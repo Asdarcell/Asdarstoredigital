@@ -20,7 +20,7 @@
 
     .produk-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 20px;
       margin: 20px 0;
     }
@@ -30,17 +30,32 @@
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 0 6px rgba(0,0,0,0.1);
-      text-align: center;
     }
 
     .produk h3 {
-      margin-bottom: 10px;
+      margin-bottom: 5px;
       color: #004d40;
     }
 
     .produk p {
       font-size: 14px;
       margin: 5px 0;
+    }
+
+    a button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: none;
+      background: #00796b;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    a button:hover {
+      background: #004d40;
     }
 
     marquee {
@@ -60,7 +75,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    input, button {
+    input, button[type="submit"] {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -68,14 +83,14 @@
       border: 1px solid #ccc;
     }
 
-    button {
+    button[type="submit"] {
       background: #00796b;
       color: white;
       font-weight: bold;
       border: none;
     }
 
-    button:hover {
+    button[type="submit"]:hover {
       background: #004d40;
     }
   </style>
@@ -84,30 +99,67 @@
 
   <h2>🛍️ Daftar Produk Bayar Laris</h2>
   <div class="produk-container">
+
+    <!-- K-Vision -->
     <div class="produk">
       <h3>K-Vision Cling</h3>
+      <p>Stok: Tersedia</p>
       <p>1 Bulan - Rp 39.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+K-Vision+Cling+1+Bulan+Rp+39.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
       <p>12 Bulan - Rp 300.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+K-Vision+Cling+12+Bulan+Rp+300.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
     </div>
+
+    <!-- Nex Parabola -->
     <div class="produk">
       <h3>Nex Parabola</h3>
+      <p>Stok: Tersedia</p>
       <p>Basic 30 Hari - Rp 39.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+Nex+Parabola+Basic+30+Hari+Rp+39.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
       <p>Basic 360 Hari - Rp 350.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+Nex+Parabola+Basic+360+Hari+Rp+350.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
     </div>
+
+    <!-- MNC Vision -->
     <div class="produk">
       <h3>MNC Vision Jawara</h3>
+      <p>Stok: Tersedia</p>
       <p>1 Bulan - Rp 49.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+MNC+Vision+Jawara+1+Bulan+Rp+49.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
       <p>12 Bulan - Rp 420.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+MNC+Vision+Jawara+12+Bulan+Rp+420.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
     </div>
+
+    <!-- Data XL -->
     <div class="produk">
       <h3>Data Unlimited XL</h3>
+      <p>Stok: Tersedia</p>
       <p>Tanpa TikTok - Rp 75.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+Data+Unlimited+XL+Tanpa+TikTok+Rp+75.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
       <p>Dengan TikTok - Rp 80.000</p>
+      <a href="https://wa.me/6281803004607?text=Halo%2C+saya+mau+pesan+Data+Unlimited+XL+Dengan+TikTok+Rp+80.000" target="_blank">
+        <button>Pesan Sekarang</button>
+      </a>
     </div>
+
   </div>
 
   <h2>💬 Testimoni Pembeli</h2>
-  <marquee id="testimoni-marquee">Memuat testimoni...</marquee>
+  <marquee id="testimoni-marquee">Menampilkan testimoni...</marquee>
 
   <form id="formTesti">
     <input type="text" id="nama" placeholder="Nama Anda" required />
@@ -142,20 +194,23 @@
     ];
 
     const marquee = document.getElementById("testimoni-marquee");
-
-    function updateMarquee(asli) {
-      const gabungan = [...dummyTestimoni, ...asli];
-      marquee.textContent = gabungan.join(" ❖ ");
-    }
+    marquee.textContent = dummyTestimoni.join(" ❖ ");
 
     db.ref("testimoni").on("value", (snapshot) => {
       const data = snapshot.val();
       const asli = [];
-      for (let id in data) {
-        const { nama, pesan } = data[id];
-        asli.push(`${nama}: ${pesan}`);
+
+      if (data) {
+        for (let id in data) {
+          const { nama, pesan } = data[id];
+          if (nama && pesan) {
+            asli.push(`${nama}: ${pesan}`);
+          }
+        }
       }
-      updateMarquee(asli);
+
+      const gabungan = [...dummyTestimoni, ...asli];
+      marquee.textContent = gabungan.join(" ❖ ");
     });
 
     document.getElementById("formTesti").addEventListener("submit", (e) => {
@@ -165,6 +220,8 @@
       if (nama && pesan) {
         db.ref("testimoni").push({ nama, pesan });
         document.getElementById("formTesti").reset();
+      } else {
+        alert("Isi nama dan pesan terlebih dahulu.");
       }
     });
   </script>
