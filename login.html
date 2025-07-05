@@ -4,7 +4,24 @@
   <meta charset="UTF-8" />
   <title>Login Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Tambahkan CSS dan Firebase Auth jika perlu -->
+  <style>
+    /* Tambahkan style sederhana */
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex; justify-content: center; align-items: center; height: 100vh;
+      background: #f0f0f0;
+    }
+    .box {
+      background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 300px; text-align: center;
+    }
+    input, button {
+      width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff; color: white; border: none; cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <div class="box">
@@ -13,21 +30,38 @@
     <input type="password" id="password" placeholder="Password" />
     <button onclick="login()">Login</button>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    const firebaseConfig = { /* ...sama seperti di register.html... */ };
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      projectId: "asdarstoredigitalll-d89c4"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+
     window.login = function() {
-      const email = document.getElementById("email").value;
-      const pass = document.getElementById("password").value;
-      signInWithEmailAndPassword(auth, email, pass)
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) {
+        alert("Mohon isi email dan password");
+        return;
+      }
+
+      signInWithEmailAndPassword(auth, email, password)
         .then(() => {
           alert("Berhasil login!");
-          // arahkan ke halaman dashboard/admin
+          window.location.href = "admin.html";  // Ganti ke nama file dashboard admin kamu
         })
-        .catch(err => alert("Gagal login: " + err.message));
+        .catch(err => {
+          alert("Gagal login: " + err.message);
+          console.error("Login error:", err);
+        });
     }
   </script>
 </body>
