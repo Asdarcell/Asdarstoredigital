@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Asdar Store Digital</title>
   <style>
+    /* CSS sama seperti sebelumnya */
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
@@ -81,10 +82,6 @@
       from { transform: translateX(0); }
       to { transform: translateX(-100%); }
     }
-    select {
-      padding: 6px;
-      border-radius: 6px;
-    }
   </style>
 </head>
 <body>
@@ -129,8 +126,8 @@
   <ul id="listTestimoni"></ul>
 </div>
 
+<!-- Firebase script -->
 <script type="module">
-  // Firebase Config
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -145,7 +142,6 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
   const testiRef = ref(db, 'testimoni');
 
   onValue(testiRef, snapshot => {
@@ -164,31 +160,10 @@
     }
     marquee.textContent = gabungan;
   });
+</script>
 
-  function kirimTestimoni(e) {
-    e.preventDefault();
-    const nama = document.getElementById('nama').value.trim();
-    const pesan = document.getElementById('pesan').value.trim();
-    if (isNegative(pesan)) {
-      alert("Testimoni negatif ditolak otomatis. Terima kasih!");
-      return;
-    }
-    push(testiRef, { nama, pesan });
-    e.target.reset();
-  }
-
-  function isNegative(pesan) {
-    const kataNegatif = ['jelek', buruk', 'nggak bagus', 'parah', 'gagal', 'zonk', 'rip', 'tipu'];
-    return kataNegatif.some(kata => pesan.toLowerCase().includes(kata));
-  }
-
-  // Navigasi
-  function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-  }
-
-  // Produk
+<!-- Fungsi biasa -->
+<script>
   const produkData = [
     { kategori: 'K-Vision', nama: 'K-Vision CLING 30 Hari', varian: ['1 Bulan - 39.000', '3 Bulan - 110.000'], wa: '081803004607' },
     { kategori: 'Nex Parabola', nama: 'Nex Basic', varian: ['30 Hari - 29.000', '360 Hari - 290.000'], wa: '081803004607' },
@@ -222,13 +197,39 @@
     renderProduk(filtered);
   }
 
-  window.pesan = (wa, nama, selectId) => {
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  function kirimTestimoni(e) {
+    e.preventDefault();
+    const nama = document.getElementById('nama').value.trim();
+    const pesan = document.getElementById('pesan').value.trim();
+    if (isNegative(pesan)) {
+      alert("Testimoni negatif ditolak otomatis.");
+      return;
+    }
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js").then(module => {
+      const { getDatabase, ref, push } = module;
+      const db = getDatabase();
+      push(ref(db, 'testimoni'), { nama, pesan });
+    });
+    e.target.reset();
+  }
+
+  function isNegative(pesan) {
+    const kataNegatif = ['jelek', 'buruk', 'zonk', 'rip', 'gagal', 'nggak bagus', 'parah', 'tipu'];
+    return kataNegatif.some(kata => pesan.toLowerCase().includes(kata));
+  }
+
+  function pesan(wa, nama, selectId) {
     const varian = document.getElementById(selectId).value;
     const link = `https://wa.me/${wa}?text=Halo%20saya%20ingin%20pesan%20${encodeURIComponent(nama)}%20dengan%20varian%20${encodeURIComponent(varian)}`;
     window.open(link, '_blank');
-  };
+  }
 
-  // Tampilkan semua produk awal
+  // Load semua produk saat awal
   renderProduk(produkData);
 </script>
 
