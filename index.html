@@ -13,47 +13,60 @@
     }
 
     body {
-      background: #f3f9ff;
+      background: linear-gradient(to right, #e8f0ff, #ffffff);
       color: #333;
       padding: 16px;
     }
 
     header {
       text-align: center;
-      padding: 20px;
+      padding: 30px 16px;
+      background: #007BFF;
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 24px;
     }
 
     header h1 {
-      font-size: 2em;
-      color: #007BFF;
+      font-size: 2.4em;
+      margin-bottom: 10px;
     }
 
     header p {
-      font-size: 1em;
-      color: #666;
+      font-size: 1.1em;
+      color: #e0eaff;
     }
 
     .card {
       background: #fff;
       border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
       margin-bottom: 24px;
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.01);
     }
 
     .card h2 {
-      font-size: 1.2em;
-      margin-bottom: 8px;
+      font-size: 1.4em;
+      margin-bottom: 12px;
+      color: #007BFF;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
     }
 
     .btn {
       background: #007BFF;
       color: white;
-      padding: 10px 20px;
+      padding: 12px 20px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      margin-top: 12px;
+      margin-top: 14px;
+      transition: background 0.3s ease;
     }
 
     .btn:hover {
@@ -62,47 +75,61 @@
 
     input, select, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
       border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-
-    .testimoni-list {
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 12px;
-    }
-
-    .testimoni-item {
-      background: #eef4ff;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
+      border-radius: 10px;
+      font-size: 1em;
     }
 
     #previewImage {
       margin-top: 10px;
       max-width: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
     }
 
     .payment-box {
-      background: #d8e3ff;
-      padding: 12px;
+      background: #eef3ff;
+      padding: 14px;
       border-radius: 12px;
       text-align: center;
-      margin-top: 12px;
       font-weight: bold;
       color: #333;
       line-height: 1.6;
+      margin-top: 16px;
     }
 
     footer {
       text-align: center;
-      margin-top: 32px;
-      color: #888;
+      margin-top: 40px;
+      color: #777;
       font-size: 0.9em;
+    }
+
+    /* Testimoni */
+    .testimoni-container {
+      position: relative;
+      height: 160px;
+      overflow: hidden;
+      background: #f4f8ff;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .testimoni-item {
+      background: #dce8ff;
+      color: #222;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      animation: slideUp 20s linear infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes slideUp {
+      0% { transform: translateY(100%); }
+      100% { transform: translateY(-200%); }
     }
   </style>
 </head>
@@ -110,12 +137,12 @@
 
   <header>
     <h1>Asdar Store Digital</h1>
-    <p>Cepat, Aman, Terpercaya</p>
+    <p>💎 Cepat · Aman · Terpercaya 💎</p>
   </header>
 
   <!-- Produk -->
   <section class="card">
-    <h2>Produk Voucher</h2>
+    <h2>🛒 Pilih Produk</h2>
     <select id="kategoriProduk" onchange="updateVarian()">
       <option value="">Pilih kategori...</option>
       <option value="kvision">K-Vision</option>
@@ -130,28 +157,27 @@
 
   <!-- Upload bukti -->
   <section class="card" id="uploadSection" style="display:none;">
-    <h2>Upload Bukti Pembayaran</h2>
+    <h2>📤 Upload Bukti Pembayaran</h2>
     <input type="file" id="buktiBayar" accept="image/*" onchange="previewImage(event)" />
     <img id="previewImage" />
     <div class="payment-box">
-      🟣 PAYMENT 🟣<br/>
-      ShopeePay: 081803004607<br/>
-      DANA: 087755432880
+      🟣 <b>PAYMENT</b> 🟣<br/>
+      ShopeePay: <b>081803004607</b><br/>
+      DANA: <b>087755432880</b>
     </div>
     <button class="btn" onclick="uploadGambar()">Kirim ke WhatsApp</button>
   </section>
 
   <!-- Testimoni -->
   <section class="card">
-    <h2>Testimoni Pelanggan</h2>
+    <h2>💬 Testimoni Pelanggan</h2>
     <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
     <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
-    <div class="testimoni-list" id="listTestimoni">
-    </div>
+    <div class="testimoni-container" id="listTestimoni"></div>
   </section>
 
   <footer>
-    &copy; 2025 Asdar Store Digital
+    &copy; 2025 Asdar Store Digital · All Rights Reserved
   </footer>
 
   <script>
@@ -206,7 +232,7 @@
       produkTerpilih = `${namaKategori} - ${varian}`;
       hargaTerpilih = harga;
 
-      alert(`Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nSetelah itu upload bukti pembayaran.`);
+      alert(`💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nKemudian upload bukti pembayaran.`);
 
       document.getElementById("uploadSection").style.display = "block";
       document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
@@ -235,7 +261,7 @@
         const nomorWA = "081803004607";
         window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
       })
-      .catch(() => alert("Gagal upload gambar."));
+      .catch(() => alert("❌ Gagal upload gambar."));
     }
 
     function kirimTestimoni() {
@@ -243,12 +269,12 @@
       if (!isi) return;
 
       const dilarang = testimoniNegatif.some(kata => isi.includes(kata));
-      if (dilarang) return alert("Testimoni mengandung kata negatif.");
+      if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
 
       const div = document.createElement("div");
       div.className = "testimoni-item";
       div.textContent = isi;
-      document.getElementById("listTestimoni").prepend(div);
+      document.getElementById("listTestimoni").appendChild(div);
       document.getElementById("inputTesti").value = "";
     }
   </script>
