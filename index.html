@@ -1,380 +1,101 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asdar Store Digital</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif;
-    }
-    body {
-      background: linear-gradient(to right, #e8f0ff, #ffffff);
-      color: #333;
-      padding: 16px;
-    }
-    header {
-      text-align: center;
-      padding: 30px 16px;
-      background: #007BFF;
-      color: white;
-      border-radius: 16px;
-      margin-bottom: 24px;
-    }
-    header h1 {
-      font-size: 2.4em;
-      margin-bottom: 10px;
-    }
-    header p {
-      font-size: 1.1em;
-      color: #e0eaff;
-    }
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
-      transition: 0.3s ease;
-    }
-    .card:hover {
-      transform: scale(1.01);
-    }
-    .card h2 {
-      font-size: 1.4em;
-      margin-bottom: 12px;
-      color: #007BFF;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 6px;
-    }
-    .btn {
-      background: #007BFF;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-top: 14px;
-      transition: background 0.3s ease;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 1em;
-    }
-    #previewImage {
-      margin-top: 10px;
-      max-width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.1);
-    }
-    .payment-box {
-      background: #eef3ff;
-      padding: 14px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: bold;
-      color: #333;
-      line-height: 1.6;
-      margin-top: 16px;
-    }
-    footer {
-      text-align: center;
-      margin-top: 40px;
-      color: #777;
-      font-size: 0.9em;
-    }
-    .testimoni-container {
-      background: #f4f8ff;
-      border-radius: 10px;
-      padding: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .testimoni-item {
-      background: #dce8ff;
-      color: #222;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      animation: fadeInUp 0.5s ease;
-    }
-    @keyframes fadeInUp {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: linear-gradient(to right, #e8f0ff, #ffffff); color: #333; padding: 16px; }
+    header { text-align: center; padding: 30px 16px; background: #007BFF; color: white; border-radius: 16px; margin-bottom: 24px; }
+    header h1 { font-size: 2.4em; margin-bottom: 10px; }
+    header p { font-size: 1.1em; color: #e0eaff; }
+    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 24px; transition: 0.3s ease; }
+    .card:hover { transform: scale(1.01); }
+    .card h2 { font-size: 1.4em; margin-bottom: 12px; color: #007BFF; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+    .btn { background: #007BFF; color: white; padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; margin-top: 14px; transition: background 0.3s ease; }
+    .btn:hover { background: #0056b3; }
+    input, select, textarea { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 1em; }
   </style>
 </head>
 <body>
-<header>
-  <h1>Asdar Store Digital</h1>
-  <p>💎 Cepat · Aman · Terpercaya 💎</p>
-</header>
+  <header>
+    <h1>Asdar Store Digital</h1>
+    <p>💎 Cepat · Aman · Terpercaya 💎</p>
+  </header>  <section class="card">
+    <h2>🛒 Pilih Produk</h2>
+    <select id="kategoriProduk" onchange="updateVarian()"></select>
+    <select id="varianProduk"><option value="">Pilih paket...</option></select>
+    <input type="text" id="nomorHP" placeholder="Nomor HP Anda (opsional)" />
+    <button class="btn" onclick="pesanSekarang()">Pesan Sekarang</button>
+  </section>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<section class="card">
-  <h2>🛒 Pilih Produk</h2>
-  <select id="kategoriProduk" onchange="updateVarian()">
-    <option value="">Pilih kategori...</option>
-    <option value="kvision">K-Vision</option>
-    <option value="nex">Nex Parabola</option>
-    <option value="mnc">MNC Vision</option>
-  </select>
-  <select id="varianProduk"><option value="">Pilih paket...</option></select>
-  <input type="text" id="nomorHP" placeholder="Nomor HP Anda (opsional)" />
-  <button class="btn" onclick="pesanSekarang()">Pesan Sekarang</button>
-</section>
+    let produkList = {}; // {kategori: [nama1, nama2]}
+    let hargaProduk = {}; // {kategori|nama: harga}
 
-<section class="card" id="uploadSection" style="display:none;">
-  <h2>📤 Upload Bukti Pembayaran</h2>
-  <input type="file" id="buktiBayar" accept="image/*" onchange="previewImage(event)" />
-  <img id="previewImage" />
-  <div class="payment-box">
-    🟣 <b>PAYMENT</b> 🟣<br/>
-    ShopeePay: <b>081803004607</b><br/>
-    DANA: <b>087755432880</b>
-  </div>
-  <button class="btn" onclick="uploadGambar()">Kirim ke WhatsApp</button>
-</section>
+    db.ref("produk").on("value", snapshot => {
+      produkList = {};
+      hargaProduk = {};
 
-<section class="card">
-  <h2>💬 Testimoni Pelanggan</h2>
-  <input type="text" id="namaTesti" placeholder="Nama Anda (contoh: Budi)" />
-  <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
-  <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
-  <div class="testimoni-container" id="testimoniContainer"></div>
-</section>
-
-<footer>
-  &copy; 2025 Asdar Store Digital · All Rights Reserved
-</footer>
-
-<!-- Firebase & Script -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-<script>
-  // Config Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  // Daftar kata negatif untuk testimoni
-  const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
-
-  // Data produk dan harga yang diisi dari Firebase
-  const hargaProduk = {};
-  const produkList = {};
-
-  // Ambil data produk dari Firebase dan update produkList & hargaProduk
-  db.ref("produk").on("value", snapshot => {
-    // Kosongkan data lama
-    for (const k in hargaProduk) delete hargaProduk[k];
-    for (const k in produkList) delete produkList[k];
-
-    snapshot.forEach(childSnap => {
-      const data = childSnap.val();
-      const key = `${data.kategori}|${data.nama}`;
-      hargaProduk[key] = data.harga;
-
-      if (!produkList[data.kategori]) produkList[data.kategori] = [];
-      produkList[data.kategori].push(data.nama);
-    });
-
-    updateVarian(); // Refresh varian dropdown setelah data didapat
-  });
-
-  // Fungsi update varian paket berdasarkan kategori produk
-  function updateVarian() {
-    const kategori = document.getElementById("kategoriProduk").value;
-    const varian = document.getElementById("varianProduk");
-    varian.innerHTML = '<option value="">Pilih paket...</option>';
-
-    if (!kategori || !produkList[kategori]) return;
-
-    produkList[kategori].forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      varian.appendChild(opt);
-    });
-  }
-
-  // Data testimoni default
-  const testimoniDefault = [
-    { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
-    { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!" },
-    { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
-  ];
-
-  let indexTesti = 0;
-  window.addEventListener("DOMContentLoaded", () => {
-    tampilkanTestimoniDefault();
-    muatTestimoniDariFirebase();
-  });
-
-  // Tampilkan testimoni default secara looping setiap 3 detik
-  function tampilkanTestimoniDefault() {
-    const container = document.getElementById("testimoniContainer");
-    setInterval(() => {
-      const testi = testimoniDefault[indexTesti];
-      const div = document.createElement("div");
-      div.className = "testimoni-item";
-      div.textContent = `${testi.nama}: ${testi.isi}`;
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-      indexTesti++;
-      if (indexTesti >= testimoniDefault.length) indexTesti = 0;
-    }, 3000);
-  }
-
-  // Muat testimoni dari Firebase realtime dan tampilkan paling atas
-  function muatTestimoniDariFirebase() {
-    const container = document.getElementById("testimoniContainer");
-    db.ref("testimoni").limitToLast(20).on("child_added", snapshot => {
-      const data = snapshot.val();
-      const div = document.createElement("div");
-      div.className = "testimoni-item";
-      div.textContent = `${data.nama}: ${data.isi}`;
-      container.prepend(div);
-    });
-  }
-
-  // Kirim testimoni ke Firebase dengan filter kata negatif dan validasi nama
-  function kirimTestimoni() {
-    const nama = document.getElementById("namaTesti").value.trim();
-    const isi = document.getElementById("inputTesti").value.trim();
-
-    if (!nama || !isi) {
-      alert("Isi nama dan testimoni terlebih dahulu.");
-      return;
-    }
-
-    if (!/^[a-zA-Z\s]+$/.test(nama)) {
-      alert("Nama hanya boleh huruf.");
-      return;
-    }
-
-    const adaNegatif = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
-    if (adaNegatif) {
-      alert("Testimoni mengandung kata negatif ❗");
-      return;
-    }
-
-    db.ref("testimoni").push({ nama, isi });
-    const container = document.getElementById("testimoniContainer");
-    const div = document.createElement("div");
-    div.className = "testimoni-item";
-    div.textContent = `${nama}: ${isi}`;
-    container.prepend(div);
-
-    // Reset input
-    document.getElementById("namaTesti").value = "";
-    document.getElementById("inputTesti").value = "";
-  }
-
-  // Variabel global untuk menyimpan produk & harga terpilih
-  let hargaTerpilih = 0;
-  let produkTerpilih = "";
-
-  // Fungsi proses pesan dan simpan transaksi di Firebase
-  function pesanSekarang() {
-    const kategori = document.getElementById("kategoriProduk").value;
-    const varian = document.getElementById("varianProduk").value;
-    const nomorHP = document.getElementById("nomorHP").value.trim();
-
-    if (!kategori || !varian) {
-      alert("Pilih kategori dan varian terlebih dahulu.");
-      return;
-    }
-
-    const key = `${kategori}|${varian}`;
-    const harga = hargaProduk[key] || 0;
-    if (harga === 0) {
-      alert("Harga belum tersedia.");
-      return;
-    }
-
-    produkTerpilih = `${kategori} - ${varian}`;
-    hargaTerpilih = harga;
-
-    // Simpan transaksi baru
-    db.ref("transaksi").push({
-      nama: nomorHP || "Tidak ada nomor",
-      produkNama: produkTerpilih,
-      idpel: nomorHP || "",
-      harga: harga,
-      status: "Pending",
-      buktiBayarUrl: null
-    });
-
-    let pesan = `💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.`;
-    if (nomorHP) pesan += `\nNomor HP Anda: ${nomorHP}`;
-    pesan += `\nKemudian upload bukti pembayaran.`;
-
-    alert(pesan);
-    document.getElementById("uploadSection").style.display = "block";
-    document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
-  }
-
-  // Preview gambar bukti bayar sebelum upload
-  function previewImage(event) {
-    const image = document.getElementById('previewImage');
-    image.src = URL.createObjectURL(event.target.files[0]);
-  }
-
-  // Upload gambar ke imgbb, update transaksi dan kirim WA ke admin
-  function uploadGambar() {
-    const file = document.getElementById("buktiBayar").files[0];
-    if (!file) {
-      alert("Upload gambar terlebih dahulu.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", file);
-
-    fetch("https://api.imgbb.com/1/upload?key=f71ccc1a662c9f8656766990018d3a33", {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.success) throw new Error("Upload gagal");
-
-      const linkGambar = data.data.url;
-
-      // Update bukti bayar URL transaksi yang produkNama-nya sama dengan produkTerpilih dan status pending
-      db.ref("transaksi").orderByChild("produkNama").equalTo(produkTerpilih).once("value", snapshot => {
-        snapshot.forEach(childSnapshot => {
-          const key = childSnapshot.key;
-          const val = childSnapshot.val();
-          if (val.status === "Pending") {
-            db.ref("transaksi/" + key).update({ buktiBayarUrl: linkGambar });
-          }
-        });
+      snapshot.forEach(child => {
+        const data = child.val();
+        const key = `${data.kategori}|${data.nama}`;
+        hargaProduk[key] = data.harga;
+        if (!produkList[data.kategori]) produkList[data.kategori] = [];
+        produkList[data.kategori].push(data.nama);
       });
 
-      const pesan = `Halo Admin, saya sudah bayar sebesar Rp${hargaTerpilih.toLocaleString()} untuk ${produkTerpilih}. Berikut bukti pembayaran:\n${linkGambar}`;
-      const nomorWA = "081803004607";
-      window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
-    })
-    .catch(() => alert("❌ Gagal upload gambar."));
-  }
-</script>
-</body>
+      updateDropdownKategori();
+    });
+
+    function updateDropdownKategori() {
+      const kategoriSelect = document.getElementById("kategoriProduk");
+      kategoriSelect.innerHTML = "<option value=''>Pilih kategori...</option>";
+      Object.keys(produkList).forEach(k => {
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = k.toUpperCase();
+        kategoriSelect.appendChild(opt);
+      });
+    }
+
+    function updateVarian() {
+      const kategori = document.getElementById("kategoriProduk").value;
+      const varian = document.getElementById("varianProduk");
+      varian.innerHTML = "<option value=''>Pilih paket...</option>";
+      if (!kategori || !produkList[kategori]) return;
+      produkList[kategori].forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        varian.appendChild(opt);
+      });
+    }
+
+    function pesanSekarang() {
+      const kategori = document.getElementById("kategoriProduk").value;
+      const varian = document.getElementById("varianProduk").value;
+      const nomorHP = document.getElementById("nomorHP").value.trim();
+
+      if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
+      const key = `${kategori}|${varian}`;
+      const harga = hargaProduk[key] || 0;
+      if (harga === 0) return alert("Harga belum tersedia.");
+
+      const produkTerpilih = `${kategori} - ${varian}`;
+      const pesan = `💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\n\nProduk: ${produkTerpilih}\n${nomorHP ? 'Nomor HP: ' + nomorHP : ''}`;
+      alert(pesan);
+    }
+  </script></body>
 </html>
