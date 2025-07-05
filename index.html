@@ -3,33 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Upload Bukti Bayar (ImgBB)</title>
+  <title>Asdar Store Digital</title>
   <style>
-    body { font-family: sans-serif; background: #eef6ff; padding: 20px; }
-    label, select, input, button { display: block; margin: 10px 0; font-size: 16px; }
-    #kirimWA { display: none; background: green; color: white; padding: 10px; border: none; cursor: pointer; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: #eef6ff;
+      color: #333;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    label, select, input, button, textarea {
+      width: 100%;
+      font-size: 16px;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #2980b9;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #kirimWA {
+      background: green;
+      display: none;
+    }
+    .testimoni {
+      overflow: hidden;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    .testimoni p {
+      display: inline-block;
+      padding-right: 50px;
+      animation: marquee 25s linear infinite;
+    }
+    @keyframes marquee {
+      0%   { transform: translateX(100%) }
+      100% { transform: translateX(-100%) }
+    }
+    .testiForm textarea {
+      resize: none;
+      height: 100px;
+    }
   </style>
 </head>
 <body>
 
-<h2>🧾 Upload Bukti Bayar</h2>
+<h1>🛒 Asdar Store Digital</h1>
 
-<label>Varian Produk:</label>
-<select id="varianProduk">
-  <option value="1 Bulan - 39.000">1 Bulan - 39.000</option>
-  <option value="3 Bulan - 110.000">3 Bulan - 110.000</option>
-</select>
+<div class="card">
+  <h2>🧾 Upload Bukti Bayar</h2>
+  <label>Varian Produk:</label>
+  <select id="varianProduk">
+    <option value="1 Bulan - 39.000">1 Bulan - 39.000</option>
+    <option value="3 Bulan - 110.000">3 Bulan - 110.000</option>
+  </select>
 
-<label>Upload Bukti Bayar (gambar):</label>
-<input type="file" id="buktiInput" accept="image/*" />
+  <label>Upload Bukti Bayar (gambar):</label>
+  <input type="file" id="buktiInput" accept="image/*" />
 
-<button onclick="uploadToImgbb()">✅ Upload Bukti Bayar</button>
+  <button onclick="uploadToImgbb()">✅ Upload Bukti Bayar</button>
+  <button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
+</div>
 
-<!-- Tombol WhatsApp muncul setelah sukses -->
-<button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
+<div class="card">
+  <h2>💬 Kirim Testimoni</h2>
+  <div class="testiForm">
+    <label>Nama:</label>
+    <input type="text" id="namaTesti" placeholder="Nama kamu">
+    <label>Pesan Testimoni:</label>
+    <textarea id="pesanTesti" placeholder="Tulis testimu di sini..."></textarea>
+    <button onclick="kirimTesti()">📨 Kirim Testimoni</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📢 Testimoni Pelanggan</h2>
+  <div class="testimoni" id="tampilanTestimoni">
+    <p>👍 Pelayanan cepat dan aman! - Andi</p>
+    <p>💯 Voucher langsung aktif, mantap - Sari</p>
+    <p>⭐⭐⭐⭐⭐ Rekomendasi banget - Budi</p>
+  </div>
+</div>
 
 <script>
-  const API_KEY = "f71ccc1a662c9f8656766990018d3a33"; // API Key kamu sudah benar
+  const API_KEY = "f71ccc1a662c9f8656766990018d3a33";
   let buktiURL = "";
 
   async function uploadToImgbb() {
@@ -65,6 +136,38 @@
     } catch (err) {
       alert("⚠️ Error saat upload: " + err.message);
     }
+  }
+
+  function kirimTesti() {
+    const nama = document.getElementById("namaTesti").value.trim();
+    const pesan = document.getElementById("pesanTesti").value.trim();
+    const tampil = document.getElementById("tampilanTestimoni");
+
+    if (!nama || !pesan) {
+      alert("❗ Nama dan testimoni wajib diisi!");
+      return;
+    }
+
+    // Cek testimoni jelek (filter kata-kata kasar/negatif)
+    const blacklist = ["jelek", buruk, "penipu", "tidak bagus", "bohong", "rip", "sampah"];
+    const lowerPesan = pesan.toLowerCase();
+
+    for (let kata of blacklist) {
+      if (lowerPesan.includes(kata)) {
+        alert("❌ Testimoni kamu ditolak karena mengandung kata negatif.");
+        return;
+      }
+    }
+
+    // Tambahkan ke marquee
+    const elemen = document.createElement("p");
+    elemen.textContent = `🗣️ ${pesan} - ${nama}`;
+    tampil.appendChild(elemen);
+
+    // Reset form
+    document.getElementById("namaTesti").value = "";
+    document.getElementById("pesanTesti").value = "";
+    alert("✅ Testimoni berhasil dikirim!");
   }
 </script>
 
