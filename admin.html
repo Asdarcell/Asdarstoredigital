@@ -1,173 +1,415 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Admin Asdar Store Digital</title>
+  <title>Dashboard Admin - Asdar Store Digital</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Poppins', sans-serif; background: #f5f7ff; margin: 0; padding: 20px; }
-    h1 { color: #007BFF; text-align: center; margin-bottom: 30px; }
-    section { background: white; border-radius: 12px; padding: 20px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-    th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
-    th { background: #007BFF; color: white; }
-    button { background-color: #007BFF; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 6px; transition: background-color 0.3s ease; }
-    button:hover { background-color: #0056b3; }
-    .btn-danger { background-color: #dc3545; }
-    .btn-danger:hover { background-color: #a71d2a; }
-    img.bukti { max-width: 120px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    body {
+      font-family: 'Poppins', sans-serif;
+      padding: 20px;
+      background: #f0f4ff;
+      color: #222;
+    }
+    h1 {
+      color: #007BFF;
+      margin-bottom: 20px;
+    }
+    .hidden { display: none; }
+    input, select, button, textarea {
+      font-size: 1em;
+      padding: 10px;
+      margin: 6px 0 12px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 12px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background: #dce8ff;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .logout-btn {
+      float: right;
+      background: #dc3545;
+    }
+    .logout-btn:hover {
+      background: #a71d2a;
+    }
+    .flex-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .flex-col {
+      flex: 1;
+      min-width: 200px;
+    }
   </style>
 </head>
-<body><h1>Dashboard Admin Asdar Store Digital</h1><section>
-  <h2>📦 Manajemen Produk</h2>
-  <form id="formProduk" onsubmit="tambahProduk(event)">
-    <select id="kategoriProdukInput" required>
-      <option value="">Pilih Kategori</option>
-      <option value="kvision">K-Vision</option>
-      <option value="nex">Nex Parabola</option>
-      <option value="mnc">MNC Vision</option>
-      <option value="xl">XL Data</option>
-      <option value="pulsa">Pulsa</option>
-    </select>
-    <input type="text" id="namaProdukInput" placeholder="Nama Produk" required />
-    <input type="number" id="hargaProdukInput" placeholder="Harga (contoh: 30000)" required />
-    <button type="submit">Tambah Produk</button>
-  </form>  <table id="tableProduk">
-    <thead>
-      <tr><th>ID</th><th>Kategori</th><th>Nama Produk</th><th>Harga</th><th>Aksi</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</section><section>
-  <h2>📑 Daftar Transaksi</h2>
-  <table id="tableTransaksi">
-    <thead>
-      <tr><th>ID</th><th>Nomor HP</th><th>Produk</th><th>Harga (Rp)</th><th>Status</th><th>Bukti Bayar</th><th>Aksi</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</section><section>
-  <h2>💬 Testimoni Pelanggan</h2>
-  <table id="tableTestimoni">
-    <thead>
-      <tr><th>ID</th><th>Nama</th><th>Isi Testimoni</th><th>Aksi</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</section><script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+<body>
 
-  function tampilkanProduk() {
-    const tbody = document.querySelector("#tableProduk tbody");
-    db.ref("produk").on("value", snapshot => {
-      tbody.innerHTML = "";
-      const data = snapshot.val();
-      if (!data) return tbody.innerHTML = "<tr><td colspan='5'>Belum ada produk.</td></tr>";
-      Object.entries(data).forEach(([key, val]) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${key}</td>
-          <td>${val.kategori}</td>
-          <td><input value="${val.nama}" onchange="updateProduk('${key}', { nama: this.value })" /></td>
-          <td><input type="number" value="${val.harga}" onchange="updateProduk('${key}', { harga: parseInt(this.value) })" /></td>
-          <td><button class="btn-danger" onclick="hapusProduk('${key}')">Hapus</button></td>`;
-        tbody.appendChild(tr);
-      });
+  <h1>Dashboard Admin</h1>
+  <button class="logout-btn hidden" id="btnLogout">Logout</button>
+
+  <!-- Login Section -->
+  <section id="loginSection" class="section">
+    <h2>Login Admin</h2>
+    <input type="email" id="emailAdmin" placeholder="Email admin" />
+    <input type="password" id="passwordAdmin" placeholder="Password" />
+    <button id="btnLogin">Login</button>
+  </section>
+
+  <!-- Dashboard Section -->
+  <section id="dashboardSection" class="section hidden">
+
+    <!-- Kategori Management -->
+    <div id="kategoriSection" style="margin-bottom:40px;">
+      <h2>Manajemen Kategori</h2>
+      <div class="flex-row">
+        <input type="text" id="inputKategoriBaru" placeholder="Tambah kategori baru" class="flex-col" />
+        <button id="btnTambahKategori" style="width:150px;">Tambah Kategori</button>
+      </div>
+      <h3>Daftar Kategori</h3>
+      <table id="tableKategori">
+        <thead>
+          <tr><th>Nama Kategori</th><th>Aksi</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Produk Management -->
+    <div id="produkSection" style="margin-bottom:40px;">
+      <h2>Manajemen Produk</h2>
+      <div class="flex-row">
+        <select id="selectKategoriProduk" class="flex-col">
+          <option value="">Pilih kategori...</option>
+        </select>
+        <input type="text" id="inputVarian" placeholder="Nama varian / paket" class="flex-col" />
+        <input type="number" id="inputHarga" placeholder="Harga produk (Rp)" class="flex-col" />
+        <button id="btnTambahProduk" style="width:150px;">Tambah / Update Produk</button>
+      </div>
+      <h3>Daftar Produk</h3>
+      <table id="tableProduk">
+        <thead>
+          <tr>
+            <th>Kategori</th>
+            <th>Varian</th>
+            <th>Harga (Rp)</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Transaksi Management -->
+    <div id="transaksiSection" style="margin-bottom:40px;">
+      <h2>Daftar Transaksi</h2>
+      <table id="tableTransaksi">
+        <thead>
+          <tr>
+            <th>Nomor HP / Nama</th>
+            <th>Produk</th>
+            <th>Harga (Rp)</th>
+            <th>Status</th>
+            <th>Bukti Bayar</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Testimoni Management -->
+    <div id="testimoniSection" style="margin-bottom:40px;">
+      <h2>Daftar Testimoni</h2>
+      <table id="tableTestimoni">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Isi Testimoni</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // UI elements
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnLogout = document.getElementById('btnLogout');
+
+    const inputKategoriBaru = document.getElementById('inputKategoriBaru');
+    const btnTambahKategori = document.getElementById('btnTambahKategori');
+    const tableKategoriBody = document.querySelector('#tableKategori tbody');
+
+    const selectKategoriProduk = document.getElementById('selectKategoriProduk');
+    const inputVarian = document.getElementById('inputVarian');
+    const inputHarga = document.getElementById('inputHarga');
+    const btnTambahProduk = document.getElementById('btnTambahProduk');
+    const tableProdukBody = document.querySelector('#tableProduk tbody');
+
+    const tableTransaksiBody = document.querySelector('#tableTransaksi tbody');
+    const tableTestimoniBody = document.querySelector('#tableTestimoni tbody');
+
+    // Auth state
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginSection.classList.add('hidden');
+        dashboardSection.classList.remove('hidden');
+        btnLogout.classList.remove('hidden');
+        loadKategori();
+        loadProduk();
+        loadTransaksi();
+        loadTestimoni();
+      } else {
+        loginSection.classList.remove('hidden');
+        dashboardSection.classList.add('hidden');
+        btnLogout.classList.add('hidden');
+      }
     });
-  }
 
-  function tambahProduk(e) {
-    e.preventDefault();
-    const kategori = document.getElementById("kategoriProdukInput").value;
-    const nama = document.getElementById("namaProdukInput").value.trim();
-    const harga = parseInt(document.getElementById("hargaProdukInput").value);
-    if (!kategori || !nama || !harga) return alert("Isi semua data.");
-    db.ref("produk").push({ kategori, nama, harga })
-      .then(() => document.getElementById("formProduk").reset());
-  }
+    // Login
+    btnLogin.onclick = () => {
+      const email = document.getElementById('emailAdmin').value.trim();
+      const pass = document.getElementById('passwordAdmin').value.trim();
+      if (!email || !pass) return alert('Isi email dan password admin!');
+      auth.signInWithEmailAndPassword(email, pass)
+        .catch(err => alert('Gagal login: ' + err.message));
+    };
 
-  function updateProduk(id, data) {
-    db.ref("produk/" + id).update(data);
-  }
+    // Logout
+    btnLogout.onclick = () => auth.signOut();
 
-  function hapusProduk(id) {
-    if (confirm("Yakin hapus produk?")) db.ref("produk/" + id).remove();
-  }
-
-  function tampilkanTransaksi() {
-    const tbody = document.querySelector("#tableTransaksi tbody");
-    db.ref("transaksi").on("value", snapshot => {
-      tbody.innerHTML = "";
-      const data = snapshot.val();
-      if (!data) return tbody.innerHTML = "<tr><td colspan='7'>Belum ada transaksi.</td></tr>";
-      Object.entries(data).forEach(([key, val]) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${key}</td>
-          <td>${val.nama || '-'}</td>
-          <td>${val.produkNama || '-'}</td>
-          <td>${val.harga?.toLocaleString() || '-'}</td>
-          <td>${val.status || '-'}</td>
-          <td>${val.buktiBayarUrl ? `<img src="${val.buktiBayarUrl}" class="bukti" />` : '-'}</td>
-          <td>
-            ${val.status === "Pending" ? `<button onclick="updateStatus('${key}', 'Lunas')">Set Lunas</button>` : ''}
-            <button class="btn-danger" onclick="hapusTransaksi('${key}')">Hapus</button>
-          </td>`;
-        tbody.appendChild(tr);
+    // Load kategori unik dari Firebase
+    function loadKategori() {
+      db.ref('kategori').off();
+      tableKategoriBody.innerHTML = '';
+      selectKategoriProduk.innerHTML = '<option value="">Pilih kategori...</option>';
+      db.ref('kategori').on('value', snapshot => {
+        tableKategoriBody.innerHTML = '';
+        selectKategoriProduk.innerHTML = '<option value="">Pilih kategori...</option>';
+        snapshot.forEach(child => {
+          const kategori = child.val();
+          const key = child.key;
+          // Tabel kategori
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${kategori}</td><td><button onclick="hapusKategori('${key}')">Hapus</button></td>`;
+          tableKategoriBody.appendChild(tr);
+          // Dropdown kategori produk
+          const opt = document.createElement('option');
+          opt.value = kategori;
+          opt.textContent = kategori;
+          selectKategoriProduk.appendChild(opt);
+        });
       });
-    });
-  }
-
-  function updateStatus(id, statusBaru) {
-    if (confirm(`Ubah status menjadi ${statusBaru}?`)) {
-      db.ref("transaksi/" + id).update({ status: statusBaru });
     }
-  }
 
-  function hapusTransaksi(id) {
-    if (confirm("Yakin ingin menghapus?")) {
-      db.ref("transaksi/" + id).remove();
-    }
-  }
-
-  function tampilkanTestimoni() {
-    const tbody = document.querySelector("#tableTestimoni tbody");
-    db.ref("testimoni").on("value", snapshot => {
-      tbody.innerHTML = "";
-      const data = snapshot.val();
-      if (!data) return tbody.innerHTML = "<tr><td colspan='4'>Belum ada testimoni.</td></tr>";
-      Object.entries(data).forEach(([key, val]) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${key}</td>
-          <td>${val.nama}</td>
-          <td>${val.isi}</td>
-          <td><button class="btn-danger" onclick="hapusTestimoni('${key}')">Hapus</button></td>`;
-        tbody.appendChild(tr);
+    // Tambah kategori baru
+    btnTambahKategori.onclick = () => {
+      const namaKategori = inputKategoriBaru.value.trim();
+      if (!namaKategori) return alert('Masukkan nama kategori!');
+      // Cek apakah kategori sudah ada
+      db.ref('kategori').orderByValue().equalTo(namaKategori).once('value', snapshot => {
+        if (snapshot.exists()) {
+          alert('Kategori sudah ada!');
+          return;
+        }
+        // Tambah kategori baru
+        db.ref('kategori').push(namaKategori)
+          .then(() => {
+            alert('Kategori berhasil ditambah!');
+            inputKategoriBaru.value = '';
+          });
       });
-    });
-  }
+    };
 
-  function hapusTestimoni(id) {
-    if (confirm("Hapus testimoni?")) {
-      db.ref("testimoni/" + id).remove();
+    // Hapus kategori & produk terkait
+    function hapusKategori(key) {
+      if (!confirm('Yakin hapus kategori? Semua produk dalam kategori ini juga akan dihapus!')) return;
+      // Hapus kategori
+      db.ref('kategori/' + key).remove();
+      // Hapus produk terkait kategori ini
+      db.ref('produk').orderByChild('kategori').equalTo(key).once('value', snapshot => {
+        snapshot.forEach(child => {
+          db.ref('produk/' + child.key).remove();
+        });
+      });
     }
-  }
 
-  window.onload = () => {
-    tampilkanProduk();
-    tampilkanTransaksi();
-    tampilkanTestimoni();
-  };
-</script></body>
+    // Load produk
+    function loadProduk() {
+      db.ref('produk').off();
+      tableProdukBody.innerHTML = '';
+      db.ref('produk').on('value', snapshot => {
+        tableProdukBody.innerHTML = '';
+        snapshot.forEach(child => {
+          const p = child.val();
+          const key = child.key;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${p.kategori}</td>
+            <td>${p.nama}</td>
+            <td>${p.harga.toLocaleString()}</td>
+            <td><button onclick="hapusProduk('${key}')">Hapus</button></td>`;
+          tableProdukBody.appendChild(tr);
+        });
+      });
+    }
+
+    // Tambah atau update produk
+    btnTambahProduk.onclick = () => {
+      const kategori = selectKategoriProduk.value.trim();
+      const varian = inputVarian.value.trim();
+      const harga = Number(inputHarga.value);
+      if (!kategori) return alert('Pilih kategori produk!');
+      if (!varian) return alert('Isi nama varian produk!');
+      if (!harga || harga <= 0) return alert('Isi harga produk dengan benar!');
+
+      // Cek apakah produk sudah ada (kategori+varian unik)
+      db.ref('produk').orderByChild('kategori').equalTo(kategori).once('value', snapshot => {
+        let produkKey = null;
+        snapshot.forEach(child => {
+          if (child.val().nama.toLowerCase() === varian.toLowerCase()) {
+            produkKey = child.key;
+          }
+        });
+
+        if (produkKey) {
+          // Update produk
+          db.ref('produk/' + produkKey).update({ harga })
+            .then(() => {
+              alert('Produk berhasil diupdate!');
+              inputVarian.value = '';
+              inputHarga.value = '';
+            });
+        } else {
+          // Tambah produk baru
+          db.ref('produk').push({
+            kategori,
+            nama: varian,
+            harga
+          }).then(() => {
+            alert('Produk berhasil ditambah!');
+            inputVarian.value = '';
+            inputHarga.value = '';
+          });
+        }
+      });
+    };
+
+    // Hapus produk
+    function hapusProduk(key) {
+      if (!confirm('Yakin hapus produk ini?')) return;
+      db.ref('produk/' + key).remove();
+    }
+
+    // Load transaksi
+    function loadTransaksi() {
+      db.ref('transaksi').off();
+      tableTransaksiBody.innerHTML = '';
+      db.ref('transaksi').on('value', snapshot => {
+        tableTransaksiBody.innerHTML = '';
+        snapshot.forEach(child => {
+          const t = child.val();
+          const key = child.key;
+          const bukti = t.buktiBayarUrl ? `<a href="${t.buktiBayarUrl}" target="_blank">Lihat</a>` : '-';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${t.nama || t.idpel || '-'}</td>
+            <td>${t.produkNama || '-'}</td>
+            <td>${t.harga ? t.harga.toLocaleString() : '-'}</td>
+            <td>${t.status || '-'}</td>
+            <td>${bukti}</td>
+            <td><button onclick="hapusTransaksi('${key}')">Hapus</button></td>`;
+          tableTransaksiBody.appendChild(tr);
+        });
+      });
+    }
+
+    // Hapus transaksi
+    function hapusTransaksi(key) {
+      if (!confirm('Yakin hapus transaksi ini?')) return;
+      db.ref('transaksi/' + key).remove();
+    }
+
+    // Load testimoni
+    function loadTestimoni() {
+      db.ref('testimoni').off();
+      tableTestimoniBody.innerHTML = '';
+      db.ref('testimoni').on('value', snapshot => {
+        tableTestimoniBody.innerHTML = '';
+        snapshot.forEach(child => {
+          const t = child.val();
+          const key = child.key;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${t.nama}</td>
+            <td>${t.isi}</td>
+            <td><button onclick="hapusTestimoni('${key}')">Hapus</button></td>`;
+          tableTestimoniBody.appendChild(tr);
+        });
+      });
+    }
+
+    // Hapus testimoni
+    function hapusTestimoni(key) {
+      if (!confirm('Yakin hapus testimoni ini?')) return;
+      db.ref('testimoni/' + key).remove();
+    }
+  </script>
+</body>
 </html>
