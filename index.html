@@ -93,26 +93,34 @@
       color: #777;
       font-size: 0.9em;
     }
+
+    /* Testimoni Baru */
     .testimoni-container {
-      position: relative;
-      height: 160px;
-      overflow: hidden;
       background: #f4f8ff;
       border-radius: 10px;
       padding: 10px;
+      max-height: 200px;
+      overflow-y: auto;
     }
+
     .testimoni-item {
       background: #dce8ff;
       color: #222;
       padding: 10px 14px;
       border-radius: 8px;
       margin-bottom: 8px;
-      animation: slideUp 20s linear infinite;
-      white-space: nowrap;
+      animation: fadeInUp 0.5s ease;
     }
-    @keyframes slideUp {
-      0% { transform: translateY(100%); }
-      100% { transform: translateY(-200%); }
+
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -156,7 +164,7 @@
     <input type="text" id="namaTesti" placeholder="Nama Anda (contoh: Budi)" />
     <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
     <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
-    <div class="testimoni-container" id="listTestimoni"></div>
+    <div class="testimoni-container" id="testimoniContainer"></div>
   </section>
 
   <footer>
@@ -182,19 +190,44 @@
       { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
     ];
 
+    let indexTesti = 0;
     window.addEventListener("DOMContentLoaded", () => {
       tampilkanTestimoniDefault();
     });
 
     function tampilkanTestimoniDefault() {
-      const container = document.getElementById("listTestimoni");
+      const container = document.getElementById("testimoniContainer");
       container.innerHTML = "";
-      testimoniDefault.forEach(testi => {
+      const interval = setInterval(() => {
+        if (indexTesti >= testimoniDefault.length) {
+          clearInterval(interval);
+          return;
+        }
+        const testi = testimoniDefault[indexTesti];
         const div = document.createElement("div");
         div.className = "testimoni-item";
         div.textContent = `${testi.nama}: ${testi.isi}`;
         container.appendChild(div);
-      });
+        indexTesti++;
+      }, 1500);
+    }
+
+    function kirimTestimoni() {
+      const nama = document.getElementById("namaTesti").value.trim();
+      const isi = document.getElementById("inputTesti").value.trim();
+
+      if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
+      if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
+
+      const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
+      if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
+
+      const div = document.createElement("div");
+      div.className = "testimoni-item";
+      div.textContent = `${nama}: ${isi}`;
+      document.getElementById("testimoniContainer").appendChild(div);
+      document.getElementById("namaTesti").value = "";
+      document.getElementById("inputTesti").value = "";
     }
 
     function updateVarian() {
@@ -265,24 +298,6 @@
         window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
       })
       .catch(() => alert("❌ Gagal upload gambar."));
-    }
-
-    function kirimTestimoni() {
-      const nama = document.getElementById("namaTesti").value.trim();
-      const isi = document.getElementById("inputTesti").value.trim();
-
-      if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
-      if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
-
-      const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
-      if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
-
-      const div = document.createElement("div");
-      div.className = "testimoni-item";
-      div.textContent = `${nama}: ${isi}`;
-      document.getElementById("listTestimoni").appendChild(div);
-      document.getElementById("namaTesti").value = "";
-      document.getElementById("inputTesti").value = "";
     }
   </script>
 </body>
