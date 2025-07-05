@@ -98,26 +98,31 @@
       border-radius: 10px;
       padding: 10px;
       max-height: 220px;
-      overflow-y: auto;
+      overflow: hidden;
+      position: relative;
+    }
+    .testimoni-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      animation: scrollTesti 25s linear infinite;
+    }
+    @keyframes scrollTesti {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-100%); }
     }
     .testimoni-item {
       background: #dce8ff;
       color: #222;
       padding: 10px 14px;
       border-radius: 8px;
-      margin-bottom: 8px;
-      animation: fadeInUp 0.5s ease;
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
     }
     .star {
       color: gold;
       font-size: 1.1em;
-    }
-    @keyframes fadeInUp {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
     }
     .rating-input {
       margin-top: 8px;
@@ -128,247 +133,64 @@
     .rating-input label {
       cursor: pointer;
       font-size: 1.5em;
-      color: #ccc;
-      transition: color 0.3s;
-    }
-    .rating-input input[type="radio"]:checked ~ label,
-    .rating-input label:hover,
-    .rating-input label:hover ~ label {
       color: gold;
     }
   </style>
 </head>
 <body>
+
   <header>
     <h1>Asdar Store Digital PRO</h1>
-    <p>💎 Cepat · Aman · Terpercaya · Lengkap 💎</p>
+    <p>Solusi lengkap untuk kebutuhan digital Anda</p>
   </header>
 
-  <section class="card">
-    <h2>🛒 Pilih Produk</h2>
-    <select id="kategoriProduk" onchange="updateVarian()">
-      <option value="">Pilih kategori...</option>
-      <option value="kvision">K-Vision</option>
-      <option value="nex">Nex Parabola</option>
-      <option value="mnc">MNC Vision</option>
+  <div class="card">
+    <h2>Form Pemesanan</h2>
+    <input type="text" placeholder="Nama Lengkap" />
+    <input type="text" placeholder="Nomor WhatsApp Aktif" />
+    <select>
+      <option>Pilih Produk</option>
+      <option>K-Vision</option>
+      <option>Nex Parabola</option>
+      <option>MNC Vision</option>
+      <option>Data Unlimited XL</option>
     </select>
-    <select id="varianProduk">
-      <option value="">Pilih paket...</option>
-    </select>
-    <button class="btn" onclick="pesanSekarang()">Pesan Sekarang</button>
-  </section>
-
-  <section class="card" id="uploadSection" style="display:none;">
-    <h2>📤 Upload Bukti Pembayaran</h2>
-    <input type="file" id="buktiBayar" accept="image/*" onchange="previewImage(event)" />
-    <img id="previewImage" />
+    <textarea placeholder="Catatan tambahan (opsional)"></textarea>
+    <button class="btn">Sudah Bayar & Kirim Bukti</button>
     <div class="payment-box">
-      🟣 <b>PAYMENT</b> 🟣<br/>
-      ShopeePay: <b>081803004607</b><br/>
-      DANA: <b>087755432880</b>
+      Transfer ke DANA: <br />
+      <strong>087755432880</strong><br />
+      a.n. Asdar Store Digital
     </div>
-    <button class="btn" onclick="uploadGambar()">Kirim ke WhatsApp</button>
-  </section>
+  </div>
 
-  <section class="card">
-    <h2>💬 Testimoni Pelanggan</h2>
-    <input type="text" id="namaTesti" placeholder="Nama Anda (contoh: Budi)" />
-    <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
-    <div class="rating-input" aria-label="Rating bintang">
-      <input type="radio" id="star5" name="rating" value="5" /><label for="star5">★</label>
-      <input type="radio" id="star4" name="rating" value="4" /><label for="star4">★</label>
-      <input type="radio" id="star3" name="rating" value="3" /><label for="star3">★</label>
-      <input type="radio" id="star2" name="rating" value="2" /><label for="star2">★</label>
-      <input type="radio" id="star1" name="rating" value="1" checked /><label for="star1">★</label>
+  <div class="card">
+    <h2>Testimoni Pelanggan</h2>
+    <div class="testimoni-container">
+      <div class="testimoni-list">
+        <div class="testimoni-item">
+          <strong>Rina</strong>
+          <span>⭐⭐⭐⭐⭐</span>
+          <p>Pelayanan cepat dan ramah, top banget!</p>
+        </div>
+        <div class="testimoni-item">
+          <strong>Agus</strong>
+          <span>⭐⭐⭐⭐⭐</span>
+          <p>Transaksi aman, produk langsung aktif!</p>
+        </div>
+        <div class="testimoni-item">
+          <strong>Dewi</strong>
+          <span>⭐⭐⭐⭐⭐</span>
+          <p>Sangat puas, responnya cepat dan terpercaya!</p>
+        </div>
+        <!-- Tambahkan testimoni lainnya di sini -->
+      </div>
     </div>
-    <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
-    <div class="testimoni-container" id="testimoniContainer"></div>
-  </section>
+  </div>
 
   <footer>
-    &copy; 2025 Asdar Store Digital · All Rights Reserved
+    &copy; 2025 Asdar Store Digital. All rights reserved.
   </footer>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
-    const hargaProduk = {
-      "K-Vision|Cling 30 Hari": 30000,
-      "K-Vision|Liga 1": 35000,
-      "K-Vision|Timnas": 30000,
-      "K-Vision|Paket Film": 40000,
-      "Nex Parabola|Basic 30 Hari": 35000,
-      "Nex Parabola|Basic 90 Hari": 90000,
-      "MNC Vision|Jawara 30 Hari": 40000,
-      "MNC Vision|Timnas": 35000
-    };
-
-    const testimoniDefault = [
-      { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!", rating: 5 },
-      { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!", rating: 5 },
-      { nama: "Dewi", isi: "Terpercaya banget, langganan terus!", rating: 4 }
-    ];
-
-    let indexTesti = 0;
-
-    window.addEventListener("DOMContentLoaded", () => {
-      tampilkanTestimoniDefault();
-      muatTestimoniDariFirebase();
-    });
-
-    // Looping testimoni default terus
-    function tampilkanTestimoniDefault() {
-      const container = document.getElementById("testimoniContainer");
-      setInterval(() => {
-        const testi = testimoniDefault[indexTesti];
-        if (!testi) return;
-        const div = document.createElement("div");
-        div.className = "testimoni-item";
-        div.innerHTML = `${renderStars(testi.rating)} <strong>${testi.nama}:</strong> ${testi.isi}`;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-        indexTesti++;
-        if (indexTesti >= testimoniDefault.length) indexTesti = 0;
-      }, 3500);
-    }
-
-    // Muat testimoni pelanggan dari Firebase realtime
-    function muatTestimoniDariFirebase() {
-      const container = document.getElementById("testimoniContainer");
-      db.ref("testimoni").limitToLast(20).on("child_added", snapshot => {
-        const data = snapshot.val();
-        const div = document.createElement("div");
-        div.className = "testimoni-item";
-        div.innerHTML = `${renderStars(data.rating)} <strong>${data.nama}:</strong> ${data.isi}`;
-        container.prepend(div);
-      });
-    }
-
-    // Render bintang berdasarkan rating
-    function renderStars(rating) {
-      rating = Number(rating) || 0;
-      let stars = "";
-      for(let i = 0; i < rating; i++) stars += '<span class="star">★</span>';
-      for(let i = rating; i < 5; i++) stars += '<span class="star" style="color:#ccc;">★</span>';
-      return stars;
-    }
-
-    function kirimTestimoni() {
-      const nama = document.getElementById("namaTesti").value.trim();
-      const isi = document.getElementById("inputTesti").value.trim();
-      const rating = document.querySelector('input[name="rating"]:checked')?.value || 1;
-
-      if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
-      if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
-      const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
-      if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
-
-      // Simpan ke Firebase testimoni
-      db.ref("testimoni").push({ nama, isi, rating });
-
-      // Tambah langsung di UI paling atas
-      const container = document.getElementById("testimoniContainer");
-      const div = document.createElement("div");
-      div.className = "testimoni-item";
-      div.innerHTML = `${renderStars(rating)} <strong>${nama}:</strong> ${isi}`;
-      container.prepend(div);
-
-      document.getElementById("namaTesti").value = "";
-      document.getElementById("inputTesti").value = "";
-      document.querySelector('input[name="rating"][value="1"]').checked = true;
-    }
-
-    function updateVarian() {
-      const varian = document.getElementById("varianProduk");
-      const kategori = document.getElementById("kategoriProduk").value;
-      varian.innerHTML = "";
-      let opsi = [];
-      if (kategori === "kvision") opsi = ["Cling 30 Hari", "Liga 1", "Timnas", "Paket Film"];
-      if (kategori === "nex") opsi = ["Basic 30 Hari", "Basic 90 Hari"];
-      if (kategori === "mnc") opsi = ["Jawara 30 Hari", "Timnas"];
-      opsi.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        varian.appendChild(opt);
-      });
-    }
-
-    let hargaTerpilih = 0;
-    let produkTerpilih = "";
-
-    function pesanSekarang() {
-      const kategori = document.getElementById("kategoriProduk").value;
-      const varian = document.getElementById("varianProduk").value;
-      if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
-
-      const namaKategori = kategori === "kvision" ? "K-Vision" : kategori === "nex" ? "Nex Parabola" : "MNC Vision";
-      const key = `${namaKategori}|${varian}`;
-      const harga = hargaProduk[key] || 0;
-      if (harga === 0) return alert("Harga belum tersedia.");
-
-      produkTerpilih = `${namaKategori} - ${varian}`;
-      hargaTerpilih = harga;
-
-      // Simpan pesanan ke Firebase
-      const waktu = Date.now();
-      db.ref("pesanan").push({
-        produk: produkTerpilih,
-        harga: hargaTerpilih,
-        waktu: waktu
-      });
-
-      alert(`💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nKemudian upload bukti pembayaran.`);
-      document.getElementById("uploadSection").style.display = "block";
-      document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
-    }
-
-    function previewImage(event) {
-      const image = document.getElementById('previewImage');
-      image.src = URL.createObjectURL(event.target.files[0]);
-    }
-
-    function uploadGambar() {
-      const file = document.getElementById("buktiBayar").files[0];
-      if (!file) return alert("Upload gambar terlebih dahulu.");
-      const formData = new FormData();
-      formData.append("image", file);
-      fetch("https://api.imgbb.com/1/upload?key=f71ccc1a662c9f8656766990018d3a33", {
-        method: "POST",
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        const linkGambar = data.data.url;
-        const waktu = Date.now();
-        // Simpan bukti bayar ke Firebase
-        db.ref("buktiBayar").push({
-          urlGambar: linkGambar,
-          produk: produkTerpilih,
-          harga: hargaTerpilih,
-          waktu: waktu
-        });
-
-        // Kirim WA otomatis ke admin
-        const pesan = `Halo Admin, saya sudah bayar sebesar Rp${hargaTerpilih.toLocaleString()} untuk ${produkTerpilih}. Berikut bukti pembayaran:\n${linkGambar}`;
-        const nomorWA = "081803004607";
-        window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
-      })
-      .catch(() => alert("❌ Gagal upload gambar."));
-    }
-  </script>
 </body>
 </html>
