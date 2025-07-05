@@ -269,3 +269,136 @@
 
 </body>
 </html>
+<div id="testimoni" class="page">
+  <h2>🗣️ Testimoni Pelanggan</h2>
+  <form onsubmit="kirimTestimoni(event)">
+    <input id="nama" placeholder="Nama Anda" required />
+    <textarea id="pesan" placeholder="Tulis testimoni Anda..." required></textarea>
+    <button type="submit">Kirim Testimoni</button>
+  </form>
+  <div id="listTestimoni"></div>
+</div>
+
+<footer>
+  &copy; 2025 Asdar Store Digital - Powered by Firebase & WhatsApp API
+</footer>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const testiRef = ref(db, 'testimoni');
+
+  onValue(testiRef, snapshot => {
+    const data = snapshot.val();
+    const list = document.getElementById('listTestimoni');
+    const marquee = document.getElementById('marqueeText');
+    list.innerHTML = '';
+    let gabungan = "Selamat datang di Asdar Store Digital — ";
+    for (let id in data) {
+      const { nama, pesan } = data[id];
+      if (isNegative(pesan)) continue;
+      const card = document.createElement('div');
+      card.className = 'testimoni-card';
+      card.innerHTML = `<strong>${nama}:</strong><p>${pesan}</p>`;
+      list.appendChild(card);
+      gabungan += `${nama}: ${pesan} ⚡ `;
+    }
+    marquee.textContent = gabungan;
+  });
+</script>
+
+<!-- Fungsionalitas Produk -->
+<script>
+  const produkData = [
+    { kategori: 'K-Vision', nama: 'K-Vision CLING 30 Hari', varian: ['1 Bulan - 39.000', '3 Bulan - 110.000'], harga: 39000, wa: '081803004607' },
+    { kategori: 'Nex Parabola', nama: 'Nex Basic', varian: ['30 Hari - 29.000', '360 Hari - 290.000'], harga: 29000, wa: '081803004607' },
+    { kategori: 'MNC Vision', nama: 'Paket Jawara', varian: ['1 Bulan - 60.000', '12 Bulan - 700.000'], harga: 60000, wa: '081803004607' },
+    { kategori: 'XL', nama: 'Paket Unlimited XL', varian: ['TikTok + Semua Aplikasi - 80.000', 'Tanpa TikTok - 75.000'], harga: 80000, wa: '081803004607' },
+    { kategori: 'PLN', nama: 'Token Listrik', varian: ['20.000 - Rp23.000', '50.000 - Rp53.000', '100.000 - Rp103.000'], harga: 23000, wa: '081803004607' }
+  ];
+
+  function renderProduk(list) {
+    const container = document.getElementById('produkList');
+    container.innerHTML = '';
+    list.forEach((p, index) => {
+      const varianId = 'varian-' + index;
+      const waBtnId = 'wa-btn-' + index;
+      container.innerHTML += `
+        <div class="produk-card">
+          <h3>${p.nama}</h3>
+          <p><strong>Kategori:</strong> ${p.kategori}</p>
+          <select id="${varianId}">
+            ${p.varian.map(v => `<option value="${v}">${v}</option>`).join('')}
+          </select>
+          <div class="bayar-info">
+            🟣 <strong>PAYMENT WAJIB SEBELUM PESAN</strong><br>
+            ShopeePay: <strong>081803004607</strong><br>
+            DANA: <strong>087755432880</strong><br>
+            <b>Total:</b> Rp${p.harga.toLocaleString('id-ID')}
+          </div>
+          <button onclick="tampilkanWA('${waBtnId}')">✅ Saya Sudah Bayar</button>
+          <button id="${waBtnId}" class="hidden" onclick="pesan('${p.wa}', '${p.nama}', '${varianId}')">Pesan via WhatsApp</button>
+        </div>
+      `;
+    });
+  }
+
+  function tampilkanWA(id) {
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function pesan(wa, nama, selectId) {
+    const varian = document.getElementById(selectId).value;
+    const link = `https://wa.me/${wa}?text=Halo%20saya%20ingin%20pesan%20${encodeURIComponent(nama)}%0D%0AVarian:%20${encodeURIComponent(varian)}`;
+    window.open(link, '_blank');
+  }
+
+  function filterKategori(kategori) {
+    if (kategori === 'semua') return renderProduk(produkData);
+    const filtered = produkData.filter(p => p.kategori === kategori);
+    renderProduk(filtered);
+  }
+
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  function kirimTestimoni(e) {
+    e.preventDefault();
+    const nama = document.getElementById('nama').value.trim();
+    const pesan = document.getElementById('pesan').value.trim();
+    if (isNegative(pesan)) {
+      alert("🙏 Maaf, testimoni negatif tidak diterima.");
+      return;
+    }
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js").then(({ getDatabase, ref, push }) => {
+      const db = getDatabase();
+      push(ref(db, 'testimoni'), { nama, pesan });
+    });
+    e.target.reset();
+  }
+
+  function isNegative(pesan) {
+    const kataNegatif = ['jelek', 'buruk', 'zonk', 'rip', 'gagal', 'parah', 'tipu', 'jelek banget'];
+    return kataNegatif.some(kata => pesan.toLowerCase().includes(kata));
+  }
+
+  renderProduk(produkData);
+</script>
+
+</body>
+</html>
