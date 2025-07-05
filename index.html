@@ -81,6 +81,23 @@
       margin-bottom: 8px;
     }
 
+    #previewImage {
+      margin-top: 10px;
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .payment-box {
+      background: #d8e3ff;
+      padding: 12px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #333;
+      line-height: 1.6;
+    }
+
     footer {
       text-align: center;
       margin-top: 32px;
@@ -114,8 +131,14 @@
   <!-- Upload bukti -->
   <section class="card" id="uploadSection" style="display:none;">
     <h2>Upload Bukti Pembayaran</h2>
-    <input type="file" id="buktiBayar" accept="image/*" />
-    <button class="btn" onclick="kirimWA()">Kirim ke WhatsApp</button>
+    <input type="file" id="buktiBayar" accept="image/*" onchange="previewImage(event)" />
+    <img id="previewImage" />
+    <div class="payment-box">
+      🟣 PAYMENT 🟣<br/>
+      ShopeePay: 081803004607<br/>
+      DANA: 087755432880
+    </div>
+    <button class="btn" onclick="uploadGambar()">Kirim ke WhatsApp</button>
   </section>
 
   <!-- Testimoni -->
@@ -124,7 +147,6 @@
     <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
     <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
     <div class="testimoni-list" id="listTestimoni">
-      <!-- Testimoni akan ditampilkan di sini -->
     </div>
   </section>
 
@@ -133,7 +155,6 @@
   </footer>
 
   <script>
-    const testimoniContainer = document.getElementById("listTestimoni");
     const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
     const hargaProduk = {
       "K-Vision|Cling 30 Hari": 30000,
@@ -150,16 +171,10 @@
       const varian = document.getElementById("varianProduk");
       const kategori = document.getElementById("kategoriProduk").value;
       varian.innerHTML = "";
-
       let opsi = [];
-      if (kategori === "kvision") {
-        opsi = ["Cling 30 Hari", "Liga 1", "Timnas", "Paket Film"];
-      } else if (kategori === "nex") {
-        opsi = ["Basic 30 Hari", "Basic 90 Hari"];
-      } else if (kategori === "mnc") {
-        opsi = ["Jawara 30 Hari", "Timnas"];
-      }
-
+      if (kategori === "kvision") opsi = ["Cling 30 Hari", "Liga 1", "Timnas", "Paket Film"];
+      if (kategori === "nex") opsi = ["Basic 30 Hari", "Basic 90 Hari"];
+      if (kategori === "mnc") opsi = ["Jawara 30 Hari", "Timnas"];
       opsi.forEach(v => {
         const opt = document.createElement("option");
         opt.value = v;
@@ -168,59 +183,72 @@
       });
     }
 
+    let hargaTerpilih = 0;
+    let produkTerpilih = "";
+
     function pesanSekarang() {
-  const kategori = document.getElementById("kategoriProduk").value;
-  const varian = document.getElementById("varianProduk").value;
-  if (!kategori || !varian) {
-    alert("Pilih kategori dan varian terlebih dahulu.");
-    return;
-  }
-
-  let kategoriNama = "";
-  if (kategori === "kvision") kategoriNama = "K-Vision";
-  else if (kategori === "nex") kategoriNama = "Nex Parabola";
-  else if (kategori === "mnc") kategoriNama = "MNC Vision";
-
-  const key = `${kategoriNama}|${varian}`;
-  const harga = hargaProduk[key] || 0;
-
-  if (harga === 0) {
-    alert("Harga belum tersedia.");
-    return;
-  }
-
-  alert(`Silakan lakukan pembayaran sebesar Rp${harga.toLocaleString()} ke DANA 087755432880.`);
-
-  document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
-  document.getElementById("uploadSection").style.display = "block";
-    }
-      
-    function kirimWA() {
-      const fileInput = document.getElementById("buktiBayar");
-      if (!fileInput.files[0]) {
-        alert("Silakan upload bukti pembayaran terlebih dahulu.");
+      const kategori = document.getElementById("kategoriProduk").value;
+      const varian = document.getElementById("varianProduk").value;
+      if (!kategori || !varian) {
+        alert("Pilih kategori dan varian terlebih dahulu.");
         return;
       }
 
-      const nomorTujuan = "081803004607";
-      const pesan = encodeURIComponent("Halo admin, saya sudah melakukan pembayaran dan upload bukti.");
-      window.open(`https://wa.me/${nomorTujuan}?text=${pesan}`, "_blank");
+      const namaKategori = kategori === "kvision" ? "K-Vision" : kategori === "nex" ? "Nex Parabola" : "MNC Vision";
+      const key = `${namaKategori}|${varian}`;
+      const harga = hargaProduk[key] || 0;
+
+      if (harga === 0) {
+        alert("Harga belum tersedia.");
+        return;
+      }
+
+      produkTerpilih = `${namaKategori} - ${varian}`;
+      hargaTerpilih = harga;
+
+      alert(`Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nSetelah itu upload bukti pembayaran.`);
+
+      document.getElementById("uploadSection").style.display = "block";
+      document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function previewImage(event) {
+      const image = document.getElementById('previewImage');
+      image.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    function uploadGambar() {
+      const file = document.getElementById("buktiBayar").files[0];
+      if (!file) return alert("Upload gambar terlebih dahulu.");
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      fetch("https://api.imgbb.com/1/upload?key=f71ccc1a662c9f8656766990018d3a33", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        const linkGambar = data.data.url;
+        const pesan = `Halo Admin, saya sudah bayar sebesar Rp${hargaTerpilih.toLocaleString()} untuk ${produkTerpilih}. Berikut bukti pembayaran:\n${linkGambar}`;
+        const nomorWA = "081803004607";
+        window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
+      })
+      .catch(() => alert("Gagal upload gambar."));
     }
 
     function kirimTestimoni() {
-      const testi = document.getElementById("inputTesti").value.toLowerCase();
-      if (!testi) return;
+      const isi = document.getElementById("inputTesti").value.toLowerCase();
+      if (!isi) return;
 
-      const dilarang = testimoniNegatif.some(kata => testi.includes(kata));
-      if (dilarang) {
-        alert("Testimoni tidak diterima karena mengandung kata negatif.");
-        return;
-      }
+      const dilarang = testimoniNegatif.some(kata => isi.includes(kata));
+      if (dilarang) return alert("Testimoni mengandung kata negatif.");
 
       const div = document.createElement("div");
       div.className = "testimoni-item";
-      div.textContent = testi;
-      testimoniContainer.prepend(div);
+      div.textContent = isi;
+      document.getElementById("listTestimoni").prepend(div);
       document.getElementById("inputTesti").value = "";
     }
   </script>
