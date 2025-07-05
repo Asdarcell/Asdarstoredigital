@@ -1,31 +1,76 @@
-<input type="file" id="fileInput" accept="image/*" />
-<button onclick="uploadToImgbb()">Upload Bukti Bayar</button>
-<div id="result"></div>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload Bukti Bayar (ImgBB)</title>
+  <style>
+    body { font-family: sans-serif; background: #eef6ff; padding: 20px; }
+    label, select, input, button { display: block; margin: 10px 0; font-size: 16px; }
+    #kirimWA { display: none; background: green; color: white; padding: 10px; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h2>🧾 Upload Bukti Bayar</h2>
+
+<label>Varian Produk:</label>
+<select id="varianProduk">
+  <option value="1 Bulan - 39.000">1 Bulan - 39.000</option>
+  <option value="3 Bulan - 110.000">3 Bulan - 110.000</option>
+</select>
+
+<label>Upload Bukti Bayar (gambar):</label>
+<input type="file" id="buktiInput" accept="image/*" />
+
+<button onclick="uploadToImgbb()">✅ Upload Bukti Bayar</button>
+
+<!-- Tombol WhatsApp muncul setelah sukses -->
+<button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
 
 <script>
+  const API_KEY = "YOUR_API_KEY"; // GANTI dengan milik kamu
+  let buktiURL = "";
+
   async function uploadToImgbb() {
-    const fileInput = document.getElementById('fileInput');
-    if (!fileInput.files[0]) return alert('Pilih gambar dulu!');
+    const fileInput = document.getElementById('buktiInput');
+    const varian = document.getElementById("varianProduk").value;
+    const btnWA = document.getElementById("kirimWA");
+
+    if (!fileInput.files[0]) return alert("Pilih file gambar dulu!");
 
     const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('image', file);
+    const reader = new FileReader();
+    reader.onloadend = async function () {
+      const base64Image = reader.result.replace(/^data:image\/[a-z]+;base64,/, "");
 
-    // Ganti 'YOUR_API_KEY' dengan API Key dari imgbb.com (gratis daftar)
-    const API_KEY = 'YOUR_API_KEY';
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64Image })
+        });
 
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-      method: 'POST',
-      body: formData
-    });
+        const data = await res.json();
+        if (data.success) {
+          buktiURL = data.data.url;
+          alert("✅ Upload berhasil!");
+          btnWA.style.display = "block";
 
-    const data = await res.json();
-    if (data.success) {
-      const url = data.data.url;
-      document.getElementById('result').innerHTML = `Upload berhasil! Link: <a href="${url}" target="_blank">${url}</a>`;
-      // Bisa lanjut ke kirim WA pakai link ini
-    } else {
-      alert('Upload gagal');
-    }
+          btnWA.onclick = () => {
+            const pesan = `Halo Admin, saya sudah bayar:\n📦 Varian: ${varian}\n🧾 Bukti: ${buktiURL}`;
+            window.open(`https://wa.me/6281803004607?text=${encodeURIComponent(pesan)}`, "_blank");
+          };
+        } else {
+          alert("❌ Upload gagal!");
+        }
+      } catch (err) {
+        alert("⚠️ Error saat upload: " + err.message);
+      }
+    };
+    reader.readAsDataURL(file);
   }
 </script>
+
+</body>
+</html>
