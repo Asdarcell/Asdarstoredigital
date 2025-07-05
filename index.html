@@ -85,16 +85,43 @@
     const db = firebase.database();
 
     const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
-    const hargaProduk = {
-        "K-Vision|Cling 30 Hari": 30000,
-        "K-Vision|Liga 1": 35000,
-        "K-Vision|Timnas": 30000,
-        "K-Vision|Paket Film": 40000,
-        "Nex Parabola|Basic 30 Hari": 35000,
-        "Nex Parabola|Basic 90 Hari": 90000,
-        "MNC Vision|Jawara 30 Hari": 40000,
-        "MNC Vision|Timnas": 35000
-    }; 
+    <script>
+  const hargaProduk = {};
+  const produkList = {};
+
+  // Ambil data produk dari Firebase
+  db.ref("produk").on("value", snapshot => {
+    // Kosongkan data lama
+    Object.keys(hargaProduk).forEach(k => delete hargaProduk[k]);
+    Object.keys(produkList).forEach(k => delete produkList[k]);
+
+    snapshot.forEach(childSnap => {
+      const data = childSnap.val();
+      const key = `${data.kategori}|${data.nama}`;
+      hargaProduk[key] = data.harga;
+
+      if (!produkList[data.kategori]) produkList[data.kategori] = [];
+      produkList[data.kategori].push(data.nama);
+    });
+
+    updateVarian(); // Refresh dropdown setelah data didapat
+  });
+
+  function updateVarian() {
+    const kategori = document.getElementById("kategoriProduk").value;
+    const varian = document.getElementById("varianProduk");
+    varian.innerHTML = "";
+
+    if (!kategori || !produkList[kategori]) return;
+
+    produkList[kategori].forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      varian.appendChild(opt);
+    });
+  }
+</script>
 
     const testimoniDefault = [
         { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
@@ -171,40 +198,38 @@
     let produkTerpilih = "";
 
     function pesanSekarang() {
-        const kategori = document.getElementById("kategoriProduk").value;
-        const varian = document.getElementById("varianProduk").value;
-        const nomorHP = document.getElementById("nomorHP").value.trim();
-        if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
+  const kategori = document.getElementById("kategoriProduk").value;
+  const varian = document.getElementById("varianProduk").value;
+  const nomorHP = document.getElementById("nomorHP").value.trim();
 
-        const namaKategori = kategori === "kvision" ? "K-Vision" : kategori === "nex" ? "Nex Parabola" : "MNC Vision";
-        const key = `${namaKategori}|${varian}`;
-        const harga = hargaProduk[key] || 0;
-        if (harga === 0) return alert("Harga belum tersedia.");
+  if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
 
-        produkTerpilih = `${namaKategori} - ${varian}`;
-        hargaTerpilih = harga;
+  const key = `${kategori}|${varian}`;
+  const harga = hargaProduk[key] || 0;
+  if (harga === 0) return alert("Harga belum tersedia.");
 
-        // Menyimpan data transaksi ke Firebase
-        db.ref("transaksi").push({
-            nama: document.getElementById("nomorHP").value,
-            produkNama: produkTerpilih,
-            idpel: nomorHP,
-            harga: hargaTerpilih,
-            status: "Pending",
-            buktiBayarUrl: null // Akan diperbarui saat upload
-        });
+  produkTerpilih = `${kategori} - ${varian}`;
+  hargaTerpilih = harga;
 
-        let pesan = `💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.`;
-        if (nomorHP) {
-            pesan += `\nNomor HP Anda: ${nomorHP}`;
-        }
-        pesan += `\nKemudian upload bukti pembayaran.`;
+  // Simpan ke Firebase
+  db.ref("transaksi").push({
+    nama: nomorHP,
+    produkNama: produkTerpilih,
+    idpel: nomorHP,
+    harga: harga,
+    status: "Pending",
+    buktiBayarUrl: null
+  });
 
-        alert(pesan);
-        document.getElementById("uploadSection").style.display = "block";
-        document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
-    }
+  let pesan = `💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.`;
+  if (nomorHP) pesan += `\nNomor HP Anda: ${nomorHP}`;
+  pesan += `\nKemudian upload bukti pembayaran.`;
 
+  alert(pesan);
+  document.getElementById("uploadSection").style.display = "block";
+  document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+}
+    
     function previewImage(event) {
         const image = document.getElementById('previewImage');
         image.src = URL.createObjectURL(event.target.files[0]);
