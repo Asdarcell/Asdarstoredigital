@@ -29,7 +29,7 @@
 <button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
 
 <script>
-  const API_KEY = "YOUR_API_KEY"; // GANTI dengan milik kamu
+  const API_KEY = "f71ccc1a662c9f8656766990018d3a33"; // API Key kamu sudah benar
   let buktiURL = "";
 
   async function uploadToImgbb() {
@@ -37,38 +37,34 @@
     const varian = document.getElementById("varianProduk").value;
     const btnWA = document.getElementById("kirimWA");
 
-    if (!fileInput.files[0]) return alert("Pilih file gambar dulu!");
+    if (!fileInput.files[0]) return alert("❗ Pilih file gambar dulu!");
 
     const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onloadend = async function () {
-      const base64Image = reader.result.replace(/^data:image\/[a-z]+;base64,/, "");
+    const formData = new FormData();
+    formData.append("image", file);
 
-      try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64Image })
-        });
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+        method: "POST",
+        body: formData
+      });
 
-        const data = await res.json();
-        if (data.success) {
-          buktiURL = data.data.url;
-          alert("✅ Upload berhasil!");
-          btnWA.style.display = "block";
+      const data = await res.json();
+      if (data.success) {
+        buktiURL = data.data.url;
+        alert("✅ Upload berhasil!");
+        btnWA.style.display = "inline-block";
 
-          btnWA.onclick = () => {
-            const pesan = `Halo Admin, saya sudah bayar:\n📦 Varian: ${varian}\n🧾 Bukti: ${buktiURL}`;
-            window.open(`https://wa.me/6281803004607?text=${encodeURIComponent(pesan)}`, "_blank");
-          };
-        } else {
-          alert("❌ Upload gagal!");
-        }
-      } catch (err) {
-        alert("⚠️ Error saat upload: " + err.message);
+        btnWA.onclick = () => {
+          const pesan = `Halo Admin, saya sudah bayar:\n📦 Varian: ${varian}\n🧾 Bukti: ${buktiURL}`;
+          window.open(`https://wa.me/6281803004607?text=${encodeURIComponent(pesan)}`, "_blank");
+        };
+      } else {
+        alert("❌ Upload gagal: " + data.error.message);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      alert("⚠️ Error saat upload: " + err.message);
+    }
   }
 </script>
 
