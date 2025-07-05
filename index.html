@@ -6,7 +6,7 @@
   <title>Upload Bukti Bayar</title>
   <style>
     body { font-family: sans-serif; background: #eef6ff; padding: 20px; }
-    label, select, input, button { display: block; margin: 10px 0; }
+    label, select, input, button { display: block; margin: 10px 0; font-size: 16px; }
     #kirimWA { display: none; background: green; color: white; padding: 10px; border: none; cursor: pointer; }
   </style>
 </head>
@@ -24,15 +24,14 @@
 <input type="file" id="buktiInput" accept="image/*" />
 
 <button onclick="uploadBuktiBayar()">✅ Saya Sudah Bayar</button>
-
-<!-- Tombol akan muncul setelah upload sukses -->
 <button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
 
-<script type="module">
-  // Firebase config kamu
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
+<script>
+  // ✅ Konfigurasi Firebase kamu
   const firebaseConfig = {
     apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
     authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -43,31 +42,38 @@
     measurementId: "G-CMRW37J19G"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const storage = getStorage(app);
+  firebase.initializeApp(firebaseConfig);
+  const storage = firebase.storage();
 
-  let buktiURL = "";
-  const btnKirim = document.getElementById("kirimWA");
-
-  window.uploadBuktiBayar = async function() {
-    const file = document.getElementById("buktiInput").files[0];
+  async function uploadBuktiBayar() {
+    const fileInput = document.getElementById("buktiInput");
     const varian = document.getElementById("varianProduk").value;
+    const kirimWA = document.getElementById("kirimWA");
 
-    if (!file) return alert("Pilih gambar bukti bayar terlebih dahulu!");
+    if (!fileInput.files[0]) {
+      alert("❗ Silakan pilih gambar bukti transfer.");
+      return;
+    }
 
-    const fileRef = ref(storage, 'bukti-bayar/' + Date.now() + '_' + file.name);
-    await uploadBytes(fileRef, file);
-    buktiURL = await getDownloadURL(fileRef);
+    const file = fileInput.files[0];
+    const fileName = `bukti_${Date.now()}_${file.name}`;
+    const storageRef = storage.ref().child("bukti-bayar/" + fileName);
 
-    alert("✅ Bukti bayar berhasil diunggah!");
-    btnKirim.style.display = "inline-block";
+    try {
+      await storageRef.put(file);
+      const downloadURL = await storageRef.getDownloadURL();
 
-    // Tambahkan event klik setelah upload sukses
-    btnKirim.onclick = function() {
-      const pesan = `Halo Admin, saya sudah transfer untuk pembelian:\n\n📦 Varian: ${varian}\n📸 Bukti: ${buktiURL}`;
-      const nomorWA = "6281803004607";
-      const waLink = `https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`;
-      window.open(waLink, "_blank");
+      alert("✅ Bukti berhasil diupload!");
+      kirimWA.style.display = "inline-block";
+
+      kirimWA.onclick = () => {
+        const pesan = `Halo Admin, saya sudah melakukan pembayaran.\n\n📦 Produk: ${varian}\n🧾 Bukti bayar: ${downloadURL}`;
+        const waLink = "https://wa.me/6281803004607?text=" + encodeURIComponent(pesan);
+        window.open(waLink, "_blank");
+      };
+    } catch (error) {
+      console.error(error);
+      alert("❌ Gagal upload bukti. Coba lagi.");
     }
   }
 </script>
