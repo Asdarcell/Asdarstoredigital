@@ -1,82 +1,31 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Upload Bukti Bayar</title>
-  <style>
-    body { font-family: sans-serif; background: #eef6ff; padding: 20px; }
-    label, select, input, button { display: block; margin: 10px 0; font-size: 16px; }
-    #kirimWA { display: none; background: green; color: white; padding: 10px; border: none; cursor: pointer; }
-  </style>
-</head>
-<body>
-
-<h2>🧾 Upload Bukti Bayar</h2>
-
-<label>Varian Produk:</label>
-<select id="varianProduk">
-  <option value="1 Bulan - 39.000">1 Bulan - 39.000</option>
-  <option value="3 Bulan - 110.000">3 Bulan - 110.000</option>
-</select>
-
-<label>Upload Bukti Bayar (gambar):</label>
-<input type="file" id="buktiInput" accept="image/*" />
-
-<button onclick="uploadBuktiBayar()">✅ Saya Sudah Bayar</button>
-<button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<input type="file" id="fileInput" accept="image/*" />
+<button onclick="uploadToImgbb()">Upload Bukti Bayar</button>
+<div id="result"></div>
 
 <script>
-  // ✅ Konfigurasi Firebase kamu
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
-    measurementId: "G-CMRW37J19G"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const storage = firebase.storage();
-
-  async function uploadBuktiBayar() {
-    const fileInput = document.getElementById("buktiInput");
-    const varian = document.getElementById("varianProduk").value;
-    const kirimWA = document.getElementById("kirimWA");
-
-    if (!fileInput.files[0]) {
-      alert("❗ Silakan pilih gambar bukti transfer.");
-      return;
-    }
+  async function uploadToImgbb() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files[0]) return alert('Pilih gambar dulu!');
 
     const file = fileInput.files[0];
-    const fileName = `bukti_${Date.now()}_${file.name}`;
-    const storageRef = storage.ref().child("bukti-bayar/" + fileName);
+    const formData = new FormData();
+    formData.append('image', file);
 
-    try {
-      await storageRef.put(file);
-      const downloadURL = await storageRef.getDownloadURL();
+    // Ganti 'YOUR_API_KEY' dengan API Key dari imgbb.com (gratis daftar)
+    const API_KEY = 'YOUR_API_KEY';
 
-      alert("✅ Bukti berhasil diupload!");
-      kirimWA.style.display = "inline-block";
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+      method: 'POST',
+      body: formData
+    });
 
-      kirimWA.onclick = () => {
-        const pesan = `Halo Admin, saya sudah melakukan pembayaran.\n\n📦 Produk: ${varian}\n🧾 Bukti bayar: ${downloadURL}`;
-        const waLink = "https://wa.me/6281803004607?text=" + encodeURIComponent(pesan);
-        window.open(waLink, "_blank");
-      };
-    } catch (error) {
-      console.error(error);
-      alert("❌ Gagal upload bukti. Coba lagi.");
+    const data = await res.json();
+    if (data.success) {
+      const url = data.data.url;
+      document.getElementById('result').innerHTML = `Upload berhasil! Link: <a href="${url}" target="_blank">${url}</a>`;
+      // Bisa lanjut ke kirim WA pakai link ini
+    } else {
+      alert('Upload gagal');
     }
   }
 </script>
-
-</body>
-</html>
