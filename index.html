@@ -265,56 +265,129 @@
       .catch(() => alert("❌ Gagal upload gambar."));
     }
 
-    function kirimTestimoni() {
-      const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
-const testimoniDefault = [
-  { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
-  { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!" },
-  { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
-];
+    function kirimTestimoni() 
+  const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
+  const hargaProduk = {
+    "K-Vision|Cling 30 Hari": 30000,
+    "K-Vision|Liga 1": 35000,
+    "K-Vision|Timnas": 30000,
+    "K-Vision|Paket Film": 40000,
+    "Nex Parabola|Basic 30 Hari": 35000,
+    "Nex Parabola|Basic 90 Hari": 90000,
+    "MNC Vision|Jawara 30 Hari": 40000,
+    "MNC Vision|Timnas": 35000
+  };
 
-window.addEventListener("DOMContentLoaded", () => {
-  tampilkanTestimoniDefault();
-});
+  const testimoniDefault = [
+    { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
+    { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!" },
+    { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
+  ];
 
-function tampilkanTestimoniDefault() {
-  const container = document.getElementById("listTestimoni");
-  testimoniDefault.forEach(testi => {
+  window.addEventListener("DOMContentLoaded", () => {
+    tampilkanTestimoniDefault();
+  });
+
+  function tampilkanTestimoniDefault() {
+    const container = document.getElementById("listTestimoni");
+    container.innerHTML = "";
+    testimoniDefault.forEach(testi => {
+      const div = document.createElement("div");
+      div.className = "testimoni-item";
+      div.textContent = `${testi.nama}: ${testi.isi}`;
+      container.appendChild(div);
+    });
+  }
+
+  function updateVarian() {
+    const varian = document.getElementById("varianProduk");
+    const kategori = document.getElementById("kategoriProduk").value;
+    varian.innerHTML = "";
+    let opsi = [];
+    if (kategori === "kvision") opsi = ["Cling 30 Hari", "Liga 1", "Timnas", "Paket Film"];
+    if (kategori === "nex") opsi = ["Basic 30 Hari", "Basic 90 Hari"];
+    if (kategori === "mnc") opsi = ["Jawara 30 Hari", "Timnas"];
+    opsi.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      varian.appendChild(opt);
+    });
+  }
+
+  let hargaTerpilih = 0;
+  let produkTerpilih = "";
+
+  function pesanSekarang() {
+    const kategori = document.getElementById("kategoriProduk").value;
+    const varian = document.getElementById("varianProduk").value;
+    if (!kategori || !varian) {
+      alert("Pilih kategori dan varian terlebih dahulu.");
+      return;
+    }
+
+    const namaKategori = kategori === "kvision" ? "K-Vision" : kategori === "nex" ? "Nex Parabola" : "MNC Vision";
+    const key = `${namaKategori}|${varian}`;
+    const harga = hargaProduk[key] || 0;
+
+    if (harga === 0) {
+      alert("Harga belum tersedia.");
+      return;
+    }
+
+    produkTerpilih = `${namaKategori} - ${varian}`;
+    hargaTerpilih = harga;
+
+    alert(`💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nKemudian upload bukti pembayaran.`);
+
+    document.getElementById("uploadSection").style.display = "block";
+    document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function previewImage(event) {
+    const image = document.getElementById('previewImage');
+    image.src = URL.createObjectURL(event.target.files[0]);
+  }
+
+  function uploadGambar() {
+    const file = document.getElementById("buktiBayar").files[0];
+    if (!file) return alert("Upload gambar terlebih dahulu.");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    fetch("https://api.imgbb.com/1/upload?key=f71ccc1a662c9f8656766990018d3a33", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      const linkGambar = data.data.url;
+      const pesan = `Halo Admin, saya sudah bayar sebesar Rp${hargaTerpilih.toLocaleString()} untuk ${produkTerpilih}. Berikut bukti pembayaran:\n${linkGambar}`;
+      const nomorWA = "081803004607";
+      window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
+    })
+    .catch(() => alert("❌ Gagal upload gambar."));
+  }
+
+  function kirimTestimoni() {
+    const nama = document.getElementById("namaTesti").value.trim();
+    const isi = document.getElementById("inputTesti").value.trim();
+
+    if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
+    if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
+
+    const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
+    if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
+
     const div = document.createElement("div");
     div.className = "testimoni-item";
-    div.textContent = `${testi.nama}: ${testi.isi}`;
-    container.appendChild(div);
-  });
-}
-      
-function tampilkanTestimoniDefault() {
-  const container = document.getElementById("listTestimoni");
-  testimoniDefault.forEach(testi => {
-    const div = document.createElement("div");
-    div.className = "testimoni-item";
-    div.textContent = `${testi.nama}: ${testi.isi}`;
-    container.appendChild(div);
-  });
-}
+    div.textContent = `${nama}: ${isi}`;
+    document.getElementById("listTestimoni").appendChild(div);
 
-function kirimTestimoni() {
-  const nama = document.getElementById("namaTesti").value.trim();
-  const isi = document.getElementById("inputTesti").value.trim();
-
-  if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
-
-  if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
-
-  const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
-  if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
-
-  const div = document.createElement("div");
-  div.className = "testimoni-item";
-  div.textContent = `${nama}: ${isi}`;
-  document.getElementById("listTestimoni").appendChild(div);
-  document.getElementById("namaTesti").value = "";
-  document.getElementById("inputTesti").value = "";
-}
+    document.getElementById("namaTesti").value = "";
+    document.getElementById("inputTesti").value = "";
+  }
   </script>
 
 </body>
