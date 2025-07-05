@@ -6,111 +6,56 @@
   <title>Asdar Store Digital</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      scroll-behavior: smooth;
-    }
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: #f1f7ff;
-      color: #333;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+    body { font-family: 'Poppins', sans-serif; background: #f1f7ff; color: #333; }
     header {
-      background: #007BFF;
-      color: white;
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: #007BFF; color: white; padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100;
     }
     nav button {
-      background: transparent;
-      border: none;
-      color: white;
-      font-size: 16px;
-      margin: 0 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      background: transparent; border: none; color: white; font-size: 16px;
+      margin: 0 10px; cursor: pointer; transition: 0.3s;
     }
-    nav button:hover {
-      transform: scale(1.1);
-      color: #ffeb3b;
-    }
-    .page {
-      display: none;
-      padding: 20px;
-    }
-    .active {
-      display: block;
-    }
+    nav button:hover { transform: scale(1.1); color: #ffeb3b; }
+    .page { display: none; padding: 20px; }
+    .active { display: block; }
     .marquee {
-      background: #e3f2fd;
-      color: #000;
-      padding: 10px;
-      white-space: nowrap;
-      overflow: hidden;
+      background: #e3f2fd; color: #000; padding: 10px;
+      white-space: nowrap; overflow: hidden;
     }
     .marquee span {
-      display: inline-block;
-      padding-right: 100%;
+      display: inline-block; padding-right: 100%;
       animation: scroll 15s linear infinite;
     }
-    .marquee:hover span {
-      animation-play-state: paused;
-    }
+    .marquee:hover span { animation-play-state: paused; }
     @keyframes scroll {
       from { transform: translateX(0); }
       to { transform: translateX(-100%); }
     }
     .produk-card, .testimoni-card {
-      background: white;
-      padding: 20px;
-      margin: 15px 0;
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      transition: transform 0.2s;
+      background: white; padding: 20px; margin: 15px 0; border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.2s;
     }
-    .produk-card:hover, .testimoni-card:hover {
-      transform: scale(1.01);
-    }
+    .produk-card:hover, .testimoni-card:hover { transform: scale(1.01); }
     .produk-card select, .produk-card button, input, textarea {
-      margin-top: 12px;
-      padding: 10px;
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-family: inherit;
+      margin-top: 12px; padding: 10px; width: 100%;
+      border-radius: 8px; border: 1px solid #ccc; font-family: inherit;
     }
     .produk-card button {
-      background: #28a745;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
+      background: #28a745; color: white; font-weight: bold;
+      cursor: pointer; transition: background 0.3s;
     }
-    .produk-card button:hover {
-      background: #218838;
+    .produk-card button:hover { background: #218838; }
+    .bayar-info {
+      background: #fff3cd; border-left: 4px solid #ffc107;
+      padding: 10px; margin-top: 10px; border-radius: 6px; font-size: 14px;
     }
-    h2 {
-      margin-bottom: 10px;
-      color: #007BFF;
-    }
-    select {
-      background: #fff;
-    }
+    .hidden { display: none; }
+    h2 { color: #007BFF; margin-bottom: 10px; }
     footer {
-      text-align: center;
-      padding: 15px;
-      font-size: 14px;
-      color: #666;
-      background: #e3f2fd;
-      margin-top: 40px;
+      text-align: center; padding: 15px; font-size: 14px;
+      color: #666; background: #e3f2fd; margin-top: 40px;
     }
   </style>
 </head>
@@ -145,130 +90,6 @@
   </select>
   <div id="produkList"></div>
 </div>
-
-<div id="testimoni" class="page">
-  <h2>🗣️ Testimoni Pelanggan</h2>
-  <form onsubmit="kirimTestimoni(event)">
-    <input id="nama" placeholder="Nama Anda" required />
-    <textarea id="pesan" placeholder="Tulis testimoni Anda..." required></textarea>
-    <button type="submit">Kirim Testimoni</button>
-  </form>
-  <div id="listTestimoni"></div>
-</div>
-
-<footer>
-  &copy; 2025 Asdar Store Digital - Powered by Firebase & WhatsApp API
-</footer>
-
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const testiRef = ref(db, 'testimoni');
-
-  onValue(testiRef, snapshot => {
-    const data = snapshot.val();
-    const list = document.getElementById('listTestimoni');
-    const marquee = document.getElementById('marqueeText');
-    list.innerHTML = '';
-    let gabungan = "Selamat datang di Asdar Store Digital — ";
-    for (let id in data) {
-      const { nama, pesan } = data[id];
-      if (isNegative(pesan)) continue;
-      const card = document.createElement('div');
-      card.className = 'testimoni-card';
-      card.innerHTML = `<strong>${nama}:</strong><p>${pesan}</p>`;
-      list.appendChild(card);
-      gabungan += `${nama}: ${pesan} ⚡ `;
-    }
-    marquee.textContent = gabungan;
-  });
-</script>
-
-<!-- Script Fungsional -->
-<script>
-  const produkData = [
-    { kategori: 'K-Vision', nama: 'K-Vision CLING 30 Hari', varian: ['1 Bulan - 39.000', '3 Bulan - 110.000'], wa: '081803004607' },
-    { kategori: 'Nex Parabola', nama: 'Nex Basic', varian: ['30 Hari - 29.000', '360 Hari - 290.000'], wa: '081803004607' },
-    { kategori: 'MNC Vision', nama: 'Paket Jawara', varian: ['1 Bulan - 60.000', '12 Bulan - 700.000'], wa: '081803004607' },
-    { kategori: 'XL', nama: 'Paket Unlimited XL', varian: ['TikTok + Semua Aplikasi - 80.000', 'Tanpa TikTok - 75.000'], wa: '081803004607' },
-    { kategori: 'PLN', nama: 'Token Listrik', varian: ['20.000', '50.000', '100.000'], wa: '081803004607' }
-  ];
-
-  function renderProduk(list) {
-    const container = document.getElementById('produkList');
-    container.innerHTML = '';
-    list.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'produk-card';
-      const selectId = 'varian-' + Math.random();
-      card.innerHTML = `
-        <h3>${p.nama}</h3>
-        <p><strong>Kategori:</strong> ${p.kategori}</p>
-        <select id="${selectId}">
-          ${p.varian.map(v => `<option value="${v}">${v}</option>`).join('')}
-        </select>
-        <button onclick="pesan('${p.wa}', '${p.nama}', '${selectId}')">Pesan via WhatsApp</button>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  function filterKategori(kategori) {
-    if (kategori === 'semua') return renderProduk(produkData);
-    const filtered = produkData.filter(p => p.kategori === kategori);
-    renderProduk(filtered);
-  }
-
-  function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-  }
-
-  function pesan(wa, nama, selectId) {
-    const varian = document.getElementById(selectId).value;
-    const link = `https://wa.me/${wa}?text=Halo%20saya%20ingin%20pesan%20${encodeURIComponent(nama)}%20%0D%0AVarian: ${encodeURIComponent(varian)}`;
-    window.open(link, '_blank');
-  }
-
-  function kirimTestimoni(e) {
-    e.preventDefault();
-    const nama = document.getElementById('nama').value.trim();
-    const pesan = document.getElementById('pesan').value.trim();
-    if (isNegative(pesan)) {
-      alert("🙏 Maaf, testimoni negatif tidak diterima.");
-      return;
-    }
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js").then(({ getDatabase, ref, push }) => {
-      const db = getDatabase();
-      push(ref(db, 'testimoni'), { nama, pesan });
-    });
-    e.target.reset();
-  }
-
-  function isNegative(pesan) {
-    const kataNegatif = ['jelek', 'buruk', 'zonk', 'rip', 'gagal', 'parah', 'tipu', 'jelek banget'];
-    return kataNegatif.some(kata => pesan.toLowerCase().includes(kata));
-  }
-
-  // Tampilkan produk awal
-  renderProduk(produkData);
-</script>
-
-</body>
-</html>
 <div id="testimoni" class="page">
   <h2>🗣️ Testimoni Pelanggan</h2>
   <form onsubmit="kirimTestimoni(event)">
