@@ -5,82 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dashboard Admin - Asdar Store Digital</title>
 <style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #f8f9fa;
-    padding: 20px;
-  }
-  h1 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  button.logout-btn {
-    float: right;
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  section {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 40px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  th, td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-    vertical-align: middle;
-  }
-  th {
-    background: #007bff;
-    color: white;
-    font-weight: 600;
-  }
-  tr:hover {
-    background: #f1f1f1;
-  }
-  button.action-btn {
-    background: #007bff;
-    border: none;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    margin-right: 6px;
-  }
-  button.delete-btn {
-    background: #dc3545;
-  }
-  input[type="text"], input[type="number"], select {
-    width: 100%;
-    padding: 8px 10px;
-    margin: 6px 0 12px 0;
-    box-sizing: border-box;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-  label {
-    font-weight: 600;
-    display: block;
-    margin-top: 12px;
-  }
-  img.bukti-img {
-    max-width: 100px;
-    border-radius: 6px;
-  }
+  body { font-family: 'Poppins', sans-serif; background: f8f9fa; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 20px; }
+  button.logout-btn { float: right; background: dc3545; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  section { background: white; border-radius: 12px; padding: 20px; margin-bottom: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; }
+  th, td { padding: 12px 15px; border-bottom: 1px solid ddd; text-align: left; vertical-align: middle; }
+  th { background: 007bff; color: white; font-weight: 600; }
+  tr:hover { background: f1f1f1; }
+  button.action-btn { background: 007bff; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 6px; }
+  button.delete-btn { background: dc3545; }
+  input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; margin: 6px 0 12px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid ccc; }
+  label { font-weight: 600; display: block; margin-top: 12px; }
+  img.bukti-img { max-width: 100px; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -188,7 +125,6 @@
   }
 
   // ===================== Produk =====================
-
   function loadProduk() {
     const tbody = document.querySelector("#produkTable tbody");
     tbody.innerHTML = "<tr><td colspan='4'>Memuat data produk...</td></tr>";
@@ -278,9 +214,8 @@
   }
 
   // ===================== Transaksi =====================
-
   function loadTransaksi() {
-    const tbody = document.querySelector("#transaksiTable tbody");
+    const tbody = document.querySelector("transaksiTable tbody");
     tbody.innerHTML = "<tr><td colspan='7'>Memuat data transaksi...</td></tr>";
     db.ref("transaksi").on("value", snapshot => {
       tbody.innerHTML = "";
@@ -292,13 +227,13 @@
         const data = childSnap.val();
         const id = childSnap.key;
         const statusColor = {
-          Pending: "#ffc107",
-          Proses: "#0d6efd",
-          Terkirim: "#198754"
-        }[data.status] || "#6c757d";
+          Pending: "ffc107",
+          Proses: "0d6efd",
+          Terkirim: "198754"
+        }[data.status] || "6c757d";
 
         const statusSelect = `
-          <select onchange="ubahStatusTransaksi('${id}', this.value)" style="padding:6px; border-radius:6px; border:1px solid #ccc;">
+          <select onchange="ubahStatusTransaksi('${id}', this.value)" style="padding:6px; border-radius:6px; border:1px solid ccc;">
             <option value="Pending" ${data.status==="Pending" ? "selected":""}>Pending</option>
             <option value="Proses" ${data.status==="Proses" ? "selected":""}>Proses</option>
             <option value="Terkirim" ${data.status==="Terkirim" ? "selected":""}>Terkirim</option>
@@ -310,7 +245,7 @@
           : "-";
 
         const pesanWA = encodeURIComponent(
-          `Halo, pesanan Anda *${data.produkNama}* dengan harga *Rp${data.harga.toLocaleString()}* statusnya sekarang *${data.status}*.\n\nTerima kasih telah berbelanja di Asdar Store Digital.`
+          `Halo, pesanan Anda ${data.produkNama} dengan harga Rp${data.harga.toLocaleString()} statusnya sekarang ${data.status}.\n\nTerima kasih telah berbelanja di Asdar Store Digital.`
         );
 
         tbody.innerHTML += `
@@ -355,7 +290,6 @@
   }
 
   // ===================== Testimoni =====================
-
   function loadTestimoni() {
     const tbody = document.querySelector("#testimoniTable tbody");
     tbody.innerHTML = "<tr><td colspan='3'>Memuat data testimoni...</td></tr>";
@@ -388,6 +322,9 @@
         .catch(err => alert("Gagal hapus testimoni: " + err.message));
     }
   }
+
+  // Memanggil fungsi loadTestimoni pada saat halaman dimuat
+  window.addEventListener("DOMContentLoaded", loadTestimoni);
 
 </script>
 
