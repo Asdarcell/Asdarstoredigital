@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -9,13 +8,19 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
     body { font-family: 'Poppins', sans-serif; background: #f1f7ff; color: #333; padding: 20px; }
-    header { background: #007BFF; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+    header { background: #007BFF; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     nav button { background: transparent; border: none; color: white; font-size: 16px; margin: 0 10px; cursor: pointer; transition: all 0.3s ease; }
     nav button:hover { transform: scale(1.1); color: #ffeb3b; }
     .page { display: none; }
     .active { display: block; }
-    .card, .produk-card, .testimoni-card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    label, select, input, button, textarea { width: 100%; font-size: 16px; margin: 10px 0; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+    .card, .produk-card, .testimoni-card {
+      background: white; padding: 20px; margin-bottom: 20px;
+      border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    label, select, input, button, textarea {
+      width: 100%; font-size: 16px; margin: 10px 0; padding: 10px;
+      border-radius: 8px; border: 1px solid #ccc;
+    }
     button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
     button:hover { background: #218838; }
     #kirimWA { background: green; display: none; }
@@ -27,6 +32,7 @@
   </style>
 </head>
 <body>
+
 <header>
   <strong>Asdar Store Digital</strong>
   <nav>
@@ -54,20 +60,13 @@
     <option value="XL">Paket XL</option>
     <option value="PLN">Token PLN</option>
   </select>
-  <div id="produkList">
-    <div class="produk-card" data-kategori="K-Vision">K-Vision - Paket Cling 1 Bulan - 39.000</div>
-    <div class="produk-card" data-kategori="Nex Parabola">Nex Parabola - Basic 30 Hari - 45.000</div>
-    <div class="produk-card" data-kategori="MNC Vision">MNC Vision - Jawara 1 Bulan - 39.000</div>
-    <div class="produk-card" data-kategori="XL">XL - Unlimited TikTok 80rb</div>
-    <div class="produk-card" data-kategori="XL">XL - Unlimited No TikTok 75rb</div>
-    <div class="produk-card" data-kategori="PLN">Token PLN - 50.000</div>
-  </div>
+  <div id="produkList"></div>
 </div>
 
 <div id="upload" class="page">
   <h2>🧾 Upload Bukti Bayar</h2>
   <select id="varianProduk">
-    <option value="">-- Pilih Varian --</option>
+    <option value="">-- Pilih produk dari halaman Produk --</option>
   </select>
   <input type="file" id="buktiInput" accept="image/*">
   <button onclick="uploadToImgbb()">✅ Upload Bukti Bayar</button>
@@ -92,7 +91,7 @@
     apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
     authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
     projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll.appspot.com",
+    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
     messagingSenderId: "220670500351",
     appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
   };
@@ -118,90 +117,116 @@
     }
     marquee.textContent = gabungan;
   });
+</script>
 
-  const API_KEY = "f71ccc1a662c9f8656766990018d3a33";
-  let buktiURL = "";
+<script>
+const semuaProduk = [
+  { kategori: "K-Vision", nama: "K-Vision Cling 1 Bulan", harga: 39000 },
+  { kategori: "K-Vision", nama: "K-Vision BRI Liga 1", harga: 29000 },
+  { kategori: "Nex Parabola", nama: "Nex Parabola Basic 30 Hari", harga: 40000 },
+  { kategori: "MNC Vision", nama: "MNC Vision Jawara 1 Bulan", harga: 50000 },
+  { kategori: "XL", nama: "Paket Data XL Unlimited (TikTok)", harga: 80000 },
+  { kategori: "XL", nama: "Paket Data XL Unlimited (All App)", harga: 75000 },
+  { kategori: "PLN", nama: "Token PLN 20.000", harga: 23000 },
+  { kategori: "PLN", nama: "Token PLN 50.000", harga: 53000 }
+];
 
-  window.uploadToImgbb = async function () {
-    const file = document.getElementById('buktiInput').files[0];
-    const varian = document.getElementById('varianProduk').value;
-    if (!file) return alert("Pilih gambar bukti pembayaran dulu.");
+function filterKategori(kategori) {
+  const list = document.getElementById("produkList");
+  list.innerHTML = "";
+  const hasil = kategori === "semua" ? semuaProduk : semuaProduk.filter(p => p.kategori === kategori);
+  if (hasil.length === 0) {
+    list.innerHTML = "<p>Tidak ada produk dalam kategori ini.</p>";
+    return;
+  }
+  hasil.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "produk-card";
+    card.innerHTML = `
+      <h4>${p.nama}</h4>
+      <p>Harga: Rp ${p.harga.toLocaleString()}</p>
+      <button onclick="pesanProduk('${p.nama}', ${p.harga})">Pesan Sekarang</button>
+    `;
+    list.appendChild(card);
+  });
+}
 
-    const formData = new FormData();
-    formData.append("image", file);
+function pesanProduk(nama, harga) {
+  alert(`Anda memilih: ${nama}\nHarga: Rp ${harga.toLocaleString()}\nSilakan lanjutkan pembayaran dan upload bukti.`);
+  showPage('upload');
+  document.getElementById("varianProduk").innerHTML = `<option value="${nama} - Rp ${harga.toLocaleString()}">${nama} - Rp ${harga.toLocaleString()}</option>`;
+}
 
-    try {
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-        method: "POST", body: formData
-      });
-      const result = await response.json();
-      buktiURL = result.data.url;
-      alert("Upload berhasil!");
-      document.getElementById("kirimWA").style.display = "block";
-      document.getElementById("kirimWA").onclick = () => {
-        const waNomor = "6281803004607";
-        const pesan = `Halo Admin, saya sudah transfer.
+const API_KEY = "f71ccc1a662c9f8656766990018d3a33";
+let buktiURL = "";
 
-Varian: ${varian}
-Bukti: ${buktiURL}`;
-        window.open(`https://wa.me/${waNomor}?text=${encodeURIComponent(pesan)}`, "_blank");
-      };
-    } catch (error) {
-      alert("Upload gagal, coba lagi."); console.error(error);
-    }
-  };
+async function uploadToImgbb() {
+  const file = document.getElementById('buktiInput').files[0];
+  const varian = document.getElementById('varianProduk').value;
 
-  window.kirimTestimoni = function (event) {
-    event.preventDefault();
-    const nama = document.getElementById('nama').value.trim();
-    const pesan = document.getElementById('pesan').value.trim();
-    if (!nama || !pesan) return alert("Isi nama dan testimoni dulu!");
-    if (isNegative(pesan)) return alert("Maaf, testimoni Anda tidak diterima.");
-    push(testiRef, { nama, pesan });
-    alert("Testimoni berhasil dikirim!");
-    document.getElementById('nama').value = '';
-    document.getElementById('pesan').value = '';
-  };
-
-  window.filterKategori = function (kategori) {
-    document.querySelectorAll('.produk-card').forEach(p => {
-      p.style.display = (kategori === "semua" || p.dataset.kategori === kategori) ? "block" : "none";
-    });
-  };
-
-  window.showPage = function (id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  };
-
-  function isNegative(text) {
-    const blacklist = ["jelek", "buruk", "tidak puas", "mengecewakan", "bohong", "tipu", "gak", "ga", "tidak", "salah", "nggak", "parah"];
-    return blacklist.some(kata => text.toLowerCase().includes(kata));
+  if (!file) {
+    alert("Pilih gambar bukti pembayaran dulu.");
+    return;
   }
 
-  document.querySelectorAll('.produk-card').forEach(card => {
-    card.style.cursor = "pointer";
-    card.onclick = () => {
-      const namaProduk = card.textContent.trim();
-      const select = document.getElementById('varianProduk');
-      let sudahAda = false;
-      for (let i = 0; i < select.options.length; i++) {
-        if (select.options[i].value === namaProduk) {
-          sudahAda = true;
-          select.selectedIndex = i;
-          break;
-        }
-      }
-      if (!sudahAda) {
-        const opsi = document.createElement("option");
-        opsi.value = namaProduk;
-        opsi.textContent = namaProduk;
-        select.appendChild(opsi);
-        select.value = namaProduk;
-      }
-      showPage('upload');
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+      method: "POST",
+      body: formData
+    });
+    const result = await response.json();
+    buktiURL = result.data.url;
+
+    alert("Upload berhasil!");
+    document.getElementById("kirimWA").style.display = "block";
+
+    document.getElementById("kirimWA").onclick = () => {
+      const waNomor = "6281803004607";
+      const pesan = `Halo Admin, saya sudah transfer.\n\nVarian: ${varian}\nBukti: ${buktiURL}`;
+      const urlWA = `https://wa.me/${waNomor}?text=${encodeURIComponent(pesan)}`;
+      window.open(urlWA, "_blank");
     };
-  });
+  } catch (error) {
+    alert("Upload gagal, coba lagi.");
+    console.error(error);
+  }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function isNegative(text) {
+  const blacklist = ["jelek", "buruk", "tidak puas", "mengecewakan", "bohong", "tipu", "gak", "ga", "tidak", "salah", "nggak", "parah"];
+  const lower = text.toLowerCase();
+  return blacklist.some(kata => lower.includes(kata));
+}
+
+function kirimTestimoni(event) {
+  event.preventDefault();
+  const nama = document.getElementById('nama').value.trim();
+  const pesan = document.getElementById('pesan').value.trim();
+
+  if (!nama || !pesan) {
+    alert("Isi nama dan testimoni dulu!");
+    return;
+  }
+
+  if (isNegative(pesan)) {
+    alert("Maaf, testimoni Anda tidak diterima.");
+    return;
+  }
+
+  firebase.database().ref("testimoni").push({ nama, pesan });
+
+  alert("Testimoni berhasil dikirim!");
+  document.getElementById('nama').value = '';
+  document.getElementById('pesan').value = '';
+}
 </script>
 </body>
 </html>
