@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asdar Store Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Asdar Store Digital PRO</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * {
@@ -97,7 +97,7 @@
       background: #f4f8ff;
       border-radius: 10px;
       padding: 10px;
-      max-height: 200px;
+      max-height: 220px;
       overflow-y: auto;
     }
     .testimoni-item {
@@ -107,17 +107,41 @@
       border-radius: 8px;
       margin-bottom: 8px;
       animation: fadeInUp 0.5s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .star {
+      color: gold;
+      font-size: 1.1em;
     }
     @keyframes fadeInUp {
       0% { opacity: 0; transform: translateY(20px); }
       100% { opacity: 1; transform: translateY(0); }
     }
+    .rating-input {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-start;
+      gap: 6px;
+    }
+    .rating-input label {
+      cursor: pointer;
+      font-size: 1.5em;
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .rating-input input[type="radio"]:checked ~ label,
+    .rating-input label:hover,
+    .rating-input label:hover ~ label {
+      color: gold;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Asdar Store Digital</h1>
-    <p>💎 Cepat · Aman · Terpercaya 💎</p>
+    <h1>Asdar Store Digital PRO</h1>
+    <p>💎 Cepat · Aman · Terpercaya · Lengkap 💎</p>
   </header>
 
   <section class="card">
@@ -150,6 +174,13 @@
     <h2>💬 Testimoni Pelanggan</h2>
     <input type="text" id="namaTesti" placeholder="Nama Anda (contoh: Budi)" />
     <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
+    <div class="rating-input" aria-label="Rating bintang">
+      <input type="radio" id="star5" name="rating" value="5" /><label for="star5">★</label>
+      <input type="radio" id="star4" name="rating" value="4" /><label for="star4">★</label>
+      <input type="radio" id="star3" name="rating" value="3" /><label for="star3">★</label>
+      <input type="radio" id="star2" name="rating" value="2" /><label for="star2">★</label>
+      <input type="radio" id="star1" name="rating" value="1" checked /><label for="star1">★</label>
+    </div>
     <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
     <div class="testimoni-container" id="testimoniContainer"></div>
   </section>
@@ -158,7 +189,6 @@
     &copy; 2025 Asdar Store Digital · All Rights Reserved
   </footer>
 
-  <!-- Firebase & Script -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script>
@@ -187,9 +217,9 @@
     };
 
     const testimoniDefault = [
-      { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
-      { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!" },
-      { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
+      { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!", rating: 5 },
+      { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!", rating: 5 },
+      { nama: "Dewi", isi: "Terpercaya banget, langganan terus!", rating: 4 }
     ];
 
     let indexTesti = 0;
@@ -199,47 +229,66 @@
       muatTestimoniDariFirebase();
     });
 
+    // Looping testimoni default terus
     function tampilkanTestimoniDefault() {
       const container = document.getElementById("testimoniContainer");
       setInterval(() => {
         const testi = testimoniDefault[indexTesti];
+        if (!testi) return;
         const div = document.createElement("div");
         div.className = "testimoni-item";
-        div.textContent = `${testi.nama}: ${testi.isi}`;
+        div.innerHTML = `${renderStars(testi.rating)} <strong>${testi.nama}:</strong> ${testi.isi}`;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
         indexTesti++;
         if (indexTesti >= testimoniDefault.length) indexTesti = 0;
-      }, 3000);
+      }, 3500);
     }
 
+    // Muat testimoni pelanggan dari Firebase realtime
     function muatTestimoniDariFirebase() {
       const container = document.getElementById("testimoniContainer");
       db.ref("testimoni").limitToLast(20).on("child_added", snapshot => {
         const data = snapshot.val();
         const div = document.createElement("div");
         div.className = "testimoni-item";
-        div.textContent = `${data.nama}: ${data.isi}`;
+        div.innerHTML = `${renderStars(data.rating)} <strong>${data.nama}:</strong> ${data.isi}`;
         container.prepend(div);
       });
+    }
+
+    // Render bintang berdasarkan rating
+    function renderStars(rating) {
+      rating = Number(rating) || 0;
+      let stars = "";
+      for(let i = 0; i < rating; i++) stars += '<span class="star">★</span>';
+      for(let i = rating; i < 5; i++) stars += '<span class="star" style="color:#ccc;">★</span>';
+      return stars;
     }
 
     function kirimTestimoni() {
       const nama = document.getElementById("namaTesti").value.trim();
       const isi = document.getElementById("inputTesti").value.trim();
+      const rating = document.querySelector('input[name="rating"]:checked')?.value || 1;
+
       if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
       if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
       const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
       if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
 
-      db.ref("testimoni").push({ nama, isi });
+      // Simpan ke Firebase testimoni
+      db.ref("testimoni").push({ nama, isi, rating });
+
+      // Tambah langsung di UI paling atas
       const container = document.getElementById("testimoniContainer");
       const div = document.createElement("div");
       div.className = "testimoni-item";
-      div.textContent = `${nama}: ${isi}`;
+      div.innerHTML = `${renderStars(rating)} <strong>${nama}:</strong> ${isi}`;
       container.prepend(div);
+
       document.getElementById("namaTesti").value = "";
       document.getElementById("inputTesti").value = "";
+      document.querySelector('input[name="rating"][value="1"]').checked = true;
     }
 
     function updateVarian() {
@@ -273,6 +322,15 @@
 
       produkTerpilih = `${namaKategori} - ${varian}`;
       hargaTerpilih = harga;
+
+      // Simpan pesanan ke Firebase
+      const waktu = Date.now();
+      db.ref("pesanan").push({
+        produk: produkTerpilih,
+        harga: hargaTerpilih,
+        waktu: waktu
+      });
+
       alert(`💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\nKemudian upload bukti pembayaran.`);
       document.getElementById("uploadSection").style.display = "block";
       document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
@@ -295,6 +353,16 @@
       .then(res => res.json())
       .then(data => {
         const linkGambar = data.data.url;
+        const waktu = Date.now();
+        // Simpan bukti bayar ke Firebase
+        db.ref("buktiBayar").push({
+          urlGambar: linkGambar,
+          produk: produkTerpilih,
+          harga: hargaTerpilih,
+          waktu: waktu
+        });
+
+        // Kirim WA otomatis ke admin
         const pesan = `Halo Admin, saya sudah bayar sebesar Rp${hargaTerpilih.toLocaleString()} untuk ${produkTerpilih}. Berikut bukti pembayaran:\n${linkGambar}`;
         const nomorWA = "081803004607";
         window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
