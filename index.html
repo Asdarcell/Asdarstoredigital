@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Asdar Store Digital</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -40,6 +40,9 @@
       box-shadow: 0 8px 20px rgba(0,0,0,0.08);
       margin-bottom: 24px;
       transition: 0.3s ease;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .card:hover {
       transform: scale(1.01);
@@ -60,6 +63,7 @@
       cursor: pointer;
       margin-top: 14px;
       transition: background 0.3s ease;
+      font-weight: 600;
     }
     .btn:hover {
       background: #0056b3;
@@ -77,6 +81,7 @@
       max-width: 100%;
       border-radius: 10px;
       box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      display: none;
     }
     .payment-box {
       background: #eef3ff;
@@ -87,6 +92,9 @@
       color: #333;
       line-height: 1.6;
       margin-top: 16px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .testimoni-container {
       background: #f4f8ff;
@@ -94,6 +102,9 @@
       padding: 16px;
       margin-top: 24px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .testimoni-container h3 {
       margin-bottom: 12px;
@@ -116,6 +127,10 @@
       color: #777;
       font-size: 0.9em;
     }
+    #varian-container {
+      display: none;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -127,14 +142,15 @@
 
   <div class="card">
     <h2>Formulir Pemesanan</h2>
+
     <label>Nama Lengkap</label>
-    <input type="text" placeholder="Masukkan nama kamu">
+    <input type="text" id="nama" placeholder="Masukkan nama kamu" />
 
     <label>Nomor WhatsApp</label>
-    <input type="tel" placeholder="08xxxxxxxxxx">
+    <input type="tel" id="wa" placeholder="08xxxxxxxxxx" />
 
     <label>Pilih Produk</label>
-    <select>
+    <select id="produk" onchange="tampilkanVarian()">
       <option value="">-- Pilih Produk --</option>
       <option value="kvision">Voucher K-Vision</option>
       <option value="nex">Nex Parabola</option>
@@ -142,12 +158,19 @@
       <option value="data">Paket Data XL Unlimited</option>
     </select>
 
+    <div id="varian-container">
+      <label>Pilih Varian</label>
+      <select id="varian">
+        <!-- opsi varian akan diisi via JavaScript -->
+      </select>
+    </div>
+
     <label>ID Pelanggan / Nomor HP</label>
-    <input type="text" placeholder="Contoh: 111222333 atau 0878xxxxxxx">
+    <input type="text" id="idpel" placeholder="Contoh: 111222333 atau 0878xxxxxxx" />
 
     <label>Upload Bukti Pembayaran</label>
-    <input type="file" accept="image/*" onchange="previewImage(event)">
-    <img id="previewImage" src="" alt="Preview Bukti Bayar" style="display:none;" />
+    <input type="file" accept="image/*" onchange="previewImage(event)" />
+    <img id="previewImage" src="" alt="Preview Bukti Bayar" />
 
     <div class="payment-box">
       📌 Transfer ke DANA <br />
@@ -155,7 +178,7 @@
       Harga produk + Ongkos Admin akan tertera otomatis saat pemesanan.
     </div>
 
-    <button class="btn">Sudah Bayar</button>
+    <button class="btn" onclick="kirimWA()">Sudah Bayar</button>
   </div>
 
   <div class="testimoni-container">
@@ -174,6 +197,102 @@
       const img = document.getElementById('previewImage');
       img.src = URL.createObjectURL(event.target.files[0]);
       img.style.display = 'block';
+    }
+
+    function tampilkanVarian() {
+      const produk = document.getElementById('produk').value;
+      const varianContainer = document.getElementById('varian-container');
+      const varianSelect = document.getElementById('varian');
+
+      varianSelect.innerHTML = '';
+
+      let opsi = [];
+
+      if (produk === 'kvision') {
+        opsi = [
+          'Cling 30 Hari',
+          'Cling 90 Hari',
+          'Cling 180 Hari',
+          'Paket BRI Liga 1',
+          'Paket Timnas',
+          'Paket Film'
+        ];
+      } else if (produk === 'nex') {
+        opsi = [
+          'Basic 30 Hari',
+          'Basic 90 Hari',
+          'Basic 180 Hari',
+          'Timnas',
+          'Liga 1'
+        ];
+      } else if (produk === 'mnc') {
+        opsi = [
+          'Jawara 30 Hari',
+          'Jawara 90 Hari',
+          'Paket Timnas'
+        ];
+      } else if (produk === 'data') {
+        opsi = [
+          'XL Unlimited 75rb (tanpa TikTok)',
+          'XL Unlimited 80rb (semua aplikasi)'
+        ];
+      }
+
+      if (opsi.length > 0) {
+        varianContainer.style.display = 'block';
+        opsi.forEach(function(v) {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          varianSelect.appendChild(opt);
+        });
+      } else {
+        varianContainer.style.display = 'none';
+      }
+    }
+
+    function kirimWA() {
+      const nama = document.getElementById('nama').value.trim();
+      const wa = document.getElementById('wa').value.trim();
+      const produk = document.getElementById('produk').value;
+      const varianSelect = document.getElementById('varian');
+      const varian = varianSelect ? varianSelect.value : '';
+      const idpel = document.getElementById('idpel').value.trim();
+
+      if (!nama) {
+        alert("Mohon isi Nama Lengkap.");
+        return;
+      }
+      if (!wa) {
+        alert("Mohon isi Nomor WhatsApp.");
+        return;
+      }
+      if (!produk) {
+        alert("Mohon pilih Produk.");
+        return;
+      }
+      if (document.getElementById('varian-container').style.display === 'block' && !varian) {
+        alert("Mohon pilih Varian Produk.");
+        return;
+      }
+      if (!idpel) {
+        alert("Mohon isi ID Pelanggan atau Nomor HP.");
+        return;
+      }
+
+      const pesan = 
+        `Halo Admin, saya sudah transfer untuk pemesanan:\n\n` +
+        `Nama: ${nama}\n` +
+        `WA: ${wa}\n` +
+        `Produk: ${produk}\n` +
+        `Varian: ${varian}\n` +
+        `ID/HP: ${idpel}\n\n` +
+        `Tolong segera diproses ya. Terima kasih.`;
+
+      const noAdmin = "081803004607"; // No WA tujuan admin (sesuaikan)
+      const linkWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`;
+
+      window.open(linkWA, '_blank');
     }
   </script>
 
