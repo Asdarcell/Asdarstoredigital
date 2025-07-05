@@ -169,13 +169,14 @@
   </section>
 
   <!-- Testimoni -->
-  <section class="card">
-    <h2>💬 Testimoni Pelanggan</h2>
-    <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
-    <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
-    <div class="testimoni-container" id="listTestimoni"></div>
-  </section>
-
+<section class="card">
+  <h2>💬 Testimoni Pelanggan</h2>
+  <input type="text" id="namaTesti" placeholder="Nama Anda (contoh: Budi)" />
+  <textarea id="inputTesti" placeholder="Tulis testimoni Anda..."></textarea>
+  <button class="btn" onclick="kirimTestimoni()">Kirim Testimoni</button>
+  <div class="testimoni-container" id="listTestimoni"></div>
+</section>
+  
   <footer>
     &copy; 2025 Asdar Store Digital · All Rights Reserved
   </footer>
@@ -265,18 +266,45 @@
     }
 
     function kirimTestimoni() {
-      const isi = document.getElementById("inputTesti").value.toLowerCase();
-      if (!isi) return;
+      const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
+const testimoniDefault = [
+  { nama: "Rina", isi: "Pelayanan cepat dan ramah, top!" },
+  { nama: "Agus", isi: "Transaksi aman, produk langsung aktif!" },
+  { nama: "Dewi", isi: "Terpercaya banget, langganan terus!" }
+];
 
-      const dilarang = testimoniNegatif.some(kata => isi.includes(kata));
-      if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
+window.addEventListener("DOMContentLoaded", () => {
+  tampilkanTestimoniDefault();
+});
 
-      const div = document.createElement("div");
-      div.className = "testimoni-item";
-      div.textContent = isi;
-      document.getElementById("listTestimoni").appendChild(div);
-      document.getElementById("inputTesti").value = "";
-    }
+function tampilkanTestimoniDefault() {
+  const container = document.getElementById("listTestimoni");
+  testimoniDefault.forEach(testi => {
+    const div = document.createElement("div");
+    div.className = "testimoni-item";
+    div.textContent = `${testi.nama}: ${testi.isi}`;
+    container.appendChild(div);
+  });
+}
+
+function kirimTestimoni() {
+  const nama = document.getElementById("namaTesti").value.trim();
+  const isi = document.getElementById("inputTesti").value.trim();
+
+  if (!nama || !isi) return alert("Isi nama dan testimoni terlebih dahulu.");
+
+  if (!/^[a-zA-Z\s]+$/.test(nama)) return alert("Nama hanya boleh huruf.");
+
+  const dilarang = testimoniNegatif.some(kata => isi.toLowerCase().includes(kata));
+  if (dilarang) return alert("Testimoni mengandung kata negatif ❗");
+
+  const div = document.createElement("div");
+  div.className = "testimoni-item";
+  div.textContent = `${nama}: ${isi}`;
+  document.getElementById("listTestimoni").appendChild(div);
+  document.getElementById("namaTesti").value = "";
+  document.getElementById("inputTesti").value = "";
+}
   </script>
 
 </body>
