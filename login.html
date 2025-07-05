@@ -1,68 +1,102 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    /* Tambahkan style sederhana */
-    body {
-      font-family: 'Poppins', sans-serif;
-      display: flex; justify-content: center; align-items: center; height: 100vh;
-      background: #f0f0f0;
-    }
-    .box {
-      background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 300px; text-align: center;
-    }
-    input, button {
-      width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc;
-    }
-    button {
-      background: #007bff; color: white; border: none; cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login Admin - Asdar Store Digital</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .login-box {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    width: 320px;
+  }
+  input, button {
+    width: 100%;
+    padding: 12px;
+    margin: 12px 0;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+  .error-msg {
+    color: red;
+    text-align: center;
+    margin-top: 6px;
+  }
+</style>
 </head>
 <body>
-  <div class="box">
-    <h2>Login Admin</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+<div class="login-box">
+  <h2>Login Admin</h2>
+  <input type="email" id="email" placeholder="Email admin" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="loginAdmin()">Masuk</button>
+  <div class="error-msg" id="errorMsg"></div>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      projectId: "asdarstoredigitalll-d89c4"
-    };
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    window.login = function() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+  function loginAdmin() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorMsg = document.getElementById("errorMsg");
+    errorMsg.textContent = "";
 
-      if (!email || !password) {
-        alert("Mohon isi email dan password");
-        return;
-      }
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          alert("Berhasil login!");
-          window.location.href = "admin.html";  // Ganti ke nama file dashboard admin kamu
-        })
-        .catch(err => {
-          alert("Gagal login: " + err.message);
-          console.error("Login error:", err);
-        });
+    if (!email || !password) {
+      errorMsg.textContent = "Email dan password harus diisi";
+      return;
     }
-  </script>
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        window.location.href = "admin.html";
+      })
+      .catch((error) => {
+        errorMsg.textContent = error.message;
+      });
+  }
+
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      window.location.href = "admin.html";
+    }
+  });
+</script>
+
 </body>
 </html>
