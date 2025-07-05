@@ -205,6 +205,18 @@
     const tableTransaksiBody = document.querySelector('#tableTransaksi tbody');
     const tableTestimoniBody = document.querySelector('#tableTestimoni tbody');
 
+    // Admin WhatsApp number (ganti sesuai kebutuhan)
+    const nomorAdminWA = "6281803004607";
+
+    // Helper function kirim notifikasi WA
+    function kirimNotifWA(nomor, pesan) {
+      if (nomor.startsWith("0")) {
+        nomor = "62" + nomor.slice(1);
+      }
+      const url = `https://wa.me/${nomor}?text=${encodeURIComponent(pesan)}`;
+      window.open(url, "_blank");
+    }
+
     // Auth state
     auth.onAuthStateChanged(user => {
       if (user) {
@@ -357,15 +369,19 @@
       db.ref('produk/' + key).remove();
     }
 
-    // Load transaksi
+    // Load transaksi dan kirim notifikasi WA jika ada transaksi baru
+    let transaksiKeys = new Set();
+
     function loadTransaksi() {
       db.ref('transaksi').off();
       tableTransaksiBody.innerHTML = '';
-      db.ref('transaksi').on('value', snapshot => {
-        tableTransaksiBody.innerHTML = '';
-        snapshot.forEach(child => {
-          const t = child.val();
-          const key = child.key;
+      db.ref('transaksi').on('child_added', snapshot => {
+        const t = snapshot.val();
+        const key = snapshot.key;
+
+        if (!transaksiKeys.has(key)) {
+          transaksiKeys.add(key);
+          // Tampilkan di tabel
           const bukti = t.buktiBayarUrl ? `<a href="${t.buktiBayarUrl}" target="_blank">Lihat</a>` : '-';
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -375,8 +391,25 @@
             <td>${t.status || '-'}</td>
             <td>${bukti}</td>
             <td><button onclick="hapusTransaksi('${key}')">Hapus</button></td>`;
-          tableTransaksiBody.appendChild(tr);
-        });
+          tableTransaksiBody.prepend(tr);
+
+          // Kirim notifikasi WA ke admin
+          const pesanWA = 
+            `🚨 Transaksi Baru 🚨\n` +
+            `Produk: ${t.produkNama || '-'}\n` +
+            `Nomor HP/Nama: ${t.nama || t.idpel || '-'}\n` +
+            `Harga: Rp${t.harga ? t.harga.toLocaleString() : '-'}\n` +
+            `Status: ${t.status || '-'}\n` +
+            `Mohon cek dashboard untuk detail lebih lanjut.`;
+          kirimNotifWA(nomorAdminWA, pesanWA);
+        }
+      });
+
+      // Untuk update/delete transaksi juga disarankan ditambah listener lain
+      db.ref('transaksi').on('child_removed', snapshot => {
+        const key = snapshot.key;
+        transaksiKeys.delete(key);
+        loadTransaksi(); // reload full list
       });
     }
 
