@@ -108,14 +108,14 @@
     <select id="varianProduk">
       <option value="">Pilih paket...</option>
     </select>
-    <button class="btn" onclick="tambahKeKeranjang()">Tambah ke Keranjang</button>
+    <button class="btn" onclick="pesanSekarang()">Pesan Sekarang</button>
   </section>
 
   <!-- Upload bukti -->
-  <section class="card">
+  <section class="card" id="uploadSection" style="display:none;">
     <h2>Upload Bukti Pembayaran</h2>
     <input type="file" id="buktiBayar" accept="image/*" />
-    <button class="btn" onclick="kirimWA()">Sudah Bayar</button>
+    <button class="btn" onclick="kirimWA()">Kirim ke WhatsApp</button>
   </section>
 
   <!-- Testimoni -->
@@ -135,16 +135,16 @@
   <script>
     const testimoniContainer = document.getElementById("listTestimoni");
     const testimoniNegatif = ["jelek", "penipu", "bohong", "gagal", "tidak sesuai", "buruk"];
-
-    function tambahKeKeranjang() {
-      const kategori = document.getElementById("kategoriProduk").value;
-      const varian = document.getElementById("varianProduk").value;
-      if (kategori && varian) {
-        alert(`Produk ${kategori} - ${varian} ditambahkan ke keranjang!`);
-      } else {
-        alert("Pilih kategori dan varian terlebih dahulu.");
-      }
-    }
+    const hargaProduk = {
+      "K-Vision|Cling 30 Hari": 30000,
+      "K-Vision|Liga 1": 35000,
+      "K-Vision|Timnas": 30000,
+      "K-Vision|Paket Film": 40000,
+      "Nex Parabola|Basic 30 Hari": 35000,
+      "Nex Parabola|Basic 90 Hari": 90000,
+      "MNC Vision|Jawara 30 Hari": 40000,
+      "MNC Vision|Timnas": 35000
+    };
 
     function updateVarian() {
       const varian = document.getElementById("varianProduk");
@@ -168,6 +168,28 @@
       });
     }
 
+    function pesanSekarang() {
+      const kategori = document.getElementById("kategoriProduk").value;
+      const varian = document.getElementById("varianProduk").value;
+      if (!kategori || !varian) {
+        alert("Pilih kategori dan varian terlebih dahulu.");
+        return;
+      }
+
+      const key = `${kategori.charAt(0).toUpperCase() + kategori.slice(1)}|${varian}`;
+      const harga = hargaProduk[key] || 0;
+
+      if (harga === 0) {
+        alert("Harga belum tersedia.");
+        return;
+      }
+
+      alert(`Silakan lakukan pembayaran sebesar Rp${harga.toLocaleString()} ke DANA 087755432880.`);
+
+      document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+      document.getElementById("uploadSection").style.display = "block";
+    }
+
     function kirimWA() {
       const fileInput = document.getElementById("buktiBayar");
       if (!fileInput.files[0]) {
@@ -176,7 +198,7 @@
       }
 
       const nomorTujuan = "081803004607";
-      const pesan = encodeURIComponent("Halo admin, saya sudah upload bukti pembayaran.");
+      const pesan = encodeURIComponent("Halo admin, saya sudah melakukan pembayaran dan upload bukti.");
       window.open(`https://wa.me/${nomorTujuan}?text=${pesan}`, "_blank");
     }
 
