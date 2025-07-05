@@ -1,300 +1,142 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Asdar Store Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
-    body {
-      background: linear-gradient(to right, #e8f0ff, #ffffff);
-      color: #333;
-      padding: 16px;
-    }
-    header {
-      text-align: center;
-      padding: 30px 16px;
-      background: #007BFF;
-      color: white;
-      border-radius: 16px;
-      margin-bottom: 24px;
-    }
-    header h1 {
-      font-size: 2.4em;
-      margin-bottom: 10px;
-    }
-    header p {
-      font-size: 1.1em;
-      color: #e0eaff;
-    }
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
-      transition: 0.3s ease;
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .card:hover {
-      transform: scale(1.01);
-    }
-    .card h2 {
-      font-size: 1.4em;
-      margin-bottom: 12px;
-      color: #007BFF;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 6px;
-    }
-    .btn {
-      background: #007BFF;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-top: 14px;
-      transition: background 0.3s ease;
-      font-weight: 600;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 1em;
-    }
-    #previewImage {
-      margin-top: 10px;
-      max-width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.1);
-      display: none;
-    }
-    .payment-box {
-      background: #eef3ff;
-      padding: 14px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: bold;
-      color: #333;
-      line-height: 1.6;
-      margin-top: 16px;
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .testimoni-container {
-      background: #f4f8ff;
-      border-radius: 10px;
-      padding: 16px;
-      margin-top: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .testimoni-container h3 {
-      margin-bottom: 12px;
-      color: #007BFF;
-    }
-    .marquee {
-      overflow: hidden;
-      white-space: nowrap;
-      animation: marquee 30s linear infinite;
-      color: #444;
-      font-size: 0.95em;
-    }
-    @keyframes marquee {
-      0%   { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    footer {
-      text-align: center;
-      margin-top: 40px;
-      color: #777;
-      font-size: 0.9em;
-    }
-    #varian-container {
-      display: none;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>Asdar Store Digital</h1>
-    <p>Tempat isi voucher TV, paket data, dan produk digital lainnya</p>
-  </header>
-
-  <div class="card">
-    <h2>Formulir Pemesanan</h2>
-
-    <label>Nama Lengkap</label>
-    <input type="text" id="nama" placeholder="Masukkan nama kamu" />
-
-    <label>Nomor WhatsApp</label>
-    <input type="tel" id="wa" placeholder="08xxxxxxxxxx" />
-
-    <label>Pilih Produk</label>
-    <select id="produk" onchange="tampilkanVarian()">
-      <option value="">-- Pilih Produk --</option>
-      <option value="kvision">Voucher K-Vision</option>
-      <option value="nex">Nex Parabola</option>
-      <option value="mnc">MNC Vision</option>
-      <option value="data">Paket Data XL Unlimited</option>
-    </select>
-
-    <div id="varian-container">
-      <label>Pilih Varian</label>
-      <select id="varian">
-        <!-- opsi varian akan diisi via JavaScript -->
+<!DOCTYPE html><html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asdar Store Digital</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+        background: #f0f4ff;
+        padding: 20px;
+      }
+      .card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 480px;
+        margin: auto;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+      }
+      input,
+      select {
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+      button {
+        margin-top: 14px;
+        padding: 12px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      img {
+        margin-top: 10px;
+        max-width: 100%;
+        border-radius: 10px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Formulir Pemesanan</h2>
+      <input type="text" id="nama" placeholder="Nama Lengkap" />
+      <input type="tel" id="wa" placeholder="Nomor WhatsApp" />
+      <select id="produk" onchange="isiVarian()">
+        <option value="">-- Pilih Produk --</option>
+        <option value="kvision">K-Vision</option>
+        <option value="nex">Nex Parabola</option>
+        <option value="mnc">MNC Vision</option>
+        <option value="data">Paket Data XL</option>
       </select>
-    </div>
+      <select id="varian" style="display: none"></select>
+      <input type="text" id="idpel" placeholder="ID Pelanggan / No HP" />
+      <input type="file" id="bukti" accept="image/*" onchange="preview(event)" />
+      <img id="previewImage" src="" />
+      <button onclick="kirimPesanan()">Sudah Bayar</button>
+    </div><script>
+  const varianMap = {
+    kvision: ['Cling 30 Hari', 'Cling 90 Hari', 'Liga 1', 'Timnas'],
+    nex: ['Basic 30 Hari', 'Liga 1', 'Timnas'],
+    mnc: ['Jawara 30 Hari', 'Timnas'],
+    data: ['XL 75rb (tanpa TikTok)', 'XL 80rb (semua aplikasi)'],
+  };
 
-    <label>ID Pelanggan / Nomor HP</label>
-    <input type="text" id="idpel" placeholder="Contoh: 111222333 atau 0878xxxxxxx" />
+  function isiVarian() {
+    const produk = document.getElementById('produk').value;
+    const varianSelect = document.getElementById('varian');
+    varianSelect.innerHTML = '';
 
-    <label>Upload Bukti Pembayaran</label>
-    <input type="file" accept="image/*" onchange="previewImage(event)" />
-    <img id="previewImage" src="" alt="Preview Bukti Bayar" />
+    if (varianMap[produk]) {
+      varianMap[produk].forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        varianSelect.appendChild(option);
+      });
+      varianSelect.style.display = 'block';
+    } else {
+      varianSelect.style.display = 'none';
+    }
+  }
 
-    <div class="payment-box">
-      📌 Transfer ke DANA <br />
-      <strong>0877-5543-2880 (a.n Asdar Store)</strong><br />
-      Harga produk + Ongkos Admin akan tertera otomatis saat pemesanan.
-    </div>
-
-    <button class="btn" onclick="kirimWA()">Sudah Bayar</button>
-  </div>
-
-  <div class="testimoni-container">
-    <h3>💬 Testimoni Pelanggan</h3>
-    <div class="marquee">
-      ✅ Cepat dan terpercaya! | ✅ Voucher langsung aktif! | ✅ Admin ramah banget! | ✅ Paket data murah & lancar! | ✅ Bakal langganan terus! | ✅ Top markotop!
-    </div>
-  </div>
-
-  <footer>
-    &copy; 2025 Asdar Store Digital • All rights reserved.
-  </footer>
-
-  <script>
-    function previewImage(event) {
+  function preview(event) {
+    const reader = new FileReader();
+    reader.onload = function () {
       const img = document.getElementById('previewImage');
-      img.src = URL.createObjectURL(event.target.files[0]);
+      img.src = reader.result;
       img.style.display = 'block';
+    };
+    reader.readAsDataURL(event.target.files[0]);
+  }
+
+  function kirimPesanan() {
+    const nama = document.getElementById('nama').value.trim();
+    const wa = document.getElementById('wa').value.trim();
+    const produk = document.getElementById('produk').value;
+    const varian = document.getElementById('varian').value;
+    const idpel = document.getElementById('idpel').value.trim();
+    const buktiFile = document.getElementById('bukti').files[0];
+
+    if (!nama || !wa || !produk || !varian || !idpel || !buktiFile) {
+      alert('Harap lengkapi semua kolom!');
+      return;
     }
 
-    function tampilkanVarian() {
-      const produk = document.getElementById('produk').value;
-      const varianContainer = document.getElementById('varian-container');
-      const varianSelect = document.getElementById('varian');
+    const timestamp = Date.now();
+    const buktiRef = firebase.storage().ref('bukti/' + timestamp + '_' + buktiFile.name);
 
-      varianSelect.innerHTML = '';
+    buktiRef.put(buktiFile).then((snapshot) => {
+      snapshot.ref.getDownloadURL().then((url) => {
+        const data = {
+          nama,
+          wa,
+          produk,
+          varian,
+          idpel,
+          bukti: url,
+          waktu: new Date().toISOString(),
+        };
 
-      let opsi = [];
-
-      if (produk === 'kvision') {
-        opsi = [
-          'Cling 30 Hari',
-          'Cling 90 Hari',
-          'Cling 180 Hari',
-          'Paket BRI Liga 1',
-          'Paket Timnas',
-          'Paket Film'
-        ];
-      } else if (produk === 'nex') {
-        opsi = [
-          'Basic 30 Hari',
-          'Basic 90 Hari',
-          'Basic 180 Hari',
-          'Timnas',
-          'Liga 1'
-        ];
-      } else if (produk === 'mnc') {
-        opsi = [
-          'Jawara 30 Hari',
-          'Jawara 90 Hari',
-          'Paket Timnas'
-        ];
-      } else if (produk === 'data') {
-        opsi = [
-          'XL Unlimited 75rb (tanpa TikTok)',
-          'XL Unlimited 80rb (semua aplikasi)'
-        ];
-      }
-
-      if (opsi.length > 0) {
-        varianContainer.style.display = 'block';
-        opsi.forEach(function(v) {
-          const opt = document.createElement('option');
-          opt.value = v;
-          opt.textContent = v;
-          varianSelect.appendChild(opt);
+        firebase.database().ref('pesanan/' + timestamp).set(data).then(() => {
+          alert('Pesanan berhasil dikirim!');
+          document.querySelector('form')?.reset();
+          document.getElementById('previewImage').style.display = 'none';
         });
-      } else {
-        varianContainer.style.display = 'none';
-      }
-    }
+      });
+    });
+  }
+</script>
 
-    function kirimWA() {
-      const nama = document.getElementById('nama').value.trim();
-      const wa = document.getElementById('wa').value.trim();
-      const produk = document.getElementById('produk').value;
-      const varianSelect = document.getElementById('varian');
-      const varian = varianSelect ? varianSelect.value : '';
-      const idpel = document.getElementById('idpel').value.trim();
-
-      if (!nama) {
-        alert("Mohon isi Nama Lengkap.");
-        return;
-      }
-      if (!wa) {
-        alert("Mohon isi Nomor WhatsApp.");
-        return;
-      }
-      if (!produk) {
-        alert("Mohon pilih Produk.");
-        return;
-      }
-      if (document.getElementById('varian-container').style.display === 'block' && !varian) {
-        alert("Mohon pilih Varian Produk.");
-        return;
-      }
-      if (!idpel) {
-        alert("Mohon isi ID Pelanggan atau Nomor HP.");
-        return;
-      }
-
-      const pesan = 
-        `Halo Admin, saya sudah transfer untuk pemesanan:\n\n` +
-        `Nama: ${nama}\n` +
-        `WA: ${wa}\n` +
-        `Produk: ${produk}\n` +
-        `Varian: ${varian}\n` +
-        `ID/HP: ${idpel}\n\n` +
-        `Tolong segera diproses ya. Terima kasih.`;
-
-      const noAdmin = "081803004607"; // No WA tujuan admin (sesuaikan)
-      const linkWA = `https://wa.me/${noAdmin}?text=${encodeURIComponent(pesan)}`;
-
-      window.open(linkWA, '_blank');
-    }
-  </script>
-
-</body>
+  </body>
 </html>
