@@ -1,29 +1,20 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asdar Store Digital - Bukti Bayar</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload Bukti Bayar</title>
   <style>
-    body { font-family: sans-serif; background: #f1f7ff; padding: 20px; }
-    .produk-card {
-      background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    input, select, button {
-      width: 100%; padding: 10px; margin-top: 10px;
-      border-radius: 8px; border: 1px solid #ccc;
-    }
-    button {
-      background: #28a745; color: white; border: none; font-weight: bold;
-    }
+    body { font-family: sans-serif; background: #eef6ff; padding: 20px; }
+    label, select, input, button { display: block; margin: 10px 0; }
+    #kirimWA { display: none; background: green; color: white; padding: 10px; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h2>🧾 Upload Bukti Bayar</h2>  <div class="produk-card">
-    <label>Nama Produk:</label>
-    <input type="text" id="namaProduk" value="K-Vision CLING" readonly /><label>Varian:</label>
+
+<h2>🧾 Upload Bukti Bayar</h2>
+
+<label>Varian Produk:</label>
 <select id="varianProduk">
   <option value="1 Bulan - 39.000">1 Bulan - 39.000</option>
   <option value="3 Bulan - 110.000">3 Bulan - 110.000</option>
@@ -34,51 +25,52 @@
 
 <button onclick="uploadBuktiBayar()">✅ Saya Sudah Bayar</button>
 
-  </div>  <script>
-    // Firebase Config kamu
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
+<!-- Tombol akan muncul setelah upload sukses -->
+<button id="kirimWA">📲 Kirim Pesanan ke WhatsApp</button>
 
-    firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage();
+<script type="module">
+  // Firebase config kamu
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    function uploadBuktiBayar() {
-      const fileInput = document.getElementById('buktiInput');
-      const namaProduk = document.getElementById('namaProduk').value;
-      const varian = document.getElementById('varianProduk').value;
-      const file = fileInput.files[0];
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+    measurementId: "G-CMRW37J19G"
+  };
 
-      if (!file) {
-        alert("Silakan pilih gambar bukti pembayaran terlebih dahulu.");
-        return;
-      }
+  const app = initializeApp(firebaseConfig);
+  const storage = getStorage(app);
 
-      const fileName = `bukti_${Date.now()}_${file.name}`;
-      const storageRef = storage.ref('bukti-bayar/' + fileName);
+  let buktiURL = "";
+  const btnKirim = document.getElementById("kirimWA");
 
-      storageRef.put(file).then(snapshot => {
-        return snapshot.ref.getDownloadURL();
-      }).then(url => {
-        const total = 39000 + 3000;
-        const pesan = `Halo kak, saya sudah transfer.%0AProduk: ${namaProduk}%0AVarian: ${varian}%0ATotal: Rp${total.toLocaleString()}%0ABukti: ${url}%0AMohon segera diproses ya 🙏`;
+  window.uploadBuktiBayar = async function() {
+    const file = document.getElementById("buktiInput").files[0];
+    const varian = document.getElementById("varianProduk").value;
 
-        // Kirim ke pembeli
-        window.open(`https://wa.me/6281803004607?text=${pesan}`, '_blank');
+    if (!file) return alert("Pilih gambar bukti bayar terlebih dahulu!");
 
-        // Kirim ke admin juga
-        const adminPesan = `📥 Bukti Bayar Masuk:%0AProduk: ${namaProduk}%0AVarian: ${varian}%0ATotal: Rp${total.toLocaleString()}%0ABukti: ${url}`;
-        window.open(`https://wa.me/6281803004607?text=${adminPesan}`, '_blank');
+    const fileRef = ref(storage, 'bukti-bayar/' + Date.now() + '_' + file.name);
+    await uploadBytes(fileRef, file);
+    buktiURL = await getDownloadURL(fileRef);
 
-      }).catch(error => {
-        console.error("Upload error:", error);
-        alert("Gagal upload bukti bayar.");
-      });
+    alert("✅ Bukti bayar berhasil diunggah!");
+    btnKirim.style.display = "inline-block";
+
+    // Tambahkan event klik setelah upload sukses
+    btnKirim.onclick = function() {
+      const pesan = `Halo Admin, saya sudah transfer untuk pembelian:\n\n📦 Varian: ${varian}\n📸 Bukti: ${buktiURL}`;
+      const nomorWA = "6281803004607";
+      const waLink = `https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`;
+      window.open(waLink, "_blank");
     }
-  </script></body>
+  }
+</script>
+
+</body>
 </html>
