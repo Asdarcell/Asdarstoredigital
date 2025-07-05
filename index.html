@@ -61,6 +61,11 @@
     <option value="PLN">Token PLN</option>
   </select>
   <div id="produkList"></div>
+  <div id="infoPembayaran" class="card">
+    <h3>🟣PAYMENT🟣</h3>
+    <p>ShopeePay: <strong>081803004607</strong></p>
+    <p>Dana: <strong>087755432880</strong></p>
+  </div>
 </div>
 
 <div id="upload" class="page">
@@ -134,27 +139,39 @@ const semuaProduk = [
 function filterKategori(kategori) {
   const list = document.getElementById("produkList");
   list.innerHTML = "";
+  document.getElementById("varianProduk").innerHTML = '<option value="">-- Pilih produk dari halaman Produk --</option>';
   const hasil = kategori === "semua" ? semuaProduk : semuaProduk.filter(p => p.kategori === kategori);
   if (hasil.length === 0) {
     list.innerHTML = "<p>Tidak ada produk dalam kategori ini.</p>";
     return;
   }
-  hasil.forEach(p => {
+
+  const tampilkan = [...new Set(hasil.map(p => p.nama.split(" ")[0]))];
+  tampilkan.forEach(judul => {
+    const matching = hasil.filter(p => p.nama.includes(judul));
     const card = document.createElement("div");
     card.className = "produk-card";
     card.innerHTML = `
-      <h4>${p.nama}</h4>
-      <p>Harga: Rp ${p.harga.toLocaleString()}</p>
-      <button onclick="pesanProduk('${p.nama}', ${p.harga})">Pesan Sekarang</button>
+      <h4>${judul} (${matching[0].kategori})</h4>
+      <p>Varian tersedia: ${matching.length}</p>
+      <button onclick='tampilkanVarian(${JSON.stringify(matching)})'>Lihat Varian</button>
     `;
     list.appendChild(card);
   });
 }
 
-function pesanProduk(nama, harga) {
-  alert(`Anda memilih: ${nama}\nHarga: Rp ${harga.toLocaleString()}\nSilakan lanjutkan pembayaran dan upload bukti.`);
-  showPage('upload');
-  document.getElementById("varianProduk").innerHTML = `<option value="${nama} - Rp ${harga.toLocaleString()}">${nama} - Rp ${harga.toLocaleString()}</option>`;
+function tampilkanVarian(varianList) {
+  const dropdown = document.getElementById("varianProduk");
+  dropdown.innerHTML = '<option value="">-- Pilih varian --</option>';
+  varianList.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = `${v.nama} - Rp ${v.harga.toLocaleString()}`;
+    opt.textContent = `${v.nama} - Rp ${v.harga.toLocaleString()}`;
+    dropdown.appendChild(opt);
+  });
+
+  alert("Varian dimuat. Silakan lanjut ke halaman Upload untuk bayar dan kirim bukti.");
+  showPage("upload");
 }
 
 const API_KEY = "f71ccc1a662c9f8656766990018d3a33";
