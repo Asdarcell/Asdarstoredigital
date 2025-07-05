@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Daftar Akun</title>
+  <title>Daftar Akun Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
@@ -47,36 +47,40 @@
 </head>
 <body>
   <div class="box">
-    <h2>Daftar Akun</h2>
+    <h2>Daftar Admin</h2>
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password (min. 6 karakter)" />
     <button onclick="register()">Daftar</button>
-    <a href="index.html">Sudah punya akun?</a>
+    <a href="login.html">Sudah punya akun?</a>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import versi modular Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      projectId: "asdarstoredigitalll-d89c4",
+      projectId: "asdarstoredigitalll-d89c4"
     };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
 
-    function register() {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.register = function() {
       const email = document.getElementById("email").value;
       const pass = document.getElementById("password").value;
 
-      auth.createUserWithEmailAndPassword(email, pass)
+      createUserWithEmailAndPassword(auth, email, pass)
         .then(() => {
           alert("Akun berhasil dibuat!");
-          window.location.href = "index.html";
+          window.location.href = "login.html";
         })
         .catch((error) => {
           alert("Gagal daftar: " + error.message);
+          console.error(error);
         });
     }
   </script>
