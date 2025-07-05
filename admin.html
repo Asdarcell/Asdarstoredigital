@@ -24,10 +24,16 @@
     cursor: pointer;
     font-weight: 600;
   }
+  section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 40px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
   table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
     border-radius: 10px;
     overflow: hidden;
   }
@@ -35,6 +41,7 @@
     padding: 12px 15px;
     border-bottom: 1px solid #ddd;
     text-align: left;
+    vertical-align: middle;
   }
   th {
     background: #007bff;
@@ -44,14 +51,31 @@
   tr:hover {
     background: #f1f1f1;
   }
-  button.delete-btn {
-    background: #dc3545;
+  button.action-btn {
+    background: #007bff;
     border: none;
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
+    margin-right: 6px;
+  }
+  button.delete-btn {
+    background: #dc3545;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 8px 10px;
+    margin: 6px 0 12px 0;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  label {
+    font-weight: 600;
+    display: block;
+    margin-top: 12px;
   }
   img.bukti-img {
     max-width: 100px;
@@ -64,32 +88,68 @@
 <h1>Dashboard Admin</h1>
 <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
 
-<h2>Data Pesanan / Transaksi</h2>
-<table id="transaksiTable">
-  <thead>
-    <tr>
-      <th>Nama</th>
-      <th>Produk</th>
-      <th>ID Pelanggan</th>
-      <th>Harga</th>
-      <th>Bukti Bayar</th>
-      <th>Aksi</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<section id="produkSection">
+  <h2>Kelola Produk</h2>
+  <form id="formProduk" onsubmit="return tambahAtauUpdateProduk()">
+    <input type="hidden" id="produkId" />
+    <label>Nama Produk</label>
+    <input type="text" id="namaProduk" required placeholder="Contoh: Cling 30 Hari" />
+    <label>Kategori</label>
+    <select id="kategoriProduk" required>
+      <option value="">Pilih kategori...</option>
+      <option value="K-Vision">K-Vision</option>
+      <option value="Nex Parabola">Nex Parabola</option>
+      <option value="MNC Vision">MNC Vision</option>
+    </select>
+    <label>Harga (Rp)</label>
+    <input type="number" id="hargaProduk" required min="0" placeholder="Misal: 30000" />
+    <button type="submit" class="action-btn" style="margin-top:10px;">Simpan Produk</button>
+    <button type="button" onclick="resetFormProduk()" style="margin-left:10px;">Reset Form</button>
+  </form>
+  <table id="produkTable" style="margin-top:20px;">
+    <thead>
+      <tr>
+        <th>Nama Produk</th>
+        <th>Kategori</th>
+        <th>Harga (Rp)</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 
-<h2 style="margin-top: 40px;">Testimoni Pelanggan</h2>
-<table id="testimoniTable">
-  <thead>
-    <tr>
-      <th>Nama</th>
-      <th>Isi Testimoni</th>
-      <th>Aksi</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<section id="transaksiSection">
+  <h2>Kelola Pesanan / Transaksi</h2>
+  <table id="transaksiTable">
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>Produk</th>
+        <th>ID Pelanggan</th>
+        <th>Harga</th>
+        <th>Status</th>
+        <th>Bukti Bayar</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section id="testimoniSection">
+  <h2>Kelola Testimoni Pelanggan</h2>
+  <table id="testimoniTable">
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>Isi Testimoni</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -110,13 +170,14 @@
   const auth = firebase.auth();
   const db = firebase.database();
 
-  // Cek apakah admin sudah login
+  // Cek login admin
   auth.onAuthStateChanged(user => {
     if (!user) {
       window.location.href = "login.html";
     } else {
-      loadDataTransaksi();
-      loadDataTestimoni();
+      loadProduk();
+      loadTransaksi();
+      loadTestimoni();
     }
   });
 
@@ -126,14 +187,15 @@
     });
   }
 
-  // Load data transaksi dari Realtime Database
-  function loadDataTransaksi() {
-    const tbody = document.querySelector("#transaksiTable tbody");
-    tbody.innerHTML = "<tr><td colspan='6'>Memuat data...</td></tr>";
-    db.ref("transaksi").on("value", snapshot => {
+  // ===================== Produk =====================
+
+  function loadProduk() {
+    const tbody = document.querySelector("#produkTable tbody");
+    tbody.innerHTML = "<tr><td colspan='4'>Memuat data produk...</td></tr>";
+    db.ref("produk").on("value", snapshot => {
       tbody.innerHTML = "";
       if (!snapshot.exists()) {
-        tbody.innerHTML = "<tr><td colspan='6'>Tidak ada data transaksi.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='4'>Tidak ada produk.</td></tr>";
         return;
       }
       snapshot.forEach(childSnap => {
@@ -141,30 +203,162 @@
         const id = childSnap.key;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${data.nama || "-"}</td>
-          <td>${data.produk || "-"}</td>
-          <td>${data.idpel || "-"}</td>
-          <td>Rp${(data.harga || 0).toLocaleString()}</td>
-          <td>${data.buktiBayarUrl ? `<img src="${data.buktiBayarUrl}" alt="Bukti Bayar" class="bukti-img" />` : "-"}</td>
-          <td><button class="delete-btn" onclick="hapusTransaksi('${id}')">Hapus</button></td>
+          <td>${data.nama}</td>
+          <td>${data.kategori}</td>
+          <td>Rp${data.harga.toLocaleString()}</td>
+          <td>
+            <button class="action-btn" onclick="editProduk('${id}')">Edit</button>
+            <button class="action-btn delete-btn" onclick="hapusProduk('${id}')">Hapus</button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
     });
   }
 
-  function hapusTransaksi(id) {
-    if (confirm("Yakin ingin menghapus transaksi ini?")) {
-      db.ref("transaksi/" + id).remove()
-        .then(() => alert("Data transaksi berhasil dihapus"))
-        .catch(err => alert("Gagal menghapus data: " + err.message));
+  function tambahAtauUpdateProduk() {
+    const produkId = document.getElementById("produkId").value;
+    const nama = document.getElementById("namaProduk").value.trim();
+    const kategori = document.getElementById("kategoriProduk").value;
+    const harga = parseInt(document.getElementById("hargaProduk").value);
+
+    if (!nama || !kategori || isNaN(harga) || harga < 0) {
+      alert("Isi data produk dengan benar.");
+      return false;
+    }
+
+    if (produkId) {
+      // Update produk
+      db.ref("produk/" + produkId).update({ nama, kategori, harga })
+        .then(() => {
+          alert("Produk berhasil diperbarui.");
+          resetFormProduk();
+        })
+        .catch(err => alert("Gagal update produk: " + err.message));
+    } else {
+      // Tambah produk baru
+      const newProdRef = db.ref("produk").push();
+      newProdRef.set({ nama, kategori, harga })
+        .then(() => {
+          alert("Produk berhasil ditambahkan.");
+          resetFormProduk();
+        })
+        .catch(err => alert("Gagal tambah produk: " + err.message));
+    }
+
+    return false; // supaya form tidak reload halaman
+  }
+
+  function editProduk(id) {
+    db.ref("produk/" + id).get().then(snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        document.getElementById("produkId").value = id;
+        document.getElementById("namaProduk").value = data.nama;
+        document.getElementById("kategoriProduk").value = data.kategori;
+        document.getElementById("hargaProduk").value = data.harga;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
+  function hapusProduk(id) {
+    if (confirm("Yakin ingin menghapus produk ini?")) {
+      db.ref("produk/" + id).remove()
+        .then(() => alert("Produk berhasil dihapus."))
+        .catch(err => alert("Gagal hapus produk: " + err.message));
     }
   }
 
-  // Load data testimoni dari Realtime Database
-  function loadDataTestimoni() {
+  function resetFormProduk() {
+    document.getElementById("produkId").value = "";
+    document.getElementById("namaProduk").value = "";
+    document.getElementById("kategoriProduk").value = "";
+    document.getElementById("hargaProduk").value = "";
+  }
+
+  // ===================== Transaksi =====================
+
+  function loadTransaksi() {
+    const tbody = document.querySelector("#transaksiTable tbody");
+    tbody.innerHTML = "<tr><td colspan='7'>Memuat data transaksi...</td></tr>";
+    db.ref("transaksi").on("value", snapshot => {
+      tbody.innerHTML = "";
+      if (!snapshot.exists()) {
+        tbody.innerHTML = "<tr><td colspan='7'>Tidak ada transaksi.</td></tr>";
+        return;
+      }
+      snapshot.forEach(childSnap => {
+        const data = childSnap.val();
+        const id = childSnap.key;
+        const statusColor = {
+          Pending: "#ffc107",
+          Proses: "#0d6efd",
+          Terkirim: "#198754"
+        }[data.status] || "#6c757d";
+
+        const statusSelect = `
+          <select onchange="ubahStatusTransaksi('${id}', this.value)" style="padding:6px; border-radius:6px; border:1px solid #ccc;">
+            <option value="Pending" ${data.status==="Pending" ? "selected":""}>Pending</option>
+            <option value="Proses" ${data.status==="Proses" ? "selected":""}>Proses</option>
+            <option value="Terkirim" ${data.status==="Terkirim" ? "selected":""}>Terkirim</option>
+          </select>
+        `;
+
+        const buktiBayarHtml = data.buktiBayarUrl
+          ? `<img src="${data.buktiBayarUrl}" class="bukti-img" alt="Bukti Bayar" />`
+          : "-";
+
+        const pesanWA = encodeURIComponent(
+          `Halo, pesanan Anda *${data.produkNama}* dengan harga *Rp${data.harga.toLocaleString()}* statusnya sekarang *${data.status}*.\n\nTerima kasih telah berbelanja di Asdar Store Digital.`
+        );
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${data.nama || "-"}</td>
+            <td>${data.produkNama || "-"}</td>
+            <td>${data.idpel || "-"}</td>
+            <td>Rp${(data.harga || 0).toLocaleString()}</td>
+            <td style="color:${statusColor}">${statusSelect}</td>
+            <td>${buktiBayarHtml}</td>
+            <td>
+              <button class="action-btn" onclick="kirimNotifikasiWA('${data.idpel}', '${pesanWA}')">Kirim WA</button>
+              <button class="action-btn delete-btn" onclick="hapusTransaksi('${id}')">Hapus</button>
+            </td>
+          </tr>
+        `;
+      });
+    });
+  }
+
+  function ubahStatusTransaksi(id, statusBaru) {
+    db.ref("transaksi/" + id).update({ status: statusBaru })
+      .then(() => alert("Status transaksi berhasil diubah."))
+      .catch(err => alert("Gagal ubah status: " + err.message));
+  }
+
+  function hapusTransaksi(id) {
+    if (confirm("Yakin ingin menghapus transaksi ini?")) {
+      db.ref("transaksi/" + id).remove()
+        .then(() => alert("Transaksi berhasil dihapus."))
+        .catch(err => alert("Gagal hapus transaksi: " + err.message));
+    }
+  }
+
+  function kirimNotifikasiWA(noHp, pesan) {
+    if (!noHp || noHp.length < 8) {
+      alert("Nomor HP pelanggan tidak valid.");
+      return;
+    }
+    const waUrl = `https://wa.me/${noHp}?text=${pesan}`;
+    window.open(waUrl, "_blank");
+  }
+
+  // ===================== Testimoni =====================
+
+  function loadTestimoni() {
     const tbody = document.querySelector("#testimoniTable tbody");
-    tbody.innerHTML = "<tr><td colspan='3'>Memuat data...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='3'>Memuat data testimoni...</td></tr>";
     db.ref("testimoni").on("value", snapshot => {
       tbody.innerHTML = "";
       if (!snapshot.exists()) {
@@ -178,7 +372,9 @@
         tr.innerHTML = `
           <td>${data.nama || "-"}</td>
           <td>${data.isi || "-"}</td>
-          <td><button class="delete-btn" onclick="hapusTestimoni('${id}')">Hapus</button></td>
+          <td>
+            <button class="action-btn delete-btn" onclick="hapusTestimoni('${id}')">Hapus</button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
@@ -188,10 +384,11 @@
   function hapusTestimoni(id) {
     if (confirm("Yakin ingin menghapus testimoni ini?")) {
       db.ref("testimoni/" + id).remove()
-        .then(() => alert("Testimoni berhasil dihapus"))
-        .catch(err => alert("Gagal menghapus testimoni: " + err.message));
+        .then(() => alert("Testimoni berhasil dihapus."))
+        .catch(err => alert("Gagal hapus testimoni: " + err.message));
     }
   }
+
 </script>
 
 </body>
