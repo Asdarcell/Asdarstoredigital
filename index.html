@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Asdar Store Digital - Pemesanan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asdar Store Digital</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -11,147 +11,79 @@
     header { text-align: center; padding: 30px 16px; background: #007BFF; color: white; border-radius: 16px; margin-bottom: 24px; }
     header h1 { font-size: 2.4em; margin-bottom: 10px; }
     header p { font-size: 1.1em; color: #e0eaff; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 24px; transition: 0.3s ease; }
+    .card:hover { transform: scale(1.01); }
     .card h2 { font-size: 1.4em; margin-bottom: 12px; color: #007BFF; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-    select, input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #ccc; font-size: 1em; }
-    button { background: #007BFF; color: white; border: none; cursor: pointer; transition: background 0.3s ease; }
-    button:hover { background: #0056b3; }
-    .hidden { display: none; }
+    .btn { background: #007BFF; color: white; padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; margin-top: 14px; transition: background 0.3s ease; }
+    .btn:hover { background: #0056b3; }
+    select { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 1em; }
     footer { text-align: center; margin-top: 40px; color: #777; font-size: 0.9em; }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Asdar Store Digital</h1>
+    <p>💎 Cepat · Aman · Terpercaya 💎</p>
+  </header>
+  <section class="card">
+    <h2>🛒 Pilih Produk</h2>
+    <select id="kategoriProduk" onchange="loadVarian()">
+      <option value="">Pilih Kategori...</option>
+      <option value="K-Vision">K-Vision</option>
+      <option value="Nex Parabola">Nex Parabola</option>
+      <option value="MNC Vision">MNC Vision</option>
+    </select>
+    <select id="varianProduk">
+      <option value="">Pilih Produk...</option>
+    </select>
+    <button class="btn" onclick="lanjutTransaksi()">Lanjutkan</button>
+  </section>
+  <footer>
+    &copy; 2025 Asdar Store Digital · All Rights Reserved
+  </footer>
 
-<header>
-  <h1>Asdar Store Digital</h1>
-  <p>💎 Cepat · Aman · Terpercaya 💎</p>
-</header>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<section class="card">
-  <h2>🛒 Pilih Produk</h2>
-  <select id="kategoriProduk" onchange="loadVarian()">
-    <option value="">Pilih Kategori...</option>
-    <option value="K-Vision">K-Vision</option>
-    <option value="Nex Parabola">Nex Parabola</option>
-    <option value="MNC Vision">MNC Vision</option>
-  </select>
-
-  <select id="varianProduk" onchange="checkInputFields()">
-    <option value="">Pilih Produk...</option>
-  </select>
-
-  <div id="inputIDSNDiv" class="hidden">
-    <label for="inputIDSN">Masukkan ID / SN (wajib untuk produk digital):</label>
-    <input type="text" id="inputIDSN" placeholder="Masukkan ID atau SN Anda" />
-  </div>
-
-  <div id="inputNoHPDiv" class="hidden">
-    <label for="inputNoHP">Masukkan Nomor HP (wajib untuk paket data):</label>
-    <input type="text" id="inputNoHP" placeholder="Masukkan nomor HP Anda" />
-  </div>
-
-  <button onclick="lanjutTransaksi()">Lanjutkan</button>
-</section>
-
-<footer>
-  &copy; 2025 Asdar Store Digital · All Rights Reserved
-</footer>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  function loadVarian() {
-    const kategori = document.getElementById("kategoriProduk").value;
-    const varianSelect = document.getElementById("varianProduk");
-    varianSelect.innerHTML = '<option value="">Memuat...</option>';
-    document.getElementById("inputIDSNDiv").classList.add("hidden");
-    document.getElementById("inputNoHPDiv").classList.add("hidden");
-    db.ref("produk").orderByChild("kategori").equalTo(kategori).once("value", snapshot => {
-      varianSelect.innerHTML = '<option value="">Pilih Produk...</option>';
-      snapshot.forEach(child => {
-        const data = child.val();
-        const option = document.createElement("option");
-        // value format: key|nama|harga|tipe
-        option.value = `${child.key}|${data.nama}|${data.harga}|${data.tipe || ""}`;
-        option.textContent = `${data.nama} - Rp${data.harga.toLocaleString()}`;
-        varianSelect.appendChild(option);
+    function loadVarian() {
+      const kategori = document.getElementById("kategoriProduk").value;
+      const varianSelect = document.getElementById("varianProduk");
+      varianSelect.innerHTML = '<option value="">Memuat...</option>';
+      if (!kategori) {
+        varianSelect.innerHTML = '<option value="">Pilih Produk...</option>';
+        return;
+      }
+      db.ref("produk").orderByChild("kategori").equalTo(kategori).once("value", snapshot => {
+        varianSelect.innerHTML = '<option value="">Pilih Produk...</option>';
+        snapshot.forEach(child => {
+          const data = child.val();
+          const option = document.createElement("option");
+          option.value = `${child.key}|${data.nama}|${data.harga}`;
+          option.textContent = `${data.nama} - Rp${data.harga.toLocaleString()}`;
+          varianSelect.appendChild(option);
+        });
       });
-    });
-  }
-
-  function checkInputFields() {
-    const varianSelect = document.getElementById("varianProduk");
-    const value = varianSelect.value;
-    const inputIDSNDiv = document.getElementById("inputIDSNDiv");
-    const inputNoHPDiv = document.getElementById("inputNoHPDiv");
-    if (!value) {
-      inputIDSNDiv.classList.add("hidden");
-      inputNoHPDiv.classList.add("hidden");
-      return;
-    }
-    const parts = value.split("|");
-    const tipe = parts[3]; // tipe produk: digital / paket_data / kosong
-    if (tipe === "digital") {
-      inputIDSNDiv.classList.remove("hidden");
-      inputNoHPDiv.classList.add("hidden");
-    } else if (tipe === "paket_data") {
-      inputNoHPDiv.classList.remove("hidden");
-      inputIDSNDiv.classList.add("hidden");
-    } else {
-      inputIDSNDiv.classList.add("hidden");
-      inputNoHPDiv.classList.add("hidden");
-    }
-  }
-
-  function lanjutTransaksi() {
-    const varianSelect = document.getElementById("varianProduk");
-    const value = varianSelect.value;
-    if (!value) return alert("Pilih produk terlebih dahulu.");
-
-    const parts = value.split("|");
-    const id = parts[0];
-    const nama = parts[1];
-    const harga = parts[2];
-    const tipe = parts[3];
-
-    // Validasi input ID/SN atau nomor HP jika diperlukan
-    if (tipe === "digital") {
-      const idsn = document.getElementById("inputIDSN").value.trim();
-      if (!idsn) {
-        alert("ID / SN wajib diisi untuk produk digital.");
-        return;
-      }
-      localStorage.setItem("inputIDSN", idsn);
-      localStorage.removeItem("inputNoHP");
-    } else if (tipe === "paket_data") {
-      const nohp = document.getElementById("inputNoHP").value.trim();
-      if (!nohp) {
-        alert("Nomor HP wajib diisi untuk paket data.");
-        return;
-      }
-      localStorage.setItem("inputNoHP", nohp);
-      localStorage.removeItem("inputIDSN");
-    } else {
-      localStorage.removeItem("inputIDSN");
-      localStorage.removeItem("inputNoHP");
     }
 
-    localStorage.setItem("produkDipilih", JSON.stringify({ id, nama, harga, tipe }));
-    window.location.href = "transaksi.html";
-  }
-</script>
-
+    function lanjutTransaksi() {
+      const value = document.getElementById("varianProduk").value;
+      if (!value) return alert("Pilih produk terlebih dahulu.");
+      const [id, nama, harga] = value.split("|");
+      localStorage.setItem("produkDipilih", JSON.stringify({ id, nama, harga }));
+      window.location.href = "transaksi.html";
+    }
+  </script>
 </body>
 </html>
