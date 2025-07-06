@@ -1,150 +1,124 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Asdar Store Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-    body { background: linear-gradient(to right, #e8f0ff, #ffffff); color: #333; padding: 16px; }
-    header { text-align: center; padding: 30px 16px; background: #007BFF; color: white; border-radius: 16px; margin-bottom: 24px; }
-    header h1 { font-size: 2.4em; margin-bottom: 10px; }
-    header p { font-size: 1.1em; color: #e0eaff; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 24px; transition: 0.3s ease; }
-    .card:hover { transform: scale(1.01); }
-    .card h2 { font-size: 1.4em; margin-bottom: 12px; color: #007BFF; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-    .btn { background: #007BFF; color: white; padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; margin-top: 14px; transition: background 0.3s ease; }
-    .btn:hover { background: #0056b3; }
-    input, select, textarea { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 1em; }
-    #uploadSection { display: none; margin-top: 24px; }
-    #uploadSection label { font-weight: 600; }
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { display: block; margin: 10px 0; padding: 10px; width: 100%; }
+    h2 { margin-top: 40px; }
+    img { max-width: 100%; height: auto; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Asdar Store Digital</h1>
-    <p>💎 Cepat · Aman · Terpercaya 💎</p>
-  </header>
-  <section class="card">
-    <h2>🏍 Pilih Produk</h2>
-    <select id="kategoriProduk" onchange="updateVarian()"></select>
-    <select id="varianProduk"><option value="">Pilih paket...</option></select>
-    <input type="text" id="nomorHP" placeholder="Nomor HP Anda (wajib untuk paket data)" />
-    <button class="btn" id="btnPesan">Pesan Sekarang</button><div id="uploadSection">
-  <label for="buktiBayar">Upload Bukti Pembayaran (jpg/png maksimal 2MB):</label>
-  <input type="file" id="buktiBayar" accept="image/png, image/jpeg" />
-  <button class="btn" id="btnUploadBukti">Upload Bukti Bayar</button>
-</div>
 
-  </section>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>  <script>
+  <h1>Asdar Store Digital</h1>
+
+  <!-- FORM PESANAN -->
+  <h2>Form Pemesanan</h2>
+  <form id="orderForm">
+    <input type="text" id="nama" placeholder="Nama Anda" required />
+    <input type="text" id="nomor" placeholder="Nomor HP" required />
+    <input type="text" id="produk" placeholder="Nama Produk" required />
+    <input type="text" id="idProduk" placeholder="ID/SN/Nomor Tujuan" required />
+    <button type="submit">Kirim Pesanan</button>
+  </form>
+
+  <!-- FORM UPLOAD -->
+  <h2>Upload Bukti Bayar</h2>
+  <form id="uploadForm">
+    <input type="text" id="nomorUpload" placeholder="Nomor HP Anda" required />
+    <input type="file" id="buktiBayar" accept="image/*" required />
+    <button type="submit">Upload Bukti</button>
+  </form>
+
+  <!-- CEK STATUS -->
+  <h2>Cek Status Pesanan</h2>
+  <input type="text" id="nomorCek" placeholder="Masukkan Nomor HP" />
+  <button onclick="cekStatus()">Cek</button>
+  <div id="hasilStatus"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+  <!-- Firebase Config -->
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const storage = firebase.storage();
+  </script>
 
-    let produkList = {}; let hargaProduk = {}; let lastTransaksiKey = null;
+  <!-- Script Logika Pembeli -->
+  <script>
+    // Kirim Pesanan
+    document.getElementById("orderForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const nama = document.getElementById("nama").value;
+      const nomor = document.getElementById("nomor").value;
+      const produk = document.getElementById("produk").value;
+      const idProduk = document.getElementById("idProduk").value;
 
-    db.ref("produk").on("value", snapshot => {
-      produkList = {}; hargaProduk = {};
-      snapshot.forEach(child => {
-        const data = child.val();
-        const key = `${data.kategori}|${data.nama}`;
-        hargaProduk[key] = data.harga;
-        if (!produkList[data.kategori]) produkList[data.kategori] = [];
-        produkList[data.kategori].push(data.nama);
+      const id = Date.now();
+      db.ref("pesanan/" + id).set({
+        nama, nomor, produk, idProduk,
+        status: "Menunggu Verifikasi"
+      }).then(() => {
+        alert("Pesanan terkirim!");
+        this.reset();
       });
-      updateDropdownKategori();
     });
 
-    function updateDropdownKategori() {
-      const kategoriSelect = document.getElementById("kategoriProduk");
-      kategoriSelect.innerHTML = "<option value=''>Pilih kategori...</option>";
-      Object.keys(produkList).forEach(k => {
-        const opt = document.createElement("option");
-        opt.value = k; opt.textContent = k.toUpperCase();
-        kategoriSelect.appendChild(opt);
-      });
-      updateVarian();
-    }
+    // Upload Bukti Bayar
+    document.getElementById("uploadForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const nomor = document.getElementById("nomorUpload").value;
+      const file = document.getElementById("buktiBayar").files[0];
 
-    function updateVarian() {
-      const kategori = document.getElementById("kategoriProduk").value;
-      const varian = document.getElementById("varianProduk");
-      varian.innerHTML = "<option value=''>Pilih paket...</option>";
-      if (!kategori || !produkList[kategori]) return;
-      produkList[kategori].forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v; opt.textContent = v;
-        varian.appendChild(opt);
-      });
-    }
-
-    document.getElementById("btnPesan").addEventListener("click", () => {
-      const kategori = document.getElementById("kategoriProduk").value;
-      const varian = document.getElementById("varianProduk").value;
-      const nomorHP = document.getElementById("nomorHP").value.trim();
-      if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
-
-      const key = `${kategori}|${varian}`;
-      const harga = hargaProduk[key] || 0;
-      if (harga === 0) return alert("Harga belum tersedia.");
-
-      if (kategori.toLowerCase().includes("paket data") && (!nomorHP || nomorHP.length < 9)) {
-        return alert("Nomor HP wajib diisi dengan benar untuk paket data.");
-      }
-
-      const produkTerpilih = `${kategori} - ${varian}`;
-      const pesan = `\u{1F4B0} Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\n\nProduk: ${produkTerpilih}\nNomor HP: ${nomorHP || '-'}`;
-
-      db.ref("transaksi").push({
-        nama: nomorHP || "-",
-        produkNama: produkTerpilih,
-        harga: harga,
-        status: "Pending",
-        buktiBayarUrl: null,
-        timestamp: Date.now()
-      }).then(ref => {
-        lastTransaksiKey = ref.key;
-        document.getElementById("uploadSection").style.display = "block";
-        alert(pesan);
-
-        // Kirim notifikasi WA ke admin via NgirimWA
-        fetch("https://app.ngirimwa.com/api/create-message", {
-          method: "POST",
-          body: new FormData(Object.entries({
-            appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-            authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-            to: "6281803004607",
-            message: `📩 Pesanan Baru:\nProduk: ${produkTerpilih}\nHP: ${nomorHP || '-'}\nHarga: Rp${harga.toLocaleString()}\nSilakan cek dashboard admin.`
-          }).reduce((f, [k,v]) => { f.append(k,v); return f }, new FormData()))
+      const ref = storage.ref("bukti_bayar/" + nomor + "_" + Date.now());
+      ref.put(file).then(snapshot => {
+        return snapshot.ref.getDownloadURL();
+      }).then(url => {
+        // Cari pesanan dengan nomor HP dan update bukti bayar
+        db.ref("pesanan").orderByChild("nomor").equalTo(nomor).once("value", snap => {
+          snap.forEach(s => {
+            db.ref("pesanan/" + s.key).update({ bukti_bayar: url });
+          });
         });
-
-      }).catch(err => alert("Gagal menyimpan transaksi: " + err.message));
+        alert("Bukti bayar berhasil diupload!");
+        this.reset();
+      });
     });
 
-    document.getElementById("btnUploadBukti").addEventListener("click", () => {
-      const fileInput = document.getElementById("buktiBayar");
-      const file = fileInput.files[0];
-      if (!file) return alert("Pilih file bukti pembayaran terlebih dahulu.");
-      if (!lastTransaksiKey) return alert("Tidak ada transaksi aktif. Silakan pesan dulu.");
-      if (file.size > 2 * 1024 * 1024) return alert("Ukuran file maksimal 2MB.");
-
-      const buktiRef = storage.ref().child(`buktiBayar/${lastTransaksiKey}_${file.name}`);
-      buktiRef.put(file).then(snapshot => snapshot.ref.getDownloadURL())
-        .then(url => db.ref(`transaksi/${lastTransaksiKey}`).update({ buktiBayarUrl: url, status: "Menunggu Verifikasi" }))
-        .then(() => {
-          alert("Bukti pembayaran berhasil diupload. Terima kasih!");
-          fileInput.value = "";
-          document.getElementById("uploadSection").style.display = "none";
-        }).catch(err => alert("Gagal upload bukti bayar: " + err.message));
-    });
-  </script></body>
+    // Cek Status Pesanan
+    function cekStatus() {
+      const nomor = document.getElementById("nomorCek").value;
+      const hasil = document.getElementById("hasilStatus");
+      db.ref("pesanan").orderByChild("nomor").equalTo(nomor).once("value", snap => {
+        if (snap.exists()) {
+          hasil.innerHTML = '';
+          snap.forEach(data => {
+            const p = data.val();
+            hasil.innerHTML += `
+              <p><strong>${p.produk}</strong><br>
+              Status: ${p.status}<br>
+              ${p.bukti_selesai ? `<img src=\"${p.bukti_selesai}\" />` : ''}</p><hr>`;
+          });
+        } else {
+          hasil.innerHTML = 'Pesanan tidak ditemukan.';
+        }
+      });
+    }
+  </script>
+</body>
 </html>
