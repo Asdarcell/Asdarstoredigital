@@ -2,256 +2,81 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Admin - Asdar Store Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard - Asdar Store</title>
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      padding: 20px;
-      background: #f0f4ff;
-      color: #222;
-    }
-    h1 { color: #007BFF; margin-bottom: 20px; }
-    .hidden { display: none; }
-    input, select, button, textarea {
-      font-size: 1em;
-      padding: 10px;
-      margin: 6px 0 12px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      background: #007BFF;
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    button:hover { background: #0056b3; }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 12px;
-    }
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
-      text-align: left;
-    }
-    th { background: #dce8ff; }
-    .section {
-      background: white;
-      padding: 20px;
-      border-radius: 16px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-    }
-    .logout-btn {
-      float: right;
-      background: #dc3545;
-    }
-    .logout-btn:hover { background: #a71d2a; }
-    .flex-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .flex-col { flex: 1; min-width: 200px; }
+    body { font-family: sans-serif; padding: 20px; background: #f8f9fa; }
+    h1 { color: #2c3e50; }
+    .pesanan { background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px #ccc; }
+    .pesanan img { max-width: 100%; margin-top: 10px; }
+    .btn-upload { margin-top: 10px; }
   </style>
 </head>
 <body>
 
   <h1>Dashboard Admin</h1>
-  <button class="logout-btn hidden" id="btnLogout">Logout</button>
+  <div id="daftarPesanan">Memuat pesanan...</div>
 
-  <!-- Login Section -->
-  <section id="loginSection" class="section">
-    <h2>Login Admin</h2>
-    <input type="email" id="emailAdmin" placeholder="Email admin" />
-    <input type="password" id="passwordAdmin" placeholder="Password" />
-    <button id="btnLogin">Login</button>
-  </section>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
-  <!-- Dashboard Section -->
-  <section id="dashboardSection" class="section hidden">
-    <div id="kategoriSection" style="margin-bottom:40px;">
-      <h2>Manajemen Kategori</h2>
-      <div class="flex-row">
-        <input type="text" id="inputKategoriBaru" placeholder="Tambah kategori baru" class="flex-col" />
-        <button id="btnTambahKategori" style="width:150px;">Tambah Kategori</button>
-      </div>
-      <h3>Daftar Kategori</h3>
-      <table id="tableKategori"><thead><tr><th>Nama Kategori</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    </div>
-
-    <div id="produkSection" style="margin-bottom:40px;">
-      <h2>Manajemen Produk</h2>
-      <div class="flex-row">
-        <select id="selectKategoriProduk" class="flex-col"><option value="">Pilih kategori...</option></select>
-        <input type="text" id="inputVarian" placeholder="Nama varian / paket" class="flex-col" />
-        <input type="number" id="inputHarga" placeholder="Harga produk (Rp)" class="flex-col" />
-        <button id="btnTambahProduk" style="width:150px;">Tambah / Update Produk</button>
-      </div>
-      <h3>Daftar Produk</h3>
-      <table id="tableProduk"><thead><tr><th>Kategori</th><th>Varian</th><th>Harga (Rp)</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    </div>
-
-    <div id="transaksiSection" style="margin-bottom:40px;">
-      <h2>Daftar Transaksi</h2>
-      <table id="tableTransaksi"><thead><tr><th>Nama / Nomor HP</th><th>Produk</th><th>Harga</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    </div>
-
-    <div id="testimoniSection">
-      <h2>Daftar Testimoni</h2>
-      <table id="tableTestimoni"><thead><tr><th>Nama</th><th>Isi</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    </div>
-  </section>
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- Firebase Config -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.database();
+    const storage = firebase.storage();
+  </script>
 
-    const loginSection = document.getElementById("loginSection");
-    const dashboardSection = document.getElementById("dashboardSection");
-    const btnLogout = document.getElementById("btnLogout");
+  <!-- Admin Logic -->
+  <script>
+    const daftar = document.getElementById("daftarPesanan");
 
-    const nomorAdminWA = "6281803004607";
+    db.ref("pesanan").on("value", snap => {
+      daftar.innerHTML = "";
+      if (!snap.exists()) return daftar.innerHTML = "Belum ada pesanan.";
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        loginSection.classList.add("hidden");
-        dashboardSection.classList.remove("hidden");
-        btnLogout.classList.remove("hidden");
-        loadKategori(); loadProduk(); loadTransaksi(); loadTestimoni();
-      } else {
-        loginSection.classList.remove("hidden");
-        dashboardSection.classList.add("hidden");
-        btnLogout.classList.add("hidden");
-      }
+      snap.forEach(data => {
+        const d = data.val();
+        const key = data.key;
+        daftar.innerHTML += `
+          <div class="pesanan">
+            <b>${d.nama}</b> (${d.nomor})<br>
+            Produk: ${d.produk}<br>
+            Tujuan: ${d.idProduk}<br>
+            Status: <b>${d.status}</b><br>
+            ${d.bukti_bayar ? `<img src="${d.bukti_bayar}" alt="Bukti bayar"/>` : '<i>Belum ada bukti bayar</i>'}<br>
+
+            <input type="file" id="bukti_${key}" class="btn-upload" /><br>
+            <button onclick="verifikasi('${key}')">Tandai Selesai</button>
+          </div>
+        `;
+      });
     });
 
-    document.getElementById("btnLogin").onclick = () => {
-      const email = document.getElementById("emailAdmin").value;
-      const password = document.getElementById("passwordAdmin").value;
-      auth.signInWithEmailAndPassword(email, password).catch(err => alert("Login gagal: " + err.message));
-    };
-    btnLogout.onclick = () => auth.signOut();
+    function verifikasi(key) {
+      const fileInput = document.getElementById("bukti_" + key);
+      const file = fileInput.files[0];
+      if (!file) return alert("Pilih gambar bukti selesai!");
 
-    // Kategori
-    const tableKategoriBody = document.querySelector("#tableKategori tbody");
-    const selectKategoriProduk = document.getElementById("selectKategoriProduk");
-    const inputKategoriBaru = document.getElementById("inputKategoriBaru");
-
-    function loadKategori() {
-      db.ref("kategori").on("value", snap => {
-        tableKategoriBody.innerHTML = ""; selectKategoriProduk.innerHTML = '<option value="">Pilih kategori...</option>';
-        snap.forEach(child => {
-          const key = child.key;
-          const val = child.val();
-          const row = `<tr><td>${val}</td><td><button onclick="hapusKategori('${key}')">Hapus</button></td></tr>`;
-          tableKategoriBody.innerHTML += row;
-          const opt = document.createElement("option");
-          opt.value = val; opt.textContent = val;
-          selectKategoriProduk.appendChild(opt);
-        });
+      const ref = storage.ref("bukti_selesai/" + key + "_" + Date.now());
+      ref.put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
+        db.ref("pesanan/" + key).update({
+          status: "Selesai",
+          bukti_selesai: url
+        }).then(() => alert("Pesanan ditandai selesai!"));
       });
-    }
-
-    document.getElementById("btnTambahKategori").onclick = () => {
-      const kategori = inputKategoriBaru.value.trim();
-      if (!kategori) return alert("Isi nama kategori!");
-      db.ref("kategori").push(kategori).then(() => inputKategoriBaru.value = "");
-    };
-
-    function hapusKategori(key) {
-      if (confirm("Hapus kategori ini?")) {
-        db.ref("kategori/" + key).remove();
-      }
-    }
-
-    // Produk
-    const inputVarian = document.getElementById("inputVarian");
-    const inputHarga = document.getElementById("inputHarga");
-    const tableProdukBody = document.querySelector("#tableProduk tbody");
-
-    function loadProduk() {
-      db.ref("produk").on("value", snap => {
-        tableProdukBody.innerHTML = "";
-        snap.forEach(child => {
-          const p = child.val();
-          const row = `<tr><td>${p.kategori}</td><td>${p.nama}</td><td>${p.harga.toLocaleString()}</td><td><button onclick="hapusProduk('${child.key}')">Hapus</button></td></tr>`;
-          tableProdukBody.innerHTML += row;
-        });
-      });
-    }
-
-    document.getElementById("btnTambahProduk").onclick = () => {
-      const kategori = selectKategoriProduk.value;
-      const nama = inputVarian.value.trim();
-      const harga = parseInt(inputHarga.value);
-      if (!kategori || !nama || !harga) return alert("Lengkapi semua data produk!");
-      db.ref("produk").push({ kategori, nama, harga }).then(() => {
-        inputVarian.value = ""; inputHarga.value = "";
-      });
-    };
-
-    function hapusProduk(key) {
-      if (confirm("Hapus produk ini?")) db.ref("produk/" + key).remove();
-    }
-
-    // Transaksi
-    const tableTransaksiBody = document.querySelector("#tableTransaksi tbody");
-    function loadTransaksi() {
-      db.ref("transaksi").on("value", snap => {
-        tableTransaksiBody.innerHTML = "";
-        snap.forEach(child => {
-          const t = child.val();
-          const row = `
-            <tr>
-              <td>${t.nama}</td>
-              <td>${t.produkNama}</td>
-              <td>Rp${t.harga.toLocaleString()}</td>
-              <td>${t.status}</td>
-              <td>${t.buktiBayarUrl ? `<a href="${t.buktiBayarUrl}" target="_blank">Lihat</a>` : '-'}</td>
-              <td><button onclick="hapusTransaksi('${child.key}')">Hapus</button></td>
-            </tr>`;
-          tableTransaksiBody.innerHTML += row;
-        });
-      });
-    }
-
-    function hapusTransaksi(key) {
-      if (confirm("Hapus transaksi ini?")) db.ref("transaksi/" + key).remove();
-    }
-
-    // Testimoni
-    const tableTestimoniBody = document.querySelector("#tableTestimoni tbody");
-    function loadTestimoni() {
-      db.ref("testimoni").on("value", snap => {
-        tableTestimoniBody.innerHTML = "";
-        snap.forEach(child => {
-          const t = child.val();
-          const row = `<tr><td>${t.nama}</td><td>${t.isi}</td><td><button onclick="hapusTestimoni('${child.key}')">Hapus</button></td></tr>`;
-          tableTestimoniBody.innerHTML += row;
-        });
-      });
-    }
-
-    function hapusTestimoni(key) {
-      if (confirm("Hapus testimoni ini?")) db.ref("testimoni/" + key).remove();
     }
   </script>
+
 </body>
 </html>
