@@ -1,40 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Status Transaksi</title>
+  <style>
+    body {
+      font-family: Poppins, sans-serif;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f4f4f4;
+      border-radius: 12px;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-  <h2>Status Transaksi</h2>
-  <div id="statusInfo">Memuat...</div>
+  <h1>Status Transaksi</h1>
+  <div id="statusInfo">Memuat data...</div>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
+    // Konfigurasi Firebase (samakan dengan config lainnya)
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
+
     const db = firebase.database();
 
+    // Ambil id dari URL
     const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get("id");
+    const idPesanan = urlParams.get('id');
+    const statusDiv = document.getElementById('statusInfo');
 
-    db.ref('pesanan/' + id).once('value').then(snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById('statusInfo').innerHTML =
-          `Nama: ${data.nama}<br>Produk: ${data.produk}<br>Status: ${data.status}`;
-      } else {
-        document.getElementById('statusInfo').innerHTML = 'Pesanan tidak ditemukan.';
-      }
-    });
+    if (!idPesanan) {
+      statusDiv.innerHTML = '<p style="color:red;">ID pesanan tidak ditemukan di URL.</p>';
+    } else {
+      // Ambil data pesanan dari Firebase
+      db.ref('pesanan/' + idPesanan).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          statusDiv.innerHTML = '<p style="color:red;">Pesanan tidak ditemukan.</p>';
+          return;
+        }
+
+        // Tampilkan data
+        let html = `
+          <p><strong>Nama:</strong> ${data.nama}</p>
+          <p><strong>Produk:</strong> ${data.produk}</p>
+          <p><strong>Status:</strong> ${data.status}</p>
+        `;
+
+        // Tampilkan gambar bukti bayar jika ada
+        if (data.buktiBayar) {
+          html += `<p><strong>Bukti Pembayaran:</strong></p>
+                   <img src="${data.buktiBayar}" alt="Bukti Pembayaran" />`;
+        } else {
+          html += `<p><em>Bukti pembayaran belum diupload.</em></p>`;
+        }
+
+        statusDiv.innerHTML = html;
+      }).catch(error => {
+        statusDiv.innerHTML = '<p style="color:red;">Gagal memuat data: ' + error.message + '</p>';
+        console.error(error);
+      });
+    }
   </script>
 </body>
 </html>
