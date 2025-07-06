@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -25,50 +24,35 @@
   <header>
     <h1>Asdar Store Digital</h1>
     <p>💎 Cepat · Aman · Terpercaya 💎</p>
-  </header>
-
-  <section class="card">
-    <h2>🛒 Pilih Produk</h2>
+  </header>  <section class="card">
+    <h2>🏍 Pilih Produk</h2>
     <select id="kategoriProduk" onchange="updateVarian()"></select>
     <select id="varianProduk"><option value="">Pilih paket...</option></select>
     <input type="text" id="nomorHP" placeholder="Nomor HP Anda (wajib untuk paket data)" />
-    <button class="btn" id="btnPesan">Pesan Sekarang</button>
+    <button class="btn" id="btnPesan">Pesan Sekarang</button><div id="uploadSection">
+  <label for="buktiBayar">Upload Bukti Pembayaran (jpg/png maksimal 2MB):</label>
+  <input type="file" id="buktiBayar" accept="image/png, image/jpeg" />
+  <button class="btn" id="btnUploadBukti">Upload Bukti Bayar</button>
+</div>
 
-    <div id="uploadSection">
-      <label for="buktiBayar">Upload Bukti Pembayaran (jpg/png maksimal 2MB):</label>
-      <input type="file" id="buktiBayar" accept="image/png, image/jpeg" />
-      <button class="btn" id="btnUploadBukti">Upload Bukti Bayar</button>
-    </div>
-  </section>
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-
-  <script>
-    // Firebase config
+  </section>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+      storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
-
     const db = firebase.database();
     const storage = firebase.storage();
 
-    let produkList = {}; // {kategori: [nama1, nama2]}
-    let hargaProduk = {}; // {kategori|nama: harga}
-    let lastTransaksiKey = null;
+    let produkList = {}; let hargaProduk = {}; let lastTransaksiKey = null;
 
-    // Ambil data produk realtime
     db.ref("produk").on("value", snapshot => {
-      produkList = {};
-      hargaProduk = {};
+      produkList = {}; hargaProduk = {};
       snapshot.forEach(child => {
         const data = child.val();
         const key = `${data.kategori}|${data.nama}`;
@@ -84,8 +68,7 @@
       kategoriSelect.innerHTML = "<option value=''>Pilih kategori...</option>";
       Object.keys(produkList).forEach(k => {
         const opt = document.createElement("option");
-        opt.value = k;
-        opt.textContent = k.toUpperCase();
+        opt.value = k; opt.textContent = k.toUpperCase();
         kategoriSelect.appendChild(opt);
       });
       updateVarian();
@@ -98,8 +81,7 @@
       if (!kategori || !produkList[kategori]) return;
       produkList[kategori].forEach(v => {
         const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
+        opt.value = v; opt.textContent = v;
         varian.appendChild(opt);
       });
     }
@@ -108,21 +90,19 @@
       const kategori = document.getElementById("kategoriProduk").value;
       const varian = document.getElementById("varianProduk").value;
       const nomorHP = document.getElementById("nomorHP").value.trim();
-
       if (!kategori || !varian) return alert("Pilih kategori dan varian terlebih dahulu.");
+
       const key = `${kategori}|${varian}`;
       const harga = hargaProduk[key] || 0;
       if (harga === 0) return alert("Harga belum tersedia.");
 
-      // Validasi nomor HP wajib untuk kategori paket data (contoh kategori "paket data")
       if (kategori.toLowerCase().includes("paket data") && (!nomorHP || nomorHP.length < 9)) {
         return alert("Nomor HP wajib diisi dengan benar untuk paket data.");
       }
 
       const produkTerpilih = `${kategori} - ${varian}`;
-      const pesan = `💰 Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\n\nProduk: ${produkTerpilih}\nNomor HP: ${nomorHP || '-'}`;
+      const pesan = `\u{1F4B0} Silakan bayar Rp${harga.toLocaleString()} ke DANA 087755432880.\n\nProduk: ${produkTerpilih}\nNomor HP: ${nomorHP || '-'}`;
 
-      // Simpan transaksi ke Firebase
       db.ref("transaksi").push({
         nama: nomorHP || "-",
         produkNama: produkTerpilih,
@@ -132,12 +112,17 @@
         timestamp: Date.now()
       }).then(ref => {
         lastTransaksiKey = ref.key;
-        alert(pesan + "\n\nData transaksi sudah tersimpan. Silakan upload bukti pembayaran.");
-        // Tampilkan form upload bukti bayar
         document.getElementById("uploadSection").style.display = "block";
-      }).catch(err => {
-        alert("Gagal menyimpan transaksi: " + err.message);
-      });
+        alert(pesan);
+
+        // Kirim notifikasi WA ke admin via StarSender backend
+        fetch("https://asdar-notif.onrender.com/notif-wa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nama: nomorHP, produk: produkTerpilih, harga })
+        });
+
+      }).catch(err => alert("Gagal menyimpan transaksi: " + err.message));
     });
 
     document.getElementById("btnUploadBukti").addEventListener("click", () => {
@@ -145,30 +130,16 @@
       const file = fileInput.files[0];
       if (!file) return alert("Pilih file bukti pembayaran terlebih dahulu.");
       if (!lastTransaksiKey) return alert("Tidak ada transaksi aktif. Silakan pesan dulu.");
-
-      // Batasi ukuran file max 2MB
       if (file.size > 2 * 1024 * 1024) return alert("Ukuran file maksimal 2MB.");
 
-      const storageRef = storage.ref();
-      const buktiRef = storageRef.child(`buktiBayar/${lastTransaksiKey}_${file.name}`);
-
-      buktiRef.put(file).then(snapshot => {
-        return snapshot.ref.getDownloadURL();
-      }).then(url => {
-        // Update URL bukti bayar di transaksi
-        return db.ref(`transaksi/${lastTransaksiKey}`).update({
-          buktiBayarUrl: url,
-          status: "Menunggu Verifikasi"
-        });
-      }).then(() => {
-        alert("Bukti pembayaran berhasil diupload. Terima kasih!");
-        // Reset form
-        fileInput.value = "";
-        document.getElementById("uploadSection").style.display = "none";
-      }).catch(err => {
-        alert("Gagal upload bukti bayar: " + err.message);
-      });
+      const buktiRef = storage.ref().child(`buktiBayar/${lastTransaksiKey}_${file.name}`);
+      buktiRef.put(file).then(snapshot => snapshot.ref.getDownloadURL())
+        .then(url => db.ref(`transaksi/${lastTransaksiKey}`).update({ buktiBayarUrl: url, status: "Menunggu Verifikasi" }))
+        .then(() => {
+          alert("Bukti pembayaran berhasil diupload. Terima kasih!");
+          fileInput.value = "";
+          document.getElementById("uploadSection").style.display = "none";
+        }).catch(err => alert("Gagal upload bukti bayar: " + err.message));
     });
-  </script>
-</body>
+  </script></body>
 </html>
