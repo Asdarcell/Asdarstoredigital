@@ -1,31 +1,18 @@
-// server.js const express = require("express"); const bodyParser = require("body-parser"); const axios = require("axios"); const cors = require("cors");
+// server.js const express = require("express"); const bodyParser = require("body-parser"); const cors = require("cors"); const axios = require("axios");
 
 const app = express(); app.use(cors()); app.use(bodyParser.json());
 
-// Ganti dengan API key StarSender kamu const API_KEY = "APIKEY_KAMU"; const NOMOR_ADMIN = "6281803004607"; const URL_STARSENDER = "https://starsender.online/api/sendText";
+const STARSENDER_APIKEY = process.env.STARSENDER_APIKEY; const NO_WA_ADMIN = process.env.NO_WA_ADMIN;
 
-app.post("/notif-wa", async (req, res) => { const { nama, produk, harga } = req.body;
+app.post("/notif-wa", async (req, res) => { const { nama, produk, harga } = req.body; if (!nama || !produk || !harga) { return res.status(400).send("Data tidak lengkap"); }
 
-if (!nama || !produk || !harga) { return res.status(400).json({ error: "Data tidak lengkap" }); }
+const pesan = \u{1F4E2} Pesanan Masuk\nNama: ${nama}\nProduk: ${produk}\nHarga: Rp${harga.toLocaleString()}\nSegera proses di Dashboard Admin.;
 
-try { const pesan = \u2705 Pesanan Baru Masuk!\n\nNama/HP: ${nama}\nProduk: ${produk}\nHarga: Rp${harga.toLocaleString()}\n\nSegera cek dashboard admin.;
+try { const response = await axios.post( "https://starsender.online/api/sendText", { phone: NO_WA_ADMIN, message: pesan }, { headers: { apikey: STARSENDER_APIKEY, "Content-Type": "application/json" } } );
 
-const kirim = await axios.post(
-  URL_STARSENDER,
-  {
-    phone: NOMOR_ADMIN,
-    message: pesan,
-    secret: API_KEY,
-    priority: 1
-  },
-  { headers: { "Content-Type": "application/json" } }
-);
+res.status(200).send("Notifikasi terkirim");
 
-res.json({ success: true, result: kirim.data });
+} catch (err) { console.error(err.response?.data || err.message); res.status(500).send("Gagal mengirim notifikasi"); } });
 
-} catch (error) { res.status(500).json({ error: "Gagal kirim WhatsApp", detail: error.message }); } });
-
-app.get("/", (req, res) => { res.send("API WA Notifikasi Aktif"); });
-
-const PORT = process.env.PORT || 3000; app.listen(PORT, () => { console.log("Server jalan di port", PORT); });
+const PORT = process.env.PORT || 3000; app.listen(PORT, () => console.log("Server running on port", PORT));
 
