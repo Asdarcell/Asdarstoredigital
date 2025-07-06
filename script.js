@@ -23,6 +23,11 @@ document.getElementById('formPesanan').addEventListener('submit', function(e) {
     id, nama, nomor, produk, status: "Menunggu Pembayaran", waktu
   });
 
-  alert('Pesanan dikirim! Silakan transfer dan upload bukti pembayaran.');
-  location.href = "status.html?id=" + id;
-});
+  alert(
+  '🟣 PESANAN DITERIMA 🟣\\n' +
+  'Silakan transfer pembayaran ke salah satu metode berikut:\\n\\n' +
+  'ShopeePay: 081803004607\\n' +
+  'DANA: 087755432880\\n\\n' +
+  'Setelah transfer, upload bukti pembayaran di halaman selanjutnya.'
+);
+location.href = "upload.html?id=" + id;
