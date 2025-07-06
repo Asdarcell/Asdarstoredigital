@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -31,23 +30,17 @@
     <select id="kategoriProduk" onchange="updateVarian()"></select>
     <select id="varianProduk"><option value="">Pilih paket...</option></select>
     <input type="text" id="nomorHP" placeholder="Nomor HP Anda (wajib untuk paket data)" />
-    <button class="btn" id="btnPesan">Pesan Sekarang</button>
-    <div id="uploadSection">
-      <label for="buktiBayar">Upload Bukti Pembayaran (jpg/png maksimal 2MB):</label>
-      <input type="file" id="buktiBayar" accept="image/png, image/jpeg" />
-      <button class="btn" id="btnUploadBukti">Upload Bukti Bayar</button>
-    </div>
-  </section>
+    <button class="btn" id="btnPesan">Pesan Sekarang</button><div id="uploadSection">
+  <label for="buktiBayar">Upload Bukti Pembayaran (jpg/png maksimal 2MB):</label>
+  <input type="file" id="buktiBayar" accept="image/png, image/jpeg" />
+  <button class="btn" id="btnUploadBukti">Upload Bukti Bayar</button>
+</div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-  <script>
+  </section>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
       storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
@@ -123,20 +116,15 @@
         document.getElementById("uploadSection").style.display = "block";
         alert(pesan);
 
-        // Kirim notifikasi ke WhatsApp admin via NgirimWA
-        const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-        const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-        const to = "6281803004607"; // nomor admin
-        const pesanWA = `🚨 Pesanan Baru 🚨\nProduk: ${produkTerpilih}\nNomor HP: ${nomorHP || '-'}\nHarga: Rp${harga.toLocaleString()}\nSilakan cek dashboard untuk verifikasi.`;
-
+        // Kirim notifikasi WA ke admin via NgirimWA
         fetch("https://app.ngirimwa.com/api/create-message", {
           method: "POST",
-          body: new URLSearchParams({
-            appkey: appkey,
-            authkey: authkey,
-            to: to,
-            message: pesanWA
-          })
+          body: new FormData(Object.entries({
+            appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+            authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+            to: "6281803004607",
+            message: `📩 Pesanan Baru:\nProduk: ${produkTerpilih}\nHP: ${nomorHP || '-'}\nHarga: Rp${harga.toLocaleString()}\nSilakan cek dashboard admin.`
+          }).reduce((f, [k,v]) => { f.append(k,v); return f }, new FormData()))
         });
 
       }).catch(err => alert("Gagal menyimpan transaksi: " + err.message));
@@ -158,6 +146,5 @@
           document.getElementById("uploadSection").style.display = "none";
         }).catch(err => alert("Gagal upload bukti bayar: " + err.message));
     });
-  </script>
-</body>
+  </script></body>
 </html>
