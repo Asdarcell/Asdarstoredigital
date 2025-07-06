@@ -1,157 +1,115 @@
-<!DOCTYPE html>
-<html lang="id">
+<!-- login.html --><!DOCTYPE html><html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Asdar Store Digital - Pemesanan</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Admin - Asdar Store</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-    body { background: linear-gradient(to right, #e8f0ff, #ffffff); color: #333; padding: 16px; }
-    header { text-align: center; padding: 30px 16px; background: #007BFF; color: white; border-radius: 16px; margin-bottom: 24px; }
-    header h1 { font-size: 2.4em; margin-bottom: 10px; }
-    header p { font-size: 1.1em; color: #e0eaff; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); margin-bottom: 24px; }
-    .card h2 { font-size: 1.4em; margin-bottom: 12px; color: #007BFF; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-    select, input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #ccc; font-size: 1em; }
-    button { background: #007BFF; color: white; border: none; cursor: pointer; transition: background 0.3s ease; }
+    body { font-family: 'Poppins', sans-serif; background: #f1f3f8; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-box { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    h2 { margin-bottom: 20px; color: #007BFF; text-align: center; }
+    input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 10px; }
+    button { width: 100%; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; }
     button:hover { background: #0056b3; }
-    .hidden { display: none; }
-    footer { text-align: center; margin-top: 40px; color: #777; font-size: 0.9em; }
   </style>
 </head>
 <body>
-
-<header>
-  <h1>Asdar Store Digital</h1>
-  <p>💎 Cepat · Aman · Terpercaya 💎</p>
-</header>
-
-<section class="card">
-  <h2>🛒 Pilih Produk</h2>
-  <select id="kategoriProduk" onchange="loadVarian()">
-    <option value="">Pilih Kategori...</option>
-    <option value="K-Vision">K-Vision</option>
-    <option value="Nex Parabola">Nex Parabola</option>
-    <option value="MNC Vision">MNC Vision</option>
-  </select>
-
-  <select id="varianProduk" onchange="checkInputFields()">
-    <option value="">Pilih Produk...</option>
-  </select>
-
-  <div id="inputIDSNDiv" class="hidden">
-    <label for="inputIDSN">Masukkan ID / SN (wajib untuk produk digital):</label>
-    <input type="text" id="inputIDSN" placeholder="Masukkan ID atau SN Anda" />
+  <div class="login-box">
+    <h2>Login Admin</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="loginAdmin()">Masuk</button>
   </div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = { /* Firebase config kamu */ };
+    firebase.initializeApp(firebaseConfig);function loginAdmin() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(() => window.location.href = 'admin.html')
+    .catch(err => alert('Login gagal: ' + err.message));
+}
 
-  <div id="inputNoHPDiv" class="hidden">
-    <label for="inputNoHP">Masukkan Nomor HP (wajib untuk paket data):</label>
-    <input type="text" id="inputNoHP" placeholder="Masukkan nomor HP Anda" />
-  </div>
+  </script>
+</body>
+</html><!-- admin.html --><!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin</title>
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: #f4f6fc; padding: 20px; }
+    h1 { text-align: center; color: #007BFF; }
+    .section { margin-top: 30px; }
+    .item { background: white; padding: 16px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
+    .item h3 { margin-bottom: 8px; color: #333; }
+    button { padding: 8px 12px; margin-top: 10px; background: #007BFF; border: none; color: white; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Admin</h1>
+  <div class="section" id="transaksi"></div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = { /* Firebase config kamu */ };
+    firebase.initializeApp(firebaseConfig);firebase.auth().onAuthStateChanged(user => {
+  if (!user) window.location.href = 'login.html';
+  else loadTransaksi();
+});
 
-  <button onclick="lanjutTransaksi()">Lanjutkan</button>
-</section>
-
-<footer>
-  &copy; 2025 Asdar Store Digital · All Rights Reserved
-</footer>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
+function loadTransaksi() {
   const db = firebase.database();
-
-  function loadVarian() {
-    const kategori = document.getElementById("kategoriProduk").value;
-    const varianSelect = document.getElementById("varianProduk");
-    varianSelect.innerHTML = '<option value="">Memuat...</option>';
-    document.getElementById("inputIDSNDiv").classList.add("hidden");
-    document.getElementById("inputNoHPDiv").classList.add("hidden");
-    db.ref("produk").orderByChild("kategori").equalTo(kategori).once("value", snapshot => {
-      varianSelect.innerHTML = '<option value="">Pilih Produk...</option>';
-      snapshot.forEach(child => {
-        const data = child.val();
-        const option = document.createElement("option");
-        // value format: key|nama|harga|tipe
-        option.value = `${child.key}|${data.nama}|${data.harga}|${data.tipe || ""}`;
-        option.textContent = `${data.nama} - Rp${data.harga.toLocaleString()}`;
-        varianSelect.appendChild(option);
-      });
+  db.ref("transaksi").once("value", snapshot => {
+    const container = document.getElementById("transaksi");
+    container.innerHTML = '';
+    snapshot.forEach(child => {
+      const data = child.val();
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `<h3>${data.namaProduk}</h3><p>Nomor: ${data.noHP || data.idsn}</p><p>Status: ${data.status}</p>`;
+      container.appendChild(div);
     });
-  }
+  });
+}
 
-  function checkInputFields() {
-    const varianSelect = document.getElementById("varianProduk");
-    const value = varianSelect.value;
-    const inputIDSNDiv = document.getElementById("inputIDSNDiv");
-    const inputNoHPDiv = document.getElementById("inputNoHPDiv");
-    if (!value) {
-      inputIDSNDiv.classList.add("hidden");
-      inputNoHPDiv.classList.add("hidden");
-      return;
-    }
-    const parts = value.split("|");
-    const tipe = parts[3]; // tipe produk: digital / paket_data / kosong
-    if (tipe === "digital") {
-      inputIDSNDiv.classList.remove("hidden");
-      inputNoHPDiv.classList.add("hidden");
-    } else if (tipe === "paket_data") {
-      inputNoHPDiv.classList.remove("hidden");
-      inputIDSNDiv.classList.add("hidden");
-    } else {
-      inputIDSNDiv.classList.add("hidden");
-      inputNoHPDiv.classList.add("hidden");
-    }
-  }
+  </script>
+</body>
+</html><!-- galeri.html --><!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeri Bukti Bayar</title>
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: #f9fafc; padding: 20px; }
+    h1 { text-align: center; color: #007BFF; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .grid img { width: 100%; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  </style>
+</head>
+<body>
+  <h1>Galeri Bukti Bayar</h1>
+  <div class="grid" id="galeri"></div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script>
+    const firebaseConfig = { /* Firebase config kamu */ };
+    firebase.initializeApp(firebaseConfig);const storage = firebase.storage();
+const galeriDiv = document.getElementById('galeri');
 
-  function lanjutTransaksi() {
-    const varianSelect = document.getElementById("varianProduk");
-    const value = varianSelect.value;
-    if (!value) return alert("Pilih produk terlebih dahulu.");
+storage.ref("bukti_bayar").listAll().then(res => {
+  res.items.forEach(itemRef => {
+    itemRef.getDownloadURL().then(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      galeriDiv.appendChild(img);
+    });
+  });
+});
 
-    const parts = value.split("|");
-    const id = parts[0];
-    const nama = parts[1];
-    const harga = parts[2];
-    const tipe = parts[3];
-
-    // Validasi input ID/SN atau nomor HP jika diperlukan
-    if (tipe === "digital") {
-      const idsn = document.getElementById("inputIDSN").value.trim();
-      if (!idsn) {
-        alert("ID / SN wajib diisi untuk produk digital.");
-        return;
-      }
-      localStorage.setItem("inputIDSN", idsn);
-      localStorage.removeItem("inputNoHP");
-    } else if (tipe === "paket_data") {
-      const nohp = document.getElementById("inputNoHP").value.trim();
-      if (!nohp) {
-        alert("Nomor HP wajib diisi untuk paket data.");
-        return;
-      }
-      localStorage.setItem("inputNoHP", nohp);
-      localStorage.removeItem("inputIDSN");
-    } else {
-      localStorage.removeItem("inputIDSN");
-      localStorage.removeItem("inputNoHP");
-    }
-
-    localStorage.setItem("produkDipilih", JSON.stringify({ id, nama, harga, tipe }));
-    window.location.href = "transaksi.html";
-  }
-</script>
-
+  </script>
 </body>
 </html>
