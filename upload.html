@@ -32,17 +32,21 @@
 <body>
   <h1>Upload Bukti Pembayaran</h1>
   <p>Silakan upload bukti pembayaran untuk pesanan Anda.</p>
+
   <form id="uploadForm">
     <input type="file" id="bukti" accept="image/*" required />
     <button type="submit">Upload Bukti</button>
   </form>
+
   <p id="statusMsg"></p>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
-    // Firebase config (isi sesuai milikmu)
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -53,15 +57,21 @@
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
+
     const storage = firebase.storage();
     const db = firebase.database();
 
-    // Ambil id dari URL: upload.html?id=123456
+    // Ambil ID dari URL
     const urlParams = new URLSearchParams(window.location.search);
     const idPesanan = urlParams.get('id');
-
     const form = document.getElementById('uploadForm');
     const statusMsg = document.getElementById('statusMsg');
+
+    if (!idPesanan) {
+      statusMsg.style.color = 'red';
+      statusMsg.textContent = 'ID pesanan tidak ditemukan di URL.';
+      form.style.display = 'none';
+    }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -70,34 +80,27 @@
         alert('Pilih file terlebih dahulu!');
         return;
       }
-      if (!idPesanan) {
-        alert('ID pesanan tidak ditemukan di URL.');
-        return;
-      }
 
       statusMsg.style.color = 'black';
-      statusMsg.textContent = 'Mengupload bukti...';
+      statusMsg.textContent = 'Mengupload bukti... Mohon tunggu...';
 
-      const storageRef = storage.ref('buktiBayar/' + idPesanan);
+      const storageRef = storage.ref('buktiBayar/' + idPesanan + '_' + file.name);
 
       storageRef.put(file).then(snapshot => {
-        snapshot.ref.getDownloadURL().then(url => {
-          db.ref('pesanan/' + idPesanan).update({
-            buktiBayar: url,
-            status: 'Menunggu Verifikasi Admin'
-          });
-          statusMsg.style.color = 'green';
-          statusMsg.textContent = 'Bukti berhasil diupload! Terima kasih.';
-          form.reset();
-        }).catch(err => {
-          statusMsg.style.color = 'red';
-          statusMsg.textContent = 'Gagal mendapatkan URL bukti.';
-          console.error(err);
+        return snapshot.ref.getDownloadURL();
+      }).then(downloadURL => {
+        return db.ref('pesanan/' + idPesanan).update({
+          buktiBayar: downloadURL,
+          status: 'Menunggu Verifikasi'
         });
-      }).catch(err => {
+      }).then(() => {
+        statusMsg.style.color = 'green';
+        statusMsg.textContent = '✅ Bukti pembayaran berhasil diupload! Tunggu verifikasi admin.';
+        form.reset();
+      }).catch(error => {
         statusMsg.style.color = 'red';
-        statusMsg.textContent = 'Gagal mengupload bukti.';
-        console.error(err);
+        statusMsg.textContent = '❌ Gagal upload bukti: ' + error.message;
+        console.error(error);
       });
     });
   </script>
