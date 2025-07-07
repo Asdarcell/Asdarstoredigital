@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kelola Produk - Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    input, select, textarea { display: block; width: 100%; margin-bottom: 10px; padding: 8px; }
+    button { padding: 8px 16px; margin-top: 10px; }
+    .produk-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Kelola Produk</h2>
+
+  <form id="formProduk">
+    <input type="text" id="kategori" placeholder="Kategori (misal: Paket Data, Voucher)" required />
+    <input type="text" id="namaProduk" placeholder="Nama Produk (misal: Paket Data XL 10GB)" required />
+    <input type="number" id="harga" placeholder="Harga (contoh: 30000)" required />
+    <input type="text" id="varian" placeholder="Varian (misal: TikTok, Tanpa TikTok)" />
+    <textarea id="keterangan" placeholder="Keterangan / Cara Beli" rows="3"></textarea>
+    <button type="submit">💾 Simpan Produk</button>
+  </form>
+
+  <hr />
+
+  <h3>Daftar Produk</h3>
+  <div id="daftarProduk">Memuat...</div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const form = document.getElementById('formProduk');
+    const daftar = document.getElementById('daftarProduk');
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const data = {
+        kategori: form.kategori.value,
+        nama: form.namaProduk.value,
+        harga: parseInt(form.harga.value),
+        varian: form.varian.value,
+        keterangan: form.keterangan.value,
+        waktu: new Date().toLocaleString()
+      };
+
+      const id = Date.now();
+      db.ref('produk/' + id).set(data).then(() => {
+        alert('✅ Produk berhasil disimpan.');
+        form.reset();
+        tampilkanProduk();
+      });
+    });
+
+    function tampilkanProduk() {
+      db.ref('produk').once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (!data) return daftar.innerHTML = 'Belum ada produk.';
+        let html = '';
+        Object.entries(data).forEach(([id, p]) => {
+          html += `
+            <div class="produk-card">
+              <b>${p.nama}</b><br>
+              Kategori: ${p.kategori}<br>
+              Harga: Rp${p.harga.toLocaleString()}<br>
+              Varian: ${p.varian || '-'}<br>
+              Keterangan: ${p.keterangan || '-'}<br>
+              <small>Ditambahkan: ${p.waktu}</small><br>
+              <button onclick="hapusProduk('${id}')">🗑 Hapus</button>
+            </div>
+          `;
+        });
+        daftar.innerHTML = html;
+      });
+    }
+
+    function hapusProduk(id) {
+      if (confirm('Yakin ingin menghapus produk ini?')) {
+        db.ref('produk/' + id).remove().then(() => {
+          alert('✅ Produk dihapus.');
+          tampilkanProduk();
+        });
+      }
+    }
+
+    // Tampilkan saat pertama kali
+    tampilkanProduk();
+  </script>
+</body>
+</html>
