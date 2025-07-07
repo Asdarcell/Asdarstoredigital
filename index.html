@@ -10,7 +10,7 @@
     label { font-weight: bold; margin-top: 10px; display: block; }
     input, select, button { width: 100%; padding: 10px; margin: 8px 0; }
     .info { background: #e7f3ff; padding: 10px; border-left: 4px solid #2196f3; }
-    #hasil { margin-top: 20px; }
+    #hasil, #hasilCariId { margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -47,11 +47,20 @@
     <button type="submit">Cek Status</button>
   </form>
 
+  <hr><br>
+  <h2>Cari ID Pesanan Saya (Jika Lupa)</h2>
+  <form onsubmit="event.preventDefault(); cariIdPesanan();">
+    <input type="text" id="cariNama" placeholder="Nama Lengkap Pembeli" required />
+    <input type="text" id="cariKategori" placeholder="Kategori Produk" required />
+    <input type="text" id="cariProduk" placeholder="Nama Produk" required />
+    <button type="submit">Cari ID Pesanan</button>
+    <div id="hasilCariId" style="margin-top: 10px; color: green;"></div>
+  </form>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -64,13 +73,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Elemen HTML
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
 
-    // Ambil kategori dari Firebase
     const produkRef = db.ref('produk');
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
@@ -85,7 +92,6 @@
     kategoriSelect.addEventListener('change', () => {
       produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
       infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-
       const kategori = kategoriSelect.value;
       if (!kategori) return;
 
@@ -114,10 +120,8 @@
       });
     });
 
-    // Submit Pesanan
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
-
       const nama = document.getElementById('nama').value.trim();
       const nomor = document.getElementById('nomor').value.trim();
       const kategori = kategoriSelect.value;
@@ -140,7 +144,7 @@
           💳 Silakan transfer ke:<br/>
           - DANA: <b>087755432880</b><br/>
           - ShopeePay: <b>081803004607</b><br/><br/>
-          📤 Setelah transfer, upload bukti bayar di: 
+          📤 Setelah transfer, upload bukti bayar di:
           <a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/><br/>
           🔍 Cek status di <a href="status.html?id=${id}">Halaman Status</a>
         `;
@@ -149,11 +153,45 @@
       });
     });
 
-    // Cek Status Pesanan
     function cekStatus() {
       const id = document.getElementById('idCek').value.trim();
       if (!id) return;
       window.location.href = `status.html?id=${id}`;
+    }
+
+    function cariIdPesanan() {
+      const nama = document.getElementById('cariNama').value.trim().toLowerCase();
+      const kategori = document.getElementById('cariKategori').value.trim().toLowerCase();
+      const produk = document.getElementById('cariProduk').value.trim().toLowerCase();
+      const hasilDiv = document.getElementById('hasilCariId');
+      hasilDiv.innerHTML = "🔎 Mencari...";
+
+      db.ref('pesanan').once('value').then(snapshot => {
+        const data = snapshot.val();
+        let ditemukan = false;
+
+        for (let id in data) {
+          const item = data[id];
+          if (
+            item.nama.toLowerCase() === nama &&
+            item.kategori.toLowerCase() === kategori &&
+            item.produk.toLowerCase() === produk
+          ) {
+            hasilDiv.innerHTML = `
+              ✅ Ditemukan!<br>
+              <b>ID Pesanan Anda:</b> ${id}<br>
+              🔗 <a href="status.html?id=${id}">Cek Status</a> |
+              📤 <a href="upload.html?id=${id}">Upload Bukti</a>
+            `;
+            ditemukan = true;
+            break;
+          }
+        }
+
+        if (!ditemukan) {
+          hasilDiv.innerHTML = "❌ Pesanan tidak ditemukan. Pastikan data yang dimasukkan benar.";
+        }
+      });
     }
   </script>
 </body>
