@@ -1,4 +1,5 @@
-<!-- upload.html --><!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <title>Upload Bukti Pembayaran</title>
@@ -35,66 +36,79 @@
     <input type="file" id="bukti" accept="image/*" required />
     <button type="submit">Upload Bukti</button>
   </form>
-  <p id="statusMsg"></p>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const firebaseConfig = {
-        apiKey: "f71ccc1a662c9f8656766990018d3a33",
-        authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-        databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-        projectId: "asdarstoredigitalll-d89c4",
-        storageBucket: "asdarstoredigitalll.appspot.com",
-        messagingSenderId: "220670500351",
-        appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-      };
-      firebase.initializeApp(firebaseConfig);
-      const storage = firebase.storage();
-      const db = firebase.database();
+  <p id="statusMsg"></p>
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const idPesanan = urlParams.get('id');
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-      const form = document.getElementById('uploadForm');
-      const statusMsg = document.getElementById('statusMsg');
+  <script>
+    const firebaseConfig = {
+      apiKey: "f71ccc1a662c9f8656766990018d3a33",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
 
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        console.log("Tombol submit ditekan");
+    firebase.initializeApp(firebaseConfig);
 
-        const file = document.getElementById('bukti').files[0];
-        if (!file) {
-          alert('Pilih file terlebih dahulu!');
-          return;
-        }
+    const storage = firebase.storage();
+    const db = firebase.database();
 
-        if (!idPesanan) {
-          alert('ID pesanan tidak ditemukan di URL.');
-          return;
-        }
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPesanan = urlParams.get('id');
 
-        statusMsg.style.color = 'black';
-        statusMsg.textContent = 'Mengupload bukti...';
+    const form = document.getElementById('uploadForm');
+    const statusMsg = document.getElementById('statusMsg');
 
-        const storageRef = storage.ref('buktiBayar/' + idPesanan);
-        storageRef.put(file).then(snapshot => {
-          snapshot.ref.getDownloadURL().then(url => {
-            db.ref('pesanan/' + idPesanan).update({
-              buktiBayar: url,
-              status: 'Menunggu Verifikasi Admin'
-            });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!idPesanan) {
+        alert('ID pesanan tidak ditemukan di URL.');
+        return;
+      }
+
+      const fileInput = document.getElementById('bukti');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Pilih file bukti pembayaran terlebih dahulu.');
+        return;
+      }
+
+      statusMsg.style.color = 'black';
+      statusMsg.textContent = 'Mengupload bukti...';
+
+      const storageRef = storage.ref('buktiBayar/' + idPesanan + '/' + file.name);
+
+      storageRef.put(file).then(snapshot => {
+        snapshot.ref.getDownloadURL().then(url => {
+          db.ref('pesanan/' + idPesanan).update({
+            buktiBayar: url,
+            status: 'Menunggu Verifikasi Admin'
+          }).then(() => {
             statusMsg.style.color = 'green';
-            statusMsg.textContent = '✅ Bukti berhasil diupload!';
+            statusMsg.textContent = 'Bukti berhasil diupload! Terima kasih.';
             form.reset();
           }).catch(err => {
-            console.error(err);
             statusMsg.style.color = 'red';
-            statusMsg.textContent = 'Gagal mendapatkan URL bukti.';
+            statusMsg.textContent = 'Gagal update data pesanan.';
+            console.error(err);
           });
         }).catch(err => {
-          console.error(err);
           statusMsg.style.color = 'red';
-          statusMsg.textContent = '❌ Gagal upload bukti.';
+          statusMsg.textContent = 'Gagal mendapatkan URL bukti.';
+          console.error(err);
         });
+      }).catch(err => {
+        statusMsg.style.color = 'red';
+        statusMsg.textContent = 'Gagal mengupload bukti.';
+        console.error(err);
       });
     });
-  </script></body>
+  </script>
+</body>
 </html>
