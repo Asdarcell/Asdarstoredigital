@@ -28,92 +28,74 @@
       color: var(--text);
       transition: all 0.3s ease;
     }
-    h1, h2 {
-      color: var(--text);
-      text-align: center;
-    }
-    label {
-      font-weight: 600;
-      margin-top: 10px;
-      display: block;
-    }
+    h1, h2 { text-align: center; }
+    label { font-weight: 600; margin-top: 10px; display: block; }
     input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 8px; border: 1px solid #ccc;
       transition: 0.3s;
     }
-    input:focus, select:focus {
-      border-color: var(--primary);
-      outline: none;
-    }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
     button {
-      background: var(--primary);
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
+      background: var(--primary); color: white;
+      cursor: pointer; font-weight: bold;
     }
-    button:hover {
-      background: #2980b9;
-    }
+    button:hover { background: #2980b9; }
     .info {
-      background: var(--card);
-      padding: 12px;
-      margin-top: 10px;
-      border-left: 4px solid var(--primary);
-      border-radius: 5px;
+      background: var(--card); padding: 12px; margin-top: 10px;
+      border-left: 4px solid var(--primary); border-radius: 5px;
       animation: fadeIn 0.5s ease;
     }
+    #hasil, #hasilCariId { margin-top: 20px; }
     .toggle-theme {
-      display: block;
-      margin: auto;
-      margin-bottom: 15px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 20px; padding: 10px 16px;
+      cursor: pointer; z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    .toggle-theme:hover {
-      background: #2980b9;
-    }
-    #hasil, #hasilCariId {
+
+    #testimoniBox {
       margin-top: 20px;
+      background: var(--card);
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      min-height: 80px;
+      padding: 10px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+    #animTestimoni {
+      position: absolute;
+      width: 100%;
+      transition: opacity 0.5s ease;
+      opacity: 1;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .testimoni {
-      background: var(--card);
-      padding: 14px;
-      border-left: 4px solid var(--primary);
-      border-radius: 5px;
-      font-size: 15px;
-      min-height: 70px;
-      transition: 0.5s ease;
-    }
   </style>
 </head>
 <body data-theme="light">
+
   <button class="toggle-theme" onclick="toggleTheme()">🌙 Mode Gelap</button>
   <h1>Asdar Store Digital</h1>
 
   <form id="formPesanan">
     <label for="nama">Nama Lengkap</label>
     <input type="text" id="nama" required />
+
     <label for="nomor">Nomor HP / ID SN</label>
     <input type="text" id="nomor" required />
+
     <label for="kategori">Kategori Produk</label>
     <select id="kategori" required><option value="">Pilih Kategori</option></select>
+
     <label for="produk">Produk</label>
     <select id="produk" required><option value="">Pilih Produk</option></select>
+
     <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
     <button type="submit">Pesan Sekarang</button>
   </form>
@@ -132,10 +114,13 @@
   <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
     <label for="namaCari">Nama Buyer</label>
     <input type="text" id="namaCari" required />
+
     <label for="kategoriCari">Kategori Produk</label>
     <select id="kategoriCari" required><option value="">Pilih Kategori</option></select>
+
     <label for="produkCari">Produk</label>
     <select id="produkCari" required><option value="">Pilih Produk</option></select>
+
     <button type="submit">Cari ID Pesanan</button>
   </form>
 
@@ -143,11 +128,8 @@
 
   <hr><br>
   <h2>Testimoni Pelanggan</h2>
-  <div id="testimoniBox" style="min-height: 100px; overflow: hidden; position: relative;">
-    <div id="animTestimoni" class="testimoni" style="position: absolute; width: 100%;"></div>
-  </div>
+  <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
@@ -252,6 +234,7 @@
       const kategoriVal = kategoriCari.value;
       const produkVal = produkCari.value;
       if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
+
       hasilCariId.innerHTML = "Mencari...";
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -269,39 +252,40 @@
     }
 
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
+
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
       formData.append("to", "6281803004607");
       formData.append("message", pesan);
+
       fetch("https://app.ngirimwa.com/api/create-message", {
         method: "POST", body: formData
       }).then(res => res.json()).then(data => console.log("WA sent:", data)).catch(err => console.error("WA fail:", err));
     }
 
-    // TESTIMONI LIVE BERJALAN
-    let dataTesti = [], testiIndex = 0;
-    function tampilkanTestimoni() {
-      db.ref('testimoni').on('value', snap => {
-        const data = snap.val() || {};
-        dataTesti = Object.values(data).reverse();
-        if (dataTesti.length > 0) tampilkanSatuTesti();
-      });
-    }
+    let dataTesti = [];
+    let testiIndex = 0;
+
     function tampilkanSatuTesti() {
       const box = document.getElementById('animTestimoni');
       if (!dataTesti.length) return;
       const t = dataTesti[testiIndex];
       box.style.opacity = '0';
       setTimeout(() => {
-        box.innerHTML = `⭐️⭐️⭐️⭐️⭐️<br><b>${t.nama}</b>: ${t.pesan}`;
+        box.innerHTML = `⭐️⭐️⭐️⭐️⭐️<br/><b>${t.nama}</b>: ${t.pesan}`;
         box.style.opacity = '1';
-      }, 300);
+      }, 500);
       testiIndex = (testiIndex + 1) % dataTesti.length;
       setTimeout(tampilkanSatuTesti, 5000);
     }
-    tampilkanTestimoni();
+
+    db.ref('testimoni').on('value', snap => {
+      const data = snap.val() || {};
+      dataTesti = Object.values(data).reverse();
+      tampilkanSatuTesti();
+    });
   </script>
 </body>
 </html>
