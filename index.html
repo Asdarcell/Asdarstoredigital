@@ -52,7 +52,6 @@
   <hr><br>
 
   <h2>Darurat: Cari ID Pesanan</h2>
-  <p>Jika lupa ID Pesanan, isi data berikut untuk cari ID:</p>
   <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
     <label for="namaCari">Nama Buyer</label>
     <input type="text" id="namaCari" required />
@@ -77,6 +76,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -101,15 +101,8 @@
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
-        const opt1 = document.createElement('option');
-        opt1.value = kategori;
-        opt1.textContent = kategori;
-        kategoriSelect.appendChild(opt1);
-
-        const opt2 = document.createElement('option');
-        opt2.value = kategori;
-        opt2.textContent = kategori;
-        kategoriCari.appendChild(opt2);
+        kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+        kategoriCari.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
     });
 
@@ -121,10 +114,7 @@
       produkRef.child(kategori).once('value').then(snapshot => {
         const data = snapshot.val();
         for (let nama in data) {
-          const opt = document.createElement('option');
-          opt.value = nama;
-          opt.textContent = nama;
-          produkSelect.appendChild(opt);
+          produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
       });
     });
@@ -136,10 +126,7 @@
       produkRef.child(kategori).once('value').then(snapshot => {
         const data = snapshot.val();
         for (let nama in data) {
-          const opt = document.createElement('option');
-          opt.value = nama;
-          opt.textContent = nama;
-          produkCari.appendChild(opt);
+          produkCari.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
       });
     });
@@ -187,8 +174,6 @@
         `;
         document.getElementById('formPesanan').reset();
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-
-        // 🔔 Kirim notifikasi ke WhatsApp Admin
         kirimNotifWA(id, nama, produk);
       });
     });
@@ -232,16 +217,21 @@
     }
 
     function kirimNotifWA(id, nama, produk) {
-  fetch("https://asdar-wa.onrender.com/kirim", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ id, nama, produk })
-  })
-  .then(res => res.json())
-  .then(data => console.log("✅ WA terkirim:", data))
-  .catch(err => console.error("❌ Gagal kirim WA:", err));
+      const pesan = `📥 Pesanan Baru Masuk\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n✅ Kelola di Dashboard:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
+
+      const formData = new FormData();
+      formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
+      formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
+      formData.append("to", "6281803004607");
+      formData.append("message", pesan);
+
+      fetch("https://api.ngirimwa.id/v1/messages", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => console.log("✅ WA terkirim:", data))
+      .catch(err => console.error("❌ Gagal kirim WA:", err));
     }
   </script>
 </body>
