@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,48 +20,61 @@
     }
     body {
       font-family: 'Poppins', sans-serif;
-      padding: 20px;
-      max-width: 700px;
-      margin: auto;
       background: var(--bg);
       color: var(--text);
       transition: all 0.3s ease;
+      margin: 0;
     }
-    h1, h2 { text-align: center; }
-    label { font-weight: 600; margin-top: 10px; display: block; }
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--card);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      z-index: 999;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .theme-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--primary);
+    }
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    label {
+      font-weight: 600; margin-top: 10px; display: block;
+    }
     input, select, button {
       width: 100%; padding: 10px; margin: 8px 0;
       border-radius: 8px; border: 1px solid #ccc;
       transition: 0.3s;
     }
-    input:focus, select:focus { border-color: var(--primary); outline: none; }
     button {
       background: var(--primary); color: white;
       cursor: pointer; font-weight: bold;
     }
-    button:hover { background: #2980b9; }
     .info {
       background: var(--card); padding: 12px; margin-top: 10px;
       border-left: 4px solid var(--primary); border-radius: 5px;
-      animation: fadeIn 0.5s ease;
     }
-    #hasil, #hasilCariId { margin-top: 20px; }
-    .toggle-theme {
-      position: fixed; bottom: 20px; right: 20px;
-      background: var(--primary); color: white;
-      border: none; border-radius: 20px; padding: 10px 16px;
-      cursor: pointer; z-index: 1000;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
     #testimoniBox {
-      margin-top: 20px;
       background: var(--card);
+      padding: 10px;
       border-left: 4px solid var(--primary);
       border-radius: 6px;
       min-height: 80px;
-      padding: 10px;
-      text-align: left;
+      margin-top: 20px;
       position: relative;
       overflow: hidden;
     }
@@ -72,79 +84,51 @@
       transition: opacity 0.5s ease;
       opacity: 1;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
   </style>
 </head>
 <body data-theme="light">
+  <header>
+    <h1>Asdar Store Digital</h1>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+  </header>
+  <main>
+    <form id="formPesanan">
+      <label for="nama">Nama Lengkap</label>
+      <input type="text" id="nama" required />
+      <label for="nomor">Nomor HP / ID SN</label>
+      <input type="text" id="nomor" required />
+      <label for="kategori">Kategori Produk</label>
+      <select id="kategori" required><option value="">Pilih Kategori</option></select>
+      <label for="produk">Produk</label>
+      <select id="produk" required><option value="">Pilih Produk</option></select>
+      <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+      <button type="submit">Pesan Sekarang</button>
+    </form>
+    <div id="hasil"></div><hr><br>
+<h2>Cek Status Pesanan</h2>
+<form onsubmit="event.preventDefault(); cekStatus();">
+  <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+  <button type="submit">Cek Status</button>
+</form>
 
-  <button class="toggle-theme" onclick="toggleTheme()">🌙 Mode Gelap</button>
-  <h1>Asdar Store Digital</h1>
+<hr><br>
+<h2>Testimoni Pelanggan</h2>
+<div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
 
-  <form id="formPesanan">
-    <label for="nama">Nama Lengkap</label>
-    <input type="text" id="nama" required />
-
-    <label for="nomor">Nomor HP / ID SN</label>
-    <input type="text" id="nomor" required />
-
-    <label for="kategori">Kategori Produk</label>
-    <select id="kategori" required><option value="">Pilih Kategori</option></select>
-
-    <label for="produk">Produk</label>
-    <select id="produk" required><option value="">Pilih Produk</option></select>
-
-    <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
-    <button type="submit">Pesan Sekarang</button>
-  </form>
-
-  <div id="hasil"></div>
-
-  <hr><br>
-  <h2>Cek Status Pesanan</h2>
-  <form onsubmit="event.preventDefault(); cekStatus();">
-    <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-    <button type="submit">Cek Status</button>
-  </form>
-
-  <hr><br>
-  <h2>Darurat: Cari ID Pesanan</h2>
-  <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
-    <label for="namaCari">Nama Buyer</label>
-    <input type="text" id="namaCari" required />
-    <label for="kategoriCari">Kategori Produk</label>
-    <select id="kategoriCari" required><option value="">Pilih Kategori</option></select>
-    <label for="produkCari">Produk</label>
-    <select id="produkCari" required><option value="">Pilih Produk</option></select>
-    <button type="submit">Cari ID Pesanan</button>
-  </form>
-
-  <div id="hasilCariId"></div>
-
-  <hr><br>
-  <h2>Testimoni Pelanggan</h2>
-  <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script>
-    // 🔄 Tema Gelap/Terang Otomatis
+  </main>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     function toggleTheme() {
       const body = document.body;
-      const current = body.getAttribute('data-theme');
-      const next = current === 'light' ? 'dark' : 'light';
+      const btn = document.getElementById('themeToggle');
+      const next = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       body.setAttribute('data-theme', next);
-      localStorage.setItem("theme", next);
-      document.querySelector('.toggle-theme').textContent = next === 'light' ? '🌙 Mode Gelap' : '☀️ Mode Terang';
+      btn.textContent = next === 'light' ? '🌙' : '☀️';
+      localStorage.setItem('theme', next);
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const saved = localStorage.getItem("theme") || "light";
-      document.body.setAttribute("data-theme", saved);
-      document.querySelector('.toggle-theme').textContent = saved === 'light' ? '🌙 Mode Gelap' : '☀️ Mode Terang';
-    });
+    if (localStorage.getItem('theme')) {
+      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+    }
 
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -162,16 +146,12 @@
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
-    const kategoriCari = document.getElementById('kategoriCari');
-    const produkCari = document.getElementById('produkCari');
-    const hasilCariId = document.getElementById('hasilCariId');
 
     const produkRef = db.ref('produk');
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
         kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-        kategoriCari.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
     });
 
@@ -184,18 +164,6 @@
         const data = snapshot.val();
         for (let nama in data) {
           produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
-        }
-      });
-    });
-
-    kategoriCari.addEventListener('change', () => {
-      produkCari.innerHTML = '<option value="">Pilih Produk</option>';
-      const kategori = kategoriCari.value;
-      if (!kategori) return;
-      produkRef.child(kategori).once('value').then(snapshot => {
-        const data = snapshot.val();
-        for (let nama in data) {
-          produkCari.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
       });
     });
@@ -218,9 +186,7 @@
       const produk = produkSelect.value;
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
-
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
-
       db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, waktu, status: 'Belum Bayar' }).then(() => {
         hasil.innerHTML = `✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>Transfer ke:<br/>DANA: <b>087755432880</b><br/>ShopeePay: <b>081803004607</b><br/><a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/><a href="status.html?id=${id}">Cek Status</a>`;
         document.getElementById('formPesanan').reset();
@@ -234,40 +200,16 @@
       if (id) window.location.href = `status.html?id=${id}`;
     }
 
-    function cariIdPesanan() {
-      const namaCari = document.getElementById('namaCari').value.trim().toLowerCase();
-      const kategoriVal = kategoriCari.value;
-      const produkVal = produkCari.value;
-      if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
-      hasilCariId.innerHTML = "Mencari...";
-      db.ref('pesanan').once('value').then(snapshot => {
-        const data = snapshot.val() || {};
-        const hasilCari = [];
-        for (let id in data) {
-          const p = data[id];
-          if (p.nama.toLowerCase() === namaCari && p.kategori === kategoriVal && p.produk === produkVal) {
-            hasilCari.push({ id, ...p });
-          }
-        }
-        hasilCariId.innerHTML = hasilCari.length === 0 ?
-          "<b>Tidak ditemukan pesanan.</b>" :
-          `<b>Ditemukan:</b><ul>${hasilCari.map(i => `<li><b>${i.id}</b> - ${i.nama}, ${i.kategori} > ${i.produk}</li>`).join('')}</ul>`;
-      });
-    }
-
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
+      const pesan = `\u{1F4E5} Pesanan Baru\n\u{1F4DC} ID: ${id}\n\u{1F464} Nama: ${nama}\n\u{1F4E6} Produk: ${produk}`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
       formData.append("to", "6281803004607");
       formData.append("message", pesan);
-      fetch("https://app.ngirimwa.com/api/create-message", {
-        method: "POST", body: formData
-      }).then(res => res.json()).then(data => console.log("WA sent:", data)).catch(err => console.error("WA fail:", err));
+      fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
     }
 
-    // Testimoni Jalan
     let dataTesti = [];
     let testiIndex = 0;
     function tampilkanSatuTesti() {
@@ -287,6 +229,5 @@
       dataTesti = Object.values(data).reverse();
       tampilkanSatuTesti();
     });
-  </script>
-</body>
+  </script></body>
 </html>
