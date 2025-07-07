@@ -9,8 +9,7 @@
   <h1>Dashboard Admin</h1>
   <div id="pesananList">Memuat data...</div>
 
-  <h3>Upload Bukti Selesai (Setelah Verifikasi)</h3>
-  <input type="file" id="buktiAdmin" accept="image/*" />
+  <input type="file" id="buktiAdmin" />
   <button onclick="uploadBukti()">Kirim Bukti ke Pembeli</button>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -43,31 +42,29 @@
             <b>Nama:</b> ${p.nama}<br>
             <b>Produk:</b> ${p.produk}<br>
             <b>Status:</b> ${p.status}<br>
-            <button onclick="verifikasi('${id}')">✔ Verifikasi</button>
-            <button onclick="setSelected('${id}')">📤 Pilih untuk Kirim Bukti</button><br>
-            ${p.buktiBayar ? `<b>Bukti Pembayaran:</b><br><img src="${p.buktiBayar}" width="100" />` : ''}
-            ${p.buktiAdmin ? `<br><b>Bukti Admin:</b><br><img src="${p.buktiAdmin}" width="100" />` : ''}
+            <button onclick="setSelected('${id}')">Pilih untuk Kirim Bukti</button>
+            <button onclick="verifikasi('${id}')">Verifikasi (Proses)</button><br>
+            ${p.buktiBayar ? `<i>Bukti Pembeli:</i><br><img src="${p.buktiBayar}" width="100" />` : ''}
+            ${p.buktiAdmin ? `<br><i>Bukti Admin:</i><br><img src="${p.buktiAdmin}" width="100" />` : ''}
           </div>
         `;
       }
       document.getElementById('pesananList').innerHTML = html;
     });
 
-    function verifikasi(id) {
-      db.ref('pesanan/' + id).update({ status: 'Diproses' });
-      alert('Status diperbarui ke: Diproses.');
-    }
-
     function setSelected(id) {
       selectedId = id;
-      alert('✅ Pesanan terpilih untuk kirim bukti:\n' + id);
+      alert('Pesanan dipilih: ' + id);
+    }
+
+    function verifikasi(id) {
+      db.ref('pesanan/' + id).update({ status: 'Diproses' });
+      alert('✅ Status diperbarui menjadi "Diproses".');
     }
 
     function uploadBukti() {
       const file = document.getElementById('buktiAdmin').files[0];
-      if (!file) return alert('❌ Pilih file gambar terlebih dahulu.');
-      if (!selectedId) return alert('❌ Pilih pesanan dulu lewat tombol "Pilih untuk Kirim Bukti".');
-
+      if (!file || !selectedId) return alert('Pilih pesanan dan file gambar!');
       const ref = storage.ref('buktiAdmin/' + selectedId);
       ref.put(file).then(snapshot => {
         snapshot.ref.getDownloadURL().then(url => {
@@ -75,11 +72,8 @@
             buktiAdmin: url,
             status: 'Selesai'
           });
-          alert('✅ Bukti berhasil dikirim. Status pesanan: Selesai.');
+          alert('✅ Bukti dikirim, status diubah ke "Selesai".');
         });
-      }).catch(err => {
-        alert('❌ Gagal upload bukti.');
-        console.error(err);
       });
     }
   </script>
