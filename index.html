@@ -114,13 +114,10 @@
   <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
     <label for="namaCari">Nama Buyer</label>
     <input type="text" id="namaCari" required />
-
     <label for="kategoriCari">Kategori Produk</label>
     <select id="kategoriCari" required><option value="">Pilih Kategori</option></select>
-
     <label for="produkCari">Produk</label>
     <select id="produkCari" required><option value="">Pilih Produk</option></select>
-
     <button type="submit">Cari ID Pesanan</button>
   </form>
 
@@ -133,13 +130,21 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // 🔄 Tema Gelap/Terang Otomatis
     function toggleTheme() {
       const body = document.body;
       const current = body.getAttribute('data-theme');
       const next = current === 'light' ? 'dark' : 'light';
       body.setAttribute('data-theme', next);
+      localStorage.setItem("theme", next);
       document.querySelector('.toggle-theme').textContent = next === 'light' ? '🌙 Mode Gelap' : '☀️ Mode Terang';
     }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("theme") || "light";
+      document.body.setAttribute("data-theme", saved);
+      document.querySelector('.toggle-theme').textContent = saved === 'light' ? '🌙 Mode Gelap' : '☀️ Mode Terang';
+    });
 
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -234,7 +239,6 @@
       const kategoriVal = kategoriCari.value;
       const produkVal = produkCari.value;
       if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
-
       hasilCariId.innerHTML = "Mencari...";
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -253,21 +257,19 @@
 
     function kirimNotifWA(id, nama, produk) {
       const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
-
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
       formData.append("to", "6281803004607");
       formData.append("message", pesan);
-
       fetch("https://app.ngirimwa.com/api/create-message", {
         method: "POST", body: formData
       }).then(res => res.json()).then(data => console.log("WA sent:", data)).catch(err => console.error("WA fail:", err));
     }
 
+    // Testimoni Jalan
     let dataTesti = [];
     let testiIndex = 0;
-
     function tampilkanSatuTesti() {
       const box = document.getElementById('animTestimoni');
       if (!dataTesti.length) return;
@@ -280,7 +282,6 @@
       testiIndex = (testiIndex + 1) % dataTesti.length;
       setTimeout(tampilkanSatuTesti, 5000);
     }
-
     db.ref('testimoni').on('value', snap => {
       const data = snap.val() || {};
       dataTesti = Object.values(data).reverse();
