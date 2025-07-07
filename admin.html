@@ -12,25 +12,24 @@
 </head>
 <body>
   <div class="container">
-    <h1>Dashboard Admin - Asdar Store</h1><div class="row mb-3">
-  <div class="col-md-4">
-    <select id="filterStatus" class="form-select">
-      <option value="">Filter Semua Status</option>
-      <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
-      <option value="Sudah Bayar">Sudah Bayar</option>
-      <option value="Diproses">Diproses</option>
-      <option value="Selesai">Selesai</option>
-    </select>
-  </div>
-  <div class="col-md-4">
-    <input id="searchId" type="text" class="form-control" placeholder="Cari ID Pesanan" />
-  </div>
-  <div class="col-md-4">
-    <button onclick="exportCSV()" class="btn btn-success w-100">Export CSV</button>
-  </div>
-</div>
-
-<div id="pesananList"></div>
+    <h1>Dashboard Admin - Asdar Store</h1>
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <select id="filterStatus" class="form-select">
+          <option value="">Filter Semua Status</option>
+          <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
+          <option value="Sudah Bayar">Sudah Bayar</option>
+          <option value="Diproses">Diproses</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <input id="searchId" type="text" class="form-control" placeholder="Cari ID Pesanan" />
+      </div>
+      <div class="col-md-4">
+        <button onclick="exportCSV()" class="btn btn-success w-100">Export CSV</button>
+      </div>
+    </div><div id="pesananList"></div>
 
 <h3>Upload Bukti Admin ke Pembeli</h3>
 <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*">
@@ -55,6 +54,10 @@
     <button type="submit" class="btn btn-success">Simpan Produk</button>
   </div>
 </form>
+
+<hr>
+<h3>Daftar Produk</h3>
+<div id="daftarProduk" class="row"></div>
 
   </div>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
@@ -167,6 +170,35 @@
       this.reset();
     });
 
+    function tampilkanProduk() {
+      db.ref('produk').on('value', snapshot => {
+        const data = snapshot.val();
+        let html = '';
+        for (let id in data) {
+          const p = data[id];
+          html += `
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">${p.kategori} - ${p.varian}</h5>
+                  <p><b>Harga:</b> Rp${p.harga}<br><b>Keterangan:</b> ${p.cara}</p>
+                  <button class="btn btn-danger btn-sm" onclick="hapusProduk('${id}')">Hapus</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        document.getElementById('daftarProduk').innerHTML = html;
+      });
+    }
+
+    function hapusProduk(id) {
+      if (confirm('Yakin ingin menghapus produk ini?')) {
+        db.ref('produk/' + id).remove();
+      }
+    }
+
     tampilkanPesanan();
+    tampilkanProduk();
   </script></body>
 </html>
