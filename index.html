@@ -1,8 +1,8 @@
-<!DOCTYPE html>
-<html lang="id">
+<!-- index.html FINAL versi sinkron dengan admin.html --><!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <title>Asdar Store Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
@@ -13,45 +13,30 @@
   </style>
 </head>
 <body>
-  <h1>Asdar Store Digital</h1>
-
-  <form id="formPesanan">
+  <h1>Asdar Store Digital</h1>  <form id="formPesanan">
     <label for="nama">Nama Lengkap</label>
-    <input type="text" id="nama" required />
+    <input type="text" id="nama" required /><label for="nomor">Nomor HP / ID SN</label>
+<input type="text" id="nomor" required />
 
-    <label for="nomor">Nomor HP / ID SN</label>
-    <input type="text" id="nomor" required />
+<label for="kategori">Kategori Produk</label>
+<select id="kategori" required>
+  <option value="">Pilih Kategori</option>
+</select>
 
-    <label for="kategori">Kategori Produk</label>
-    <select id="kategori" required>
-      <option value="">Pilih Kategori</option>
-    </select>
+<label for="produk">Produk</label>
+<select id="produk" required>
+  <option value="">Pilih Produk</option>
+</select>
 
-    <label for="produk">Produk</label>
-    <select id="produk" required>
-      <option value="">Pilih Produk</option>
-    </select>
+<div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
 
-    <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+<button type="submit">Pesan Sekarang</button>
 
-    <button type="submit">Pesan Sekarang</button>
-  </form>
-
-  <div id="hasil" style="margin-top:20px;"></div>
-
-  <hr><br>
-
-  <h2>Cek Status Pesanan</h2>
+  </form>  <div id="hasil" style="margin-top:20px;"></div>  <hr><br>  <h2>Cek Status Pesanan</h2>
   <form onsubmit="event.preventDefault(); cekStatus();">
     <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
     <button type="submit">Cek Status</button>
-  </form>
-
-  <!-- FIREBASE -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script>
+  </form>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -71,7 +56,6 @@
 
     const produkRef = db.ref('produk');
 
-    // Ambil data kategori
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
@@ -82,7 +66,6 @@
       }
     });
 
-    // Ganti produk berdasarkan kategori
     kategoriSelect.addEventListener('change', () => {
       produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
       infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
@@ -99,7 +82,6 @@
       });
     });
 
-    // Tampilkan info harga dan deskripsi produk
     produkSelect.addEventListener('change', () => {
       const kategoriDipilih = kategoriSelect.value;
       const produkDipilih = produkSelect.value;
@@ -108,12 +90,11 @@
         const data = snapshot.val();
         infoProduk.innerHTML = `
           <b>Harga:</b> Rp${data.harga}<br>
-          <b>Deskripsi:</b> ${data.deskripsi}
+          <b>Deskripsi:</b> ${data.cara}
         `;
       });
     });
 
-    // Form pemesanan
     document.getElementById('formPesanan').addEventListener('submit', function (e) {
       e.preventDefault();
       const nama = document.getElementById('nama').value;
@@ -145,12 +126,10 @@
       });
     });
 
-    // Cek status dari form
     function cekStatus() {
       const id = document.getElementById('idCek').value.trim();
       if (!id) return;
       window.location.href = 'status.html?id=' + id;
     }
-  </script>
-</body>
+  </script></body>
 </html>
