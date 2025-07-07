@@ -14,9 +14,9 @@
 <body>
   <div class="container">
     <h1>Dashboard Admin - Asdar Store</h1>
-    <button class="btn btn-danger mb-3" onclick="logout()">🔓 Logout</button>
+    <!-- Tidak ada tombol logout karena tanpa login -->
 
-    <div id="mainSection" style="display:none">
+    <div id="mainSection">
       <!-- FILTER -->
       <div class="row mb-3">
         <div class="col-md-4">
@@ -78,7 +78,6 @@
   <!-- FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -91,32 +90,16 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
-    const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
-    const notifAPI = {
-      appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-      authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-      nomorAdmin: "6281803004607"
-    };
 
     let selectedId = null;
     let allData = {};
 
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        document.getElementById('mainSection').style.display = 'block';
-        tampilkanPesanan();
-        tampilkanProduk();
-        tampilkanGaleri();
-      } else {
-        window.location.href = "login.html";
-      }
-    });
+    // Langsung panggil tampilkan data tanpa login
+    tampilkanPesanan();
+    tampilkanProduk();
+    tampilkanGaleri();
 
-    function logout() {
-      auth.signOut().then(() => window.location.href = "login.html");
-    }
-
+    // Fungsi-fungsi admin (sama seperti sebelumnya)
     function tampilkanPesanan() {
       db.ref('pesanan').on('value', snapshot => {
         allData = snapshot.val() || {};
@@ -146,7 +129,6 @@
               </div>
             </div>`;
         }
-
         document.getElementById('pesananList').innerHTML = html;
       });
     }
@@ -158,7 +140,6 @@
 
     function verifikasi(id) {
       db.ref('pesanan/' + id).update({ status: 'Diproses' });
-      simpanRiwayat(id, 'Diproses');
       kirimNotifWA(`✅ Pesanan ${id} sedang diproses.`);
     }
 
@@ -169,8 +150,9 @@
       const formData = new FormData();
       formData.append("image", file);
 
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-        method: "POST", body: formData
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=f71ccc1a662c9f8656766990018d3a33`, {
+        method: "POST",
+        body: formData
       });
       const json = await res.json();
       const imageUrl = json.data.url;
@@ -180,7 +162,6 @@
         status: 'Selesai'
       });
 
-      simpanRiwayat(selectedId, 'Selesai');
       kirimNotifWA(`✅ Pesanan ${selectedId} telah selesai dan bukti telah dikirim.`);
       alert('✅ Bukti terkirim dan status selesai.');
       selectedId = null;
@@ -204,11 +185,6 @@
       a.href = URL.createObjectURL(blob);
       a.download = 'pesanan.csv';
       a.click();
-    }
-
-    function simpanRiwayat(id, statusBaru) {
-      const waktu = new Date().toLocaleString();
-      db.ref(`riwayat/${id}`).push({ status: statusBaru, waktu });
     }
 
     function tampilkanProduk() {
@@ -268,9 +244,9 @@
       fetch("https://starsender.online/api/sendText", {
         method: "POST",
         body: new URLSearchParams({
-          appkey: notifAPI.appkey,
-          authkey: notifAPI.authkey,
-          to: notifAPI.nomorAdmin,
+          appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+          authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+          to: "6281803004607",
           message: pesan
         })
       });
