@@ -4,17 +4,20 @@
   <meta charset="UTF-8" />
   <title>Status Transaksi</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
-    img { max-width: 100%; margin-top: 10px; }
-    a { display: inline-block; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; background: #f9f9f9; padding: 20px; }
+    img { max-width: 100%; margin-top: 10px; border-radius: 6px; }
+    a, button { display: inline-block; margin-top: 20px; text-decoration: none; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; }
+    .alert { background: #fff3cd; padding: 15px; border-left: 5px solid #ffc107; margin-top: 20px; }
   </style>
 </head>
 <body>
   <h2>Status Transaksi</h2>
   <div id="statusInfo">Memuat...</div>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "f71ccc1a662c9f8656766990018d3a33",
@@ -39,6 +42,7 @@
       }
 
       let html = `
+        <p><strong>ID Pesanan:</strong> ${id}</p>
         <p><strong>Nama:</strong> ${data.nama}</p>
         <p><strong>Produk:</strong> ${data.produk}</p>
         <p><strong>Status:</strong> ${data.status}</p>
@@ -46,6 +50,22 @@
 
       if (data.buktiBayar) {
         html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" /></p>`;
+      }
+
+      if (data.status === 'Belum Bayar') {
+        html += `
+          <div class="alert">
+            <b>❗ Pesanan Anda belum dibayar.</b><br>
+            Silakan transfer ke:
+            <ul>
+              <li>DANA: <b>087755432880</b></li>
+              <li>ShopeePay: <b>081803004607</b></li>
+            </ul>
+            Setelah transfer, upload bukti pembayaran Anda.
+            <br><br>
+            <a href="upload.html?id=${id}">Upload Bukti Pembayaran</a>
+          </div>
+        `;
       }
 
       if (data.status === 'Diproses' || data.status === 'Selesai') {
@@ -56,7 +76,7 @@
         }
       }
 
-      html += `<a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
+      html += `<br><a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
       statusInfo.innerHTML = html;
     }).catch(err => {
       statusInfo.textContent = '❌ Gagal mengambil data.';
