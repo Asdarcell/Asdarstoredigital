@@ -1,46 +1,41 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <title>Asdar Store Digital</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    input, select, button { display: block; width: 100%; padding: 10px; margin: 10px 0; }
-    button { cursor: pointer; }
-    .result-box { border: 1px solid #ccc; padding: 20px; border-radius: 10px; background: #f0f8ff; }
+    select, input, button { display: block; width: 100%; margin: 10px 0; padding: 10px; }
+    label { margin-top: 15px; font-weight: bold; }
+    .info { background: #f0f0f0; padding: 10px; margin-top: 10px; border-left: 4px solid #2196f3; }
   </style>
 </head>
 <body>
-  <h1>Asdar Store Digital</h1>
+  <h1>Asdar Store Digital</h1>  <form id="formPesanan">
+    <label for="nama">Nama Lengkap</label>
+    <input type="text" id="nama" required /><label for="nomor">Nomor HP / ID SN</label>
+<input type="text" id="nomor" required />
 
-  <form id="formPesanan">
-    <input type="text" id="nama" placeholder="Nama Lengkap" required />
-    <input type="text" id="nomor" placeholder="Nomor HP / ID SN" required />
-    <select id="produk" required>
-      <option value="">Pilih Produk</option>
-      <option value="Pulsa 5.000">Pulsa 5.000</option>
-      <option value="Paket Data 10GB">Paket Data 10GB</option>
-      <option value="Voucher K-Vision">Voucher K-Vision</option>
-    </select>
-    <button type="submit">Pesan Sekarang</button>
-  </form>
+<label for="kategori">Kategori Produk</label>
+<select id="kategori" required>
+  <option value="">Pilih Kategori</option>
+</select>
 
-  <br><hr><br>
+<label for="produk">Produk</label>
+<select id="produk" required>
+  <option value="">Pilih Produk</option>
+</select>
 
+<div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+
+<button type="submit">Pesan Sekarang</button>
+
+  </form>  <div id="hasil" style="margin-top:20px;"></div>  <hr><br>
   <h2>Cek Status Pesanan</h2>
   <form onsubmit="event.preventDefault(); cekStatus();">
     <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
     <button type="submit">Cek Status</button>
-  </form>
-
-  <div id="resultArea"></div>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script>
+  </form>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -53,53 +48,77 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const form = document.getElementById('formPesanan');
-    const resultArea = document.getElementById('resultArea');
+    const kategoriSelect = document.getElementById('kategori');
+    const produkSelect = document.getElementById('produk');
+    const infoProduk = document.getElementById('infoProduk');
+    const hasil = document.getElementById('hasil');
 
-    form.addEventListener('submit', (e) => {
+    const produkRef = db.ref('produk');
+
+    produkRef.once('value').then(snapshot => {
+      const data = snapshot.val();
+      for (let kategori in data) {
+        const option = document.createElement('option');
+        option.value = kategori;
+        option.textContent = kategori;
+        kategoriSelect.appendChild(option);
+      }
+    });
+
+    kategoriSelect.addEventListener('change', () => {
+      produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+      infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+      const kategoriDipilih = kategoriSelect.value;
+      if (!kategoriDipilih) return;
+      produkRef.child(kategoriDipilih).once('value').then(snapshot => {
+        const produkList = snapshot.val();
+        for (let nama in produkList) {
+          const option = document.createElement('option');
+          option.value = nama;
+          option.textContent = nama;
+          produkSelect.appendChild(option);
+        }
+      });
+    });
+
+    produkSelect.addEventListener('change', () => {
+      const kategoriDipilih = kategoriSelect.value;
+      const produkDipilih = produkSelect.value;
+      if (!produkDipilih) return;
+      produkRef.child(`${kategoriDipilih}/${produkDipilih}`).once('value').then(snapshot => {
+        const data = snapshot.val();
+        infoProduk.innerHTML = `
+          <b>Harga:</b> Rp${data.harga}<br>
+          <b>Deskripsi:</b> ${data.deskripsi}
+        `;
+      });
+    });
+
+    document.getElementById('formPesanan').addEventListener('submit', function (e) {
       e.preventDefault();
       const nama = document.getElementById('nama').value;
       const nomor = document.getElementById('nomor').value;
-      const produk = document.getElementById('produk').value;
+      const kategori = kategoriSelect.value;
+      const produk = produkSelect.value;
+      const waktu = new Date().toISOString();
+      const id = 'P' + Date.now();
 
-      const id = Date.now().toString();
+      if (!nama || !nomor || !kategori || !produk) return alert('Lengkapi semua field');
 
       db.ref('pesanan/' + id).set({
-        nama,
-        nomor,
-        produk,
-        status: 'Belum Bayar'
+        nama, nomor, kategori, produk, status: 'Belum Bayar', waktu
       }).then(() => {
-        form.reset();
-        resultArea.innerHTML = `
-          <div class="result-box">
-            <h2>✅ Pesanan Berhasil Dibuat</h2>
-            <p><strong>ID Pesanan Anda:</strong></p>
-            <input type="text" value="${id}" id="idBaru" readonly />
-            <button onclick="salinID()">📋 Salin ID</button>
-            <br>
-            <a href="upload.html?id=${id}">📤 Upload Bukti Pembayaran</a><br>
-            <a href="status.html?id=${id}">🔍 Cek Status Pesanan</a>
-          </div>
-        `;
-      }).catch(err => {
-        alert('❌ Gagal menyimpan pesanan: ' + err.message);
+        hasil.innerHTML = `✅ Pesanan berhasil dibuat!<br><b>ID Pesanan:</b> ${id}<br>
+          Simpan ID ini untuk cek status: <a href="status.html?id=${id}">Lihat Status</a>`;
+        document.getElementById('formPesanan').reset();
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
       });
     });
 
     function cekStatus() {
       const id = document.getElementById('idCek').value.trim();
-      if (id) {
-        window.location.href = "status.html?id=" + id;
-      }
+      if (!id) return;
+      window.location.href = 'status.html?id=' + id;
     }
-
-    function salinID() {
-      const input = document.getElementById('idBaru');
-      input.select();
-      document.execCommand('copy');
-      alert('📋 ID berhasil disalin ke clipboard!');
-    }
-  </script>
-</body>
+  </script></body>
 </html>
