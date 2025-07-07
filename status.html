@@ -25,25 +25,38 @@
     const db = firebase.database();
 
     const id = new URLSearchParams(window.location.search).get('id');
+    const statusInfo = document.getElementById('statusInfo');
+
     db.ref('pesanan/' + id).once('value').then(snapshot => {
       const data = snapshot.val();
       if (!data) {
-        document.getElementById('statusInfo').textContent = '❌ ID pesanan tidak ditemukan.';
+        statusInfo.textContent = '❌ ID pesanan tidak ditemukan.';
         return;
       }
+
       let html = `
         <p><strong>Nama:</strong> ${data.nama}</p>
         <p><strong>Produk:</strong> ${data.produk}</p>
         <p><strong>Status:</strong> ${data.status}</p>
       `;
+
       if (data.buktiBayar) {
-        html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" width="150" /></p>`;
+        html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" width="200" /></p>`;
       }
-      if (data.buktiAdmin) {
-        html += `<p><strong>Bukti Admin:</strong><br><img src="${data.buktiAdmin}" width="150" /></p>`;
+
+      if (data.status === 'Diproses' || data.status === 'Selesai') {
+        if (data.buktiAdmin) {
+          html += `<p><strong>Bukti dari Admin:</strong><br><img src="${data.buktiAdmin}" width="200" /></p>`;
+        } else {
+          html += `<p><em>Admin sedang memproses pesanan Anda...</em></p>`;
+        }
       }
+
       html += `<br><a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
-      document.getElementById('statusInfo').innerHTML = html;
+      statusInfo.innerHTML = html;
+    }).catch(err => {
+      statusInfo.textContent = '❌ Gagal mengambil data.';
+      console.error(err);
     });
   </script>
 </body>
