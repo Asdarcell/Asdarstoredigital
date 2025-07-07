@@ -1,124 +1,150 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Asdar Store Digital</title>
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    select, input, button { display: block; width: 100%; margin: 10px 0; padding: 10px; }
-    label { margin-top: 15px; font-weight: bold; }
-    .info { background: #f0f0f0; padding: 10px; margin-top: 10px; border-left: 4px solid #2196f3; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Asdar Store Digital - Pesan</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+  label, select, input, button { display: block; width: 100%; margin: 10px 0; }
+  .info { background: #f0f0f0; padding: 10px; border-left: 4px solid #6a1b9a; margin-bottom: 15px; }
+  a { color: #6a1b9a; text-decoration: none; font-weight: bold; }
+</style>
 </head>
 <body>
-  <h1>Asdar Store Digital</h1>  <form id="formPesanan">
-    <label for="nama">Nama Lengkap</label>
-    <input type="text" id="nama" required /><label for="nomor">Nomor HP / ID SN</label>
-<input type="text" id="nomor" required />
+<h1>Asdar Store Digital - Buat Pesanan</h1>
 
-<label for="kategori">Kategori Produk</label>
-<select id="kategori" required>
-  <option value="">Pilih Kategori</option>
-</select>
+<form id="formPesanan">
+  <label for="nama">Nama Lengkap</label>
+  <input type="text" id="nama" required />
 
-<label for="produk">Produk</label>
-<select id="produk" required>
-  <option value="">Pilih Produk</option>
-</select>
+  <label for="nomor">Nomor HP / ID SN</label>
+  <input type="text" id="nomor" required />
 
-<div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+  <label for="kategori">Kategori Produk</label>
+  <select id="kategori" required>
+    <option value="">Pilih Kategori</option>
+  </select>
 
-<button type="submit">Pesan Sekarang</button>
+  <label for="produk">Produk</label>
+  <select id="produk" required>
+    <option value="">Pilih Produk</option>
+  </select>
 
-  </form>  <div id="hasil" style="margin-top:20px;"></div>  <hr><br>
-  <h2>Cek Status Pesanan</h2>
-  <form onsubmit="event.preventDefault(); cekStatus();">
-    <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-    <button type="submit">Cek Status</button>
-  </form>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
 
-    const kategoriSelect = document.getElementById('kategori');
-    const produkSelect = document.getElementById('produk');
-    const infoProduk = document.getElementById('infoProduk');
-    const hasil = document.getElementById('hasil');
+  <button type="submit">Pesan Sekarang</button>
+</form>
 
-    const produkRef = db.ref('produk');
+<div id="hasil" style="margin-top:20px;"></div>
 
-    produkRef.once('value').then(snapshot => {
-      const data = snapshot.val();
-      for (let kategori in data) {
-        const option = document.createElement('option');
-        option.value = kategori;
-        option.textContent = kategori;
-        kategoriSelect.appendChild(option);
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+  // Firebase config (sesuaikan)
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const kategoriSelect = document.getElementById('kategori');
+  const produkSelect = document.getElementById('produk');
+  const infoProduk = document.getElementById('infoProduk');
+  const hasil = document.getElementById('hasil');
+
+  // Load kategori produk
+  db.ref('produk').once('value').then(snap => {
+    const data = snap.val();
+    for (let kategori in data) {
+      const opt = document.createElement('option');
+      opt.value = kategori;
+      opt.textContent = kategori;
+      kategoriSelect.appendChild(opt);
+    }
+  });
+
+  // Update produk saat kategori dipilih
+  kategoriSelect.addEventListener('change', () => {
+    produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+    infoProduk.textContent = 'Harga dan deskripsi akan muncul di sini...';
+    if (!kategoriSelect.value) return;
+
+    db.ref('produk/' + kategoriSelect.value).once('value').then(snap => {
+      const produkList = snap.val() || {};
+      for (let nama in produkList) {
+        const opt = document.createElement('option');
+        opt.value = nama;
+        opt.textContent = nama;
+        produkSelect.appendChild(opt);
       }
     });
+  });
 
-    kategoriSelect.addEventListener('change', () => {
-      produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-      infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-      const kategoriDipilih = kategoriSelect.value;
-      if (!kategoriDipilih) return;
-      produkRef.child(kategoriDipilih).once('value').then(snapshot => {
-        const produkList = snapshot.val();
-        for (let nama in produkList) {
-          const option = document.createElement('option');
-          option.value = nama;
-          option.textContent = nama;
-          produkSelect.appendChild(option);
-        }
-      });
-    });
-
-    produkSelect.addEventListener('change', () => {
-      const kategoriDipilih = kategoriSelect.value;
-      const produkDipilih = produkSelect.value;
-      if (!produkDipilih) return;
-      produkRef.child(`${kategoriDipilih}/${produkDipilih}`).once('value').then(snapshot => {
-        const data = snapshot.val();
-        infoProduk.innerHTML = `
-          <b>Harga:</b> Rp${data.harga}<br>
-          <b>Deskripsi:</b> ${data.deskripsi}
-        `;
-      });
-    });
-
-    document.getElementById('formPesanan').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const nama = document.getElementById('nama').value;
-      const nomor = document.getElementById('nomor').value;
-      const kategori = kategoriSelect.value;
-      const produk = produkSelect.value;
-      const waktu = new Date().toISOString();
-      const id = 'P' + Date.now();
-
-      if (!nama || !nomor || !kategori || !produk) return alert('Lengkapi semua field');
-
-      db.ref('pesanan/' + id).set({
-        nama, nomor, kategori, produk, status: 'Belum Bayar', waktu
-      }).then(() => {
-        hasil.innerHTML = `✅ Pesanan berhasil dibuat!<br><b>ID Pesanan:</b> ${id}<br>
-          Simpan ID ini untuk cek status: <a href="status.html?id=${id}">Lihat Status</a>`;
-        document.getElementById('formPesanan').reset();
-        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-      });
-    });
-
-    function cekStatus() {
-      const id = document.getElementById('idCek').value.trim();
-      if (!id) return;
-      window.location.href = 'status.html?id=' + id;
+  // Tampilkan harga dan deskripsi produk
+  produkSelect.addEventListener('change', () => {
+    if (!produkSelect.value) {
+      infoProduk.textContent = 'Harga dan deskripsi akan muncul di sini...';
+      return;
     }
-  </script></body>
+    db.ref(`produk/${kategoriSelect.value}/${produkSelect.value}`).once('value').then(snap => {
+      const data = snap.val();
+      if (data) {
+        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || '-'}`;
+      } else {
+        infoProduk.textContent = 'Data produk tidak ditemukan.';
+      }
+    });
+  });
+
+  // Submit form buat pesanan
+  document.getElementById('formPesanan').addEventListener('submit', e => {
+    e.preventDefault();
+    const nama = document.getElementById('nama').value.trim();
+    const nomor = document.getElementById('nomor').value.trim();
+    const kategori = kategoriSelect.value;
+    const produk = produkSelect.value;
+
+    if (!nama || !nomor || !kategori || !produk) {
+      alert('Lengkapi semua field terlebih dahulu');
+      return;
+    }
+
+    const idPesanan = 'P' + Date.now();
+    const waktu = new Date().toISOString();
+
+    // Simpan pesanan ke Firebase dengan status 'Belum Bayar'
+    db.ref('pesanan/' + idPesanan).set({
+      nama,
+      nomor,
+      kategori,
+      produk,
+      status: 'Belum Bayar',
+      waktu
+    }).then(() => {
+      hasil.innerHTML = `
+        <div class="info">
+          ✅ Pesanan berhasil dibuat!<br>
+          <b>ID Pesanan:</b> ${idPesanan}<br><br>
+          Silakan lakukan pembayaran ke:<br>
+          <b>ShopeePay:</b> 081803004607<br>
+          <b>Dana:</b> 087755432880<br><br>
+          Setelah bayar, <a href="upload.html?id=${idPesanan}">klik di sini untuk upload bukti bayar</a>.<br>
+          Simpan ID pesanan untuk cek status kapan saja.
+        </div>
+      `;
+      document.getElementById('formPesanan').reset();
+      infoProduk.textContent = 'Harga dan deskripsi akan muncul di sini...';
+    }).catch(err => {
+      alert('Gagal membuat pesanan: ' + err.message);
+    });
+  });
+</script>
+</body>
 </html>
