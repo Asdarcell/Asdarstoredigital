@@ -5,31 +5,41 @@
   <title>Asdar Store Digital</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    select, input, textarea { display: block; margin-bottom: 10px; padding: 8px; width: 100%; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, select, button { display: block; width: 100%; padding: 10px; margin: 10px 0; }
+    button { cursor: pointer; }
+    .result-box { border: 1px solid #ccc; padding: 20px; border-radius: 10px; background: #f0f8ff; }
   </style>
 </head>
 <body>
-  <h2>Pesan Produk</h2>
+  <h1>Asdar Store Digital</h1>
 
-  <select id="pilihKategori">
-    <option value="">Pilih Kategori</option>
-  </select>
+  <form id="formPesanan">
+    <input type="text" id="nama" placeholder="Nama Lengkap" required />
+    <input type="text" id="nomor" placeholder="Nomor HP / ID SN" required />
+    <select id="produk" required>
+      <option value="">Pilih Produk</option>
+      <option value="Pulsa 5.000">Pulsa 5.000</option>
+      <option value="Paket Data 10GB">Paket Data 10GB</option>
+      <option value="Voucher K-Vision">Voucher K-Vision</option>
+    </select>
+    <button type="submit">Pesan Sekarang</button>
+  </form>
 
-  <select id="pilihProduk" disabled>
-    <option value="">Pilih Produk</option>
-  </select>
+  <br><hr><br>
 
-  <input type="text" id="harga" placeholder="Harga" readonly />
-  <textarea id="keterangan" placeholder="Keterangan Produk" rows="3" readonly></textarea>
+  <h2>Cek Status Pesanan</h2>
+  <form onsubmit="event.preventDefault(); cekStatus();">
+    <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+    <button type="submit">Cek Status</button>
+  </form>
 
-  <input type="text" id="nama" placeholder="Nama Anda" required />
-  <input type="text" id="nomor" placeholder="Nomor HP/ID SN" required />
+  <div id="resultArea"></div>
 
-  <button onclick="pesanSekarang()">Pesan Sekarang</button>
-
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -43,75 +53,52 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let semuaProduk = {};
+    const form = document.getElementById('formPesanan');
+    const resultArea = document.getElementById('resultArea');
 
-    const pilihKategori = document.getElementById('pilihKategori');
-    const pilihProduk = document.getElementById('pilihProduk');
-    const hargaInput = document.getElementById('harga');
-    const ketInput = document.getElementById('keterangan');
-
-    db.ref('produk').once('value').then(snapshot => {
-      semuaProduk = snapshot.val();
-      const kategoriUnik = [...new Set(Object.values(semuaProduk).map(p => p.kategori))];
-      kategoriUnik.forEach(kat => {
-        const opt = document.createElement('option');
-        opt.value = kat;
-        opt.textContent = kat;
-        pilihKategori.appendChild(opt);
-      });
-    });
-
-    pilihKategori.addEventListener('change', () => {
-      const kategoriDipilih = pilihKategori.value;
-      pilihProduk.innerHTML = '<option value="">Pilih Produk</option>';
-      if (!kategoriDipilih) {
-        pilihProduk.disabled = true;
-        return;
-      }
-      pilihProduk.disabled = false;
-      Object.entries(semuaProduk).forEach(([id, p]) => {
-        if (p.kategori === kategoriDipilih) {
-          const opt = document.createElement('option');
-          opt.value = id;
-          opt.textContent = p.nama;
-          pilihProduk.appendChild(opt);
-        }
-      });
-    });
-
-    pilihProduk.addEventListener('change', () => {
-      const id = pilihProduk.value;
-      if (!id || !semuaProduk[id]) return;
-      const p = semuaProduk[id];
-      hargaInput.value = 'Rp ' + p.harga.toLocaleString();
-      ketInput.value = p.keterangan || '-';
-    });
-
-    function pesanSekarang() {
-      const idProduk = pilihProduk.value;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
       const nama = document.getElementById('nama').value;
       const nomor = document.getElementById('nomor').value;
+      const produk = document.getElementById('produk').value;
 
-      if (!idProduk || !nama || !nomor) {
-        alert('Lengkapi semua isian.');
-        return;
-      }
+      const id = Date.now().toString();
 
-      const produk = semuaProduk[idProduk];
-
-      const idPesanan = Date.now();
-      db.ref('pesanan/' + idPesanan).set({
+      db.ref('pesanan/' + id).set({
         nama,
         nomor,
-        produk: produk.nama,
-        kategori: produk.kategori,
-        harga: produk.harga,
-        waktu: new Date().toLocaleString(),
+        produk,
         status: 'Belum Bayar'
       }).then(() => {
-        alert('✅ Pesanan disimpan. Lanjutkan dengan upload bukti bayar.');
-        window.location.href = 'upload.html?id=' + idPesanan;
+        form.reset();
+        resultArea.innerHTML = `
+          <div class="result-box">
+            <h2>✅ Pesanan Berhasil Dibuat</h2>
+            <p><strong>ID Pesanan Anda:</strong></p>
+            <input type="text" value="${id}" id="idBaru" readonly />
+            <button onclick="salinID()">📋 Salin ID</button>
+            <br>
+            <a href="upload.html?id=${id}">📤 Upload Bukti Pembayaran</a><br>
+            <a href="status.html?id=${id}">🔍 Cek Status Pesanan</a>
+          </div>
+        `;
+      }).catch(err => {
+        alert('❌ Gagal menyimpan pesanan: ' + err.message);
       });
+    });
+
+    function cekStatus() {
+      const id = document.getElementById('idCek').value.trim();
+      if (id) {
+        window.location.href = "status.html?id=" + id;
+      }
+    }
+
+    function salinID() {
+      const input = document.getElementById('idBaru');
+      input.select();
+      document.execCommand('copy');
+      alert('📋 ID berhasil disalin ke clipboard!');
     }
   </script>
 </body>
