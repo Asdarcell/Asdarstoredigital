@@ -24,35 +24,26 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get("id");
-
+    const id = new URLSearchParams(window.location.search).get('id');
     db.ref('pesanan/' + id).once('value').then(snapshot => {
       const data = snapshot.val();
-      if (data) {
-        let html = `
-          <p><strong>Nama:</strong> ${data.nama}</p>
-          <p><strong>Produk:</strong> ${data.produk}</p>
-          <p><strong>Status:</strong> ${data.status}</p>
-        `;
-
-        if (data.buktiBayar) {
-          html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" width="150" /></p>`;
-        }
-
-        if (data.buktiAdmin) {
-          html += `<p><strong>Bukti Admin (Pesanan Selesai):</strong><br><img src="${data.buktiAdmin}" width="150" /></p>`;
-        }
-
-        html += `<br><a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
-
-        document.getElementById('statusInfo').innerHTML = html;
-      } else {
-        document.getElementById('statusInfo').innerHTML = '❌ ID Pesanan tidak ditemukan.';
+      if (!data) {
+        document.getElementById('statusInfo').textContent = '❌ ID pesanan tidak ditemukan.';
+        return;
       }
-    }).catch(err => {
-      document.getElementById('statusInfo').innerHTML = '⚠ Gagal memuat data.';
-      console.error(err);
+      let html = `
+        <p><strong>Nama:</strong> ${data.nama}</p>
+        <p><strong>Produk:</strong> ${data.produk}</p>
+        <p><strong>Status:</strong> ${data.status}</p>
+      `;
+      if (data.buktiBayar) {
+        html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" width="150" /></p>`;
+      }
+      if (data.buktiAdmin) {
+        html += `<p><strong>Bukti Admin:</strong><br><img src="${data.buktiAdmin}" width="150" /></p>`;
+      }
+      html += `<br><a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
+      document.getElementById('statusInfo').innerHTML = html;
     });
   </script>
 </body>
