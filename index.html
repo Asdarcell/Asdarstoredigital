@@ -1,58 +1,27 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asdar Store Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <title>Dashboard Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { font-family: 'Poppins', sans-serif; background: #f9f9f9; padding: 20px; color: #333; }
-    h1 { text-align: center; }
-    label { display: block; margin-top: 10px; }
-    input, select, button {
-      width: 100%; padding: 10px; margin: 5px 0;
-      border-radius: 8px; border: 1px solid #ccc;
-    }
-    button { background: #3498db; color: white; font-weight: bold; cursor: pointer; }
-    .qr { text-align: center; margin-top: 20px; }
-    .info { margin-top: 10px; padding: 10px; background: #eee; border-left: 4px solid #3498db; }
+    body { padding: 20px; font-family: 'Poppins', sans-serif; background: #f0f0f0; }
+    img { max-width: 100px; margin-top: 10px; border-radius: 6px; }
   </style>
 </head>
 <body>
-  <h1>Asdar Store Digital</h1>
-
-  <form id="formPesanan">
-    <label>Nama Lengkap</label>
-    <input type="text" id="nama" required />
-    <label>Nomor HP / ID SN</label>
-    <input type="text" id="nomor" required />
-    <label>Kategori Produk</label>
-    <select id="kategori" required><option value="">Pilih Kategori</option></select>
-    <label>Produk</label>
-    <select id="produk" required><option value="">Pilih Produk</option></select>
-    <div class="info" id="infoProduk">Harga & cara akan muncul di sini</div>
-    <button type="submit">Pesan Sekarang</button>
-  </form>
-
-  <div class="qr" id="qrBayar" style="display:none;">
-    <h3>Scan untuk Bayar:</h3>
-    <img src="https://qr.dana.id/v1/281012012020101873520131" width="200" />
-    <p><b>ShopeePay:</b> 081803004607<br><b>Dana:</b> 087755432880</p>
+  <div class="container">
+    <h2>Dashboard Admin - Asdar Store</h2>
+    <input type="file" id="buktiAdmin" class="form-control my-3" />
+    <button onclick="uploadBukti()" class="btn btn-primary mb-4">Upload Bukti Admin</button>
+    <div id="pesananList"></div>
   </div>
-
-  <div id="hasil" class="info"></div>
-
-  <hr>
-  <h2>Cek Status Pesanan</h2>
-  <form onsubmit="event.preventDefault(); cekStatus();">
-    <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-    <button type="submit">Cek Status</button>
-  </form>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -66,82 +35,88 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const kategori = document.getElementById('kategori');
-    const produk = document.getElementById('produk');
-    const infoProduk = document.getElementById('infoProduk');
-    const produkRef = db.ref('produk');
+    const adminWA = "6281803004607";
+    const imgBBKey = "f71ccc1a662c9f8656766990018d3a33";
 
-    produkRef.once('value').then(snapshot => {
-      const data = snapshot.val();
-      for (let kat in data) {
-        kategori.innerHTML += `<option value="${kat}">${kat}</option>`;
-      }
-    });
+    let selectedId = null;
 
-    kategori.addEventListener('change', () => {
-      produk.innerHTML = '<option value="">Pilih Produk</option>';
-      infoProduk.innerHTML = 'Harga & cara akan muncul di sini';
-      const kat = kategori.value;
-      if (!kat) return;
-      produkRef.child(kat).once('value').then(snap => {
+    function tampilPesanan() {
+      db.ref('pesanan').once('value', snap => {
         const data = snap.val();
-        for (let p in data) {
-          produk.innerHTML += `<option value="${p}">${p}</option>`;
+        let html = '';
+        for (let id in data) {
+          const p = data[id];
+          html += `
+            <div class="card mb-3">
+              <div class="card-body">
+                <b>ID:</b> ${id}<br/>
+                <b>Nama:</b> ${p.nama}<br/>
+                <b>Produk:</b> ${p.produk}<br/>
+                <b>Nomor/ID:</b> ${p.nomor || '-'}<br/>
+                <b>Status:</b> ${p.status}<br/>
+                ${p.buktiBayar ? `<b>Bukti Bayar:</b><br/><img src="${p.buktiBayar}" />` : ''}
+                ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" />` : ''}
+                <br/><br/>
+                <button class="btn btn-success btn-sm" onclick="setSelected('${id}')">Pilih</button>
+                <button class="btn btn-warning btn-sm" onclick="verifikasi('${id}')">Verifikasi</button>
+              </div>
+            </div>
+          `;
         }
+        document.getElementById('pesananList').innerHTML = html;
       });
-    });
-
-    produk.addEventListener('change', () => {
-      const kat = kategori.value;
-      const varian = produk.value;
-      if (!varian) return;
-      produkRef.child(`${kat}/${varian}`).once('value').then(snap => {
-        const data = snap.val();
-        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Cara:</b> ${data.cara}`;
-      });
-    });
-
-    document.getElementById('formPesanan').addEventListener('submit', e => {
-      e.preventDefault();
-      const nama = document.getElementById('nama').value.trim();
-      const nomor = document.getElementById('nomor').value.trim();
-      const kat = kategori.value;
-      const varian = produk.value;
-      const waktu = new Date().toLocaleString();
-      const id = "P" + Date.now();
-
-      produkRef.child(`${kat}/${varian}`).once('value').then(snap => {
-        const data = snap.val();
-        db.ref('pesanan/' + id).set({
-          nama, nomor, kategori: kat, produk: varian, harga: data.harga,
-          cara: data.cara, status: 'Belum Bayar', waktu
-        }).then(() => {
-          document.getElementById('hasil').innerHTML = `✅ Pesanan berhasil!<br>ID: <b>${id}</b><br><a href="upload.html?id=${id}">Upload Bukti</a> | <a href="status.html?id=${id}">Cek Status</a>`;
-          document.getElementById('qrBayar').style.display = "block";
-          document.getElementById('formPesanan').reset();
-          infoProduk.innerHTML = 'Harga & cara akan muncul di sini';
-          kirimWA(id, nama, varian);
-        });
-      });
-    });
-
-    function cekStatus() {
-      const id = document.getElementById('idCek').value.trim();
-      if (id) window.location.href = `status.html?id=${id}`;
     }
 
-    function kirimWA(id, nama, produk) {
-      const pesan = `📥 Pesanan Baru\nID: ${id}\nNama: ${nama}\nProduk: ${produk}\nKelola di: admin.html`;
-      fetch("https://app.ngirimwa.com/api/create-message", {
+    function setSelected(id) {
+      selectedId = id;
+      alert("ID dipilih: " + id);
+    }
+
+    async function uploadBukti() {
+      if (!selectedId) return alert("Pilih ID pesanan dulu!");
+      const file = document.getElementById('buktiAdmin').files[0];
+      if (!file) return alert("Pilih gambar dulu!");
+      
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgBBKey}`, {
+        method: "POST",
+        body: formData
+      });
+
+      const json = await res.json();
+      const url = json.data.url;
+
+      await db.ref("pesanan/" + selectedId).update({
+        buktiAdmin: url,
+        status: "Selesai"
+      });
+
+      kirimWA(`✅ Pesanan ${selectedId} telah selesai. Bukti dikirim.`);
+      alert("Bukti berhasil dikirim!");
+      tampilPesanan();
+    }
+
+    function verifikasi(id) {
+      db.ref("pesanan/" + id).update({ status: "Diproses" });
+      kirimWA(`✅ Pesanan ${id} sedang diproses.`);
+      tampilPesanan();
+    }
+
+    function kirimWA(pesan) {
+      fetch("https://starsender.online/api/sendText", {
         method: "POST",
         body: new URLSearchParams({
           appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
           authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-          to: "6281803004607",
+          to: adminWA,
           message: pesan
         })
       });
     }
+
+    tampilPesanan();
   </script>
 </body>
 </html>
