@@ -1,3 +1,4 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -81,11 +82,10 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // Config Firebase (sesuaikan dengan milikmu)
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
       storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
@@ -94,7 +94,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // API dan nomor WA admin untuk notifikasi
     const notifAPI = {
       appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
       authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
@@ -104,7 +103,6 @@
     let selectedId = null;
     let allDataPesanan = {};
 
-    // Fungsi tampil data pesanan
     function tampilkanPesanan() {
       db.ref('pesanan').once('value').then(snapshot => {
         allDataPesanan = snapshot.val() || {};
@@ -140,13 +138,11 @@
       });
     }
 
-    // Set pesanan yang dipilih untuk upload bukti
     function setSelected(id) {
       selectedId = id;
       alert("Pesanan dipilih: " + id);
     }
 
-    // Verifikasi pesanan (ubah status ke Diproses)
     function verifikasi(id) {
       db.ref('pesanan/' + id).update({ status: 'Diproses' })
         .then(() => {
@@ -155,7 +151,6 @@
         });
     }
 
-    // Upload bukti admin dan update status selesai
     async function uploadBukti() {
       const fileInput = document.getElementById('buktiAdmin');
       const file = fileInput.files[0];
@@ -165,7 +160,6 @@
       const formData = new FormData();
       formData.append("image", file);
 
-      // Upload ke imgbb
       const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
       try {
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
@@ -191,18 +185,15 @@
       }
     }
 
-    // Hapus pesanan
     function hapusPesanan(id) {
       if (confirm("Yakin ingin menghapus pesanan ini?")) {
-        db.ref('pesanan/' + id).remove()
-          .then(() => {
-            alert("✅ Pesanan dihapus.");
-            tampilkanPesanan();
-          });
+        db.ref('pesanan/' + id).remove().then(() => {
+          alert("✅ Pesanan dihapus.");
+          tampilkanPesanan();
+        });
       }
     }
 
-    // Export pesanan ke CSV
     function exportCSV() {
       let csv = "ID,Nama,Nomor,Kategori,Produk,Status,Waktu\n";
       for (let id in allDataPesanan) {
@@ -214,13 +205,10 @@
       const a = document.createElement("a");
       a.href = url;
       a.download = "pesanan.csv";
-      document.body.appendChild(a);
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
     }
 
-    // Tampilkan daftar produk
     function tampilkanProduk() {
       db.ref('produk').once('value').then(snapshot => {
         const produk = snapshot.val() || {};
@@ -244,7 +232,6 @@
       });
     }
 
-    // Hapus produk
     function hapusProduk(kategori, varian) {
       if (confirm("Yakin ingin menghapus produk ini?")) {
         db.ref(`produk/${kategori}/${varian}`).remove()
@@ -255,7 +242,6 @@
       }
     }
 
-    // Tambah/Edit produk via form
     document.getElementById('formProduk').addEventListener('submit', function(e) {
       e.preventDefault();
       const kategori = document.getElementById('kategori').value.trim();
@@ -276,7 +262,6 @@
         });
     });
 
-    // Tampilkan galeri bukti bayar pembeli
     function tampilkanGaleri() {
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -293,7 +278,6 @@
       });
     }
 
-    // Kirim notifikasi WA via API
     function kirimNotifWA(message) {
       fetch("https://starsender.online/api/sendText", {
         method: "POST",
@@ -306,21 +290,14 @@
       });
     }
 
-    // Event listener untuk filter & search realtime
     document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
     document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
-
-    // Tombol export CSV
     document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
-
-    // Tombol upload bukti
     document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
 
-    // Initial load semua data
     tampilkanPesanan();
     tampilkanProduk();
     tampilkanGaleri();
-
   </script>
 </body>
 </html>
