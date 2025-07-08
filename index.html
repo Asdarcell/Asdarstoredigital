@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asdar Store Digital</title>
-  <link rel="icon" href="https://asdarcell.github.io/Asdarstoredigital/favicon.png" type="image/png" />
+  <link rel="icon" href="favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -129,6 +129,7 @@
     <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
   </main>
 
+  <!-- Firebase & Script -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
@@ -162,8 +163,8 @@
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
-
     const produkRef = db.ref('produk');
+
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
@@ -207,7 +208,17 @@
         const data = snap.val();
         const harga = data.harga || 0;
         db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
-          hasil.innerHTML = `✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/><a class='qr-btn' href='https://qris.link/dana/087755432880?amount=${harga}' target='_blank'>Bayar via QR</a><br/><a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/><a href="status.html?id=${id}">Cek Status</a>`;
+          hasil.innerHTML = `
+            ✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
+            <img src="qris.png" alt="QRIS DANA" style="width: 100%; max-width: 300px; border-radius: 10px;" /><br/>
+            <div class="info">
+              🟣 <b>PAYMENT</b><br/>
+              ShopeePay: <b>081803004607</b><br/>
+              Dana: <b>087755432880</b>
+            </div>
+            <a class='qr-btn' href="upload.html?id=${id}">📤 Upload Bukti Bayar</a><br/>
+            <a class='qr-btn' href="status.html?id=${id}">📄 Cek Status</a>
+          `;
           document.getElementById('formPesanan').reset();
           infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
           kirimNotifWA(id, nama, produk);
@@ -221,7 +232,7 @@
     }
 
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `\u{1F4E5} Pesanan Baru\n\u{1F4DC} ID: ${id}\n\u{1F464} Nama: ${nama}\n\u{1F4E6} Produk: ${produk}`;
+      const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n📤 Upload: https://asdarcell.github.io/Asdarstoredigital/upload.html?id=${id}`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
