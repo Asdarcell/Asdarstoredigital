@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -53,20 +54,30 @@
       padding: 20px;
     }
     label {
-      font-weight: 600; margin-top: 10px; display: block;
+      font-weight: 600;
+      margin-top: 10px;
+      display: block;
     }
     input, select, button {
-      width: 100%; padding: 10px; margin: 8px 0;
-      border-radius: 8px; border: 1px solid #ccc;
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
       transition: 0.3s;
     }
     button {
-      background: var(--primary); color: white;
-      cursor: pointer; font-weight: bold;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
     }
     .info {
-      background: var(--card); padding: 12px; margin-top: 10px;
-      border-left: 4px solid var(--primary); border-radius: 5px;
+      background: var(--card);
+      padding: 12px;
+      margin-top: 10px;
+      border-left: 4px solid var(--primary);
+      border-radius: 5px;
     }
     #testimoniBox {
       background: var(--card);
@@ -84,15 +95,11 @@
       transition: opacity 0.5s ease;
       opacity: 1;
     }
-    .qr-btn {
+    img.qr {
       margin-top: 10px;
-      background: #000;
-      color: #fff;
-      padding: 10px;
-      text-align: center;
-      border-radius: 6px;
-      text-decoration: none;
-      display: inline-block;
+      max-width: 220px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -114,18 +121,39 @@
       <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
       <button type="submit">Pesan Sekarang</button>
     </form>
-    <div id="hasil"></div><hr><br>
-<h2>Cek Status Pesanan</h2>
-<form onsubmit="event.preventDefault(); cekStatus();">
-  <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-  <button type="submit">Cek Status</button>
-</form>
 
-<hr><br>
-<h2>Testimoni Pelanggan</h2>
-<div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
+    <div id="hasil"></div>
+    <hr><br>
 
-  </main>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
+    <h2>Cek Status Pesanan</h2>
+    <form onsubmit="event.preventDefault(); cekStatus();">
+      <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+      <button type="submit">Cek Status</button>
+    </form>
+
+    <hr><br>
+    <h2>Darurat: Cari ID Pesanan</h2>
+    <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
+      <label for="namaCari">Nama Buyer</label>
+      <input type="text" id="namaCari" required />
+      <label for="kategoriCari">Kategori Produk</label>
+      <select id="kategoriCari" required><option value="">Pilih Kategori</option></select>
+      <label for="produkCari">Produk</label>
+      <select id="produkCari" required><option value="">Pilih Produk</option></select>
+      <button type="submit">Cari ID Pesanan</button>
+    </form>
+    <div id="hasilCariId"></div>
+
+    <hr><br>
+    <h2>Testimoni Pelanggan</h2>
+    <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
+  </main>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -154,14 +182,18 @@
 
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
+    const kategoriCari = document.getElementById('kategoriCari');
+    const produkCari = document.getElementById('produkCari');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
-
+    const hasilCariId = document.getElementById('hasilCariId');
     const produkRef = db.ref('produk');
+
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
         kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+        kategoriCari.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
     });
 
@@ -174,6 +206,18 @@
         const data = snapshot.val();
         for (let nama in data) {
           produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+        }
+      });
+    });
+
+    kategoriCari.addEventListener('change', () => {
+      produkCari.innerHTML = '<option value="">Pilih Produk</option>';
+      const kategori = kategoriCari.value;
+      if (!kategori) return;
+      produkRef.child(kategori).once('value').then(snapshot => {
+        const data = snapshot.val();
+        for (let nama in data) {
+          produkCari.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
       });
     });
@@ -197,15 +241,20 @@
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
-      produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
-        const data = snap.val();
-        const harga = data.harga || 0;
-        db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
-          hasil.innerHTML = `✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/><a class='qr-btn' href='https://qris.link/dana/087755432880?amount=${harga}' target='_blank'>Bayar via QR</a><br/><a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/><a href="status.html?id=${id}">Cek Status</a>`;
-          document.getElementById('formPesanan').reset();
-          infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-          kirimNotifWA(id, nama, produk);
-        });
+      db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, waktu, status: 'Belum Bayar' }).then(() => {
+        hasil.innerHTML = `
+✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
+Transfer ke:<br/>
+ShopeePay: <b>081803004607</b><br/>
+<a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/>
+<a href="status.html?id=${id}">Cek Status</a><br/><br/>
+<h3>🔄 Bayar via QR</h3>
+<img src="https://api.qrserver.com/v1/create-qr-code/?data=https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012020101873520131&size=250x250" class="qr" alt="QR DANA"><br/>
+<a href="https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012020101873520131" target="_blank"><b>➡️ Klik di sini untuk Bayar Lewat QR</b></a>
+`;
+        document.getElementById('formPesanan').reset();
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+        kirimNotifWA(id, nama, produk);
       });
     });
 
@@ -214,8 +263,29 @@
       if (id) window.location.href = `status.html?id=${id}`;
     }
 
+    function cariIdPesanan() {
+      const namaCari = document.getElementById('namaCari').value.trim().toLowerCase();
+      const kategoriVal = kategoriCari.value;
+      const produkVal = produkCari.value;
+      if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
+      hasilCariId.innerHTML = "Mencari...";
+      db.ref('pesanan').once('value').then(snapshot => {
+        const data = snapshot.val() || {};
+        const hasilCari = [];
+        for (let id in data) {
+          const p = data[id];
+          if (p.nama.toLowerCase() === namaCari && p.kategori === kategoriVal && p.produk === produkVal) {
+            hasilCari.push({ id, ...p });
+          }
+        }
+        hasilCariId.innerHTML = hasilCari.length === 0 ?
+          "<b>Tidak ditemukan pesanan.</b>" :
+          `<b>Ditemukan:</b><ul>${hasilCari.map(i => `<li><b>${i.id}</b> - ${i.nama}, ${i.kategori} > ${i.produk}</li>`).join('')}</ul>`;
+      });
+    }
+
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `\u{1F4E5} Pesanan Baru\n\u{1F4DC} ID: ${id}\n\u{1F464} Nama: ${nama}\n\u{1F4E6} Produk: ${produk}`;
+      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
@@ -243,5 +313,6 @@
       dataTesti = Object.values(data).reverse();
       tampilkanSatuTesti();
     });
-  </script></body>
+  </script>
+</body>
 </html>
