@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -179,19 +180,20 @@
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
-    // Firebase
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",  // <-- perbaikan di sini
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Elemen DOM
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const kategoriCari = document.getElementById('kategoriCari');
@@ -200,15 +202,23 @@
     const hasil = document.getElementById('hasil');
     const hasilCariId = document.getElementById('hasilCariId');
 
+    // Load kategori produk
     const produkRef = db.ref('produk');
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
+      if (!data) {
+        console.warn("Data produk kosong di Firebase.");
+        return;
+      }
       for (let kategori in data) {
         kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
         kategoriCari.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
+    }).catch(e => {
+      console.error("Error load kategori produk:", e);
     });
 
+    // Saat kategori berubah, load produk
     kategoriSelect.addEventListener('change', () => {
       produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
       infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
@@ -216,9 +226,12 @@
       if (!kategori) return;
       produkRef.child(kategori).once('value').then(snapshot => {
         const data = snapshot.val();
+        if (!data) return;
         for (let nama in data) {
           produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
+      }).catch(e => {
+        console.error("Error load produk:", e);
       });
     });
 
@@ -228,9 +241,12 @@
       if (!kategori) return;
       produkRef.child(kategori).once('value').then(snapshot => {
         const data = snapshot.val();
+        if (!data) return;
         for (let nama in data) {
           produkCari.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
+      }).catch(e => {
+        console.error("Error load produk (cari):", e);
       });
     });
 
@@ -240,39 +256,58 @@
       if (!produk) return;
       produkRef.child(`${kategori}/${produk}`).once('value').then(snapshot => {
         const data = snapshot.val();
-        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara}`;
+        if (!data) {
+          infoProduk.innerHTML = "Info produk tidak ditemukan.";
+          return;
+        }
+        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara || '-'}`;
+      }).catch(e => {
+        console.error("Error load detail produk:", e);
+        infoProduk.innerHTML = "Gagal memuat info produk.";
       });
     });
 
+    // Submit Pesanan
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
       const nomor = document.getElementById('nomor').value.trim();
       const kategori = kategoriSelect.value;
       const produk = produkSelect.value;
+      if (!nama || !nomor || !kategori || !produk) {
+        alert("Harap lengkapi semua field!");
+        return;
+      }
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
-      if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
-      db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, waktu, status: 'Belum Bayar' }).then(() => {
+      db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, waktu, status: 'Belum Bayar' })
+      .then(() => {
         hasil.innerHTML = `✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/><a href="upload.html?id=${id}">Upload Bukti Bayar</a> | <a href="status.html?id=${id}">Cek Status</a>`;
         document.getElementById('formPesanan').reset();
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
         document.getElementById('qrBayar').style.display = 'block';
         kirimNotifWA(id, nama, produk);
+      }).catch(e => {
+        alert("Gagal membuat pesanan, coba lagi.");
+        console.error("Error set pesanan:", e);
       });
     });
 
+    // Cek Status Pesanan
     function cekStatus() {
       const id = document.getElementById('idCek').value.trim();
       if (id) window.location.href = `status.html?id=${id}`;
     }
 
+    // Cari ID Pesanan Darurat
     function cariIdPesanan() {
       const namaCari = document.getElementById('namaCari').value.trim().toLowerCase();
       const kategoriVal = kategoriCari.value;
       const produkVal = produkCari.value;
-      if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
-
+      if (!namaCari || !kategoriVal || !produkVal) {
+        alert("Harap isi semua field!");
+        return;
+      }
       hasilCariId.innerHTML = "Mencari...";
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -286,9 +321,13 @@
         hasilCariId.innerHTML = hasilCari.length === 0 ?
           "<b>Tidak ditemukan pesanan.</b>" :
           `<b>Ditemukan:</b><ul>${hasilCari.map(i => `<li><b>${i.id}</b> - ${i.nama}, ${i.kategori} > ${i.produk}</li>`).join('')}</ul>`;
+      }).catch(e => {
+        hasilCariId.innerHTML = "Gagal mencari pesanan.";
+        console.error("Error cari pesanan:", e);
       });
     }
 
+    // Kirim Notifikasi WhatsApp
     function kirimNotifWA(id, nama, produk) {
       const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
       const formData = new FormData();
@@ -296,14 +335,27 @@
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
       formData.append("to", "6281803004607");
       formData.append("message", pesan);
-      fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
+      fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData })
+      .then(response => {
+        if (!response.ok) {
+          console.warn("Gagal kirim notifikasi WA:", response.statusText);
+        }
+      })
+      .catch(err => {
+        console.error("Error kirim notifikasi WA:", err);
+      });
     }
 
+    // Testimoni
     let dataTesti = [];
     let testiIndex = 0;
+    let testiTimeout = null;
     function tampilkanSatuTesti() {
       const box = document.getElementById('animTestimoni');
-      if (!dataTesti.length) return;
+      if (!dataTesti.length) {
+        box.innerHTML = "Belum ada testimoni.";
+        return;
+      }
       const t = dataTesti[testiIndex];
       box.style.opacity = '0';
       setTimeout(() => {
@@ -311,12 +363,13 @@
         box.style.opacity = '1';
       }, 500);
       testiIndex = (testiIndex + 1) % dataTesti.length;
-      setTimeout(tampilkanSatuTesti, 5000);
+      testiTimeout = setTimeout(tampilkanSatuTesti, 5000);
     }
-
     db.ref('testimoni').on('value', snap => {
       const data = snap.val() || {};
       dataTesti = Object.values(data).reverse();
+      testiIndex = 0;
+      if (testiTimeout) clearTimeout(testiTimeout);
       tampilkanSatuTesti();
     });
   </script>
