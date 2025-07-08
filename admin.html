@@ -1,122 +1,270 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard Admin</title>
+  <title>Dashboard Admin - Asdar Store</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
-    body { padding: 20px; font-family: 'Poppins', sans-serif; background: #f0f0f0; }
-    img { max-width: 100px; margin-top: 10px; border-radius: 6px; }
+    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
+    h1 { margin-bottom: 20px; }
+    .card { margin-bottom: 15px; }
+    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
+    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Dashboard Admin - Asdar Store</h2>
-    <input type="file" id="buktiAdmin" class="form-control my-3" />
-    <button onclick="uploadBukti()" class="btn btn-primary mb-4">Upload Bukti Admin</button>
-    <div id="pesananList"></div>
+
+<div class="container">
+  <h1>Dashboard Admin - Asdar Store</h1>
+
+  <!-- Filter -->
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <select id="filterStatus" class="form-select">
+        <option value="">Semua Status</option>
+        <option value="Belum Bayar">Belum Bayar</option>
+        <option value="Sudah Bayar">Sudah Bayar</option>
+        <option value="Diproses">Diproses</option>
+        <option value="Selesai">Selesai</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
+    </div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Daftar Pesanan -->
+  <div id="pesananList"></div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  <!-- Upload Bukti Admin -->
+  <h3>Upload Bukti Admin</h3>
+  <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
+  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
 
-    const adminWA = "6281803004607";
-    const imgBBKey = "f71ccc1a662c9f8656766990018d3a33";
+  <hr>
 
-    let selectedId = null;
+  <!-- Tambah/Edit Produk -->
+  <h3>Tambah / Edit Produk</h3>
+  <form id="formProduk" class="row g-3 mb-4">
+    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required></div>
+    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Nama Produk" required></div>
+    <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga" required></div>
+    <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Keterangan/Cara" required></div>
+    <div class="col-12"><button type="submit" class="btn btn-success">Simpan</button></div>
+  </form>
 
-    function tampilPesanan() {
-      db.ref('pesanan').once('value', snap => {
-        const data = snap.val();
-        let html = '';
-        for (let id in data) {
-          const p = data[id];
-          html += `
-            <div class="card mb-3">
-              <div class="card-body">
-                <b>ID:</b> ${id}<br/>
-                <b>Nama:</b> ${p.nama}<br/>
-                <b>Produk:</b> ${p.produk}<br/>
-                <b>Nomor/ID:</b> ${p.nomor || '-'}<br/>
-                <b>Status:</b> ${p.status}<br/>
-                ${p.buktiBayar ? `<b>Bukti Bayar:</b><br/><img src="${p.buktiBayar}" />` : ''}
-                ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" />` : ''}
-                <br/><br/>
-                <button class="btn btn-success btn-sm" onclick="setSelected('${id}')">Pilih</button>
-                <button class="btn btn-warning btn-sm" onclick="verifikasi('${id}')">Verifikasi</button>
-              </div>
-            </div>
-          `;
+  <!-- Daftar Produk -->
+  <h4>Daftar Produk</h4>
+  <ul id="daftarProduk" class="list-group mb-5"></ul>
+
+  <!-- Galeri Bukti -->
+  <h4>Galeri Bukti Transfer Pembeli</h4>
+  <div id="galeri" class="d-flex flex-wrap"></div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const notifAPI = {
+    appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+    authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+    nomorAdmin: "6281803004607"
+  };
+
+  let selectedId = null;
+  let allDataPesanan = {};
+
+  function tampilkanPesanan() {
+    db.ref('pesanan').once('value').then(snapshot => {
+      allDataPesanan = snapshot.val() || {};
+      const filter = document.getElementById('filterStatus').value;
+      const search = document.getElementById('searchId').value.toLowerCase();
+
+      let html = '';
+      for (let id in allDataPesanan) {
+        const p = allDataPesanan[id];
+        if (filter && p.status !== filter) continue;
+        if (search && !id.toLowerCase().includes(search)) continue;
+
+        html += `
+        <div class="card"><div class="card-body">
+          <b>ID:</b> ${id}<br/>
+          <b>Nama:</b> ${p.nama}<br/>
+          <b>Nomor:</b> ${p.nomor || '-'}<br/>
+          <b>Kategori:</b> ${p.kategori}<br/>
+          <b>Produk:</b> ${p.produk}<br/>
+          <b>Status:</b> ${p.status}<br/>
+          ${p.buktiBayar ? `<b>Bukti Bayar:</b><br><img src="${p.buktiBayar}" />` : ''}
+          ${p.buktiAdmin ? `<br><b>Bukti Admin:</b><br><img src="${p.buktiAdmin}" />` : ''}
+          <br>
+          <button class="btn btn-warning btn-sm" onclick="setSelected('${id}')">📤 Kirim Bukti</button>
+          <button class="btn btn-info btn-sm" onclick="verifikasi('${id}')">✅ Proses</button>
+          <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
+        </div></div>`;
+      }
+      document.getElementById('pesananList').innerHTML = html;
+    });
+  }
+
+  function setSelected(id) {
+    selectedId = id;
+    alert("Dipilih: " + id);
+  }
+
+  function verifikasi(id) {
+    db.ref('pesanan/' + id).update({ status: 'Diproses' }).then(() => {
+      kirimNotifWA(`📦 Pesanan ${id} sedang diproses`);
+      tampilkanPesanan();
+    });
+  }
+
+  async function uploadBukti() {
+    const fileInput = document.getElementById('buktiAdmin');
+    const file = fileInput.files[0];
+    if (!file) return alert("Pilih gambar bukti terlebih dahulu!");
+    if (!selectedId) return alert("Pilih pesanan terlebih dahulu!");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+      method: "POST",
+      body: formData
+    });
+    const json = await res.json();
+    if (!json.success) return alert("Upload gagal");
+
+    const imageUrl = json.data.url;
+    await db.ref('pesanan/' + selectedId).update({
+      buktiAdmin: imageUrl,
+      status: 'Selesai'
+    });
+    kirimNotifWA(`✅ Pesanan ${selectedId} selesai, bukti admin sudah dikirim.`);
+    alert("✅ Bukti berhasil dikirim dan status diubah ke Selesai.");
+    selectedId = null;
+    fileInput.value = "";
+    tampilkanPesanan();
+  }
+
+  function hapusPesanan(id) {
+    if (confirm("Yakin ingin menghapus pesanan ini?")) {
+      db.ref('pesanan/' + id).remove().then(() => {
+        alert("✅ Pesanan dihapus.");
+        tampilkanPesanan();
+      });
+    }
+  }
+
+  function exportCSV() {
+    let csv = "ID,Nama,Nomor,Kategori,Produk,Status\n";
+    for (let id in allDataPesanan) {
+      const p = allDataPesanan[id];
+      csv += `"${id}","${p.nama}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}"\n`;
+    }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pesanan.csv";
+    a.click();
+  }
+
+  function tampilkanProduk() {
+    db.ref('produk').once('value').then(snapshot => {
+      const data = snapshot.val() || {};
+      const list = document.getElementById('daftarProduk');
+      list.innerHTML = "";
+      for (let kategori in data) {
+        for (let varian in data[kategori]) {
+          const p = data[kategori][varian];
+          list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+            <div><b>${kategori} > ${varian}</b><br/>Harga: Rp${p.harga} - ${p.cara}</div>
+            <button class="btn btn-danger btn-sm" onclick="hapusProduk('${kategori}', '${varian}')">🗑️</button>
+          </li>`;
         }
-        document.getElementById('pesananList').innerHTML = html;
+      }
+    });
+  }
+
+  function hapusProduk(kategori, varian) {
+    if (confirm("Hapus produk ini?")) {
+      db.ref(`produk/${kategori}/${varian}`).remove().then(() => {
+        alert("✅ Produk dihapus");
+        tampilkanProduk();
       });
     }
+  }
 
-    function setSelected(id) {
-      selectedId = id;
-      alert("ID dipilih: " + id);
-    }
+  document.getElementById('formProduk').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const kategori = document.getElementById('kategori').value.trim();
+    const varian = document.getElementById('varian').value.trim();
+    const harga = parseInt(document.getElementById('harga').value);
+    const cara = document.getElementById('cara').value.trim();
+    db.ref(`produk/${kategori}/${varian}`).set({ harga, cara }).then(() => {
+      alert("✅ Produk disimpan");
+      this.reset();
+      tampilkanProduk();
+    });
+  });
 
-    async function uploadBukti() {
-      if (!selectedId) return alert("Pilih ID pesanan dulu!");
-      const file = document.getElementById('buktiAdmin').files[0];
-      if (!file) return alert("Pilih gambar dulu!");
-      
-      const formData = new FormData();
-      formData.append("image", file);
+  function tampilkanGaleri() {
+    db.ref('pesanan').once('value').then(snapshot => {
+      const data = snapshot.val() || {};
+      const galeri = document.getElementById('galeri');
+      galeri.innerHTML = "";
+      for (let id in data) {
+        if (data[id].buktiBayar) {
+          const img = document.createElement('img');
+          img.src = data[id].buktiBayar;
+          img.alt = "Bukti " + id;
+          galeri.appendChild(img);
+        }
+      }
+    });
+  }
 
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgBBKey}`, {
-        method: "POST",
-        body: formData
-      });
+  function kirimNotifWA(pesan) {
+    fetch("https://starsender.online/api/sendText", {
+      method: "POST",
+      body: new URLSearchParams({
+        appkey: notifAPI.appkey,
+        authkey: notifAPI.authkey,
+        to: notifAPI.nomorAdmin,
+        message: pesan
+      })
+    });
+  }
 
-      const json = await res.json();
-      const url = json.data.url;
+  // Event
+  document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
+  document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
+  document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
+  document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
 
-      await db.ref("pesanan/" + selectedId).update({
-        buktiAdmin: url,
-        status: "Selesai"
-      });
-
-      kirimWA(`✅ Pesanan ${selectedId} telah selesai. Bukti dikirim.`);
-      alert("Bukti berhasil dikirim!");
-      tampilPesanan();
-    }
-
-    function verifikasi(id) {
-      db.ref("pesanan/" + id).update({ status: "Diproses" });
-      kirimWA(`✅ Pesanan ${id} sedang diproses.`);
-      tampilPesanan();
-    }
-
-    function kirimWA(pesan) {
-      fetch("https://starsender.online/api/sendText", {
-        method: "POST",
-        body: new URLSearchParams({
-          appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-          authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-          to: adminWA,
-          message: pesan
-        })
-      });
-    }
-
-    tampilPesanan();
-  </script>
+  // Load awal
+  tampilkanPesanan();
+  tampilkanProduk();
+  tampilkanGaleri();
+</script>
 </body>
 </html>
