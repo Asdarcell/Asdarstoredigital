@@ -1,5 +1,4 @@
-<!DOCTYPE html><html lang="id">
-<head>
+<!DOCTYPE html><html lang="id"><head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asdar Store Digital</title>
@@ -88,22 +87,6 @@
       margin: 10px auto;
       display: block;
     }
-    #testimoniBox {
-      background: var(--card);
-      padding: 10px;
-      border-left: 4px solid var(--primary);
-      border-radius: 6px;
-      min-height: 80px;
-      margin-top: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-    #animTestimoni {
-      position: absolute;
-      width: 100%;
-      transition: opacity 0.5s ease;
-      opacity: 1;
-    }
   </style>
 </head>
 <body data-theme="light">
@@ -123,49 +106,18 @@
       <select id="produk" required><option value="">Pilih Produk</option></select>
       <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
       <button type="submit">Pesan Sekarang</button>
-    </form>
+    </form><div id="hasil"></div>
 
-    <div id="hasil"></div>
+<div class="qr-section" id="qrBayar" style="display:none;">
+  <h3>🔍 Pilih Metode Pembayaran</h3>
+  <p>🟣 <b>QR</b> (Scan QR di bawah ini)</p>
+  <img src="https://qr.dana.id/v1/281012012020101873520131" alt="QR Dana">
+  <p>Atau pilih manual:</p>
+  <b>ShopeePay:</b> 081803004607<br>
+  <b>Dana:</b> 087755432880
+</div>
 
-    <div class="qr-section" id="qrBayar" style="display:none;">
-      <h3>🔍 Pilih Metode Pembayaran</h3>
-      <p>🟣 <b>QR</b> (Scan QR di bawah ini)</p>
-      <img src="https://qr.dana.id/v1/281012012020101873520131" alt="QR Dana">
-      <p>Atau pilih manual:</p>
-      <b>ShopeePay:</b> 081803004607<br>
-      <b>Dana:</b> 087755432880
-    </div>
-
-    <hr><br>
-    <h2>Cek Status Pesanan</h2>
-    <form onsubmit="event.preventDefault(); cekStatus();">
-      <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-      <button type="submit">Cek Status</button>
-    </form>
-
-    <hr><br>
-    <h2>Darurat: Cari ID Pesanan</h2>
-    <form id="formCariId" onsubmit="event.preventDefault(); cariIdPesanan();">
-      <label for="namaCari">Nama Buyer</label>
-      <input type="text" id="namaCari" required />
-      <label for="kategoriCari">Kategori Produk</label>
-      <select id="kategoriCari" required><option value="">Pilih Kategori</option></select>
-      <label for="produkCari">Produk</label>
-      <select id="produkCari" required><option value="">Pilih Produk</option></select>
-      <button type="submit">Cari ID Pesanan</button>
-    </form>
-    <div id="hasilCariId"></div>
-
-    <hr><br>
-    <h2>Testimoni Pelanggan</h2>
-    <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
-  </main>
-
-  <!-- Firebase & Script -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script>
-    // Theme
+  </main>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -179,7 +131,6 @@
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
-    // Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -194,18 +145,14 @@
 
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
-    const kategoriCari = document.getElementById('kategoriCari');
-    const produkCari = document.getElementById('produkCari');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
-    const hasilCariId = document.getElementById('hasilCariId');
 
     const produkRef = db.ref('produk');
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
         kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-        kategoriCari.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
     });
 
@@ -218,18 +165,6 @@
         const data = snapshot.val();
         for (let nama in data) {
           produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
-        }
-      });
-    });
-
-    kategoriCari.addEventListener('change', () => {
-      produkCari.innerHTML = '<option value="">Pilih Produk</option>';
-      const kategori = kategoriCari.value;
-      if (!kategori) return;
-      produkRef.child(kategori).once('value').then(snapshot => {
-        const data = snapshot.val();
-        for (let nama in data) {
-          produkCari.innerHTML += `<option value="${nama}">${nama}</option>`;
         }
       });
     });
@@ -262,35 +197,8 @@
       });
     });
 
-    function cekStatus() {
-      const id = document.getElementById('idCek').value.trim();
-      if (id) window.location.href = `status.html?id=${id}`;
-    }
-
-    function cariIdPesanan() {
-      const namaCari = document.getElementById('namaCari').value.trim().toLowerCase();
-      const kategoriVal = kategoriCari.value;
-      const produkVal = produkCari.value;
-      if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
-
-      hasilCariId.innerHTML = "Mencari...";
-      db.ref('pesanan').once('value').then(snapshot => {
-        const data = snapshot.val() || {};
-        const hasilCari = [];
-        for (let id in data) {
-          const p = data[id];
-          if (p.nama.toLowerCase() === namaCari && p.kategori === kategoriVal && p.produk === produkVal) {
-            hasilCari.push({ id, ...p });
-          }
-        }
-        hasilCariId.innerHTML = hasilCari.length === 0 ?
-          "<b>Tidak ditemukan pesanan.</b>" :
-          `<b>Ditemukan:</b><ul>${hasilCari.map(i => `<li><b>${i.id}</b> - ${i.nama}, ${i.kategori} > ${i.produk}</li>`).join('')}</ul>`;
-      });
-    }
-
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
+      const pesan = `\uD83D\uDCC5 Pesanan Baru\nID: ${id}\nNama: ${nama}\nProduk: ${produk}`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
@@ -298,27 +206,5 @@
       formData.append("message", pesan);
       fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
     }
-
-    let dataTesti = [];
-    let testiIndex = 0;
-    function tampilkanSatuTesti() {
-      const box = document.getElementById('animTestimoni');
-      if (!dataTesti.length) return;
-      const t = dataTesti[testiIndex];
-      box.style.opacity = '0';
-      setTimeout(() => {
-        box.innerHTML = `⭐️⭐️⭐️⭐️⭐️<br/><b>${t.nama}</b>: ${t.pesan}`;
-        box.style.opacity = '1';
-      }, 500);
-      testiIndex = (testiIndex + 1) % dataTesti.length;
-      setTimeout(tampilkanSatuTesti, 5000);
-    }
-
-    db.ref('testimoni').on('value', snap => {
-      const data = snap.val() || {};
-      dataTesti = Object.values(data).reverse();
-      tampilkanSatuTesti();
-    });
-  </script>
-</body>
+  </script></body>
 </html>
