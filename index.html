@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,8 +22,8 @@
       font-family: 'Poppins', sans-serif;
       background: var(--bg);
       color: var(--text);
-      transition: all 0.3s ease;
       margin: 0;
+      transition: all 0.3s ease;
     }
     header {
       position: sticky;
@@ -37,10 +36,7 @@
       border-bottom: 1px solid #ddd;
       z-index: 999;
     }
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
+    header h1 { margin: 0; font-size: 20px; }
     .theme-btn {
       background: transparent;
       border: none;
@@ -79,6 +75,19 @@
       border-left: 4px solid var(--primary);
       border-radius: 5px;
     }
+    .qr-section {
+      background: var(--card);
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary);
+      text-align: center;
+    }
+    .qr-section img {
+      max-width: 200px;
+      margin: 10px auto;
+      display: block;
+    }
     #testimoniBox {
       background: var(--card);
       padding: 10px;
@@ -94,12 +103,6 @@
       width: 100%;
       transition: opacity 0.5s ease;
       opacity: 1;
-    }
-    img.qr {
-      margin-top: 10px;
-      max-width: 220px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
     }
   </style>
 </head>
@@ -123,8 +126,17 @@
     </form>
 
     <div id="hasil"></div>
-    <hr><br>
 
+    <div class="qr-section" id="qrBayar" style="display:none;">
+      <h3>🔍 Pilih Metode Pembayaran</h3>
+      <p>🟣 <b>QR</b> (Scan QR di bawah ini)</p>
+      <img src="https://qr.dana.id/v1/281012012020101873520131" alt="QR Dana">
+      <p>Atau pilih manual:</p>
+      <b>ShopeePay:</b> 081803004607<br>
+      <b>Dana:</b> 087755432880
+    </div>
+
+    <hr><br>
     <h2>Cek Status Pesanan</h2>
     <form onsubmit="event.preventDefault(); cekStatus();">
       <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
@@ -149,11 +161,11 @@
     <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
   </main>
 
-  <!-- Firebase -->
+  <!-- Firebase & Script -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
   <script>
+    // Theme
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -162,16 +174,16 @@
       btn.textContent = next === 'light' ? '🌙' : '☀️';
       localStorage.setItem('theme', next);
     }
-
     if (localStorage.getItem('theme')) {
       document.body.setAttribute('data-theme', localStorage.getItem('theme'));
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
+    // Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
       storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
@@ -187,8 +199,8 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
     const hasilCariId = document.getElementById('hasilCariId');
-    const produkRef = db.ref('produk');
 
+    const produkRef = db.ref('produk');
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
@@ -242,18 +254,10 @@
       const id = "P" + Date.now();
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
       db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, waktu, status: 'Belum Bayar' }).then(() => {
-        hasil.innerHTML = `
-✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
-Transfer ke:<br/>
-ShopeePay: <b>081803004607</b><br/>
-<a href="upload.html?id=${id}">Upload Bukti Bayar</a><br/>
-<a href="status.html?id=${id}">Cek Status</a><br/><br/>
-<h3>🔄 Bayar via QR</h3>
-<img src="https://api.qrserver.com/v1/create-qr-code/?data=https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012020101873520131&size=250x250" class="qr" alt="QR DANA"><br/>
-<a href="https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012020101873520131" target="_blank"><b>➡️ Klik di sini untuk Bayar Lewat QR</b></a>
-`;
+        hasil.innerHTML = `✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/><a href="upload.html?id=${id}">Upload Bukti Bayar</a> | <a href="status.html?id=${id}">Cek Status</a>`;
         document.getElementById('formPesanan').reset();
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+        document.getElementById('qrBayar').style.display = 'block';
         kirimNotifWA(id, nama, produk);
       });
     });
@@ -268,6 +272,7 @@ ShopeePay: <b>081803004607</b><br/>
       const kategoriVal = kategoriCari.value;
       const produkVal = produkCari.value;
       if (!namaCari || !kategoriVal || !produkVal) return alert("Harap isi semua field!");
+
       hasilCariId.innerHTML = "Mencari...";
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -285,7 +290,7 @@ ShopeePay: <b>081803004607</b><br/>
     }
 
     function kirimNotifWA(id, nama, produk) {
-      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola di:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
+      const pesan = `📥 Pesanan Baru\n🧾 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n✅ Kelola:\nhttps://asdarcell.github.io/Asdarstoredigital/admin.html`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
@@ -308,6 +313,7 @@ ShopeePay: <b>081803004607</b><br/>
       testiIndex = (testiIndex + 1) % dataTesti.length;
       setTimeout(tampilkanSatuTesti, 5000);
     }
+
     db.ref('testimoni').on('value', snap => {
       const data = snap.val() || {};
       dataTesti = Object.values(data).reverse();
