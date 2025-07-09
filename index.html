@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Asdar Store Digital</title>
-  <link rel="icon" href="favicon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="favicon.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
       --bg: #f9f9f9;
@@ -21,45 +21,24 @@
     }
     body {
       font-family: 'Poppins', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      transition: all 0.3s ease;
-      margin: 0;
+      background: var(--bg); color: var(--text); transition: all 0.3s ease; margin: 0;
     }
     header {
-      position: sticky;
-      top: 0;
-      background: var(--card);
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ddd;
-      z-index: 999;
+      position: sticky; top: 0;
+      background: var(--card); padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #ddd; z-index: 999;
     }
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
+    header h1 { margin: 0; font-size: 20px; }
     .theme-btn {
-      background: transparent;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--primary);
+      background: transparent; border: none; font-size: 20px;
+      cursor: pointer; color: var(--primary);
     }
-    main {
-      max-width: 700px;
-      margin: auto;
-      padding: 20px;
-    }
-    label {
-      font-weight: 600; margin-top: 10px; display: block;
-    }
+    main { max-width: 700px; margin: auto; padding: 20px; }
+    label { font-weight: 600; margin-top: 10px; display: block; }
     input, select, button {
       width: 100%; padding: 10px; margin: 8px 0;
       border-radius: 8px; border: 1px solid #ccc;
-      transition: 0.3s;
     }
     button {
       background: var(--primary); color: white;
@@ -70,30 +49,18 @@
       border-left: 4px solid var(--primary); border-radius: 5px;
     }
     #testimoniBox {
-      background: var(--card);
-      padding: 10px;
-      border-left: 4px solid var(--primary);
-      border-radius: 6px;
-      min-height: 80px;
-      margin-top: 20px;
-      position: relative;
-      overflow: hidden;
+      background: var(--card); padding: 10px;
+      border-left: 4px solid var(--primary); border-radius: 6px;
+      min-height: 80px; margin-top: 20px; position: relative;
     }
     #animTestimoni {
-      position: absolute;
-      width: 100%;
-      transition: opacity 0.5s ease;
-      opacity: 1;
+      position: absolute; width: 100%;
+      transition: opacity 0.5s ease; opacity: 1;
     }
     .qr-btn {
-      margin-top: 10px;
-      background: #000;
-      color: #fff;
-      padding: 10px;
-      text-align: center;
-      border-radius: 6px;
-      text-decoration: none;
-      display: inline-block;
+      margin-top: 10px; background: #000;
+      color: #fff; padding: 10px; border-radius: 6px;
+      text-align: center; display: inline-block; text-decoration: none;
     }
   </style>
 </head>
@@ -105,22 +72,24 @@
   <main>
     <form id="formPesanan">
       <label for="nama">Nama Lengkap</label>
-      <input type="text" id="nama" required />
+      <input type="text" id="nama" required/>
       <label for="nomor">Nomor HP / ID SN</label>
-      <input type="text" id="nomor" required />
+      <input type="text" id="nomor" required/>
       <label for="kategori">Kategori Produk</label>
       <select id="kategori" required><option value="">Pilih Kategori</option></select>
       <label for="produk">Produk</label>
       <select id="produk" required><option value="">Pilih Produk</option></select>
       <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+      <div id="tambahanInput"></div>
       <button type="submit">Pesan Sekarang</button>
     </form>
+
     <div id="hasil"></div>
 
     <hr><br>
     <h2>Cek Status Pesanan</h2>
     <form onsubmit="event.preventDefault(); cekStatus();">
-      <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+      <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required/>
       <button type="submit">Cek Status</button>
     </form>
 
@@ -129,24 +98,11 @@
     <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
   </main>
 
-  <!-- Firebase & Script -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
-    function toggleTheme() {
-      const body = document.body;
-      const btn = document.getElementById('themeToggle');
-      const next = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-      body.setAttribute('data-theme', next);
-      btn.textContent = next === 'light' ? '🌙' : '☀️';
-      localStorage.setItem('theme', next);
-    }
-
-    if (localStorage.getItem('theme')) {
-      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
-      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
-    }
-
+    // Firebase Konfigurasi
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -163,8 +119,35 @@
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
-    const produkRef = db.ref('produk');
+    const tambahanDiv = document.getElementById('tambahanInput');
 
+    const pengaturanRef = db.ref("pengaturan");
+    const inputTambahanRef = db.ref("inputTambahan");
+    const produkRef = db.ref("produk");
+
+    // Tema & Nama Toko
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.getElementById('themeToggle');
+      const next = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      body.setAttribute('data-theme', next);
+      btn.textContent = next === 'light' ? '🌙' : '☀️';
+      localStorage.setItem('theme', next);
+    }
+
+    if (localStorage.getItem('theme')) {
+      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+    }
+
+    pengaturanRef.on("value", snap => {
+      const data = snap.val() || {};
+      document.querySelector("header h1").textContent = data.namaToko || "Asdar Store Digital";
+      if (data.temaDefault) document.body.setAttribute("data-theme", data.temaDefault);
+      if (data.testimoniAktif === false) document.getElementById('testimoniBox').style.display = "none";
+    });
+
+    // Load produk
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
@@ -195,6 +178,20 @@
       });
     });
 
+    // Input tambahan dari admin
+    inputTambahanRef.on('value', snap => {
+      const data = snap.val() || {};
+      tambahanDiv.innerHTML = "";
+      for (let id in data) {
+        const field = data[id];
+        tambahanDiv.innerHTML += `
+          <label for="${id}">${field.label}</label>
+          <input type="text" id="${id}" ${field.wajib ? "required" : ""} />
+        `;
+      }
+    });
+
+    // Submit form
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
@@ -203,35 +200,40 @@
       const produk = produkSelect.value;
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
+
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
+
       produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
         const data = snap.val();
         const harga = data.harga || 0;
-        db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
-          hasil.innerHTML = `
-  ✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
-  <img src="https://asdarcell.github.io/Asdarstoredigital/1751966264423.jpg" alt="QRIS" style="width: 100%; max-width: 300px;" />
-  <div class="info">
-    🟣 <b>PAYMENT</b><br/>
-    ShopeePay: <b>081803004607</b><br/>
-    Dana: <b>087755432880</b>
-  </div>
-  <a class='qr-btn' href="upload.html?id=${id}">📤 Upload Bukti Bayar</a><br/>
-  <a class='qr-btn' href="status.html?id=${id}">📄 Cek Status</a><br/>
-  <a class='qr-btn' style="background:#00a8e8;" href="intent://sendmoney?phone=087755432880&amount=${harga}#Intent;scheme=dana;package=id.dana;end">💸 Bayar via Dana</a><br/>
-  <a class='qr-btn' style="background:#ee4d2d;" href="intent://send?phone=081803004607&amount=${harga}#Intent;scheme=shopeepay;package=com.shopee.id;end">🛒 Bayar via ShopeePay</a>
-`;
-          document.getElementById('formPesanan').reset();
-          infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-          kirimNotifWA(id, nama, produk);
+
+        let dataPesanan = { nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' };
+
+        // Tambahan input
+        inputTambahanRef.once('value').then(snap => {
+          const tambahan = snap.val() || {};
+          for (let id in tambahan) {
+            const val = document.getElementById(id)?.value?.trim();
+            dataPesanan[id] = val || "";
+          }
+
+          db.ref('pesanan/' + id).set(dataPesanan).then(() => {
+            hasil.innerHTML = `
+              ✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
+              <img src="https://asdarcell.github.io/Asdarstoredigital/1751966264423.jpg" style="max-width:300px;" />
+              <div class="info">
+                🟣 ShopeePay: <b>081803004607</b><br/>Dana: <b>087755432880</b>
+              </div>
+              <a class='qr-btn' href="upload.html?id=${id}">📤 Upload Bukti Bayar</a><br/>
+              <a class='qr-btn' href="status.html?id=${id}">📄 Cek Status</a>
+            `;
+            document.getElementById('formPesanan').reset();
+            infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+            kirimNotifWA(id, nama, produk);
+          });
         });
       });
     });
-
-    function cekStatus() {
-      const id = document.getElementById('idCek').value.trim();
-      if (id) window.location.href = `status.html?id=${id}`;
-    }
 
     function kirimNotifWA(id, nama, produk) {
       const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n📤 Admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
@@ -240,11 +242,18 @@
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
       formData.append("to", "6281803004607");
       formData.append("message", pesan);
-      fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
+      fetch("https://app.ngirimwa.com/api/create-message", {
+        method: "POST", body: formData
+      });
     }
 
-    let dataTesti = [];
-    let testiIndex = 0;
+    function cekStatus() {
+      const id = document.getElementById('idCek').value.trim();
+      if (id) window.location.href = `status.html?id=${id}`;
+    }
+
+    // Testimoni Loop
+    let dataTesti = [], testiIndex = 0;
     function tampilkanSatuTesti() {
       const box = document.getElementById('animTestimoni');
       if (!dataTesti.length) return;
@@ -258,8 +267,7 @@
       setTimeout(tampilkanSatuTesti, 5000);
     }
     db.ref('testimoni').on('value', snap => {
-      const data = snap.val() || {};
-      dataTesti = Object.values(data).reverse();
+      dataTesti = Object.values(snap.val() || {}).reverse();
       tampilkanSatuTesti();
     });
   </script>
