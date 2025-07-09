@@ -1,64 +1,48 @@
-<!DOCTYPE html><html lang="id">
+<!-- [VERSI MODULAR SUPER POWERFUL] --><!-- Akan dibagi menjadi dua file: admin.html & index.html --><!-- File pertama: admin.html --><!-- File kedua akan saya kirim setelah ini: index.html dinamis penuh --><!-- Semua fitur dikontrol dari Firebase --><!-- BEGIN: admin.html --><!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <title>Admin Modular - Asdar Store</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Super Admin - Asdar Store</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <style>
-    body { padding: 20px; background: #f0f2f5; font-family: 'Poppins', sans-serif; }
-    h1 { margin-bottom: 30px; }
-    textarea { font-family: monospace; font-size: 14px; }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 </head>
-<body>
+<body class="p-4">
   <div class="container">
-    <h1>Super Admin Dashboard - Asdar Store</h1>
-    <div class="mb-4">
-      <h4>1. Update QR / Promo / Teks Dinamis</h4>
-      <form id="formKonten">
-        <input class="form-control mb-2" type="text" id="qrDana" placeholder="Link QR Dana" />
-        <input class="form-control mb-2" type="text" id="qrShopee" placeholder="Link QR ShopeePay" />
-        <textarea class="form-control mb-2" id="textPromo" placeholder="Teks Promo atau Banner"></textarea>
-        <button class="btn btn-success">Simpan Konten</button>
-      </form>
-    </div><hr />
+    <h1 class="mb-4">Dashboard Modular Admin - Asdar Store</h1><!-- Fitur Umum -->
+<h3>Pengaturan Toko</h3>
+<form id="formPengaturan" class="mb-4">
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="showTestimoni">
+    <label class="form-check-label" for="showTestimoni">Tampilkan Testimoni</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="showCekStatus">
+    <label class="form-check-label" for="showCekStatus">Tampilkan Cek Status</label>
+  </div>
+  <label class="mt-3">Metode Pembayaran (pisahkan dengan koma):</label>
+  <input type="text" id="metodePembayaran" class="form-control mb-3" placeholder="QRIS,Dana,ShopeePay" />
+  <label>Banner Atas:</label>
+  <input type="text" id="banner" class="form-control mb-3" />
+  <label>Catatan Info:</label>
+  <textarea id="note" class="form-control mb-3"></textarea>
+  <button type="submit" class="btn btn-success">💾 Simpan Pengaturan</button>
+</form>
 
-<div class="mb-4">
-  <h4>2. Tambah Field Dinamis ke Form Pemesanan</h4>
-  <form id="formField">
-    <input class="form-control mb-2" type="text" id="fieldId" placeholder="ID Field (misal: referral)" required />
-    <input class="form-control mb-2" type="text" id="fieldLabel" placeholder="Label (misal: Kode Referral)" required />
-    <select class="form-select mb-2" id="fieldType">
-      <option value="text">Input Text</option>
-      <option value="textarea">Textarea</option>
-    </select>
-    <select class="form-select mb-2" id="fieldRequired">
-      <option value="true">Wajib Diisi</option>
-      <option value="false">Tidak Wajib</option>
-    </select>
-    <button class="btn btn-primary">Tambah Field</button>
-  </form>
-  <ul id="listField" class="mt-3 list-group"></ul>
-</div>
-
-<hr />
-
-<div>
-  <h4>3. Logika Tampilan Berdasarkan Produk</h4>
-  <form id="formLogic">
-    <input class="form-control mb-2" id="produkKey" placeholder="Nama Produk (misal: Paket Data)" required />
-    <input class="form-control mb-2" id="showFields" placeholder="Tampilkan Field (pisah koma)" />
-    <input class="form-control mb-2" id="hideFields" placeholder="Sembunyikan Field (pisah koma)" />
-    <button class="btn btn-warning">Simpan Logika</button>
-  </form>
-  <ul id="listLogic" class="mt-3 list-group"></ul>
-</div>
+<!-- Produk -->
+<h3>Produk</h3>
+<form id="formProduk" class="row g-2 mb-4">
+  <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
+  <div class="col-md-3"><input type="text" id="namaProduk" class="form-control" placeholder="Nama Produk" required /></div>
+  <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga" required /></div>
+  <div class="col-md-4"><input type="text" id="deskripsi" class="form-control" placeholder="Deskripsi" required /></div>
+  <div class="col-12"><button type="submit" class="btn btn-primary">➕ Tambah / Update Produk</button></div>
+</form>
+<ul id="listProduk" class="list-group"></ul>
 
   </div>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
       storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
@@ -67,61 +51,83 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const kontenRef = db.ref('pengaturan');
-    const fieldRef = db.ref('kontenDinamis/inputTambahan');
-    const logicRef = db.ref('formLogic');
+    const fiturRef = db.ref('fitur');
+    const halamanRef = db.ref('halaman');
+    const produkRef = db.ref('produk');
 
-    // SIMPAN KONTEN PROMO
-    document.getElementById('formKonten').addEventListener('submit', e => {
-      e.preventDefault();
-      const data = {
-        qrDana: qrDana.value,
-        qrShopee: qrShopee.value,
-        textPromo: textPromo.value
-      };
-      kontenRef.update(data);
-      alert('✅ Konten disimpan!');
+    // Load fitur awal
+    fiturRef.once('value').then(snap => {
+      const d = snap.val() || {};
+      document.getElementById('showTestimoni').checked = d.showTestimoni;
+      document.getElementById('showCekStatus').checked = d.showCekStatus;
+      document.getElementById('metodePembayaran').value = (d.metodePembayaran || []).join(',');
+    });
+    halamanRef.once('value').then(snap => {
+      const d = snap.val() || {};
+      document.getElementById('banner').value = d.banner || '';
+      document.getElementById('note').value = d.note || '';
     });
 
-    // TAMBAH FIELD DINAMIS
-    document.getElementById('formField').addEventListener('submit', e => {
+    // Simpan fitur
+    document.getElementById('formPengaturan').addEventListener('submit', e => {
       e.preventDefault();
-      const field = {
-        id: fieldId.value.trim(),
-        label: fieldLabel.value.trim(),
-        type: fieldType.value,
-        required: fieldRequired.value === 'true'
-      };
-      fieldRef.push(field);
-      alert('✅ Field ditambahkan!');
+      fiturRef.set({
+        showTestimoni: document.getElementById('showTestimoni').checked,
+        showCekStatus: document.getElementById('showCekStatus').checked,
+        metodePembayaran: document.getElementById('metodePembayaran').value.split(',').map(m => m.trim())
+      });
+      halamanRef.set({
+        banner: document.getElementById('banner').value,
+        note: document.getElementById('note').value
+      });
+      alert('✅ Pengaturan disimpan.');
     });
 
-    fieldRef.on('value', snap => {
-      const data = snap.val() || {};
-      listField.innerHTML = '';
-      Object.entries(data).forEach(([key, val]) => {
-        listField.innerHTML += `<li class='list-group-item'>${val.label} (${val.type}) - ${val.required ? 'Wajib' : 'Opsional'}</li>`;
+    // Tambah produk
+    document.getElementById('formProduk').addEventListener('submit', e => {
+      e.preventDefault();
+      const kategori = document.getElementById('kategori').value;
+      const nama = document.getElementById('namaProduk').value;
+      const harga = parseInt(document.getElementById('harga').value);
+      const deskripsi = document.getElementById('deskripsi').value;
+      produkRef.child(`${kategori}/${nama}`).set({ harga, deskripsi, aktif: true }).then(() => {
+        alert('✅ Produk disimpan.');
+        tampilProduk();
+        e.target.reset();
       });
     });
 
-    // SIMPAN LOGIKA FORM
-    document.getElementById('formLogic').addEventListener('submit', e => {
-      e.preventDefault();
-      const key = produkKey.value.trim();
-      const logic = {
-        tampilkan: showFields.value.split(',').map(x => x.trim()).filter(x => x),
-        sembunyikan: hideFields.value.split(',').map(x => x.trim()).filter(x => x)
-      };
-      logicRef.child(key).set(logic);
-      alert('✅ Logika disimpan!');
-    });
-
-    logicRef.on('value', snap => {
-      const data = snap.val() || {};
-      listLogic.innerHTML = '';
-      Object.entries(data).forEach(([produk, val]) => {
-        listLogic.innerHTML += `<li class='list-group-item'><b>${produk}</b> → Show: ${val.tampilkan.join(', ')} | Hide: ${val.sembunyikan.join(', ')}</li>`;
+    // Tampil produk
+    function tampilProduk() {
+      produkRef.once('value').then(snap => {
+        const list = document.getElementById('listProduk');
+        list.innerHTML = '';
+        const data = snap.val() || {};
+        for (let kat in data) {
+          for (let nama in data[kat]) {
+            const p = data[kat][nama];
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between';
+            li.innerHTML = `<div>
+              <b>${kat} > ${nama}</b><br/>Rp${p.harga} - ${p.deskripsi} - ${p.aktif ? '✅ Aktif' : '⛔ Tidak Aktif'}</div>
+              <div>
+                <button class="btn btn-sm btn-warning me-1" onclick="toggleAktif('${kat}','${nama}',${!p.aktif})">🔁</button>
+                <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kat}','${nama}')">🗑️</button>
+              </div>`;
+            list.appendChild(li);
+          }
+        }
       });
-    });
+    }
+
+    function hapusProduk(k, n) {
+      if (confirm(`Hapus produk ${n}?`)) produkRef.child(`${k}/${n}`).remove().then(tampilProduk);
+    }
+    function toggleAktif(k, n, status) {
+      produkRef.child(`${k}/${n}/aktif`).set(status).then(tampilProduk);
+    }
+
+    tampilProduk();
   </script></body>
 </html>
+<!-- END admin.html -->
