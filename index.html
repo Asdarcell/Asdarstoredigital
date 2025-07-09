@@ -115,7 +115,9 @@
       <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
       <button type="submit">Pesan Sekarang</button>
     </form>
-    <div id="hasil"></div>
+
+    <!-- FITUR DINAMIS TAMPIL DISINI -->
+    <div id="fiturDinamisIndex"></div>
 
     <hr><br>
     <h2>Cek Status Pesanan</h2>
@@ -133,6 +135,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // Toggle theme light/dark
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -147,6 +150,7 @@
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
+    // Firebase config dan inisialisasi
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -159,12 +163,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Element referensi
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasil = document.getElementById('hasil');
     const produkRef = db.ref('produk');
+    const fiturRef = db.ref('fitur_dinamis');
 
+    // Load kategori dari Firebase
     produkRef.once('value').then(snapshot => {
       const data = snapshot.val();
       for (let kategori in data) {
@@ -172,6 +179,7 @@
       }
     });
 
+    // Load produk berdasarkan kategori
     kategoriSelect.addEventListener('change', () => {
       produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
       infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
@@ -185,16 +193,18 @@
       });
     });
 
+    // Tampilkan harga dan deskripsi produk saat dipilih
     produkSelect.addEventListener('change', () => {
       const kategori = kategoriSelect.value;
       const produk = produkSelect.value;
       if (!produk) return;
       produkRef.child(`${kategori}/${produk}`).once('value').then(snapshot => {
         const data = snapshot.val();
-        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara}`;
+        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara || '-'}`;
       });
     });
 
+    // Submit form pesanan
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
@@ -203,7 +213,9 @@
       const produk = produkSelect.value;
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
+
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
+
       produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
         const data = snap.val();
         const harga = data.harga || 0;
@@ -228,11 +240,13 @@
       });
     });
 
+    // Fungsi cek status (redirect ke halaman status)
     function cekStatus() {
       const id = document.getElementById('idCek').value.trim();
       if (id) window.location.href = `status.html?id=${id}`;
     }
 
+    // Kirim notifikasi WA ke admin
     function kirimNotifWA(id, nama, produk) {
       const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n📤 Admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
       const formData = new FormData();
@@ -243,6 +257,7 @@
       fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
     }
 
+    // Testimoni pelanggan
     let dataTesti = [];
     let testiIndex = 0;
     function tampilkanSatuTesti() {
@@ -262,6 +277,23 @@
       dataTesti = Object.values(data).reverse();
       tampilkanSatuTesti();
     });
+
+    // --- FITUR DINAMIS ---
+    function tampilkanFiturDinamisIndex() {
+      fiturRef.once('value').then(snap => {
+        const data = snap.val() || {};
+        let fiturHTML = '';
+        for (let id in data) {
+          const f = data[id];
+          if (f.lokasi === 'index') {
+            fiturHTML += f.html;
+          }
+        }
+        document.getElementById('fiturDinamisIndex').innerHTML = fiturHTML;
+      });
+    }
+
+    tampilkanFiturDinamisIndex();
   </script>
 </body>
 </html>
