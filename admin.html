@@ -11,6 +11,11 @@
     .card { margin-bottom: 15px; }
     img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
     #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+    .star {
+      color: gold;
+      font-size: 16px;
+      margin-right: 2px;
+    }
   </style>
 </head>
 <body>
@@ -54,8 +59,8 @@
     <h4>Daftar Produk</h4>
     <ul id="daftarProduk" class="list-group mb-5"></ul>
 
-    <!-- Galeri Bukti Bayar -->
-    <h4>Galeri Bukti Transfer</h4>
+    <!-- Galeri Bukti Bayar & Testimoni -->
+    <h4>Galeri Bukti Transfer & Testimoni Positif</h4>
     <div id="galeri" class="d-flex flex-wrap"></div>
   </div>
 
@@ -85,6 +90,16 @@
     let selectedId = null;
     let allDataPesanan = {};
 
+    // Fungsi render bintang rating
+    function renderStars(rating) {
+      if (!rating) return '';
+      let stars = '';
+      for (let i = 0; i < 5; i++) {
+        stars += i < rating ? '<span class="star">&#9733;</span>' : '<span class="star" style="color:#ccc">&#9733;</span>';
+      }
+      return stars;
+    }
+
     function tampilkanPesanan() {
       db.ref('pesanan').once('value').then(snapshot => {
         allDataPesanan = snapshot.val() || {};
@@ -95,6 +110,17 @@
           const p = allDataPesanan[id];
           if (filter && p.status !== filter) continue;
           if (search && !id.toLowerCase().includes(search)) continue;
+
+          // Render rating dan testimoni jika ada
+          let ratingHTML = '';
+          if (p.rating) {
+            ratingHTML = `<div><b>Rating:</b> ${renderStars(p.rating)} (${p.rating}/5)</div>`;
+          }
+          let komentarHTML = '';
+          if (p.komentar) {
+            komentarHTML = `<div><b>Testimoni:</b> ${p.komentar}</div>`;
+          }
+
           html += `<div class="card"><div class="card-body">
             <b>ID:</b> ${id}<br/>
             <b>Nama:</b> ${p.nama}<br/>
@@ -105,6 +131,8 @@
             <b>Waktu:</b> ${p.waktu || '-'}<br/>
             ${p.buktiBayar ? `<b>Bukti Pembeli:</b><br/><img src="${p.buktiBayar}" alt="Bukti Bayar"/>` : ''}
             ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" alt="Bukti Admin"/>` : ''}
+            ${ratingHTML}
+            ${komentarHTML}
             <br/><button class="btn btn-warning btn-sm" onclick="setSelected('${id}')">📤 Kirim Bukti</button>
             <button class="btn btn-info btn-sm" onclick="verifikasi('${id}')">✅ Proses</button>
             <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
@@ -154,6 +182,7 @@
         selectedId = null;
         fileInput.value = "";
         tampilkanPesanan();
+        tampilkanGaleri(); // update galeri setelah selesai
       } catch (e) {
         alert("❌ Upload gambar gagal: " + e.message);
       }
@@ -164,15 +193,16 @@
         db.ref('pesanan/' + id).remove().then(() => {
           alert("✅ Pesanan dihapus.");
           tampilkanPesanan();
+          tampilkanGaleri();
         });
       }
     }
 
     function exportCSV() {
-      let csv = "ID,Nama,Nomor,Kategori,Produk,Status,Waktu\n";
+      let csv = "ID,Nama,Nomor,Kategori,Produk,Status,Waktu,Rating,Testimoni\n";
       for (let id in allDataPesanan) {
         const p = allDataPesanan[id];
-        csv += `"${id}","${p.nama}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}","${p.waktu || ''}"\n`;
+        csv += `"${id}","${p.nama}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}","${p.waktu || ''}","${p.rating || ''}","${p.komentar ? p.komentar.replace(/"/g, '""') : ''}"\n`;
       }
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -229,17 +259,30 @@
       });
     });
 
+    // Hanya tampilkan testimoni positif di galeri (rating > 2)
     function tampilkanGaleri() {
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
         const galeri = document.getElementById('galeri');
         galeri.innerHTML = "";
         for (const id in data) {
-          if (data[id].buktiBayar) {
+          const p = data[id];
+          if (p.buktiBayar && p.rating && p.rating > 2) {
+            // Tampilkan gambar bukti bayar + rating + komentar
+            const div = document.createElement('div');
+            div.style.margin = "5px";
+            div.style.border = "1px solid #ccc";
+            div.style.borderRadius = "6px";
+            div.style.padding = "5px";
+            div.style.width = "140px";
+            div.style.textAlign = "center";
             const img = document.createElement('img');
-            img.src = data[id].buktiBayar;
+            img.src = p.buktiBayar;
             img.alt = "Bukti Bayar " + id;
-            galeri.appendChild(img);
+            img.style.maxWidth = "120px";
+            div.appendChild(img);
+            div.innerHTML += `<br/>${renderStars(p.rating)}<br/>${p.komentar || ''}`;
+            galeri.appendChild(div);
           }
         }
       });
