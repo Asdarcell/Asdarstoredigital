@@ -1,133 +1,164 @@
-<!-- [VERSI MODULAR SUPER POWERFUL] --><!-- Akan dibagi menjadi dua file: admin.html & index.html --><!-- File pertama: admin.html --><!-- File kedua akan saya kirim setelah ini: index.html dinamis penuh --><!-- Semua fitur dikontrol dari Firebase --><!-- BEGIN: admin.html --><!DOCTYPE html><html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Modular - Asdar Store</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Admin - Asdar Store</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
+    h1 { margin-bottom: 20px; }
+    .card { margin-bottom: 15px; }
+    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+  </style>
 </head>
-<body class="p-4">
-  <div class="container">
-    <h1 class="mb-4">Dashboard Modular Admin - Asdar Store</h1><!-- Fitur Umum -->
-<h3>Pengaturan Toko</h3>
-<form id="formPengaturan" class="mb-4">
-  <div class="form-check">
-    <input class="form-check-input" type="checkbox" id="showTestimoni">
-    <label class="form-check-label" for="showTestimoni">Tampilkan Testimoni</label>
-  </div>
-  <div class="form-check">
-    <input class="form-check-input" type="checkbox" id="showCekStatus">
-    <label class="form-check-label" for="showCekStatus">Tampilkan Cek Status</label>
-  </div>
-  <label class="mt-3">Metode Pembayaran (pisahkan dengan koma):</label>
-  <input type="text" id="metodePembayaran" class="form-control mb-3" placeholder="QRIS,Dana,ShopeePay" />
-  <label>Banner Atas:</label>
-  <input type="text" id="banner" class="form-control mb-3" />
-  <label>Catatan Info:</label>
-  <textarea id="note" class="form-control mb-3"></textarea>
-  <button type="submit" class="btn btn-success">💾 Simpan Pengaturan</button>
-</form>
+<body>
+<div class="container">
+  <h1>Dashboard Admin - Asdar Store</h1>  <!-- Pengaturan Umum -->  <h3>Pengaturan Umum</h3>
+  <form id="formHalaman" class="mb-4">
+    <input type="text" id="banner" class="form-control mb-2" placeholder="Judul / Banner Halaman" required />
+    <textarea id="note" class="form-control mb-2" placeholder="Catatan di bawah banner" rows="2"></textarea>
+    <button class="btn btn-success">Simpan Halaman</button>
+  </form>  <!-- Fitur Toko -->  <h3>Pengaturan Fitur Toko</h3>
+  <form id="formFitur" class="mb-4">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="showCekStatus">
+      <label class="form-check-label" for="showCekStatus">Tampilkan Fitur Cek Status</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="showTestimoni">
+      <label class="form-check-label" for="showTestimoni">Tampilkan Testimoni</label>
+    </div>
+    <button class="btn btn-primary mt-2">Simpan Fitur</button>
+  </form>  <!-- Fitur Bebas -->  <h3>Fitur Bebas (Tambahan)</h3>
+  <form id="formCustom" class="row g-2 mb-4">
+    <div class="col-md-4"><input type="text" id="customKey" class="form-control" placeholder="Nama Fitur (key)" required /></div>
+    <div class="col-md-6"><input type="text" id="customValue" class="form-control" placeholder="Isi / Value" required /></div>
+    <div class="col-md-2"><button class="btn btn-dark w-100">Tambah</button></div>
+  </form>
+  <ul id="listCustom" class="list-group mb-4"></ul>  <hr>  <h3>Produk</h3>
+  <form id="formProduk" class="row g-3 mb-3">
+    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
+    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Nama Produk" required /></div>
+    <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga" required /></div>
+    <div class="col-md-3"><input type="text" id="cara" class="form-control" placeholder="Deskripsi / Cara" required /></div>
+    <div class="col-md-1">
+      <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" id="aktif" checked>
+        <label class="form-check-label">Aktif</label>
+      </div>
+    </div>
+    <div class="col-12"><button class="btn btn-success">Simpan Produk</button></div>
+  </form>
+  <ul id="daftarProduk" class="list-group mb-5"></ul>
+</div><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-<!-- Produk -->
-<h3>Produk</h3>
-<form id="formProduk" class="row g-2 mb-4">
-  <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
-  <div class="col-md-3"><input type="text" id="namaProduk" class="form-control" placeholder="Nama Produk" required /></div>
-  <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga" required /></div>
-  <div class="col-md-4"><input type="text" id="deskripsi" class="form-control" placeholder="Deskripsi" required /></div>
-  <div class="col-12"><button type="submit" class="btn btn-primary">➕ Tambah / Update Produk</button></div>
-</form>
-<ul id="listProduk" class="list-group"></ul>
+  // Halaman Settings
+  const formHalaman = document.getElementById("formHalaman");
+  formHalaman.addEventListener("submit", e => {
+    e.preventDefault();
+    db.ref("halaman").set({
+      banner: document.getElementById("banner").value,
+      note: document.getElementById("note").value
+    }).then(() => alert("✅ Disimpan."));
+  });
+  db.ref("halaman").once("value").then(snap => {
+    const d = snap.val() || {};
+    document.getElementById("banner").value = d.banner || "";
+    document.getElementById("note").value = d.note || "";
+  });
 
-  </div>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  // Fitur Toko
+  const formFitur = document.getElementById("formFitur");
+  formFitur.addEventListener("submit", e => {
+    e.preventDefault();
+    db.ref("fitur").set({
+      showCekStatus: document.getElementById("showCekStatus").checked,
+      showTestimoni: document.getElementById("showTestimoni").checked
+    }).then(() => alert("✅ Fitur diperbarui."));
+  });
+  db.ref("fitur").once("value").then(snap => {
+    const f = snap.val() || {};
+    document.getElementById("showCekStatus").checked = f.showCekStatus || false;
+    document.getElementById("showTestimoni").checked = f.showTestimoni || false;
+  });
 
-    const fiturRef = db.ref('fitur');
-    const halamanRef = db.ref('halaman');
-    const produkRef = db.ref('produk');
-
-    // Load fitur awal
-    fiturRef.once('value').then(snap => {
-      const d = snap.val() || {};
-      document.getElementById('showTestimoni').checked = d.showTestimoni;
-      document.getElementById('showCekStatus').checked = d.showCekStatus;
-      document.getElementById('metodePembayaran').value = (d.metodePembayaran || []).join(',');
+  // Fitur Bebas (Custom Fields)
+  const listCustom = document.getElementById("listCustom");
+  document.getElementById("formCustom").addEventListener("submit", e => {
+    e.preventDefault();
+    const key = document.getElementById("customKey").value.trim();
+    const val = document.getElementById("customValue").value.trim();
+    if (!key || !val) return;
+    db.ref("fiturBebas/" + key).set(val).then(() => {
+      document.getElementById("customKey").value = "";
+      document.getElementById("customValue").value = "";
+      loadCustom();
     });
-    halamanRef.once('value').then(snap => {
-      const d = snap.val() || {};
-      document.getElementById('banner').value = d.banner || '';
-      document.getElementById('note').value = d.note || '';
+  });
+  function loadCustom() {
+    listCustom.innerHTML = "";
+    db.ref("fiturBebas").once("value").then(snap => {
+      const data = snap.val() || {};
+      for (const key in data) {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `<div><b>${key}</b>: ${data[key]}</div>
+        <button class='btn btn-sm btn-danger' onclick="hapusCustom('${key}')">Hapus</button>`;
+        listCustom.appendChild(li);
+      }
     });
+  }
+  function hapusCustom(key) {
+    if (confirm("Hapus fitur ini?")) db.ref("fiturBebas/" + key).remove().then(loadCustom);
+  }
+  loadCustom();
 
-    // Simpan fitur
-    document.getElementById('formPengaturan').addEventListener('submit', e => {
-      e.preventDefault();
-      fiturRef.set({
-        showTestimoni: document.getElementById('showTestimoni').checked,
-        showCekStatus: document.getElementById('showCekStatus').checked,
-        metodePembayaran: document.getElementById('metodePembayaran').value.split(',').map(m => m.trim())
-      });
-      halamanRef.set({
-        banner: document.getElementById('banner').value,
-        note: document.getElementById('note').value
-      });
-      alert('✅ Pengaturan disimpan.');
+  // Produk
+  const formProduk = document.getElementById("formProduk");
+  formProduk.addEventListener("submit", e => {
+    e.preventDefault();
+    const kategori = document.getElementById("kategori").value;
+    const varian = document.getElementById("varian").value;
+    const harga = parseInt(document.getElementById("harga").value);
+    const cara = document.getElementById("cara").value;
+    const aktif = document.getElementById("aktif").checked;
+    db.ref(`produk/${kategori}/${varian}`).set({ harga, cara, deskripsi: cara, aktif }).then(() => {
+      alert("✅ Produk disimpan.");
+      formProduk.reset();
+      tampilkanProduk();
     });
-
-    // Tambah produk
-    document.getElementById('formProduk').addEventListener('submit', e => {
-      e.preventDefault();
-      const kategori = document.getElementById('kategori').value;
-      const nama = document.getElementById('namaProduk').value;
-      const harga = parseInt(document.getElementById('harga').value);
-      const deskripsi = document.getElementById('deskripsi').value;
-      produkRef.child(`${kategori}/${nama}`).set({ harga, deskripsi, aktif: true }).then(() => {
-        alert('✅ Produk disimpan.');
-        tampilProduk();
-        e.target.reset();
-      });
-    });
-
-    // Tampil produk
-    function tampilProduk() {
-      produkRef.once('value').then(snap => {
-        const list = document.getElementById('listProduk');
-        list.innerHTML = '';
-        const data = snap.val() || {};
-        for (let kat in data) {
-          for (let nama in data[kat]) {
-            const p = data[kat][nama];
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between';
-            li.innerHTML = `<div>
-              <b>${kat} > ${nama}</b><br/>Rp${p.harga} - ${p.deskripsi} - ${p.aktif ? '✅ Aktif' : '⛔ Tidak Aktif'}</div>
-              <div>
-                <button class="btn btn-sm btn-warning me-1" onclick="toggleAktif('${kat}','${nama}',${!p.aktif})">🔁</button>
-                <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kat}','${nama}')">🗑️</button>
-              </div>`;
-            list.appendChild(li);
-          }
+  });
+  function tampilkanProduk() {
+    const list = document.getElementById("daftarProduk");
+    list.innerHTML = "";
+    db.ref("produk").once("value").then(snapshot => {
+      const data = snapshot.val() || {};
+      for (const kat in data) {
+        for (const nama in data[kat]) {
+          const p = data[kat][nama];
+          const li = document.createElement("li");
+          li.className = "list-group-item d-flex justify-content-between align-items-center";
+          li.innerHTML = `<div><b>${kat} > ${nama}</b><br/>Rp${p.harga} - ${p.cara}</div>
+          <button class='btn btn-sm btn-danger' onclick="hapusProduk('${kat}','${nama}')">Hapus</button>`;
+          list.appendChild(li);
         }
-      });
-    }
-
-    function hapusProduk(k, n) {
-      if (confirm(`Hapus produk ${n}?`)) produkRef.child(`${k}/${n}`).remove().then(tampilProduk);
-    }
-    function toggleAktif(k, n, status) {
-      produkRef.child(`${k}/${n}/aktif`).set(status).then(tampilProduk);
-    }
-
-    tampilProduk();
-  </script></body>
+      }
+    });
+  }
+  function hapusProduk(kat, nama) {
+    if (confirm("Hapus produk ini?")) db.ref(`produk/${kat}/${nama}`).remove().then(tampilkanProduk);
+  }
+  tampilkanProduk();
+</script></body>
 </html>
-<!-- END admin.html -->
