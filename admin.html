@@ -1,164 +1,169 @@
 <!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard Admin - Asdar Store</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asdar Store Digital</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
-    h1 { margin-bottom: 20px; }
-    .card { margin-bottom: 15px; }
-    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+    :root {
+      --bg: #f9f9f9;
+      --text: #2c3e50;
+      --primary: #3498db;
+      --card: #ffffff;
+    }
+    [data-theme="dark"] {
+      --bg: #121212;
+      --text: #f1f1f1;
+      --primary: #1abc9c;
+      --card: #1e1e1e;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.3s ease;
+      margin: 0;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--card);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      z-index: 999;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .theme-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--primary);
+    }
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    label {
+      font-weight: 600; margin-top: 10px; display: block;
+    }
+    input, select, button {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 8px; border: 1px solid #ccc;
+      transition: 0.3s;
+    }
+    button {
+      background: var(--primary); color: white;
+      cursor: pointer; font-weight: bold;
+    }
+    .info {
+      background: var(--card); padding: 12px; margin-top: 10px;
+      border-left: 4px solid var(--primary); border-radius: 5px;
+    }
+    #testimoniBox {
+      background: var(--card);
+      padding: 10px;
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      min-height: 80px;
+      margin-top: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    #animTestimoni {
+      position: absolute;
+      width: 100%;
+      transition: opacity 0.5s ease;
+      opacity: 1;
+    }
+    .qr-btn {
+      margin-top: 10px;
+      background: #000;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+      border-radius: 6px;
+      text-decoration: none;
+      display: inline-block;
+    }
   </style>
 </head>
-<body>
-<div class="container">
-  <h1>Dashboard Admin - Asdar Store</h1>  <!-- Pengaturan Umum -->  <h3>Pengaturan Umum</h3>
-  <form id="formHalaman" class="mb-4">
-    <input type="text" id="banner" class="form-control mb-2" placeholder="Judul / Banner Halaman" required />
-    <textarea id="note" class="form-control mb-2" placeholder="Catatan di bawah banner" rows="2"></textarea>
-    <button class="btn btn-success">Simpan Halaman</button>
-  </form>  <!-- Fitur Toko -->  <h3>Pengaturan Fitur Toko</h3>
-  <form id="formFitur" class="mb-4">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="showCekStatus">
-      <label class="form-check-label" for="showCekStatus">Tampilkan Fitur Cek Status</label>
-    </div>
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="showTestimoni">
-      <label class="form-check-label" for="showTestimoni">Tampilkan Testimoni</label>
-    </div>
-    <button class="btn btn-primary mt-2">Simpan Fitur</button>
-  </form>  <!-- Fitur Bebas -->  <h3>Fitur Bebas (Tambahan)</h3>
-  <form id="formCustom" class="row g-2 mb-4">
-    <div class="col-md-4"><input type="text" id="customKey" class="form-control" placeholder="Nama Fitur (key)" required /></div>
-    <div class="col-md-6"><input type="text" id="customValue" class="form-control" placeholder="Isi / Value" required /></div>
-    <div class="col-md-2"><button class="btn btn-dark w-100">Tambah</button></div>
-  </form>
-  <ul id="listCustom" class="list-group mb-4"></ul>  <hr>  <h3>Produk</h3>
-  <form id="formProduk" class="row g-3 mb-3">
-    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
-    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Nama Produk" required /></div>
-    <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga" required /></div>
-    <div class="col-md-3"><input type="text" id="cara" class="form-control" placeholder="Deskripsi / Cara" required /></div>
-    <div class="col-md-1">
-      <div class="form-check mt-2">
-        <input class="form-check-input" type="checkbox" id="aktif" checked>
-        <label class="form-check-label">Aktif</label>
-      </div>
-    </div>
-    <div class="col-12"><button class="btn btn-success">Simpan Produk</button></div>
-  </form>
-  <ul id="daftarProduk" class="list-group mb-5"></ul>
-</div><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+<body data-theme="light">
+  <header>
+    <h1>Asdar Store Digital</h1>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+  </header>
+  <main>
+    <div id="promoBannerBox"></div>
+    <form id="formPesanan">
+      <label for="nama">Nama Lengkap</label>
+      <input type="text" id="nama" required />
+      <label for="nomor">Nomor HP / ID SN</label>
+      <input type="text" id="nomor" required />
+      <label for="kategori">Kategori Produk</label>
+      <select id="kategori" required><option value="">Pilih Kategori</option></select>
+      <label for="produk">Produk</label>
+      <select id="produk" required><option value="">Pilih Produk</option></select>
+      <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
+      <button type="submit">Pesan Sekarang</button>
+    </form>
+    <div id="hasil"></div><div id="fiturStatusBox"></div>
+<div id="fiturTestiBox"></div>
+<div id="fiturBebasBox"></div>
 
-  // Halaman Settings
-  const formHalaman = document.getElementById("formHalaman");
-  formHalaman.addEventListener("submit", e => {
-    e.preventDefault();
-    db.ref("halaman").set({
-      banner: document.getElementById("banner").value,
-      note: document.getElementById("note").value
-    }).then(() => alert("✅ Disimpan."));
-  });
-  db.ref("halaman").once("value").then(snap => {
-    const d = snap.val() || {};
-    document.getElementById("banner").value = d.banner || "";
-    document.getElementById("note").value = d.note || "";
-  });
+  </main>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.getElementById('themeToggle');
+      const next = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      body.setAttribute('data-theme', next);
+      btn.textContent = next === 'light' ? '🌙' : '☀️';
+      localStorage.setItem('theme', next);
+    }
+    if (localStorage.getItem('theme')) {
+      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+    }
 
-  // Fitur Toko
-  const formFitur = document.getElementById("formFitur");
-  formFitur.addEventListener("submit", e => {
-    e.preventDefault();
-    db.ref("fitur").set({
-      showCekStatus: document.getElementById("showCekStatus").checked,
-      showTestimoni: document.getElementById("showTestimoni").checked
-    }).then(() => alert("✅ Fitur diperbarui."));
-  });
-  db.ref("fitur").once("value").then(snap => {
-    const f = snap.val() || {};
-    document.getElementById("showCekStatus").checked = f.showCekStatus || false;
-    document.getElementById("showTestimoni").checked = f.showTestimoni || false;
-  });
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  // Fitur Bebas (Custom Fields)
-  const listCustom = document.getElementById("listCustom");
-  document.getElementById("formCustom").addEventListener("submit", e => {
-    e.preventDefault();
-    const key = document.getElementById("customKey").value.trim();
-    const val = document.getElementById("customValue").value.trim();
-    if (!key || !val) return;
-    db.ref("fiturBebas/" + key).set(val).then(() => {
-      document.getElementById("customKey").value = "";
-      document.getElementById("customValue").value = "";
-      loadCustom();
+    // Tampilkan pengaturan promo & fitur dinamis
+    db.ref("pengaturan").once("value").then(snap => {
+      const set = snap.val() || {};
+      if (set.banner) document.getElementById("promoBannerBox").innerHTML = `<div class='info'><b>${set.banner}</b></div>`;
+      if (set.fiturStatus) document.getElementById("fiturStatusBox").innerHTML = `
+        <hr><br><h2>Cek Status Pesanan</h2>
+        <form onsubmit="event.preventDefault(); cekStatus();">
+          <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+          <button type="submit">Cek Status</button>
+        </form>`;
+      if (set.fiturTesti) document.getElementById("fiturTestiBox").innerHTML = `
+        <hr><br><h2>Testimoni Pelanggan</h2>
+        <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>`;
     });
-  });
-  function loadCustom() {
-    listCustom.innerHTML = "";
-    db.ref("fiturBebas").once("value").then(snap => {
-      const data = snap.val() || {};
-      for (const key in data) {
-        const li = document.createElement("li");
-        li.className = "list-group-item d-flex justify-content-between align-items-center";
-        li.innerHTML = `<div><b>${key}</b>: ${data[key]}</div>
-        <button class='btn btn-sm btn-danger' onclick="hapusCustom('${key}')">Hapus</button>`;
-        listCustom.appendChild(li);
+
+    db.ref("fiturCustom").once("value").then(snap => {
+      const fitur = snap.val() || {};
+      for (let k in fitur) {
+        document.getElementById("fiturBebasBox").innerHTML += `<hr><div class='info'><h4>${k}</h4>${fitur[k]}</div>`;
       }
     });
-  }
-  function hapusCustom(key) {
-    if (confirm("Hapus fitur ini?")) db.ref("fiturBebas/" + key).remove().then(loadCustom);
-  }
-  loadCustom();
-
-  // Produk
-  const formProduk = document.getElementById("formProduk");
-  formProduk.addEventListener("submit", e => {
-    e.preventDefault();
-    const kategori = document.getElementById("kategori").value;
-    const varian = document.getElementById("varian").value;
-    const harga = parseInt(document.getElementById("harga").value);
-    const cara = document.getElementById("cara").value;
-    const aktif = document.getElementById("aktif").checked;
-    db.ref(`produk/${kategori}/${varian}`).set({ harga, cara, deskripsi: cara, aktif }).then(() => {
-      alert("✅ Produk disimpan.");
-      formProduk.reset();
-      tampilkanProduk();
-    });
-  });
-  function tampilkanProduk() {
-    const list = document.getElementById("daftarProduk");
-    list.innerHTML = "";
-    db.ref("produk").once("value").then(snapshot => {
-      const data = snapshot.val() || {};
-      for (const kat in data) {
-        for (const nama in data[kat]) {
-          const p = data[kat][nama];
-          const li = document.createElement("li");
-          li.className = "list-group-item d-flex justify-content-between align-items-center";
-          li.innerHTML = `<div><b>${kat} > ${nama}</b><br/>Rp${p.harga} - ${p.cara}</div>
-          <button class='btn btn-sm btn-danger' onclick="hapusProduk('${kat}','${nama}')">Hapus</button>`;
-          list.appendChild(li);
-        }
-      }
-    });
-  }
-  function hapusProduk(kat, nama) {
-    if (confirm("Hapus produk ini?")) db.ref(`produk/${kat}/${nama}`).remove().then(tampilkanProduk);
-  }
-  tampilkanProduk();
-</script></body>
+  </script></body>
 </html>
