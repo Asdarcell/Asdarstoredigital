@@ -1,119 +1,93 @@
-<!-- FINAL admin.html - Admin Dinamis Asdar Store --><!DOCTYPE html><html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Admin Dinamis - Asdar Store</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <title>Dashboard Admin - Asdar Store</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <style>
-    body { padding: 20px; background: #f5f5f5; font-family: 'Poppins', sans-serif; }
+    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
     h1 { margin-bottom: 20px; }
-    textarea { min-height: 120px; }
+    .card { margin-bottom: 15px; }
+    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
+    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>Dashboard Admin Dinamis</h1>  <!-- 🔧 Pengaturan Dinamis Halaman -->  <h4>🔧 Pengaturan Toko</h4>
-  <form id="formPengaturan">
-    <div class="mb-3">
-      <label>Judul Halaman:</label>
-      <input type="text" class="form-control" id="judulHalaman" required />
+  <h1>Dashboard Admin - Asdar Store</h1>  <div class="row mb-3">
+    <div class="col-md-4">
+      <select id="filterStatus" class="form-select">
+        <option value="">Filter Semua Status</option>
+        <option value="Belum Bayar">Belum Bayar</option>
+        <option value="Sudah Bayar">Sudah Bayar</option>
+        <option value="Diproses">Diproses</option>
+        <option value="Selesai">Selesai</option>
+      </select>
     </div>
-    <div class="mb-3">
-      <label>Pengumuman di Toko:</label>
-      <textarea class="form-control" id="pengumuman"></textarea>
+    <div class="col-md-4">
+      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
     </div>
-    <div class="form-check form-switch mb-3">
-      <input class="form-check-input" type="checkbox" id="fiturTestimoni">
-      <label class="form-check-label">Aktifkan Testimoni</label>
+    <div class="col-md-4">
+      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
     </div>
-    <div class="form-check form-switch mb-3">
-      <input class="form-check-input" type="checkbox" id="fiturUpload">
-      <label class="form-check-label">Wajib Upload Bukti Bayar</label>
+  </div>  <div id="pesananList"></div>  <h3>Upload Bukti Admin ke Pembeli</h3>
+  <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
+  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
+  <hr>  <h3>Tambah / Edit Produk</h3>
+  <form id="formProduk" class="row g-3 mb-4">
+    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required /></div>
+    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required /></div>
+    <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required /></div>
+    <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required /></div>
+    <div class="col-12"><button type="submit" class="btn btn-success">Simpan / Edit Produk</button></div>
+  </form>  <h4>Daftar Produk</h4>
+  <ul id="daftarProduk" class="list-group mb-5"></ul>  <h4>Galeri Bukti Transfer</h4>
+  <div id="galeri" class="d-flex flex-wrap"></div>
+  <hr/>  <h3>Pengaturan Toko</h3>
+  <form id="formPengaturan" class="row g-2 mb-4">
+    <div class="col-md-6">
+      <input type="text" id="namaToko" class="form-control" placeholder="Nama Toko" />
     </div>
-    <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>
-  </form>  <hr/>  <!-- 🔧 Builder Field Tambahan -->  <h4>➕ Buat Form Tambahan</h4>
-  <form id="formField">
-    <div class="mb-3">
-      <label>Nama Field Baru (misal: Catatan, Alamat):</label>
-      <input type="text" class="form-control" id="namaField" required />
+    <div class="col-md-3">
+      <select id="temaDefault" class="form-select">
+        <option value="">Tema Default</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
     </div>
-    <div class="mb-3">
-      <label>Placeholder / Petunjuk:</label>
-      <input type="text" class="form-control" id="placeholderField" />
+    <div class="col-md-3">
+      <select id="testimoniAktif" class="form-select">
+        <option value="true">Testimoni Aktif</option>
+        <option value="false">Nonaktif</option>
+      </select>
     </div>
-    <button type="submit" class="btn btn-success">➕ Tambah Field</button>
-  </form>  <ul id="listField" class="list-group mt-3"></ul>
-</div><!-- Firebase SDK --><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-    databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-    projectId: "asdarstoredigitalll-d89c4",
-    storageBucket: "asdarstoredigitalll.appspot.com",
-    messagingSenderId: "220670500351",
-    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  const formPengaturan = document.getElementById('formPengaturan');
-  const formField = document.getElementById('formField');
-  const listField = document.getElementById('listField');
-
-  function loadPengaturan() {
-    db.ref('pengaturan').once('value').then(snap => {
-      const p = snap.val() || {};
-      document.getElementById('judulHalaman').value = p.judulHalaman || '';
-      document.getElementById('pengumuman').value = p.pengumuman || '';
-      document.getElementById('fiturTestimoni').checked = !!p.fiturTestimoni;
-      document.getElementById('fiturUpload').checked = !!p.fiturUpload;
-    });
-  }
-
-  function loadFieldTambahan() {
-    db.ref('fieldTambahan').once('value').then(snap => {
-      const data = snap.val() || {};
-      listField.innerHTML = '';
-      Object.keys(data).forEach(key => {
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between';
-        li.innerHTML = `<div><b>${key}</b>: ${data[key]}</div>
-        <button class="btn btn-sm btn-danger" onclick="hapusField('${key}')">🗑️ Hapus</button>`;
-        listField.appendChild(li);
-      });
-    });
-  }
-
-  formPengaturan.onsubmit = e => {
-    e.preventDefault();
-    const data = {
-      judulHalaman: document.getElementById('judulHalaman').value,
-      pengumuman: document.getElementById('pengumuman').value,
-      fiturTestimoni: document.getElementById('fiturTestimoni').checked,
-      fiturUpload: document.getElementById('fiturUpload').checked,
-    };
-    db.ref('pengaturan').set(data).then(() => alert('✅ Pengaturan disimpan!'));
-  };
-
-  formField.onsubmit = e => {
-    e.preventDefault();
-    const key = document.getElementById('namaField').value.trim();
-    const val = document.getElementById('placeholderField').value.trim();
-    if (!key) return;
-    db.ref('fieldTambahan/' + key).set(val).then(() => {
-      alert('✅ Field ditambahkan!');
-      formField.reset();
-      loadFieldTambahan();
-    });
-  };
-
-  function hapusField(key) {
-    if (confirm(`Hapus field '${key}'?`)) {
-      db.ref('fieldTambahan/' + key).remove().then(loadFieldTambahan);
-    }
-  }
-
-  loadPengaturan();
-  loadFieldTambahan();
-</script></body>
+    <div class="col-12">
+      <button type="submit" class="btn btn-warning">Simpan Pengaturan</button>
+    </div>
+  </form>  <h3>Form Tambahan</h3>
+  <form id="formTambahan" class="row g-2 mb-3">
+    <div class="col-md-4">
+      <input type="text" id="idField" class="form-control" placeholder="ID Field (mis: email / alamat)" />
+    </div>
+    <div class="col-md-4">
+      <input type="text" id="labelField" class="form-control" placeholder="Label (mis: Email / Alamat)" />
+    </div>
+    <div class="col-md-2">
+      <select id="wajibField" class="form-select">
+        <option value="false">Opsional</option>
+        <option value="true">Wajib</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-secondary w-100" type="submit">Tambah / Edit</button>
+    </div>
+  </form>
+  <ul id="listTambahan" class="list-group mb-5"></ul>  <h3>Hapus Semua Data</h3>
+  <div class="d-grid gap-2 d-md-block mb-5">
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaPesanan()">🧹 Hapus Semua Pesanan</button>
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaProduk()">🧹 Hapus Semua Produk</button>
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaGaleri()">🧹 Hapus Semua Bukti Transfer</button>
+    <button class="btn btn-dark" onclick="hapusSemuaData()">🔥 Hapus SEMUA DATA</button>
+  </div>
+</div><!-- Firebase SDK --><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script src="admin-firebase.js"></script></body>
 </html>
