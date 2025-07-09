@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard Admin - Asdar Store</title>
@@ -9,60 +8,69 @@
     body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
     h1 { margin-bottom: 20px; }
     .card { margin-bottom: 15px; }
-    .btn-group-custom { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
+    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Dashboard Admin - Asdar Store</h1>
+  <div class="container">
+    <h1>Dashboard Admin - Asdar Store</h1>
+    <!-- Filter dan Pencarian -->
+    <div class="row mb-3">
+      <div class="col-md-4 mb-2">
+        <select id="filterStatus" class="form-select">
+          <option value="">Filter Semua Status</option>
+          <option value="Belum Bayar">Belum Bayar</option>
+          <option value="Sudah Bayar">Sudah Bayar</option>
+          <option value="Diproses">Diproses</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+      </div>
+      <div class="col-md-4 mb-2">
+        <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
+      </div>
+      <div class="col-md-4 mb-2">
+        <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
+      </div>
+    </div><!-- List Pesanan -->
+<div id="pesananList"></div>
 
-  <!-- Filter dan Pencarian -->
-  <div class="row mb-3">
-    <div class="col-md-4 mb-2">
-      <select id="filterStatus" class="form-select">
-        <option value="">Filter Semua Status</option>
-        <option value="Belum Bayar">Belum Bayar</option>
-        <option value="Sudah Bayar">Sudah Bayar</option>
-        <option value="Diproses">Diproses</option>
-        <option value="Selesai">Selesai</option>
-      </select>
-    </div>
-    <div class="col-md-4 mb-2">
-      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
-    </div>
-    <div class="col-md-4 mb-2">
-      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
-    </div>
+<!-- Upload Bukti Admin -->
+<h3>Upload Bukti Admin ke Pembeli</h3>
+<input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
+<button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
+
+<hr>
+
+<!-- Form Produk -->
+<h3>Tambah / Edit Produk</h3>
+<form id="formProduk" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required />
   </div>
-
-  <!-- Tombol Tambahan -->
-  <div class="btn-group-custom">
-    <button class="btn btn-outline-secondary btn-sm" onclick="tampilkanPesanan()">🔄 Tampilkan Semua Pesanan</button>
-    <button class="btn btn-outline-danger btn-sm" onclick="hapusSemuaPesanan()">🗑️ Hapus Semua Pesanan</button>
+  <div class="col-md-3">
+    <input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required />
   </div>
-
-  <!-- Hapus Berdasarkan Status -->
-  <div class="mb-3">
-    <label for="hapusStatus" class="form-label">Hapus Pesanan Berdasarkan Status:</label>
-    <div class="input-group">
-      <select id="hapusStatus" class="form-select">
-        <option value="">-- Pilih Status --</option>
-        <option value="Belum Bayar">Belum Bayar</option>
-        <option value="Sudah Bayar">Sudah Bayar</option>
-        <option value="Diproses">Diproses</option>
-        <option value="Selesai">Selesai</option>
-      </select>
-      <button class="btn btn-danger" onclick="hapusPesananBerdasarkanStatus()">🗑️ Hapus Status Tertentu</button>
-    </div>
+  <div class="col-md-2">
+    <input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required />
   </div>
+  <div class="col-md-4">
+    <input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required />
+  </div>
+  <div class="col-12">
+    <button type="submit" class="btn btn-success">Simpan / Edit Produk</button>
+  </div>
+</form>
 
-  <!-- List Pesanan -->
-  <div id="pesananList"></div>
+<!-- Daftar Produk -->
+<h4>Daftar Produk</h4>
+<ul id="daftarProduk" class="list-group mb-5"></ul>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script>
+<!-- Galeri Bukti Bayar -->
+<h4>Galeri Bukti Transfer</h4>
+<div id="galeri" class="d-flex flex-wrap"></div>
+
+  </div>  <!-- Firebase SDK -->  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -75,69 +83,194 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    const notifAPI = {
+      appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+      authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+      nomorAdmin: "6281803004607"
+    };
+
+    let selectedId = null;
+    let allDataPesanan = {};
+
     function tampilkanPesanan() {
       db.ref('pesanan').once('value').then(snapshot => {
-        const data = snapshot.val() || {};
+        allDataPesanan = snapshot.val() || {};
         const filter = document.getElementById('filterStatus').value;
         const search = document.getElementById('searchId').value.toLowerCase();
-        const container = document.getElementById('pesananList');
-        container.innerHTML = '';
-
-        for (const id in data) {
-          const p = data[id];
+        let html = '';
+        for (let id in allDataPesanan) {
+          const p = allDataPesanan[id];
           if (filter && p.status !== filter) continue;
           if (search && !id.toLowerCase().includes(search)) continue;
-
-          container.innerHTML += `
-            <div class="card">
-              <div class="card-body">
-                <b>ID:</b> ${id}<br>
-                <b>Nama:</b> ${p.nama}<br>
-                <b>Status:</b> ${p.status}<br>
-              </div>
-            </div>`;
+          html += `<div class="card"><div class="card-body">
+            <b>ID:</b> ${id}<br/>
+            <b>Nama:</b> ${p.nama}<br/>
+            <b>Nomor HP / ID SN:</b> ${p.nomor || '-'}<br/>
+            <b>Kategori:</b> ${p.kategori}<br/>
+            <b>Produk:</b> ${p.produk}<br/>
+            <b>Status:</b> ${p.status}<br/>
+            <b>Waktu:</b> ${p.waktu || '-'}<br/>
+            ${p.buktiBayar ? `<b>Bukti Pembeli:</b><br/><img src="${p.buktiBayar}" alt="Bukti Bayar"/>` : ''}
+            ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" alt="Bukti Admin"/>` : ''}
+            <br/><button class="btn btn-warning btn-sm" onclick="setSelected('${id}')">📤 Kirim Bukti</button>
+            <button class="btn btn-info btn-sm" onclick="verifikasi('${id}')">✅ Proses</button>
+            <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
+          </div></div>`;
         }
+        document.getElementById('pesananList').innerHTML = html;
       });
     }
 
-    function hapusSemuaPesanan() {
-      const konfirmasi = prompt("Ketik 'hapussemua' untuk konfirmasi hapus SEMUA pesanan:");
-      if (konfirmasi !== "hapussemua") return alert("❌ Dibatalkan");
-      db.ref('pesanan').remove().then(() => {
-        alert("✅ Semua pesanan berhasil dihapus.");
+    function setSelected(id) {
+      selectedId = id;
+      alert("Pesanan dipilih: " + id);
+    }
+
+    function verifikasi(id) {
+      db.ref('pesanan/' + id).update({ status: 'Diproses' }).then(() => {
+        kirimNotifWA(`✅ Pesanan ${id} sedang diproses.`);
         tampilkanPesanan();
       });
     }
 
-    function hapusPesananBerdasarkanStatus() {
-      const status = document.getElementById('hapusStatus').value;
-      if (!status) return alert("❗ Silakan pilih status yang ingin dihapus.");
+    async function uploadBukti() {
+      const fileInput = document.getElementById('buktiAdmin');
+      const file = fileInput.files[0];
+      if (!file) return alert("❗ Pilih gambar bukti dulu!");
+      if (!selectedId) return alert("❗ Pilih pesanan terlebih dahulu!");
 
-      const konfirmasi = prompt(`Ketik 'hapus-${status.replace(/\\s/g, '').toLowerCase()}' untuk hapus semua pesanan dengan status \"${status}\"`);
-      if (konfirmasi !== `hapus-${status.replace(/\\s/g, '').toLowerCase()}`) return alert("❌ Dibatalkan");
+      const formData = new FormData();
+      formData.append("image", file);
 
-      db.ref('pesanan').once('value').then(snapshot => {
-        const data = snapshot.val() || {};
-        const updates = {};
-        for (const id in data) {
-          if (data[id].status === status) updates[id] = null;
-        }
+      const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+          method: "POST",
+          body: formData
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error("Upload gagal");
 
-        if (Object.keys(updates).length === 0) return alert(`⚠️ Tidak ada pesanan dengan status \"${status}\"`);
+        const imageUrl = json.data.url;
 
-        db.ref('pesanan').update(updates).then(() => {
-          alert(`✅ Semua pesanan dengan status \"${status}\" berhasil dihapus.`);
+        await db.ref('pesanan/' + selectedId).update({
+          buktiAdmin: imageUrl,
+          status: 'Selesai'
+        });
+        kirimNotifWA(`✅ Pesanan ${selectedId} selesai, bukti admin terkirim.`);
+        alert("✅ Bukti berhasil dikirim dan status selesai.");
+        selectedId = null;
+        fileInput.value = "";
+        tampilkanPesanan();
+      } catch (e) {
+        alert("❌ Upload gambar gagal: " + e.message);
+      }
+    }
+
+    function hapusPesanan(id) {
+      if (confirm("Yakin ingin menghapus pesanan ini?")) {
+        db.ref('pesanan/' + id).remove().then(() => {
+          alert("✅ Pesanan dihapus.");
           tampilkanPesanan();
         });
+      }
+    }
+
+    function exportCSV() {
+      let csv = "ID,Nama,Nomor,Kategori,Produk,Status,Waktu\n";
+      for (let id in allDataPesanan) {
+        const p = allDataPesanan[id];
+        csv += `"${id}","${p.nama}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}","${p.waktu || ''}"\n`;
+      }
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pesanan.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function tampilkanProduk() {
+      db.ref('produk').once('value').then(snapshot => {
+        const produk = snapshot.val() || {};
+        const list = document.getElementById('daftarProduk');
+        list.innerHTML = "";
+        for (const kategori in produk) {
+          for (const varian in produk[kategori]) {
+            const p = produk[kategori][varian];
+            const li = document.createElement('li');
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.innerHTML = `<div><b>${kategori} > ${varian}</b><br/>Harga: Rp${p.harga} - ${p.cara}</div><button class="btn btn-danger btn-sm" onclick="hapusProduk('${kategori}','${varian}')">🗑️ Hapus</button>`;
+            list.appendChild(li);
+          }
+        }
+      });
+    }
+
+    function hapusProduk(kategori, varian) {
+      if (confirm("Yakin ingin menghapus produk ini?")) {
+        db.ref(`produk/${kategori}/${varian}`).remove().then(() => {
+          alert("✅ Produk dihapus.");
+          tampilkanProduk();
+        });
+      }
+    }
+
+    document.getElementById('formProduk').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const kategori = document.getElementById('kategori').value.trim();
+      const varian = document.getElementById('varian').value.trim();
+      const harga = parseInt(document.getElementById('harga').value);
+      const cara = document.getElementById('cara').value.trim();
+      if (!kategori || !varian || !harga || !cara) {
+        alert("Semua field wajib diisi dengan benar.");
+        return;
+      }
+      db.ref(`produk/${kategori}/${varian}`).set({ harga, cara }).then(() => {
+        alert("✅ Produk disimpan.");
+        this.reset();
+        tampilkanProduk();
+      });
+    });
+
+    function tampilkanGaleri() {
+      db.ref('pesanan').once('value').then(snapshot => {
+        const data = snapshot.val() || {};
+        const galeri = document.getElementById('galeri');
+        galeri.innerHTML = "";
+        for (const id in data) {
+          if (data[id].buktiBayar) {
+            const img = document.createElement('img');
+            img.src = data[id].buktiBayar;
+            img.alt = "Bukti Bayar " + id;
+            galeri.appendChild(img);
+          }
+        }
+      });
+    }
+
+    function kirimNotifWA(message) {
+      fetch("https://starsender.online/api/sendText", {
+        method: "POST",
+        body: new URLSearchParams({
+          appkey: notifAPI.appkey,
+          authkey: notifAPI.authkey,
+          to: notifAPI.nomorAdmin,
+          message: message
+        })
       });
     }
 
     document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
     document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
-    document.getElementById('exportCSVBtn').addEventListener('click', () => alert("Fitur export CSV belum ditambahkan di versi ini"));
+    document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
+    document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
 
     tampilkanPesanan();
-  </script>
-</div>
-</body>
+    tampilkanProduk();
+    tampilkanGaleri();
+  </script></body>
 </html>
