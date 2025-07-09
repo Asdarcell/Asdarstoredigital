@@ -2,92 +2,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Admin - Asdar Store</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <title>Super Admin - Asdar Store</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <style>
-    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
-    h1 { margin-bottom: 20px; }
-    .card { margin-bottom: 15px; }
-    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
-    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+    body { padding: 20px; background: #f0f2f5; font-family: 'Poppins', sans-serif; }
+    h1 { margin-bottom: 30px; }
+    textarea { font-family: monospace; font-size: 14px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Dashboard Admin - Asdar Store</h1>  <div class="row mb-3">
-    <div class="col-md-4">
-      <select id="filterStatus" class="form-select">
-        <option value="">Filter Semua Status</option>
-        <option value="Belum Bayar">Belum Bayar</option>
-        <option value="Sudah Bayar">Sudah Bayar</option>
-        <option value="Diproses">Diproses</option>
-        <option value="Selesai">Selesai</option>
-      </select>
-    </div>
-    <div class="col-md-4">
-      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
-    </div>
-    <div class="col-md-4">
-      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
-    </div>
-  </div>  <div id="pesananList"></div>  <h3>Upload Bukti Admin ke Pembeli</h3>
-  <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
-  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
-  <hr>  <h3>Tambah / Edit Produk</h3>
-  <form id="formProduk" class="row g-3 mb-4">
-    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required /></div>
-    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required /></div>
-    <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required /></div>
-    <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required /></div>
-    <div class="col-12"><button type="submit" class="btn btn-success">Simpan / Edit Produk</button></div>
-  </form>  <h4>Daftar Produk</h4>
-  <ul id="daftarProduk" class="list-group mb-5"></ul>  <h4>Galeri Bukti Transfer</h4>
-  <div id="galeri" class="d-flex flex-wrap"></div>
-  <hr/>  <h3>Pengaturan Toko</h3>
-  <form id="formPengaturan" class="row g-2 mb-4">
-    <div class="col-md-6">
-      <input type="text" id="namaToko" class="form-control" placeholder="Nama Toko" />
-    </div>
-    <div class="col-md-3">
-      <select id="temaDefault" class="form-select">
-        <option value="">Tema Default</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
-    </div>
-    <div class="col-md-3">
-      <select id="testimoniAktif" class="form-select">
-        <option value="true">Testimoni Aktif</option>
-        <option value="false">Nonaktif</option>
-      </select>
-    </div>
-    <div class="col-12">
-      <button type="submit" class="btn btn-warning">Simpan Pengaturan</button>
-    </div>
-  </form>  <h3>Form Tambahan</h3>
-  <form id="formTambahan" class="row g-2 mb-3">
-    <div class="col-md-4">
-      <input type="text" id="idField" class="form-control" placeholder="ID Field (mis: email / alamat)" />
-    </div>
-    <div class="col-md-4">
-      <input type="text" id="labelField" class="form-control" placeholder="Label (mis: Email / Alamat)" />
-    </div>
-    <div class="col-md-2">
-      <select id="wajibField" class="form-select">
-        <option value="false">Opsional</option>
-        <option value="true">Wajib</option>
-      </select>
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-secondary w-100" type="submit">Tambah / Edit</button>
-    </div>
+  <div class="container">
+    <h1>Super Admin Dashboard - Asdar Store</h1><div class="mb-4">
+  <h4>1. Update QR/Promo/Teks Dinamis</h4>
+  <form id="formKonten">
+    <input class="form-control mb-2" type="text" id="qrDana" placeholder="Link QR Dana" />
+    <input class="form-control mb-2" type="text" id="qrShopee" placeholder="Link QR ShopeePay" />
+    <textarea class="form-control mb-2" id="textPromo" placeholder="Teks Promo atau Banner"></textarea>
+    <button class="btn btn-success">Simpan Konten</button>
   </form>
-  <ul id="listTambahan" class="list-group mb-5"></ul>  <h3>Hapus Semua Data</h3>
-  <div class="d-grid gap-2 d-md-block mb-5">
-    <button class="btn btn-danger mb-2" onclick="hapusSemuaPesanan()">🧹 Hapus Semua Pesanan</button>
-    <button class="btn btn-danger mb-2" onclick="hapusSemuaProduk()">🧹 Hapus Semua Produk</button>
-    <button class="btn btn-danger mb-2" onclick="hapusSemuaGaleri()">🧹 Hapus Semua Bukti Transfer</button>
-    <button class="btn btn-dark" onclick="hapusSemuaData()">🔥 Hapus SEMUA DATA</button>
-  </div>
-</div><!-- Firebase SDK --><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script src="admin-firebase.js"></script></body>
+</div>
+
+<hr/>
+<div class="mb-4">
+  <h4>2. Tambah Field Dinamis di Form Pemesanan</h4>
+  <form id="formField">
+    <input class="form-control mb-2" type="text" id="fieldId" placeholder="ID Field (misal: referral)" required />
+    <input class="form-control mb-2" type="text" id="fieldLabel" placeholder="Label (misal: Kode Referral)" required />
+    <select class="form-select mb-2" id="fieldType">
+      <option value="text">Input Text</option>
+      <option value="textarea">Textarea</option>
+    </select>
+    <select class="form-select mb-2" id="fieldRequired">
+      <option value="true">Wajib Diisi</option>
+      <option value="false">Tidak Wajib</option>
+    </select>
+    <button class="btn btn-primary">Tambah Field</button>
+  </form>
+  <ul id="listField" class="mt-3 list-group"></ul>
+</div>
+
+<hr/>
+<div>
+  <h4>3. Kontrol Tampilan Otomatis Berdasarkan Produk</h4>
+  <form id="formLogic">
+    <input class="form-control mb-2" id="produkKey" placeholder="Nama Produk (misal: Paket Data)" required />
+    <input class="form-control mb-2" id="showFields" placeholder="Tampilkan Field (pisah koma)" />
+    <input class="form-control mb-2" id="hideFields" placeholder="Sembunyikan Field (pisah koma)" />
+    <button class="btn btn-warning">Simpan Logika</button>
+  </form>
+  <ul id="listLogic" class="mt-3 list-group"></ul>
+</div>
+
+  </div>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const kontenRef = db.ref('pengaturan');
+    const fieldRef = db.ref('kontenDinamis/inputTambahan');
+    const logicRef = db.ref('formLogic');
+
+    // SIMPAN KONTEN
+    document.getElementById('formKonten').addEventListener('submit', e => {
+      e.preventDefault();
+      const data = {
+        qrDana: qrDana.value,
+        qrShopee: qrShopee.value,
+        textPromo: textPromo.value
+      };
+      kontenRef.set(data);
+      alert('✅ Konten disimpan!');
+    });
+
+    // TAMBAH FIELD
+    document.getElementById('formField').addEventListener('submit', e => {
+      e.preventDefault();
+      const field = {
+        id: fieldId.value.trim(),
+        label: fieldLabel.value.trim(),
+        type: fieldType.value,
+        required: fieldRequired.value === 'true'
+      };
+      fieldRef.push(field);
+      alert('✅ Field ditambahkan!');
+    });
+
+    // TAMPILKAN FIELD
+    fieldRef.on('value', snap => {
+      const data = snap.val() || {};
+      listField.innerHTML = '';
+      Object.entries(data).forEach(([key, val]) => {
+        listField.innerHTML += `<li class='list-group-item'>${val.label} (${val.type}) - ${val.required ? 'Wajib' : 'Opsional'}</li>`;
+      });
+    });
+
+    // SIMPAN LOGIKA
+    document.getElementById('formLogic').addEventListener('submit', e => {
+      e.preventDefault();
+      const key = produkKey.value.trim();
+      const logic = {
+        tampilkan: showFields.value.split(',').map(x => x.trim()).filter(x => x),
+        sembunyikan: hideFields.value.split(',').map(x => x.trim()).filter(x => x)
+      };
+      logicRef.child(key).set(logic);
+      alert('✅ Logika disimpan!');
+    });
+
+    // TAMPILKAN LOGIKA
+    logicRef.on('value', snap => {
+      const data = snap.val() || {};
+      listLogic.innerHTML = '';
+      Object.entries(data).forEach(([produk, val]) => {
+        listLogic.innerHTML += `<li class='list-group-item'><b>${produk}</b> → Show: ${val.tampilkan.join(', ')} | Hide: ${val.sembunyikan.join(', ')}</li>`;
+      });
+    });
+  </script></body>
 </html>
