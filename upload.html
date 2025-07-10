@@ -23,28 +23,34 @@
   <button onclick="uploadBukti()">📤 Upload Sekarang</button>
 
   <div id="infoPembayaran"></div>
-<script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const via = urlParams.get('via');
-  const harga = urlParams.get('harga');
-  const info = {
-    dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
-    shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
-  };
-  const metode = info[via];
-  if (metode) {
-    document.getElementById("infoPembayaran").innerHTML = `
-      <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
-        <b>Metode Pembayaran: ${metode.nama}</b><br>
-        Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>
-        <b>Total Bayar:</b> Rp${harga}<br>
-        <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>
-        Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.
-      </div>
-    `;
-  }
-</script>
-  
+
+  <script>
+    // Ambil parameter URL hanya sekali
+    const urlParams = new URLSearchParams(window.location.search);
+    const via = urlParams.get("via");
+    const harga = urlParams.get("harga");
+    const id = urlParams.get("id");
+
+    // Tampilkan informasi pembayaran
+    const info = {
+      dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
+      shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
+    };
+    const metode = info[via];
+    if (metode) {
+      document.getElementById("infoPembayaran").innerHTML = `
+        <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
+          <b>Metode Pembayaran: ${metode.nama}</b><br>
+          Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>
+          <b>Total Bayar:</b> Rp${harga}<br>
+          <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>
+          Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.
+        </div>
+      `;
+    }
+  </script>
+
+  <!-- Firebase & Upload Script -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
@@ -59,9 +65,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get("id");
 
     const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33"; // Ganti kalau punya sendiri
 
@@ -95,7 +98,7 @@
         // Tambah ke galeri
         await db.ref("galeri_bukti").push({ url: imageUrl });
 
-        // Ambil data pesanan buat notif WA
+        // Ambil data pesanan buat notifikasi
         const snap = await db.ref("pesanan/" + id).once("value");
         const data = snap.val();
         const notifPesan = `📥 Bukti pembayaran diterima untuk ID ${id}\n👤 ${data.nama}\n📱 ${data.nomor}\n🔎 Cek: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
