@@ -1,129 +1,52 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Upload Bukti Bayar - Asdar Store</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    h2 { color: #3498db; }
-    input, button {
-      padding: 10px; margin: 10px 0;
-      display: block; width: 100%; max-width: 400px;
-    }
-    .info {
-      background: #eaf4ff; padding: 10px; border-left: 4px solid #3498db;
-    }
-  </style>
+  <title>Test Upload Base64</title>
 </head>
 <body>
-  <h2>Upload Bukti Pembayaran</h2>
-  <div class="info" id="statusBox">Silakan upload bukti bayar Anda.</div>
+  <h2>🧪 Test Upload .JPG ke FreeImage.host</h2>
   <input type="file" id="fileInput" accept="image/*" />
-  <button onclick="uploadBukti()">📤 Upload Sekarang</button>
-  <div id="infoPembayaran"></div>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <button onclick="upload()">Upload Sekarang</button>
+  <pre id="output">Status di sini...</pre>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    async function upload() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Pilih gambar dulu");
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const via = urlParams.get('via');
-    const harga = urlParams.get('harga');
-    const id = urlParams.get('id');
-
-    const info = {
-      dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
-      shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
-    };
-
-    const metode = info[via];
-    if (metode) {
-      document.getElementById("infoPembayaran").innerHTML = `
-        <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
-          <b>Metode Pembayaran: ${metode.nama}</b><br>
-          Nomor Tujuan: <span>${metode.no}</span><br>
-          <b>Total Bayar:</b> Rp${harga}<br>
-          <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button>
-        </div>`;
-    }
-
-    async function uploadBukti() {
-      const fileInput = document.getElementById('fileInput');
-      const file = fileInput.files[0];
-      if (!file) return alert("❗ Pilih gambar terlebih dahulu.");
-      if (!id) return alert("❗ ID pesanan tidak ditemukan di URL.");
-
-      document.getElementById("statusBox").innerText = "⏳ Mengubah gambar ke base64...";
+      const output = document.getElementById("output");
+      output.innerText = "⏳ Mengubah ke base64...";
 
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64data = reader.result.split(",")[1];
+        const base64 = reader.result.split(",")[1];
         const formData = new FormData();
-        formData.append("key", "6d207e02198a847aa98d0a2a901485a5");
-        formData.append("source", base64data);
+        formData.append("key", "6d207e02198a847aa98d0a2a901485a5"); // API key kamu
+        formData.append("source", base64);
         formData.append("format", "json");
 
+        output.innerText = "⏳ Uploading ke FreeImage.host...";
+
         try {
-          document.getElementById("statusBox").innerText = "⏳ Mengupload ke FreeImage...";
           const res = await fetch("https://freeimage.host/api/1/upload", {
             method: "POST",
             body: formData
           });
           const json = await res.json();
+          console.log("📦 Respon FreeImage:", json);
 
-          if (json.status_code !== 200) throw new Error("Upload gagal: " + json.error.message);
-
-          const imageUrl = json.image.display_url;
-
-          // Simpan ke Firebase
-          await db.ref("pesanan/" + id).update({
-            buktiBayar: imageUrl,
-            status: "Sudah Bayar"
-          });
-
-          await db.ref("galeri_bukti").push({ url: imageUrl });
-
-          const snap = await db.ref("pesanan/" + id).once("value");
-          const data = snap.val();
-
-          const notifPesan = `📥 Bukti pembayaran diterima untuk ID ${id}\n👤 ${data.nama}\n📱 ${data.nomor}\n🔎 Cek: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
-
-          // Kirim WA
-          const formWA = new FormData();
-          formWA.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
-          formWA.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
-          formWA.append("to", "6281803004607");
-          formWA.append("message", notifPesan);
-
-          const resWA = await fetch("https://app.ngirimwa.com/api/create-message", {
-            method: "POST",
-            body: formWA
-          });
-          const jsonWA = await resWA.json();
-
-          document.getElementById("statusBox").innerHTML = `<b>✅ Bukti berhasil dikirim!</b><br>ID: ${id}`;
-          fileInput.value = "";
-
-        } catch (err) {
-          alert("❌ Gagal upload bukti: " + err.message);
-          document.getElementById("statusBox").innerText = "❌ Gagal upload.";
-          console.error(err);
+          if (json.status_code === 200) {
+            output.innerHTML = `✅ <b>Berhasil!</b><br>
+              <a href="${json.image.display_url}" target="_blank">${json.image.display_url}</a><br>
+              <img src="${json.image.display_url}" width="200" />`;
+          } else {
+            output.innerText = "❌ Gagal: " + (json.error?.message || "Tidak diketahui");
+          }
+        } catch (e) {
+          output.innerText = "❌ ERROR: " + e.message;
         }
       };
+
       reader.readAsDataURL(file);
     }
   </script>
