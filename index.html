@@ -133,6 +133,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // Theme toggle with localStorage
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -147,6 +148,7 @@
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
+    // Firebase config and init
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -165,36 +167,48 @@
     const hasil = document.getElementById('hasil');
     const produkRef = db.ref('produk');
 
-    produkRef.once('value').then(snapshot => {
-      const data = snapshot.val();
+    // Realtime update kategori dan produk otomatis (sinkron dengan admin)
+    produkRef.on('value', snapshot => {
+      const data = snapshot.val() || {};
+      // Update kategori dropdown
+      kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
       for (let kategori in data) {
         kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
       }
-    });
-
-    kategoriSelect.addEventListener('change', () => {
+      // Reset produk & info produk
       produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
       infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+    });
+
+    // Saat kategori dipilih, load produk dari kategori tsb
+    kategoriSelect.addEventListener('change', () => {
       const kategori = kategoriSelect.value;
+      produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+      infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
       if (!kategori) return;
       produkRef.child(kategori).once('value').then(snapshot => {
-        const data = snapshot.val();
-        for (let nama in data) {
-          produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+        const data = snapshot.val() || {};
+        for (let produk in data) {
+          produkSelect.innerHTML += `<option value="${produk}">${produk}</option>`;
         }
       });
     });
 
+    // Saat produk dipilih, tampilkan harga dan deskripsi/cara beli
     produkSelect.addEventListener('change', () => {
       const kategori = kategoriSelect.value;
       const produk = produkSelect.value;
-      if (!produk) return;
+      if (!produk) {
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+        return;
+      }
       produkRef.child(`${kategori}/${produk}`).once('value').then(snapshot => {
-        const data = snapshot.val();
-        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara}`;
+        const data = snapshot.val() || {};
+        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga?.toLocaleString() || '0'}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara || '-'}`;
       });
     });
 
+    // Submit form pesan
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
@@ -205,7 +219,7 @@
       const id = "P" + Date.now();
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
       produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
-        const data = snap.val();
+        const data = snap.val() || {};
         const harga = data.harga || 0;
         db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
           hasil.innerHTML = `
@@ -243,6 +257,7 @@
       fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
     }
 
+    // Testimoni bergulir
     let dataTesti = [];
     let testiIndex = 0;
     function tampilkanSatuTesti() {
@@ -265,6 +280,3 @@
   </script>
 </body>
 </html>
-
-
-
