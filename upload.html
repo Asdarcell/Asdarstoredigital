@@ -3,27 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Upload Bukti Bayar - Asdar Store</title>
+  <title>DEBUG Upload Bukti Bayar</title>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    h2 { color: #3498db; }
-    input, button {
-      padding: 10px; margin: 10px 0;
-      display: block; width: 100%; max-width: 400px;
-    }
-    .info {
-      background: #eaf4ff; padding: 10px; border-left: 4px solid #3498db;
-    }
+    input, button { padding: 10px; margin: 10px 0; display: block; width: 100%; max-width: 400px; }
+    .info { background: #eaf4ff; padding: 10px; border-left: 4px solid #3498db; }
   </style>
 </head>
 <body>
-  <h2>Upload Bukti Pembayaran</h2>
+  <h2>Upload Bukti Pembayaran (Debug Mode)</h2>
   <div class="info" id="statusBox">Silakan upload bukti bayar Anda.</div>
   <input type="file" id="fileInput" accept="image/*" />
   <button onclick="uploadBukti()">📤 Upload Sekarang</button>
   <div id="infoPembayaran"></div>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -31,7 +24,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
       storageBucket: "asdarstoredigitalll.appspot.com",
       messagingSenderId: "220670500351",
@@ -45,6 +38,8 @@
     const harga = urlParams.get('harga');
     const id = urlParams.get('id');
 
+    console.log("📌 Params => via:", via, "| harga:", harga, "| id:", id);
+
     const info = {
       dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
       shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
@@ -55,20 +50,20 @@
       document.getElementById("infoPembayaran").innerHTML = `
         <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
           <b>Metode Pembayaran: ${metode.nama}</b><br>
-          Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>
+          Nomor Tujuan: <span>${metode.no}</span><br>
           <b>Total Bayar:</b> Rp${harga}<br>
-          <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>
-          Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.
-        </div>
-      `;
+          <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button>
+        </div>`;
     }
 
     async function uploadBukti() {
       const fileInput = document.getElementById('fileInput');
       const file = fileInput.files[0];
       if (!file) return alert("❗ Pilih gambar terlebih dahulu.");
+      if (!id) return alert("❗ ID pesanan tidak ditemukan di URL.");
 
       document.getElementById("statusBox").innerText = "⏳ Uploading...";
+      console.log("📤 Mulai upload...");
 
       const formData = new FormData();
       formData.append("source", file);
@@ -81,40 +76,49 @@
           body: formData
         });
         const json = await res.json();
+        console.log("📷 FreeImage response:", json);
+
         if (json.status_code !== 200) throw new Error("Upload gagal");
 
         const imageUrl = json.image.display_url;
+        console.log("✅ Link gambar:", imageUrl);
 
         // Simpan ke Firebase
         await db.ref("pesanan/" + id).update({
           buktiBayar: imageUrl,
           status: "Sudah Bayar"
         });
+        console.log("✅ Data pesanan diperbarui di Firebase");
 
-        // Tambah ke galeri
         await db.ref("galeri_bukti").push({ url: imageUrl });
+        console.log("✅ Galeri bukti ditambahkan");
 
         const snap = await db.ref("pesanan/" + id).once("value");
         const data = snap.val();
+        if (!data) throw new Error("❌ Data pesanan tidak ditemukan");
 
         const notifPesan = `📥 Bukti pembayaran diterima untuk ID ${id}\n👤 ${data.nama}\n📱 ${data.nomor}\n🔎 Cek: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+        console.log("📨 Pesan WA:", notifPesan);
 
-        // Kirim WA ke admin
+        // Kirim WA
         const formWA = new FormData();
         formWA.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
         formWA.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
         formWA.append("to", "6281803004607");
         formWA.append("message", notifPesan);
-        fetch("https://app.ngirimwa.com/api/create-message", {
+
+        const resWA = await fetch("https://app.ngirimwa.com/api/create-message", {
           method: "POST",
           body: formWA
         });
+        const jsonWA = await resWA.json();
+        console.log("📲 Respon NgirimWA:", jsonWA);
 
         document.getElementById("statusBox").innerHTML = `<b>✅ Bukti berhasil dikirim!</b><br>ID: ${id}`;
         fileInput.value = "";
 
       } catch (err) {
-        console.error(err);
+        console.error("❌ ERROR:", err);
         alert("❌ Gagal upload bukti: " + err.message);
         document.getElementById("statusBox").innerText = "Gagal upload.";
       }
