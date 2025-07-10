@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -103,7 +104,6 @@
   </header>
   <main>
     <form id="formPesanan">
-      <div id="hasil" class="info"></div>
       <label for="nama">Nama Lengkap</label>
       <input type="text" id="nama" required />
       <label for="nomor">Nomor HP / ID SN</label>
@@ -114,18 +114,157 @@
       <select id="produk" required><option value="">Pilih Produk</option></select>
       <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini...</div>
       <button type="submit">Pesan Sekarang</button>
-    </form><div id="fiturDinamisIndex"></div>
+    </form>
+    <div id="hasil"></div>
 
-<hr><br>
-<h2>Cek Status Pesanan</h2>
-<form onsubmit="event.preventDefault(); cekStatus();">
-  <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
-  <button type="submit">Cek Status</button>
-</form>
+    <hr><br>
+    <h2>Cek Status Pesanan</h2>
+    <form onsubmit="event.preventDefault(); cekStatus();">
+      <input type="text" id="idCek" placeholder="Masukkan ID Pesanan" required />
+      <button type="submit">Cek Status</button>
+    </form>
 
-<hr><br>
-<h2>Testimoni Pelanggan</h2>
-<div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
+    <hr><br>
+    <h2>Testimoni Pelanggan</h2>
+    <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
+  </main>
 
-  </main>  <!-- Firebase & Script -->  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script src="script.js"></script></body>
+  <!-- Firebase & Script -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.getElementById('themeToggle');
+      const next = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      body.setAttribute('data-theme', next);
+      btn.textContent = next === 'light' ? '🌙' : '☀️';
+      localStorage.setItem('theme', next);
+    }
+
+    if (localStorage.getItem('theme')) {
+      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const kategoriSelect = document.getElementById('kategori');
+    const produkSelect = document.getElementById('produk');
+    const infoProduk = document.getElementById('infoProduk');
+    const hasil = document.getElementById('hasil');
+    const produkRef = db.ref('produk');
+
+    produkRef.once('value').then(snapshot => {
+      const data = snapshot.val();
+      for (let kategori in data) {
+        kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+      }
+    });
+
+    kategoriSelect.addEventListener('change', () => {
+      produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+      infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+      const kategori = kategoriSelect.value;
+      if (!kategori) return;
+      produkRef.child(kategori).once('value').then(snapshot => {
+        const data = snapshot.val();
+        for (let nama in data) {
+          produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+        }
+      });
+    });
+
+    produkSelect.addEventListener('change', () => {
+      const kategori = kategoriSelect.value;
+      const produk = produkSelect.value;
+      if (!produk) return;
+      produkRef.child(`${kategori}/${produk}`).once('value').then(snapshot => {
+        const data = snapshot.val();
+        infoProduk.innerHTML = `<b>Harga:</b> Rp${data.harga}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara}`;
+      });
+    });
+
+    document.getElementById('formPesanan').addEventListener('submit', e => {
+      e.preventDefault();
+      const nama = document.getElementById('nama').value.trim();
+      const nomor = document.getElementById('nomor').value.trim();
+      const kategori = kategoriSelect.value;
+      const produk = produkSelect.value;
+      const waktu = new Date().toISOString();
+      const id = "P" + Date.now();
+      if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
+      produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
+        const data = snap.val();
+        const harga = data.harga || 0;
+        db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
+          hasil.innerHTML = `
+  ✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
+  <img src="https://asdarcell.github.io/Asdarstoredigital/1751966264423.jpg" alt="QRIS" style="width: 100%; max-width: 300px;" />
+  <div class="info">
+    🟣 <b>PAYMENT</b><br/>
+    ShopeePay: <b>081803004607</b><br/>
+    Dana: <b>087755432880</b>
+  </div>
+  <a class='qr-btn' href="upload.html?id=${id}">📤 Upload Bukti Bayar</a><br/>
+  <a class='qr-btn' href="status.html?id=${id}">📄 Cek Status</a><br/>
+  <a class='qr-btn' style="background:#00a8e8;" href="intent://sendmoney?phone=087755432880&amount=${harga}#Intent;scheme=dana;package=id.dana;end">💸 Bayar via Dana</a><br/>
+  <a class='qr-btn' style="background:#ee4d2d;" href="intent://send?phone=081803004607&amount=${harga}#Intent;scheme=shopeepay;package=com.shopee.id;end">🛒 Bayar via ShopeePay</a>
+`;
+          document.getElementById('formPesanan').reset();
+          infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
+          kirimNotifWA(id, nama, produk);
+        });
+      });
+    });
+
+    function cekStatus() {
+      const id = document.getElementById('idCek').value.trim();
+      if (id) window.location.href = `status.html?id=${id}`;
+    }
+
+    function kirimNotifWA(id, nama, produk) {
+      const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n📤 Admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+      const formData = new FormData();
+      formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
+      formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
+      formData.append("to", "6281803004607");
+      formData.append("message", pesan);
+      fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formData });
+    }
+
+    let dataTesti = [];
+    let testiIndex = 0;
+    function tampilkanSatuTesti() {
+      const box = document.getElementById('animTestimoni');
+      if (!dataTesti.length) return;
+      const t = dataTesti[testiIndex];
+      box.style.opacity = '0';
+      setTimeout(() => {
+        box.innerHTML = `⭐️⭐️⭐️⭐️⭐️<br/><b>${t.nama}</b>: ${t.pesan}`;
+        box.style.opacity = '1';
+      }, 500);
+      testiIndex = (testiIndex + 1) % dataTesti.length;
+      setTimeout(tampilkanSatuTesti, 5000);
+    }
+    db.ref('testimoni').on('value', snap => {
+      const data = snap.val() || {};
+      dataTesti = Object.values(data).reverse();
+      tampilkanSatuTesti();
+    });
+  </script>
+</body>
 </html>
+
+
+
