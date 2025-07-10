@@ -22,6 +22,29 @@
   <input type="file" id="fileInput" accept="image/*" />
   <button onclick="uploadBukti()">📤 Upload Sekarang</button>
 
+  <div id="infoPembayaran"></div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const via = urlParams.get('via');
+  const harga = urlParams.get('harga');
+  const info = {
+    dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
+    shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
+  };
+  const metode = info[via];
+  if (metode) {
+    document.getElementById("infoPembayaran").innerHTML = `
+      <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
+        <b>Metode Pembayaran: ${metode.nama}</b><br>
+        Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>
+        <b>Total Bayar:</b> Rp${harga}<br>
+        <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>
+        Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.
+      </div>
+    `;
+  }
+</script>
+  
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
