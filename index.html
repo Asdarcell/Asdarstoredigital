@@ -203,33 +203,38 @@
 
     // Render fitur dinamis (misal No WA Aktif)
     function renderFiturDinamis() {
-      fiturRef.once('value').then(snap => {
-        const fitur = snap.val() || {};
-        for (let id in fitur) {
-          const f = fitur[id];
-          if (f.lokasi === 'index') {
-            if (f.targetId) {
-              const targetElem = document.getElementById(f.targetId);
-              if (targetElem) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = f.html;
-                while (tempDiv.firstChild) {
-                  targetElem.parentNode.insertBefore(tempDiv.firstChild, targetElem.nextSibling);
-                }
+  fiturRef.once('value').then(snap => {
+    const fitur = snap.val() || {};
+    for (let id in fitur) {
+      const f = fitur[id];
+      if (f.lokasi === 'index') {
+        const container = f.targetId
+          ? document.getElementById(f.targetId)
+          : document.querySelector('main');
+        if (container) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = f.html;
+
+          while (tempDiv.firstChild) {
+            const node = tempDiv.firstChild;
+            if (node.tagName === 'SCRIPT') {
+              const script = document.createElement('script');
+              if (node.src) {
+                script.src = node.src;
+                script.async = false;
+              } else {
+                script.textContent = node.textContent;
               }
+              container.appendChild(script);
+              tempDiv.removeChild(node);
             } else {
-              const container = document.querySelector('main');
-              if (container) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = f.html;
-                while (tempDiv.firstChild) {
-                  container.appendChild(tempDiv.firstChild);
-                }
-              }
+              container.appendChild(node);
             }
           }
         }
-      });
+      }
+    }
+  });
     }
     renderFiturDinamis();
 
