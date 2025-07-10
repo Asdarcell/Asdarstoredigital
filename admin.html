@@ -87,21 +87,24 @@
   <!-- Form tambah fitur dinamis -->
   <h3>Tambah Fitur Dinamis</h3>
   <form id="formFiturDinamis" class="row g-3 mb-4">
-    <div class="col-md-3">
-      <select id="lokasiFitur" class="form-select" required>
-        <option value="">Pilih Lokasi</option>
-        <option value="index">Halaman Index</option>
-        <option value="status">Halaman Status</option>
-        <option value="admin">Dashboard Admin</option>
-      </select>
-    </div>
-    <div class="col-md-9">
-      <textarea id="htmlFitur" class="form-control" placeholder="Masukkan HTML fitur (bisa tombol, label, dll)" rows="4" required></textarea>
-    </div>
-    <div class="col-12">
-      <button type="submit" class="btn btn-secondary">💾 Simpan Fitur</button>
-    </div>
-  </form>
+  <div class="col-md-3">
+    <select id="lokasiFitur" class="form-select" required>
+      <option value="">Pilih Lokasi</option>
+      <option value="index">Halaman Index</option>
+      <option value="status">Halaman Status</option>
+      <option value="admin">Dashboard Admin</option>
+    </select>
+  </div>
+  <div class="col-md-9">
+    <textarea id="htmlFitur" class="form-control" placeholder="Masukkan HTML fitur (bisa tombol, label, dll)" rows="4" required></textarea>
+  </div>
+  <div class="col-12">
+    <input type="text" id="targetIdFitur" class="form-control" placeholder="ID Target Penempatan (contoh: formPesanan, infoProduk, dsb)" />
+  </div>
+  <div class="col-12">
+    <button type="submit" class="btn btn-secondary">💾 Simpan Fitur</button>
+  </div>
+</form>
 
   <ul id="listFiturDinamis" class="list-group mb-5"></ul>
 
@@ -409,18 +412,21 @@
 
   // --- Tambah Fitur Dinamis ---
   document.getElementById('formFiturDinamis').addEventListener('submit', e => {
-    e.preventDefault();
-    const lokasi = document.getElementById('lokasiFitur').value;
-    const html = document.getElementById('htmlFitur').value.trim();
-    if (!lokasi || !html) return alert("Lengkapi form fitur dinamis!");
-    const newKey = fiturRef.push().key;
-    fiturRef.child(newKey).set({ lokasi, html }).then(() => {
-      alert("Fitur dinamis berhasil ditambahkan");
-      e.target.reset();
-      tampilkanFiturDinamisAdmin();
-      tampilkanFiturDinamisList();
-    });
+  e.preventDefault();
+  const lokasi = document.getElementById('lokasiFitur').value;
+  const html = document.getElementById('htmlFitur').value.trim();
+  const targetId = document.getElementById('targetIdFitur').value.trim(); // ambil id target
+  if (!lokasi || !html) return alert("Lengkapi form fitur dinamis!");
+  const newKey = fiturRef.push().key;
+  const dataFitur = { lokasi, html };
+  if (targetId) dataFitur.targetId = targetId;
+  fiturRef.child(newKey).set(dataFitur).then(() => {
+    alert("Fitur dinamis berhasil ditambahkan");
+    e.target.reset();
+    tampilkanFiturDinamisAdmin();
+    tampilkanFiturDinamisList();
   });
+});
 
   // --- Hapus Fitur Dinamis ---
   function hapusFitur(id) {
@@ -443,7 +449,10 @@
         const li = document.createElement('li');
         li.className = 'list-group-item d-flex justify-content-between align-items-center';
         li.innerHTML = `
-          <div><b>${fitur.lokasi}</b>: ${fitur.html.substring(0, 50)}...</div>
+          <div>
+  <b>Lokasi:</b> ${fitur.lokasi}${fitur.targetId ? ` → <code>#${fitur.targetId}</code>` : ''}<br/>
+  <b>Preview:</b> ${fitur.html.substring(0, 50)}...
+</div>
           <button class="btn btn-sm btn-danger" onclick="hapusFitur('${key}')">Hapus</button>
         `;
         ul.appendChild(li);
