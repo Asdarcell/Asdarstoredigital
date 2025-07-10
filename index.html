@@ -108,6 +108,8 @@
       <input type="text" id="nama" required />
       <label for="nomor">Nomor HP / ID SN</label>
       <input type="text" id="nomor" required />
+      <label for="waAktif">Nomor WhatsApp Aktif</label>
+      <input type="text" id="waAktif" required />
       <label for="kategori">Kategori Produk</label>
       <select id="kategori" required><option value="">Pilih Kategori</option></select>
       <label for="produk">Produk</label>
@@ -207,18 +209,19 @@
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
       const nomor = document.getElementById('nomor').value.trim();
+      const waAktif = document.getElementById('waAktif').value.trim();
       const kategori = kategoriSelect.value;
       const produk = produkSelect.value;
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
-      if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
+      if (!nama || !nomor || !waAktif || !kategori || !produk) return alert("Harap lengkapi semua field!");
       produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
         const data = snap.val();
         const harga = data.harga || 0;
-        db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, status: 'Belum Bayar' }).then(() => {
+        db.ref('pesanan/' + id).set({ nama, nomor, kategori, produk, harga, waktu, waAktif, status: 'Belum Bayar' }).then(() => {
           hasil.innerHTML = `
 ✅ Pesanan berhasil!<br/><b>ID:</b> ${id}<br/>
-<img src="https://asdarcell.github.io/Asdarstoredigital/1751966264423.jpg" alt="QRIS" style="width: 100%; max-width: 300px;" />
+<img src="https://asdarcell.github.io/Asdarstoredigitalll/1751966264423.jpg" alt="QRIS" style="width: 100%; max-width: 300px;" />
 <div class="info">
   🟣 <b>PAYMENT</b><br/>
   ShopeePay: <b>081803004607</b><br/>
@@ -231,7 +234,7 @@
 `;
           document.getElementById('formPesanan').reset();
           infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini...';
-          kirimNotifWA(id, nama, produk);
+          kirimNotifWA(id, nama, produk, waAktif); // kirim WA Aktif ke admin
         });
       });
     });
@@ -243,8 +246,8 @@
     }
 
     // Kirim notifikasi WA ke admin
-    function kirimNotifWA(id, nama, produk) {
-      const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📦 Produk: ${produk}\n\n📤 Admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+    function kirimNotifWA(id, nama, produk, waAktif) {
+      const pesan = `📦 Pesanan Baru\n🆔 ID: ${id}\n👤 Nama: ${nama}\n📞 WA Aktif: ${waAktif}\n📦 Produk: ${produk}\n\n📤 Admin: https://asdarcell.github.io/Asdarstoredigitalll/admin.html`;
       const formData = new FormData();
       formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
       formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
@@ -281,12 +284,10 @@
         for (let id in fitur) {
           const f = fitur[id];
           if (f.lokasi === 'index') {
-            // Cek container targetId dulu
             let container;
             if (f.targetId) {
               container = document.getElementById(f.targetId);
               if (!container) {
-                // Jika belum ada elemen targetId, buat baru di main
                 container = document.createElement('div');
                 container.id = f.targetId;
                 document.querySelector('main').appendChild(container);
@@ -295,7 +296,6 @@
               container = document.querySelector('main');
             }
             if (container) {
-              // Sisipkan HTML dan jalankan script jika ada
               const tempDiv = document.createElement('div');
               tempDiv.innerHTML = f.html || '';
               while (tempDiv.firstChild) {
