@@ -106,7 +106,8 @@
     <form id="formPesanan">
       <label for="nama">Nama Lengkap</label>
       <input type="text" id="nama" required />
-      <!-- Input No WA Aktif lewat fitur dinamis akan disisipkan di sini -->
+
+      <!-- Fitur dinamis No WA akan disisipkan tepat di sini -->
 
       <label for="nomor">Nomor HP / ID SN</label>
       <input type="text" id="nomor" required />
@@ -135,6 +136,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // Theme toggle
     function toggleTheme() {
       const body = document.body;
       const btn = document.getElementById('themeToggle');
@@ -143,12 +145,12 @@
       btn.textContent = next === 'light' ? '🌙' : '☀️';
       localStorage.setItem('theme', next);
     }
-
     if (localStorage.getItem('theme')) {
       document.body.setAttribute('data-theme', localStorage.getItem('theme'));
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
+    // Firebase config & init
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -161,6 +163,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Elements
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
@@ -201,40 +204,24 @@
       });
     });
 
-    // Render fitur dinamis (misal No WA Aktif)
+    // Render fitur dinamis (No WA Aktif) tepat setelah input nama (id="nama")
     function renderFiturDinamis() {
-  fiturRef.once('value').then(snap => {
-    const fitur = snap.val() || {};
-    for (let id in fitur) {
-      const f = fitur[id];
-      if (f.lokasi === 'index') {
-        const container = f.targetId
-          ? document.getElementById(f.targetId)
-          : document.querySelector('main');
-        if (container) {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = f.html;
-
-          while (tempDiv.firstChild) {
-            const node = tempDiv.firstChild;
-            if (node.tagName === 'SCRIPT') {
-              const script = document.createElement('script');
-              if (node.src) {
-                script.src = node.src;
-                script.async = false;
-              } else {
-                script.textContent = node.textContent;
+      fiturRef.once('value').then(snap => {
+        const fitur = snap.val() || {};
+        for (let id in fitur) {
+          const f = fitur[id];
+          if (f.lokasi === 'index' && f.targetId) {
+            const targetElem = document.getElementById(f.targetId);
+            if (targetElem) {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = f.html;
+              while (tempDiv.firstChild) {
+                targetElem.parentNode.insertBefore(tempDiv.firstChild, targetElem.nextSibling);
               }
-              container.appendChild(script);
-              tempDiv.removeChild(node);
-            } else {
-              container.appendChild(node);
             }
           }
         }
-      }
-    }
-  });
+      });
     }
     renderFiturDinamis();
 
