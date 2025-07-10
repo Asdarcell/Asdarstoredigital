@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Asdar Store Digital - Fitur Dinamis No WA</title>
+  <title>Asdar Store Digital - Fitur Dinamis Lengkap</title>
   <link rel="icon" href="favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -101,13 +101,20 @@
   <header id="header">
     <h1>Asdar Store Digital</h1>
     <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    <!-- Slot fitur dinamis di header -->
+    <div id="headerSlot" style="margin-left: auto;"></div>
   </header>
+
+  <!-- Slot fitur dinamis di atas main -->
+  <div id="topSlot" style="max-width:700px; margin: auto; padding: 10px;"></div>
+
   <main>
     <form id="formPesanan">
       <label for="nama">Nama Lengkap</label>
       <input type="text" id="nama" required />
-
-      <!-- Fitur dinamis No WA akan disisipkan tepat di sini -->
+      
+      <!-- Slot fitur dinamis di form -->
+      <div id="mainSlot"></div>
 
       <label for="nomor">Nomor HP / ID SN</label>
       <input type="text" id="nomor" required />
@@ -132,7 +139,6 @@
     <div id="testimoniBox"><div id="animTestimoni">Loading...</div></div>
   </main>
 
-  <!-- Firebase & Script -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
@@ -145,12 +151,13 @@
       btn.textContent = next === 'light' ? '🌙' : '☀️';
       localStorage.setItem('theme', next);
     }
+
     if (localStorage.getItem('theme')) {
       document.body.setAttribute('data-theme', localStorage.getItem('theme'));
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
-    // Firebase config & init
+    // Firebase setup
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -163,7 +170,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Elements
+    // Refs
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
@@ -204,19 +211,30 @@
       });
     });
 
-    // Render fitur dinamis (No WA Aktif) tepat setelah input nama (id="nama")
+    // Render fitur dinamis ke slot yang sesuai
     function renderFiturDinamis() {
       fiturRef.once('value').then(snap => {
         const fitur = snap.val() || {};
         for (let id in fitur) {
           const f = fitur[id];
-          if (f.lokasi === 'index' && f.targetId) {
-            const targetElem = document.getElementById(f.targetId);
-            if (targetElem) {
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = f.html;
-              while (tempDiv.firstChild) {
-                targetElem.parentNode.insertBefore(tempDiv.firstChild, targetElem.nextSibling);
+          const container = f.targetSlot ? document.getElementById(f.targetSlot) : null;
+          if (container) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = f.html;
+            while (tempDiv.firstChild) {
+              const node = tempDiv.firstChild;
+              if (node.tagName === 'SCRIPT') {
+                const script = document.createElement('script');
+                if (node.src) {
+                  script.src = node.src;
+                  script.async = false;
+                } else {
+                  script.textContent = node.textContent;
+                }
+                container.appendChild(script);
+                tempDiv.removeChild(node);
+              } else {
+                container.appendChild(node);
               }
             }
           }
@@ -225,19 +243,24 @@
     }
     renderFiturDinamis();
 
-    // Submit form dengan input no WA dari fitur dinamis
+    // Submit form
     document.getElementById('formPesanan').addEventListener('submit', e => {
       e.preventDefault();
       const nama = document.getElementById('nama').value.trim();
       const nomor = document.getElementById('nomor').value.trim();
-      const wa = document.getElementById('wa') ? document.getElementById('wa').value.trim() : '';
+
+      // Cari input no WA dari fitur dinamis (jika ada)
+      let wa = '';
+      const waInput = document.querySelector('#mainSlot input[id="wa"], #mainSlot input[name="wa"]');
+      if (waInput) wa = waInput.value.trim();
+
       const kategori = kategoriSelect.value;
       const produk = produkSelect.value;
       const waktu = new Date().toISOString();
       const id = "P" + Date.now();
 
       if (!nama || !nomor || !kategori || !produk) return alert("Harap lengkapi semua field!");
-      if (!wa) return alert("Harap isi No. WA Aktif!");
+      if (waInput && !wa) return alert("Harap isi No. WA Aktif!");
 
       produkRef.child(`${kategori}/${produk}`).once('value').then(snap => {
         const data = snap.val();
