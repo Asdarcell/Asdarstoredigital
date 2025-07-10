@@ -1,112 +1,124 @@
-<!DOCTYPE html>  <html lang="id">  
-<head>  
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1">  
-  <title>Upload Bukti Bayar - Asdar Store</title>  
-  <style>  
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }  
-    h2 { color: #3498db; }  
-    input, button {  
-      padding: 10px; margin: 10px 0;  
-      display: block; width: 100%; max-width: 400px;  
-    }  
-    .info {  
-      background: #eaf4ff; padding: 10px; border-left: 4px solid #3498db;  
-    }  
-  </style>  
-</head>  
-<body>  
-  <h2>Upload Bukti Pembayaran</h2>  
-  <div class="info" id="statusBox">Silakan upload bukti bayar Anda.</div>  
-  <input type="file" id="fileInput" accept="image/*" />  
-  <button onclick="uploadBukti()">📤 Upload Sekarang</button>    <div id="infoPembayaran"></div>  
-<script>  
-  const urlParams = new URLSearchParams(window.location.search);  
-  const via = urlParams.get('via');  
-  const harga = urlParams.get('harga');  
-  const info = {  
-    dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },  
-    shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }  
-  };  
-  const metode = info[via];  
-  if (metode) {  
-    document.getElementById("infoPembayaran").innerHTML = `  
-      <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">  
-        <b>Metode Pembayaran: ${metode.nama}</b><br>  
-        Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>  
-        <b>Total Bayar:</b> Rp${harga}<br>  
-        <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>  
-        Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.  
-      </div>  
-    `;  
-  }  
-</script>    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>    <script>  
-    const firebaseConfig = {  
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",  
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",  
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",  
-      projectId: "asdarstoredigitalll-d89c4",  
-      storageBucket: "asdarstoredigitalll.appspot.com",  
-      messagingSenderId: "220670500351",  
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"  
-    };  
-    firebase.initializeApp(firebaseConfig);  
-    const db = firebase.database();  
-  
-    const imgbbApiKey = ""; // Ganti kalau punya sendiri  
-  
-    async function uploadBukti() {  
-      const fileInput = document.getElementById('fileInput');  
-      const file = fileInput.files[0];  
-      if (!file) return alert("❗ Pilih gambar terlebih dahulu.");  
-  
-      document.getElementById("statusBox").innerText = "⏳ Uploading...";  
-  
-      const formData = new FormData();  
-      formData.append("image", file);  
-  
-      try {  
-        // Upload ke imgbb  
-        const res = await fetch(`https://api.imgur.com/3/image
-(pakai Authorization: Client-ID <your-client-id>)/1/upload?key=${imgbbApiKey}`, {  
-          method: "POST",  
-          body: formData  
-        });  
-        const json = await res.json();  
-        if (!json.success) throw new Error("Upload gagal");  
-  
-        const imageUrl = json.data.url;  
-  
-        // Update status & simpan buktiBayar  
-        await db.ref("pesanan/" + id).update({  
-          buktiBayar: imageUrl,  
-          status: "Sudah Bayar"  
-        });  
-  
-        // Tambah ke galeri  
-        await db.ref("galeri_bukti").push({ url: imageUrl });  
-  
-        // Ambil data pesanan buat notif WA  
-        const snap = await db.ref("pesanan/" + id).once("value");  
-        const data = snap.val();  
-        const notifPesan = `📥 Bukti pembayaran diterima untuk ID ${id}\n👤 ${data.nama}\n📱 ${data.nomor}\n🔎 Cek: https://asdarcell.github.io/Asdarstoredigital/admin.html`;  
-  
-        // Kirim ke admin via NgirimWA  
-        const formWA = new FormData();  
-        formWA.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");  
-        formWA.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");  
-        formWA.append("to", "6281803004607");  
-        formWA.append("message", notifPesan);  
-        fetch("https://app.ngirimwa.com/api/create-message", { method: "POST", body: formWA });  
-  
-        document.getElementById("statusBox").innerHTML = `<b>✅ Bukti berhasil dikirim!</b><br>ID: ${id}`;  
-        fileInput.value = "";  
-  
-      } catch (err) {  
-        console.error(err);  
-        alert("❌ Gagal upload bukti: " + err.message);  
-        document.getElementById("statusBox").innerText = "Gagal upload.";  
-      }  
-    }  
-  </script>  </body>  
-</html> 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Bukti Bayar - Asdar Store</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h2 { color: #3498db; }
+    input, button {
+      padding: 10px; margin: 10px 0;
+      display: block; width: 100%; max-width: 400px;
+    }
+    .info {
+      background: #eaf4ff; padding: 10px; border-left: 4px solid #3498db;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Bukti Pembayaran</h2>
+  <div class="info" id="statusBox">Silakan upload bukti bayar Anda.</div>
+  <input type="file" id="fileInput" accept="image/*" />
+  <button onclick="uploadBukti()">📤 Upload Sekarang</button>
+  <div id="infoPembayaran"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const via = urlParams.get('via');
+    const harga = urlParams.get('harga');
+    const id = urlParams.get('id');
+
+    const info = {
+      dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
+      shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
+    };
+
+    const metode = info[via];
+    if (metode) {
+      document.getElementById("infoPembayaran").innerHTML = `
+        <div style="background:${metode.warna};color:#fff;padding:10px;border-radius:10px;">
+          <b>Metode Pembayaran: ${metode.nama}</b><br>
+          Nomor Tujuan: <span id="nomorTujuan">${metode.no}</span><br>
+          <b>Total Bayar:</b> Rp${harga}<br>
+          <button onclick="navigator.clipboard.writeText('${metode.no}').then(()=>alert('Nomor disalin!'))">📋 Salin Nomor</button><br><br>
+          Silakan transfer ke nomor di atas sesuai nominal, lalu upload bukti pembayaran Anda.
+        </div>
+      `;
+    }
+
+    async function uploadBukti() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      if (!file) return alert("❗ Pilih gambar terlebih dahulu.");
+
+      document.getElementById("statusBox").innerText = "⏳ Uploading...";
+
+      const formData = new FormData();
+      formData.append("source", file);
+      formData.append("key", "6d207e02198a847aa98d0a2a901485a5");
+      formData.append("format", "json");
+
+      try {
+        const res = await fetch("https://freeimage.host/api/1/upload", {
+          method: "POST",
+          body: formData
+        });
+        const json = await res.json();
+        if (json.status_code !== 200) throw new Error("Upload gagal");
+
+        const imageUrl = json.image.display_url;
+
+        // Simpan ke Firebase
+        await db.ref("pesanan/" + id).update({
+          buktiBayar: imageUrl,
+          status: "Sudah Bayar"
+        });
+
+        // Tambah ke galeri
+        await db.ref("galeri_bukti").push({ url: imageUrl });
+
+        const snap = await db.ref("pesanan/" + id).once("value");
+        const data = snap.val();
+
+        const notifPesan = `📥 Bukti pembayaran diterima untuk ID ${id}\n👤 ${data.nama}\n📱 ${data.nomor}\n🔎 Cek: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+
+        // Kirim WA ke admin
+        const formWA = new FormData();
+        formWA.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
+        formWA.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
+        formWA.append("to", "6281803004607");
+        formWA.append("message", notifPesan);
+        fetch("https://app.ngirimwa.com/api/create-message", {
+          method: "POST",
+          body: formWA
+        });
+
+        document.getElementById("statusBox").innerHTML = `<b>✅ Bukti berhasil dikirim!</b><br>ID: ${id}`;
+        fileInput.value = "";
+
+      } catch (err) {
+        console.error(err);
+        alert("❌ Gagal upload bukti: " + err.message);
+        document.getElementById("statusBox").innerText = "Gagal upload.";
+      }
+    }
+  </script>
+</body>
+</html>
