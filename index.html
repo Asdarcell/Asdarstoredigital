@@ -271,22 +271,38 @@
 
     // --- FITUR DINAMIS ---
     function renderFiturDinamis() {
-  fiturRef.once('value').then(snap => {
-    const fitur = snap.val() || {};
-    for (let id in fitur) {
-      const f = fitur[id];
-      if (f.lokasi === 'index') {
-        const container = f.targetId
-          ? document.getElementById(f.targetId)
-          : document.querySelector('main');
-        if (container) {
-          const div = document.createElement('div');
-          div.innerHTML = f.html;
-          container.appendChild(div);
+      fiturRef.once('value').then(snap => {
+        const fitur = snap.val() || {};
+        for (let id in fitur) {
+          const f = fitur[id];
+          if (f.lokasi === 'index') {
+            const container = f.targetId
+              ? document.getElementById(f.targetId)
+              : document.querySelector('main');
+            if (container) {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = f.html;
+
+              while (tempDiv.firstChild) {
+                const node = tempDiv.firstChild;
+                if (node.tagName === 'SCRIPT') {
+                  const script = document.createElement('script');
+                  if (node.src) {
+                    script.src = node.src;
+                    script.async = false;
+                  } else {
+                    script.textContent = node.textContent;
+                  }
+                  container.appendChild(script);
+                  tempDiv.removeChild(node);
+                } else {
+                  container.appendChild(node);
+                }
+              }
+            }
+          }
         }
-      }
-    }
-  });
+      });
     }
 
     renderFiturDinamis(); // panggil saat halaman dimuat
