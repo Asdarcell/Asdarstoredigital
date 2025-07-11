@@ -1,63 +1,135 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard Admin - Asdar Store</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <style>
-    body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
-    h1 { margin-bottom: 20px; }
-    .card { margin-bottom: 15px; }
-    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
-    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
-    pre { background: #eee; padding: 10px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
-  </style>
+<meta charset="UTF-8" />
+<title>Dashboard Admin - Asdar Store Lengkap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
+  h1 { margin-bottom: 20px; }
+  .card { margin-bottom: 15px; }
+  img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
+  #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+  textarea { font-family: monospace; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Dashboard Admin - Asdar Store</h1><!-- Fitur Dinamis Admin -->
-<h3>Fitur Dinamis (Live HTML/JS)</h3>
-<form id="formFiturDinamis" class="mb-3">
-  <textarea id="htmlFitur" class="form-control mb-2" rows="6" placeholder="Masukkan kode HTML/JS untuk ditambahkan"></textarea>
-  <button type="submit" class="btn btn-success">➕ Tambah Fitur</button>
-</form>
-<div id="fiturDinamisArea"></div>
+<div class="container">
+  <h1>Dashboard Admin - Asdar Store Lengkap</h1>
 
-<!-- Existing content: Filter, Pesanan, Produk, Galeri, etc. -->
-<!-- (Bagian ini tetap sesuai versi sebelumnya, tidak dihapus) -->
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="pesanan-tab" data-bs-toggle="tab" data-bs-target="#pesanan" type="button" role="tab">Pesanan</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="produk-tab" data-bs-toggle="tab" data-bs-target="#produk" type="button" role="tab">Produk</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="testimoni-tab" data-bs-toggle="tab" data-bs-target="#testimoni" type="button" role="tab">Testimoni</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="galeri-tab" data-bs-toggle="tab" data-bs-target="#galeriTab" type="button" role="tab">Galeri Bukti</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="dinamis-tab" data-bs-toggle="tab" data-bs-target="#dinamis" type="button" role="tab">Fitur Dinamis</button>
+    </li>
+  </ul>
 
-  </div>  <script>
-    const fiturList = [];
+  <div class="tab-content" id="adminTabContent">
 
-    function renderFiturDinamis() {
-      const container = document.getElementById('fiturDinamisArea');
-      container.innerHTML = '';
-      fiturList.forEach((html, i) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'card p-3 mb-3';
-        wrapper.innerHTML = `
-          <div class="mb-2"><b>Fitur #${i + 1}</b></div>
-          <pre>${html}</pre><div class="mt-2">${html}</div>
-      <button class="btn btn-danger btn-sm mt-2" onclick="hapusFitur(${i})">🗑️ Hapus</button>
-    `;
-    container.appendChild(wrapper);
-  });
-}
+    <!-- Tab Pesanan -->
+    <div class="tab-pane fade show active" id="pesanan" role="tabpanel">
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <select id="filterStatusPesanan" class="form-select">
+            <option value="">Filter Semua Status</option>
+            <option value="Belum Bayar">Belum Bayar</option>
+            <option value="Sudah Bayar">Sudah Bayar</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <input type="text" id="searchIdPesanan" class="form-control" placeholder="Cari ID atau Nama Pesanan" />
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-success w-100" id="exportCSVPesananBtn">Export CSV Pesanan</button>
+        </div>
+      </div>
 
-function hapusFitur(i) {
-  fiturList.splice(i, 1);
-  renderFiturDinamis();
-}
+      <div id="pesananList" style="max-height: 450px; overflow-y:auto;"></div>
 
-document.getElementById('formFiturDinamis').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const html = document.getElementById('htmlFitur').value.trim();
-  if (!html) return alert('Isi fitur tidak boleh kosong');
-  fiturList.push(html);
-  document.getElementById('htmlFitur').value = '';
-  renderFiturDinamis();
-});
+      <hr />
+      <h5>Upload Bukti Admin ke Pembeli</h5>
+      <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
+      <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
+    </div>
 
-  </script>
+    <!-- Tab Produk -->
+    <div class="tab-pane fade" id="produk" role="tabpanel">
+      <form id="formProduk" class="row g-3 mb-4">
+        <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required /></div>
+        <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required /></div>
+        <div class="col-md-2"><input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required /></div>
+        <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required /></div>
+        <div class="col-12"><button type="submit" class="btn btn-success">Simpan / Edit Produk</button></div>
+      </form>
+      <ul id="daftarProduk" class="list-group" style="max-height: 450px; overflow-y:auto;"></ul>
+      <hr/>
+      <button class="btn btn-danger" id="hapusSemuaProdukBtn">🧹 Hapus Semua Produk</button>
+    </div>
+
+    <!-- Tab Testimoni -->
+    <div class="tab-pane fade" id="testimoni" role="tabpanel">
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <select id="filterRatingTestimoni" class="form-select">
+            <option value="">Filter Semua Rating</option>
+            <option value="5">⭐⭐⭐⭐⭐</option>
+            <option value="4">⭐⭐⭐⭐</option>
+            <option value="3">⭐⭐⭐</option>
+            <option value="2">⭐⭐</option>
+            <option value="1">⭐</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <input type="text" id="searchNamaTestimoni" class="form-control" placeholder="Cari Nama / Pesan" />
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-success w-100" id="exportCSVTestimoniBtn">Export CSV Testimoni</button>
+        </div>
+      </div>
+      <div id="testimoniList" style="max-height: 450px; overflow-y:auto;"></div>
+      <hr/>
+      <button class="btn btn-danger" id="hapusSemuaTestimoniBtn">🧹 Hapus Semua Testimoni</button>
+    </div>
+
+    <!-- Tab Galeri Bukti Bayar -->
+    <div class="tab-pane fade" id="galeriTab" role="tabpanel">
+      <div id="galeri" class="d-flex flex-wrap"></div>
+      <hr/>
+      <button class="btn btn-danger" id="hapusSemuaGaleriBtn">🧹 Hapus Semua Bukti Transfer</button>
+    </div>
+
+    <!-- Tab Fitur Dinamis -->
+    <div class="tab-pane fade" id="dinamis" role="tabpanel">
+      <h5>Tambah / Edit Fitur Dinamis (HTML/JS)</h5>
+      <textarea id="inputDinamis" rows="10" class="form-control mb-2" placeholder="Masukkan HTML, JS, CSS..." spellcheck="false"></textarea>
+      <button id="simpanDinamisBtn" class="btn btn-primary">Simpan Fitur Dinamis</button>
+      <hr/>
+      <h6>Preview Fitur Dinamis</h6>
+      <div id="previewDinamis" class="p-3 border bg-white" style="min-height:200px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 </body>
 </html>
