@@ -1,92 +1,89 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Upload Bukti Bayar</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Upload Bukti Pembayaran</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #f2f2f2;
-    }
-    h2 {
-      color: #3498db;
-    }
-    input, button {
-      padding: 10px;
-      margin: 10px 0;
-      width: 100%;
-      max-width: 400px;
-    }
-    #statusBox {
-      margin-top: 10px;
-      padding: 10px;
-      background: #eaf4ff;
-      border-left: 5px solid #3498db;
-    }
-    .loading {
-      color: orange;
-    }
-    .success {
-      color: green;
-    }
-    .error {
-      color: red;
-    }
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
+    #status { margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #3498db; }
   </style>
 </head>
 <body>
-
   <h2>Upload Bukti Pembayaran</h2>
   <input type="file" id="fileInput" accept="image/*" />
-  <button id="uploadBtn">📤 Upload Sekarang</button>
-
-  <div id="statusBox">Silakan pilih dan upload bukti transfer Anda.</div>
+  <button onclick="upload()">📤 Upload & Kirim ke WhatsApp</button>
+  <div id="status">Silakan pilih gambar dan klik tombol upload.</div>
 
   <script>
-    document.getElementById('uploadBtn').addEventListener('click', async () => {
+    const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+    const ngirimwaAppkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+    const ngirimwaAuthkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+    const waTujuan = "6281803004607";
+
+    async function upload() {
       const fileInput = document.getElementById("fileInput");
-      const statusBox = document.getElementById("statusBox");
       const file = fileInput.files[0];
+      const status = document.getElementById("status");
 
-      if (!file) {
-        statusBox.innerHTML = "❗ Silakan pilih gambar terlebih dahulu.";
-        statusBox.className = "error";
-        return;
-      }
+      if (!file) return alert("❗ Pilih gambar dulu.");
 
-      const formData = new FormData();
-      formData.append("image", file);
+      status.innerText = "⏳ Upload ke ImgBB...";
 
-      statusBox.innerText = "⏳ Mengunggah gambar...";
-      statusBox.className = "loading";
+      // Convert file ke base64
+      const base64 = await toBase64(file);
 
       try {
-        const res = await fetch("https://asdarstoredigital.onrender.com/upload", {
+        // Upload ke imgbb
+        const formData = new FormData();
+        formData.append("key", imgbbApiKey);
+        formData.append("image", base64.split(",")[1]); // buang 'data:image/...;base64,'
+
+        const imgbbRes = await fetch("https://api.imgbb.com/1/upload", {
           method: "POST",
           body: formData
         });
 
-        const data = await res.json();
-        if (data.success) {
-          statusBox.className = "success";
-          statusBox.innerHTML = `
-            ✅ Upload sukses!<br>
-            <a href="${data.data.url}" target="_blank">${data.data.url}</a>
-          `;
-          fileInput.value = "";
+        const imgbbJson = await imgbbRes.json();
+        if (!imgbbJson.success) throw new Error("Upload ke ImgBB gagal");
+
+        const imageUrl = imgbbJson.data.url;
+        status.innerText = "✅ Upload berhasil. Mengirim ke WhatsApp...";
+
+        // Kirim ke NgirimWA
+        const formWA = new FormData();
+        formWA.append("appkey", ngirimwaAppkey);
+        formWA.append("authkey", ngirimwaAuthkey);
+        formWA.append("to", waTujuan);
+        formWA.append("message", `📥 Bukti pembayaran diterima:\n${imageUrl}`);
+        formWA.append("image", imageUrl);
+
+        const waRes = await fetch("https://app.ngirimwa.com/api/create-message", {
+          method: "POST",
+          body: formWA
+        });
+
+        const waJson = await waRes.json();
+
+        if (waJson.success) {
+          status.innerHTML = `✅ Berhasil dikirim ke WA!<br><a href="${imageUrl}" target="_blank">Lihat Bukti</a>`;
         } else {
-          statusBox.className = "error";
-          statusBox.innerHTML = "❌ Gagal upload: " + (data.error || "Terjadi kesalahan.");
+          throw new Error("Gagal kirim ke WhatsApp");
         }
-
       } catch (err) {
-        statusBox.className = "error";
-        statusBox.innerText = "❌ Gagal koneksi ke server: " + err.message;
+        console.error(err);
+        status.innerText = "❌ Gagal: " + err.message;
       }
-    });
-  </script>
+    }
 
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
 </body>
 </html>
