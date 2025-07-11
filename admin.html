@@ -310,7 +310,7 @@ function kirimNotifWA(nomor, pesan) {
 // Kirim WA ke pembeli
 async function kirimNotifWAkeUser(nomor, pesan) {
   try {
-    await fetch("https://api.ngirimwa.com/sendText", {
+    const res = await fetch("https://api.ngirimwa.com/sendText", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -320,8 +320,17 @@ async function kirimNotifWAkeUser(nomor, pesan) {
         message: pesan
       }).toString()
     });
+
+    const data = await res.json();
+    console.log("RESPON NGIRIMWA:", data);
+
+    if (!data.success) {
+      alert("❌ Gagal kirim WA ke user: " + data.message);
+      console.error("Gagal:", data);
+    }
   } catch (err) {
-    console.error("❌ Gagal kirim WA ke user:", err);
+    console.error("❌ Error kirim WA ke user:", err);
+    alert("❌ Error kirim WA ke user (check console).");
   }
 }
 
