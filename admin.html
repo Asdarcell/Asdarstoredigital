@@ -260,24 +260,47 @@
 
   // --- Upload Bukti Admin & Kirim Notif WA ---
   async function uploadBukti() {
-    const fileInput = document.getElementById('buktiAdmin');
-    const file = fileInput.files[0];
-    if (!file) return alert("❗ Pilih gambar bukti dulu!");
-    if (!selectedId) return alert("❗ Pilih pesanan terlebih dahulu!");
+  const fileInput = document.getElementById('buktiAdmin');
+  const file = fileInput.files[0];
+  if (!file) return alert("❗ Pilih gambar bukti dulu!");
+  if (!selectedId) return alert("❗ Pilih pesanan terlebih dahulu!");
 
-    const formData = new FormData();
-    formData.append("image", file);
+  const snapshot = await db.ref('pesanan/' + selectedId).once('value');
+  const data = snapshot.val();
+  if (!data || !data.nomor) return alert("❗ Data pembeli tidak ditemukan!");
 
-    const imgbbApiKey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a"; // Ganti kalau perlu
-    try {
-      const res = await fetch(`https://app.ngirimwa.com/api/create-message?key=${ngirimwaApiKey}`, {
-        method: "POST",
-        body: formData
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error("Gagal upload gambar");
-      
-      const urlBukti = json.data.url;
+  const nomorPembeli = data.nomor;
+  const formData = new FormData();
+  formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
+  formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
+  formData.append("to", "62" + nomorPembeli.replace(/^0/, ""));
+  formData.append("message", `📦 Pesanan ${selectedId} telah selesai dan ini bukti transaksi dari admin Asdar Store.`);
+  formData.append("image", file); // langsung kirim file gambar
+
+  try {
+    const waRes = await fetch("https://app.ngirimwa.com/api/create-message", {
+      method: "POST",
+      body: formData
+    });
+
+    const waJson = await waRes.json();
+    if (!waJson.success) throw new Error("Gagal kirim gambar ke WA");
+
+    // Tandai status pesanan selesai & catat bahwa bukti sudah dikirim
+    await db.ref('pesanan/' + selectedId).update({
+      status: "Selesai",
+      buktiAdmin: "(Dikirim via WA)"
+    });
+
+    alert("✅ Bukti berhasil dikirim ke pembeli via WhatsApp!");
+    fileInput.value = "";
+    selectedId = null;
+    tampilkanPesanan();
+  } catch (err) {
+    console.error(err);
+    alert("❌ Gagal kirim ke WhatsApp: " + err.message);
+  }
+  }
       // Simpan url bukti admin di pesanan dan ubah status ke Selesai
       await db.ref('pesanan/' + selectedId).update({
         buktiAdmin: urlBukti,
