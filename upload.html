@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Upload Bukti Pembayaran</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -20,6 +20,7 @@
   <div id="status">Silakan upload bukti pembayaran Anda.</div>
 
   <script>
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -32,56 +33,85 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // API key ImgBB
     const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+
+    // Nomor admin tujuan WA
     const nomorAdmin = "6281803004607";
+
+    // API keys NgirimWA (gunakan form-data)
+    const appKey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+    const authKey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
 
     async function upload() {
       const id = document.getElementById("idPesanan").value.trim();
       const file = document.getElementById("fileInput").files[0];
       const status = document.getElementById("status");
 
-      if (!id || !file) return alert("Lengkapi ID dan pilih gambar!");
+      if (!id || !file) {
+        alert("Lengkapi ID dan pilih gambar!");
+        return;
+      }
 
       status.innerText = "⏳ Mengupload gambar...";
       const base64 = await toBase64(file);
 
-      const formData = new FormData();
-      formData.append("key", imgbbApiKey);
-      formData.append("image", base64.split(",")[1]);
+      const formDataImg = new FormData();
+      formDataImg.append("key", imgbbApiKey);
+      formDataImg.append("image", base64.split(",")[1]);
 
       try {
-        const res = await fetch("https://api.imgbb.com/1/upload", {
+        // Upload gambar ke ImgBB
+        const resImg = await fetch("https://api.imgbb.com/1/upload", {
           method: "POST",
-          body: formData
+          body: formDataImg
         });
-        const json = await res.json();
-        if (!json.success) throw new Error("Gagal upload ke ImgBB");
+        const jsonImg = await resImg.json();
+        if (!jsonImg.success) throw new Error("Gagal upload ke ImgBB");
 
-        const imageUrl = json.data.url;
+        const imageUrl = jsonImg.data.url;
 
-        // Update database pesanan
+        // Update Firebase pesanan
         await db.ref("pesanan/" + id).update({
           buktiBayar: imageUrl,
           status: "Sudah Bayar"
         });
 
-        // Kirim notifikasi ke admin
-        await fetch("https://ngirimwa.vercel.app/api/send-message", {
+        // Ambil data pesanan untuk nomor WA buyer
+        const snapPesanan = await db.ref("pesanan/" + id).once("value");
+        const dataPesanan = snapPesanan.val();
+        const nomorBuyer = dataPesanan && dataPesanan.nomor ? dataPesanan.nomor : "-";
+
+        // Buat pesan WA ke admin (termasuk nomor buyer & link gambar)
+        const pesanWA = 
+          `📥 Pesanan *${id}* telah mengupload bukti pembayaran dan menunggu verifikasi.\n` +
+          `Nomor Pembeli: ${nomorBuyer}\n` +
+          `Link Bukti: ${imageUrl}\n` +
+          `Silakan cek dashboard admin.`;
+
+        // Kirim notifikasi WA ke admin pakai API NgirimWA dengan form-data
+        const formDataWA = new FormData();
+        formDataWA.append("appkey", appKey);
+        formDataWA.append("authkey", authKey);
+        formDataWA.append("to", nomorAdmin);
+        formDataWA.append("message", pesanWA);
+
+        const resWA = await fetch("https://app.ngirimwa.com/api/create-message", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nomor: nomorAdmin,
-            pesan: `📥 Pesanan *${id}* telah mengupload bukti pembayaran dan menunggu verifikasi.\nSilakan cek dashboard admin.`
-          })
+          body: formDataWA
         });
+        const jsonWA = await resWA.json();
+        if (!jsonWA.success) throw new Error("Gagal kirim notifikasi WA ke admin");
 
         status.innerHTML = `✅ Bukti berhasil dikirim!<br><a href="${imageUrl}" target="_blank">Lihat Gambar</a>`;
+
       } catch (error) {
         console.error(error);
-        status.innerText = "❌ Gagal upload: " + error.message;
+        status.innerText = "❌ Gagal upload atau kirim notifikasi: " + error.message;
       }
     }
 
+    // Fungsi helper convert file ke base64
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
