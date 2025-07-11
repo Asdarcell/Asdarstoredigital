@@ -8,17 +8,21 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
-    #status { margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #3498db; }
+    #status, #infoBayar { margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #3498db; }
+    .copy-btn { background: #3498db; color: #fff; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
   <h2>Upload Bukti Pembayaran</h2>
+
+  <div id="infoBayar">Memuat info pembayaran...</div>
+
   <input type="file" id="fileInput" accept="image/*" />
   <button onclick="upload()">📤 Upload & Kirim ke WhatsApp</button>
   <div id="status">Silakan pilih gambar dan klik tombol upload.</div>
 
   <script>
-    // Firebase config kamu
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -28,7 +32,6 @@
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -37,19 +40,43 @@
     const ngirimwaAuthkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
     const waTujuan = "6281803004607";
 
+    const metode = {
+      dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
+      shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const via = urlParams.get('via');
+    const harga = urlParams.get('harga') || '0';
+    const bayar = metode[via];
+
+    if (bayar) {
+      document.getElementById("infoBayar").innerHTML = `
+        <div style="background:${bayar.warna};color:#fff;padding:10px;border-radius:10px;">
+          🟣 <b>PAYMENT</b> (${bayar.nama})<br>
+          Nomor: <b id="nomorTujuan">${bayar.no}</b><br>
+          Total Bayar: <b>Rp${harga}</b><br>
+          <button class="copy-btn" onclick="salinNo()">📋 Salin Nomor</button><br><br>
+          Cara Bayar: Silakan transfer ke nomor di atas, lalu upload bukti pembayaran Anda.
+        </div>
+      `;
+    } else {
+      document.getElementById("infoBayar").innerText = "❌ Metode pembayaran tidak valid.";
+    }
+
+    function salinNo() {
+      const no = document.getElementById("nomorTujuan").innerText;
+      navigator.clipboard.writeText(no).then(() => alert("✅ Nomor disalin!"));
+    }
+
     async function upload() {
-      const fileInput = document.getElementById("fileInput");
-      const file = fileInput.files[0];
+      const file = document.getElementById("fileInput").files[0];
       const status = document.getElementById("status");
-
       if (!file) return alert("❗ Pilih gambar dulu.");
-
       status.innerText = "⏳ Upload ke ImgBB...";
 
       const base64 = await toBase64(file);
-
       try {
-        // Upload ke ImgBB
         const formData = new FormData();
         formData.append("key", imgbbApiKey);
         formData.append("image", base64.split(",")[1]);
@@ -65,15 +92,15 @@
         const imageUrl = imgbbJson.data.url;
         status.innerText = "✅ Upload berhasil. Mengirim ke WhatsApp...";
 
-        // Simpan ke Firebase galeri_bukti
+        // Simpan ke Firebase
         await db.ref("galeri_bukti").push({ url: imageUrl });
 
-        // Kirim ke WhatsApp
+        // Kirim WA
         const formWA = new FormData();
         formWA.append("appkey", ngirimwaAppkey);
         formWA.append("authkey", ngirimwaAuthkey);
         formWA.append("to", waTujuan);
-        formWA.append("message", `📥 Bukti pembayaran diterima:\n${imageUrl}`);
+        formWA.append("message", `📥 Bukti pembayaran diterima\nMetode: ${bayar.nama}\nNomor: ${bayar.no}\nTotal: Rp${harga}\nLink Gambar:\n${imageUrl}`);
         formWA.append("image", imageUrl);
 
         const waRes = await fetch("https://app.ngirimwa.com/api/create-message", {
@@ -88,7 +115,6 @@
         } else {
           throw new Error("Gagal kirim WA");
         }
-
       } catch (err) {
         console.error(err);
         status.innerText = "❌ Gagal: " + err.message;
