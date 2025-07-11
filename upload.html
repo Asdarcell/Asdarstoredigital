@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Upload Bukti Pembayaran</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
@@ -16,6 +18,20 @@
   <div id="status">Silakan pilih gambar dan klik tombol upload.</div>
 
   <script>
+    // Firebase config kamu
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
     const ngirimwaAppkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
     const ngirimwaAuthkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
@@ -30,14 +46,13 @@
 
       status.innerText = "⏳ Upload ke ImgBB...";
 
-      // Convert file ke base64
       const base64 = await toBase64(file);
 
       try {
-        // Upload ke imgbb
+        // Upload ke ImgBB
         const formData = new FormData();
         formData.append("key", imgbbApiKey);
-        formData.append("image", base64.split(",")[1]); // buang 'data:image/...;base64,'
+        formData.append("image", base64.split(",")[1]);
 
         const imgbbRes = await fetch("https://api.imgbb.com/1/upload", {
           method: "POST",
@@ -50,7 +65,10 @@
         const imageUrl = imgbbJson.data.url;
         status.innerText = "✅ Upload berhasil. Mengirim ke WhatsApp...";
 
-        // Kirim ke NgirimWA
+        // Simpan ke Firebase galeri_bukti
+        await db.ref("galeri_bukti").push({ url: imageUrl });
+
+        // Kirim ke WhatsApp
         const formWA = new FormData();
         formWA.append("appkey", ngirimwaAppkey);
         formWA.append("authkey", ngirimwaAuthkey);
@@ -66,10 +84,11 @@
         const waJson = await waRes.json();
 
         if (waJson.success) {
-          status.innerHTML = `✅ Berhasil dikirim ke WA!<br><a href="${imageUrl}" target="_blank">Lihat Bukti</a>`;
+          status.innerHTML = `✅ Sukses!<br><a href="${imageUrl}" target="_blank">Lihat Bukti Bayar</a>`;
         } else {
-          throw new Error("Gagal kirim ke WhatsApp");
+          throw new Error("Gagal kirim WA");
         }
+
       } catch (err) {
         console.error(err);
         status.innerText = "❌ Gagal: " + err.message;
@@ -80,7 +99,7 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
     }
