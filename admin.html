@@ -16,14 +16,12 @@
 <body>
 <div class="container">
   <h1>Dashboard Admin - Asdar Store</h1>
-  
   <!-- Statistik Pesanan -->
   <div class="row text-center mb-3">
     <div class="col"><div class="card p-2 bg-info text-white">Total Pesanan<br/><b id="statPesanan">0</b></div></div>
     <div class="col"><div class="card p-2 bg-success text-white">Selesai<br/><b id="statSelesai">0</b></div></div>
     <div class="col"><div class="card p-2 bg-warning text-white">Diproses<br/><b id="statProses">0</b></div></div>
   </div>
-  
   <!-- Filter Pesanan -->
   <div class="row mb-3">
     <div class="col-md-4">
@@ -42,16 +40,13 @@
       <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
     </div>
   </div>
-
   <!-- List Pesanan -->
   <div id="pesananList"></div>
-
   <!-- Upload Bukti Admin -->
   <h3>Upload Bukti Admin ke Pembeli</h3>
   <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
   <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
   <hr>
-
   <!-- Manage Produk -->
   <h3>Tambah / Edit Produk</h3>
   <form id="formProduk" class="row g-3 mb-4">
@@ -63,13 +58,10 @@
   </form>
   <h4>Daftar Produk</h4>
   <ul id="daftarProduk" class="list-group mb-5"></ul>
-
   <!-- Galeri Bukti Transfer -->
   <h4>Galeri Bukti Transfer</h4>
   <div id="galeri" class="d-flex flex-wrap"></div>
-
   <hr/>
-
   <!-- Hapus Data -->
   <h3>Hapus Semua Data</h3>
   <div class="d-grid gap-2 d-md-block mb-5">
@@ -79,35 +71,31 @@
     <button class="btn btn-dark mb-2" onclick="hapusSemuaData()">🔥 Hapus SEMUA DATA</button>
     <button class="btn btn-warning mb-2" onclick="hapusPerKategoriStatus()">🗃️ Hapus Per Kategori Status</button>
   </div>
-
   <!-- Fitur Dinamis -->
   <h3>Fitur Dinamis di Halaman Admin</h3>
   <div id="fiturDinamisAdmin" class="mb-4"></div>
-
   <!-- Form tambah fitur dinamis -->
   <h3>Tambah Fitur Dinamis</h3>
   <form id="formFiturDinamis" class="row g-3 mb-4">
-  <div class="col-md-3">
-    <select id="lokasiFitur" class="form-select" required>
-      <option value="">Pilih Lokasi</option>
-      <option value="index">Halaman Index</option>
-      <option value="status">Halaman Status</option>
-      <option value="admin">Dashboard Admin</option>
-    </select>
-  </div>
-  <div class="col-md-9">
-    <textarea id="htmlFitur" class="form-control" placeholder="Masukkan HTML fitur (bisa tombol, label, dll)" rows="4" required></textarea>
-  </div>
-  <div class="col-12">
-    <input type="text" id="targetIdFitur" class="form-control" placeholder="ID Target Penempatan (contoh: formPesanan, infoProduk, dsb)" />
-  </div>
-  <div class="col-12">
-    <button type="submit" class="btn btn-secondary">💾 Simpan Fitur</button>
-  </div>
-</form>
-
+    <div class="col-md-3">
+      <select id="lokasiFitur" class="form-select" required>
+        <option value="">Pilih Lokasi</option>
+        <option value="index">Halaman Index</option>
+        <option value="status">Halaman Status</option>
+        <option value="admin">Dashboard Admin</option>
+      </select>
+    </div>
+    <div class="col-md-9">
+      <textarea id="htmlFitur" class="form-control" placeholder="Masukkan HTML fitur (bisa tombol, label, dll)" rows="4" required></textarea>
+    </div>
+    <div class="col-12">
+      <input type="text" id="targetIdFitur" class="form-control" placeholder="ID Target Penempatan (contoh: formPesanan, infoProduk, dsb)" />
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-secondary">💾 Simpan Fitur</button>
+    </div>
+  </form>
   <ul id="listFiturDinamis" class="list-group mb-5"></ul>
-
 </div>
 
 <!-- Modal Edit Fitur Dinamis -->
@@ -150,7 +138,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -162,10 +149,9 @@
     appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
   };
   firebase.initializeApp(firebaseConfig);
-
   const db = firebase.database();
   const fiturRef = db.ref('fitur_dinamis');
-
+  const produkRef = db.ref('produk');
   const nomorAdmin = "6281803004607";
 
   let selectedId = null;
@@ -198,6 +184,7 @@
         const p = allDataPesanan[id];
         if (filter && p.status !== filter) continue;
         if (search && !id.toLowerCase().includes(search)) continue;
+
         html += `<div class="card"><div class="card-body">
           <b>ID:</b> ${id}<br/>
           <b>Nama:</b> ${p.nama || '-'}<br/>
@@ -245,289 +232,384 @@
     });
   }
 
-  // --- Fungsi Kirim Notifikasi WA via API ngirimwa.vercel.app ---
+  // --- Fungsi Kirim Notifikasi WA via API ngirimwa.com (dengan API Key) ---
+  const NGIRIMWA_APIKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a"; // Ganti jika perlu
+
   async function kirimNotifWA(message, nomor = nomorAdmin) {
     try {
-      await fetch("https://ngirimwa.vercel.app/api/send-message", {
+      const res = await fetch("https://api.ngirimwa.com/api/send-message", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nomor, pesan: message });
-    } catch (error) {
-      console.error("Gagal kirim notifikasi WA:", error);
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${NGIRIMWA_APIKEY}`
+        },
+        body: JSON.stringify({
+          nomor,
+          pesan: message
+        })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Gagal kirim WA");
+    } catch (err) {
+      console.error("Gagal kirim WA:", err);
     }
   }
 
-  // --- Upload Bukti Admin dan update status jadi Selesai ---
-  document.getElementById('uploadBuktiBtn').addEventListener('click', async () => {
-    if (!selectedId) {
-      alert("Pilih pesanan dulu dengan klik tombol 📤 Pilih Pesanan.");
-      return;
-    }
+  // --- Upload Bukti Admin & Kirim Notif WA ---
+  async function uploadBukti() {
     const fileInput = document.getElementById('buktiAdmin');
-    if (!fileInput.files.length) {
-      alert("Pilih file gambar bukti admin terlebih dahulu.");
+    const file = fileInput.files[0];
+    if (!file) return alert("❗ Pilih gambar bukti dulu!");
+    if (!selectedId) return alert("❗ Pilih pesanan terlebih dahulu!");
+
+    const snapshot = await db.ref('pesanan/' + selectedId).once('value');
+    const data = snapshot.val();
+    if (!data || !data.nomor) return alert("❗ Data pembeli tidak ditemukan!");
+
+    const nomorPembeli = data.nomor;
+    const formData = new FormData();
+    formData.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
+    formData.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
+    formData.append("to", "62" + nomorPembeli.replace(/^0/, ""));
+    formData.append("message", `📦 Pesanan ${selectedId} telah selesai dan ini bukti transaksi dari admin Asdar Store.`);
+    formData.append("image", file);
+
+    try {
+      const waRes = await fetch("https://app.ngirimwa.com/api/create-message", {
+        method: "POST",
+        body: formData
+      });
+      const waJson = await waRes.json();
+      if (!waJson.success) throw new Error("Gagal kirim gambar ke WA");
+
+      // Update database pesanan
+      await db.ref('pesanan/' + selectedId).update({
+        status: "Selesai",
+        buktiAdmin: "(Dikirim via WA)"
+      });
+
+      alert("✅ Bukti berhasil dikirim ke pembeli via WhatsApp!");
+      fileInput.value = "";
+      selectedId = null;
+      tampilkanPesanan();
+
+    } catch (err) {
+      console.error(err);
+      alert("❌ Gagal kirim ke WhatsApp: " + err.message);
+    }
+  }
+  document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
+
+  // --- Tampilkan Galeri Bukti Transfer Pembeli ---
+  function tampilkanGaleri() {
+    db.ref('pesanan').once('value').then(snap => {
+      const data = snap.val() || {};
+      const galeriDiv = document.getElementById('galeri');
+      galeriDiv.innerHTML = '';
+      for (let id in data) {
+        const p = data[id];
+        if (p.buktiBayar) {
+          const img = document.createElement('img');
+          img.src = p.buktiBayar;
+          img.alt = `Bukti Bayar ${id}`;
+          galeriDiv.appendChild(img);
+        }
+      }
+    });
+  }
+
+  // --- Kelola Produk ---
+  function tampilkanProduk() {
+    produkRef.once('value').then(snapshot => {
+      const produkData = snapshot.val() || {};
+      const daftarProduk = document.getElementById('daftarProduk');
+      daftarProduk.innerHTML = '';
+      for (let kategori in produkData) {
+        for (let varian in produkData[kategori]) {
+          const produk = produkData[kategori][varian];
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          li.innerHTML = `<div>
+            <b>${kategori} - ${varian}</b><br/>
+            Harga: Rp${produk.harga}<br/>
+            Keterangan: ${produk.cara || produk.deskripsi || ''}
+          </div>
+          <div>
+            <button class="btn btn-sm btn-warning me-1" onclick="editProduk('${kategori}', '${varian}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kategori}', '${varian}')">Hapus</button>
+          </div>`;
+          daftarProduk.appendChild(li);
+        }
+      }
+    });
+  }
+
+  // --- Simpan Produk Baru / Edit Produk ---
+  document.getElementById('formProduk').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const kategori = document.getElementById('kategori').value.trim();
+    const varian = document.getElementById('varian').value.trim();
+    const harga = Number(document.getElementById('harga').value);
+    const cara = document.getElementById('cara').value.trim();
+
+    if (!kategori || !varian || !harga) {
+      alert("Isi semua field produk dengan benar!");
       return;
     }
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64data = reader.result;
-      // Simpan base64 ke Firebase
-      try {
-        await db.ref('pesanan/' + selectedId).update({
-          buktiAdmin: base64data,
-          status: "Selesai"
-        });
-        kirimNotifWA(`✅ Pesanan ${selectedId} telah selesai.\nBukti admin sudah dikirim ke pembeli.`);
-        alert("Bukti admin berhasil diupload dan status diubah ke Selesai.");
-        fileInput.value = "";
-        selectedId = null;
-        tampilkanPesanan();
-      } catch (e) {
-        alert("Gagal upload bukti admin: " + e.message);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    produkRef.child(kategori).child(varian).set({
+      harga,
+      cara
+    }).then(() => {
+      alert("Produk berhasil disimpan.");
+      this.reset();
+      tampilkanProduk();
+    });
   });
 
-  // --- Export Pesanan ke CSV ---
-  document.getElementById('exportCSVBtn').addEventListener('click', () => {
-    let csv = 'ID,Nama,Nomor,Kategori,Produk,Status,Waktu\n';
-    for (let id in allDataPesanan) {
-      const p = allDataPesanan[id];
-      csv += `"${id}","${p.nama || ''}","${p.nomor || ''}","${p.kategori || ''}","${p.produk || ''}","${p.status || ''}","${p.waktu || ''}"\n`;
-    }
-    const blob = new Blob([csv], {type: 'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'pesanan_asdar_store.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+  // --- Edit Produk ---
+  function editProduk(kategori, varian) {
+    produkRef.child(kategori).child(varian).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if (!data) return alert("Produk tidak ditemukan!");
 
-  // --- Hapus Semua Pesanan ---
-  function hapusSemuaPesanan() {
-    if (confirm("Yakin hapus SEMUA pesanan?")) {
-      db.ref('pesanan').remove().then(() => {
-        alert("Semua pesanan dihapus.");
-        tampilkanPesanan();
-      });
-    }
+      document.getElementById('kategori').value = kategori;
+      document.getElementById('varian').value = varian;
+      document.getElementById('harga').value = data.harga || '';
+      document.getElementById('cara').value = data.cara || '';
+    });
   }
 
-  // --- Hapus Semua Produk ---
-  function hapusSemuaProduk() {
-    if (confirm("Yakin hapus SEMUA produk?")) {
-      db.ref('produk').remove().then(() => {
-        alert("Semua produk dihapus.");
-        tampilkanProduk();
-      });
-    }
-  }
-
-  // --- Hapus Semua Galeri Bukti Transfer ---
-  function hapusSemuaGaleri() {
-    if (confirm("Yakin hapus SEMUA galeri bukti transfer?")) {
-      db.ref('galeri_bukti').remove().then(() => {
-        alert("Semua galeri bukti transfer dihapus.");
-        tampilkanGaleri();
-      });
-    }
+  // --- Hapus Produk ---
+  function hapusProduk(kategori, varian) {
+    if (!confirm(`Yakin hapus produk ${kategori} - ${varian}?`)) return;
+    produkRef.child(kategori).child(varian).remove().then(() => {
+      alert("Produk dihapus.");
+      tampilkanProduk();
+    });
   }
 
   // --- Hapus Semua Data ---
+  function hapusSemuaPesanan() {
+    if (confirm("Hapus SEMUA pesanan?")) {
+      db.ref('pesanan').remove().then(() => {
+        alert("Semua pesanan telah dihapus.");
+        tampilkanPesanan();
+      });
+    }
+  }
+
+  function hapusSemuaProduk() {
+    if (confirm("Hapus SEMUA produk?")) {
+      produkRef.remove().then(() => {
+        alert("Semua produk telah dihapus.");
+        tampilkanProduk();
+      });
+    }
+  }
+
+  function hapusSemuaGaleri() {
+    if (confirm("Hapus SEMUA bukti transfer?")) {
+      // Karena bukti bayar ada di node pesanan, hapus field buktiBayar di semua pesanan
+      db.ref('pesanan').once('value').then(snapshot => {
+        const data = snapshot.val() || {};
+        const updates = {};
+        for (let id in data) {
+          if (data[id].buktiBayar) updates[`pesanan/${id}/buktiBayar`] = null;
+        }
+        return db.ref().update(updates);
+      }).then(() => {
+        alert("Semua bukti transfer telah dihapus.");
+        tampilkanPesanan();
+      });
+    }
+  }
+
   function hapusSemuaData() {
-    if (confirm("Yakin hapus SEMUA data pesanan, produk, dan galeri?")) {
+    if (confirm("Hapus SEMUA DATA (pesanan, produk, fitur, galeri)?")) {
       Promise.all([
         db.ref('pesanan').remove(),
-        db.ref('produk').remove(),
-        db.ref('galeri_bukti').remove(),
-        db.ref('fitur_dinamis').remove()
+        produkRef.remove(),
+        fiturRef.remove(),
       ]).then(() => {
-        alert("Semua data berhasil dihapus.");
+        alert("Semua data telah dihapus.");
         tampilkanPesanan();
         tampilkanProduk();
-        tampilkanGaleri();
         tampilkanFiturDinamisAdmin();
       });
     }
   }
 
-  // --- Hapus Per Kategori Status ---
+  // --- Hapus Per Kategori Status (contoh hapus pesanan tertentu) ---
   function hapusPerKategoriStatus() {
-    const status = prompt("Masukkan status yang ingin dihapus semua datanya (contoh: Selesai, Diproses, Sudah Bayar, Belum Bayar):");
+    const status = prompt("Masukkan status pesanan yang ingin dihapus (contoh: Belum Bayar, Sudah Bayar, Diproses, Selesai):");
     if (!status) return;
     if (!confirm(`Yakin hapus semua pesanan dengan status "${status}"?`)) return;
-    db.ref('pesanan').once('value').then(snap => {
-      const data = snap.val() || {};
+
+    db.ref('pesanan').once('value').then(snapshot => {
+      const data = snapshot.val() || {};
       const updates = {};
-      for (const id in data) {
-        if (data[id].status === status) updates[id] = null;
+      for (let id in data) {
+        if (data[id].status === status) updates[`pesanan/${id}`] = null;
       }
-      return db.ref('pesanan').update(updates);
+      return db.ref().update(updates);
     }).then(() => {
       alert(`Semua pesanan dengan status "${status}" telah dihapus.`);
       tampilkanPesanan();
     });
   }
 
-  // --- Produk: Tambah/Edit Produk ---
-  document.getElementById('formProduk').addEventListener('submit', e => {
-    e.preventDefault();
-    const kategori = document.getElementById('kategori').value.trim();
-    const varian = document.getElementById('varian').value.trim();
-    const harga = Number(document.getElementById('harga').value);
-    const cara = document.getElementById('cara').value.trim();
-    if (!kategori || !varian || !harga || !cara) {
-      alert("Semua field produk harus diisi dengan benar.");
-      return;
-    }
-    const key = kategori.toLowerCase() + "_" + varian.toLowerCase().replace(/\s+/g,'_');
-    db.ref('produk/' + key).set({kategori, varian, harga, cara}).then(() => {
-      alert("Produk berhasil disimpan.");
-      document.getElementById('formProduk').reset();
-      tampilkanProduk();
-    });
-  });
-
-  // --- Tampilkan Produk ---
-  function tampilkanProduk() {
-    db.ref('produk').once('value').then(snap => {
-      const produk = snap.val() || {};
-      let html = '';
-      for (const key in produk) {
-        const p = produk[key];
-        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <b>${p.kategori}</b> - ${p.varian} : Rp${p.harga.toLocaleString()}<br/>
-            <small>${p.cara}</small>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="hapusProduk('${key}')">Hapus</button>
-        </li>`;
-      }
-      document.getElementById('daftarProduk').innerHTML = html;
-    });
-  }
-
-  // --- Hapus Produk ---
-  function hapusProduk(key) {
-    if (!confirm("Yakin hapus produk ini?")) return;
-    db.ref('produk/' + key).remove().then(() => {
-      alert("Produk dihapus.");
-      tampilkanProduk();
-    });
-  }
-
-  // --- Galeri Bukti Transfer ---
-  function tampilkanGaleri() {
-    db.ref('galeri_bukti').once('value').then(snap => {
-      const galeri = snap.val() || {};
-      let html = '';
-      for (const id in galeri) {
-        html += `<img src="${galeri[id]}" alt="Bukti Transfer"/>`;
-      }
-      document.getElementById('galeri').innerHTML = html;
-    });
-  }
-
-  // --- Hapus Semua Galeri ---
-  function hapusSemuaGaleri() {
-    if (!confirm("Yakin hapus semua galeri bukti transfer?")) return;
-    db.ref('galeri_bukti').remove().then(() => {
-      alert("Semua galeri bukti transfer telah dihapus.");
-      tampilkanGaleri();
-    });
-  }
-
   // --- Fitur Dinamis Admin ---
 
+  // Tampilkan fitur dinamis yang sudah tersimpan untuk halaman admin
   function tampilkanFiturDinamisAdmin() {
-    fiturRef.once('value').then(snap => {
-      const data = snap.val() || {};
-      let html = '';
-      let i = 1;
-      for (const key in data) {
-        const f = data[key];
-        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <b>${f.lokasi}</b> - Target: ${f.targetId || '-'}<br/>
-            <small>${f.html.substring(0, 80)}...</small>
-          </div>
-          <div>
-            <button class="btn btn-sm btn-primary" onclick="editFiturDinamis('${key}')">Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="hapusFiturDinamis('${key}')">Hapus</button>
-          </div>
-        </li>`;
-        i++;
+    fiturRef.orderByChild('lokasi').equalTo('admin').once('value').then(snapshot => {
+      const data = snapshot.val() || {};
+      const container = document.getElementById('fiturDinamisAdmin');
+      container.innerHTML = '';
+      for (let id in data) {
+        const fitur = data[id];
+        const div = document.createElement('div');
+        div.className = 'mb-3 p-2 border rounded';
+        div.innerHTML = `
+          <div><b>ID:</b> ${id}</div>
+          <div><b>Lokasi:</b> ${fitur.lokasi}</div>
+          <div><b>Target ID:</b> ${fitur.targetId || '(tidak ada)'}</div>
+          <div><b>Konten:</b> <pre style="white-space: pre-wrap;">${fitur.html}</pre></div>
+          <button class="btn btn-sm btn-warning me-2" onclick="editFiturDinamis('${id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="hapusFiturDinamis('${id}')">Hapus</button>
+        `;
+        container.appendChild(div);
       }
-      document.getElementById('listFiturDinamis').innerHTML = html;
     });
   }
 
-  document.getElementById('formFiturDinamis').addEventListener('submit', e => {
+  // --- Tambah Fitur Dinamis ---
+  document.getElementById('formFiturDinamis').addEventListener('submit', function(e){
     e.preventDefault();
     const lokasi = document.getElementById('lokasiFitur').value;
     const html = document.getElementById('htmlFitur').value.trim();
     const targetId = document.getElementById('targetIdFitur').value.trim();
-    if (!lokasi || !html) {
-      alert("Lokasi dan HTML fitur wajib diisi.");
-      return;
-    }
+
+    if(!lokasi || !html) return alert("Lokasi dan HTML wajib diisi!");
+
     const newKey = fiturRef.push().key;
-    fiturRef.child(newKey).set({ lokasi, html, targetId }).then(() => {
+    fiturRef.child(newKey).set({
+      lokasi,
+      html,
+      targetId: targetId || null
+    }).then(() => {
       alert("Fitur dinamis berhasil ditambahkan.");
-      document.getElementById('formFiturDinamis').reset();
+      this.reset();
       tampilkanFiturDinamisAdmin();
+      tampilkanFiturDinamisList();
     });
   });
 
-  function editFiturDinamis(key) {
-    fiturRef.child(key).once('value').then(snap => {
-      const data = snap.val();
-      if (!data) return alert("Data fitur tidak ditemukan.");
-      document.getElementById('editFiturId').value = key;
+  // --- Tampilkan List Fitur Dinamis (semua lokasi) ---
+  function tampilkanFiturDinamisList() {
+    fiturRef.once('value').then(snapshot => {
+      const data = snapshot.val() || {};
+      const list = document.getElementById('listFiturDinamis');
+      list.innerHTML = '';
+      for(let id in data){
+        const item = document.createElement('li');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center';
+        item.innerHTML = `
+          <div><b>${id}</b> - Lokasi: ${data[id].lokasi} - Target ID: ${data[id].targetId || '(tidak ada)'}</div>
+          <div>
+            <button class="btn btn-sm btn-warning me-1" onclick="editFiturDinamis('${id}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="hapusFiturDinamis('${id}')">Hapus</button>
+          </div>
+        `;
+        list.appendChild(item);
+      }
+    });
+  }
+
+  // --- Edit Fitur Dinamis ---
+  function editFiturDinamis(id){
+    fiturRef.child(id).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if(!data) return alert("Fitur tidak ditemukan");
+
+      document.getElementById('editFiturId').value = id;
       document.getElementById('editLokasiFitur').value = data.lokasi;
       document.getElementById('editHtmlFitur').value = data.html;
       document.getElementById('editTargetIdFitur').value = data.targetId || '';
+
       const modal = new bootstrap.Modal(document.getElementById('modalEditFitur'));
       modal.show();
     });
   }
 
-  document.getElementById('formEditFitur').addEventListener('submit', e => {
+  // --- Simpan Edit Fitur Dinamis ---
+  document.getElementById('formEditFitur').addEventListener('submit', function(e){
     e.preventDefault();
-    const key = document.getElementById('editFiturId').value;
+    const id = document.getElementById('editFiturId').value;
     const lokasi = document.getElementById('editLokasiFitur').value;
     const html = document.getElementById('editHtmlFitur').value.trim();
     const targetId = document.getElementById('editTargetIdFitur').value.trim();
-    if (!lokasi || !html) {
-      alert("Lokasi dan HTML wajib diisi.");
-      return;
-    }
-    fiturRef.child(key).update({ lokasi, html, targetId }).then(() => {
+
+    if(!id || !lokasi || !html) return alert("Data lengkap wajib diisi");
+
+    fiturRef.child(id).update({
+      lokasi,
+      html,
+      targetId: targetId || null
+    }).then(() => {
       alert("Fitur dinamis berhasil diperbarui.");
-      const modalEl = document.getElementById('modalEditFitur');
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      modal.hide();
       tampilkanFiturDinamisAdmin();
+      tampilkanFiturDinamisList();
+      bootstrap.Modal.getInstance(document.getElementById('modalEditFitur')).hide();
     });
   });
 
-  function hapusFiturDinamis(key) {
-    if (!confirm("Yakin hapus fitur dinamis ini?")) return;
-    fiturRef.child(key).remove().then(() => {
-      alert("Fitur dinamis berhasil dihapus.");
+  // --- Hapus Fitur Dinamis ---
+  function hapusFiturDinamis(id){
+    if(!confirm("Hapus fitur ini?")) return;
+    fiturRef.child(id).remove().then(() => {
+      alert("Fitur dinamis dihapus.");
       tampilkanFiturDinamisAdmin();
+      tampilkanFiturDinamisList();
     });
   }
 
-  // --- Inisialisasi tampilan ---
-  tampilkanPesanan();
+  // --- Export Data Pesanan ke CSV ---
+  function exportCSV() {
+    const rows = [["ID","Nama","Nomor","Kategori","Produk","Status","Waktu"]];
+    for(let id in allDataPesanan){
+      const p = allDataPesanan[id];
+      rows.push([
+        id,
+        p.nama || "",
+        p.nomor || "",
+        p.kategori || "",
+        p.produk || "",
+        p.status || "",
+        p.waktu || ""
+      ]);
+    }
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + rows.map(e => e.map(v => `"${v.toString().replace(/"/g, '""')}"`).join(",")).join("\n");
 
-  // Update tampilan saat filter/search diubah
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "pesanan_asdar_store.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
+
+  // --- Event Listener Filter & Search ---
   document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
   document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
+
+  // --- Inisialisasi ---
+  tampilkanPesanan();
+  tampilkanFiturDinamisList();
 
 </script>
 </body>
