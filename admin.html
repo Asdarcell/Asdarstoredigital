@@ -35,7 +35,6 @@
       <button id="exportCSVBtn" class="btn btn-primary w-100">Export Data Pesanan ke CSV</button>
     </div>
   </div>
-
   <!-- TABEL PESANAN -->
   <div class="mb-4 scrollable">
     <table class="table table-bordered table-hover bg-white">
@@ -57,7 +56,6 @@
   </div>
 
   <hr />
-
   <!-- PRODUK -->
   <div class="mb-5 border p-3 bg-white rounded">
     <h5>Daftar Produk</h5>
@@ -138,59 +136,65 @@
       </form>
     </div>
   </div>
-  <!-- Firebase SDK dan Bootstrap JS -->
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // Konfigurasi Firebase
+    // --- KONFIGURASI FIREBASE ---
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+      apiKey: "API_KEY_FIREBASE_MU",
+      authDomain: "PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://PROJECT_ID.firebaseio.com",
+      projectId: "PROJECT_ID",
+      storageBucket: "PROJECT_ID.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
     };
     firebase.initializeApp(firebaseConfig);
-
     const db = firebase.database();
     const storage = firebase.storage();
-    const pesananRef = db.ref("pesanan");
-    const produkRef = db.ref("produk");
-    const fiturRef = db.ref("fiturDinamis");
 
-    const nomorAdmin = "081803004607";
-    let selectedId = null;
+    // Reference database
+    const pesananRef = db.ref('pesanan');
+    const produkRef = db.ref('produk');
+    const fiturRef = db.ref('fiturDinamis');
+
+    // Nomor admin (ubah sesuai nomor WA admin)
+    const nomorAdmin = "08123456789";
+
     let allDataPesanan = {};
+    let selectedId = null; // ID pesanan yang dipilih untuk upload bukti
 
-    // Tampilkan data pesanan
+    // --- Tampilkan Pesanan ---
     function tampilkanPesanan() {
-      const filter = document.getElementById("filterStatus").value.toLowerCase();
-      const search = document.getElementById("searchId").value.toLowerCase();
+      const filterStatus = document.getElementById('filterStatus').value.toLowerCase();
+      const searchId = document.getElementById('searchId').value.toLowerCase();
 
-      pesananRef.once("value").then(snapshot => {
+      pesananRef.once('value').then(snapshot => {
         const data = snapshot.val() || {};
         allDataPesanan = data;
-        const tbody = document.getElementById("tabelPesanan");
-        tbody.innerHTML = "";
+
+        const tbody = document.getElementById('tabelPesanan');
+        tbody.innerHTML = '';
 
         for (let id in data) {
           const p = data[id];
-          if ((filter && p.status.toLowerCase() !== filter) || (search && !id.toLowerCase().includes(search))) continue;
+          if ((filterStatus && p.status.toLowerCase() !== filterStatus) || (searchId && !id.toLowerCase().includes(searchId))) {
+            continue;
+          }
 
-          const tr = document.createElement("tr");
+          const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${id}</td>
-            <td>${p.nama || ""}</td>
-            <td>${p.nomor || ""}</td>
-            <td>${p.kategori || ""}</td>
-            <td>${p.produk || ""}</td>
-            <td>${p.status || ""}</td>
-            <td>${p.waktu || ""}</td>
+            <td>${p.nama || ''}</td>
+            <td>${p.nomor || ''}</td>
+            <td>${p.kategori || ''}</td>
+            <td>${p.produk || ''}</td>
+            <td>${p.status || ''}</td>
+            <td>${p.waktu || ''}</td>
             <td>
               <button class="btn btn-sm btn-primary" onclick="pilihPesanan('${id}')">Pilih</button>
             </td>
@@ -200,33 +204,36 @@
       });
     }
 
+    // --- Pilih Pesanan untuk upload bukti ---
     function pilihPesanan(id) {
       selectedId = id;
-      alert("Pesanan ID " + id + " dipilih.");
+      alert("Pesanan dengan ID " + id + " dipilih. Silakan upload bukti transaksi.");
     }
-    // Upload bukti & update status
+
+    // --- Upload Bukti Admin dan tandai Selesai ---
     async function uploadBukti() {
-      const fileInput = document.getElementById("buktiAdmin");
+      const fileInput = document.getElementById('buktiAdmin');
       const file = fileInput.files[0];
-      if (!file) return alert("Pilih gambar bukti terlebih dahulu!");
-      if (!selectedId) return alert("Pilih pesanan dari tabel terlebih dahulu!");
+      if (!file) return alert("Pilih gambar bukti dulu!");
+      if (!selectedId) return alert("Pilih pesanan terlebih dahulu dari tabel.");
 
       try {
         const imgRef = storage.ref().child(`buktiAdmin/${selectedId}_${Date.now()}.jpg`);
         const snapshot = await imgRef.put(file);
         const url = await snapshot.ref.getDownloadURL();
 
+        // Update pesanan status & buktiAdmin
         await pesananRef.child(selectedId).update({
           buktiAdmin: url,
-          status: "Selesai"
+          status: 'Selesai'
         });
 
+        // Kirim WA notifikasi (fungsi kirimNotifWA harus kamu sesuaikan)
         const pesananData = allDataPesanan[selectedId];
+        kirimNotifWA(`Pesanan ${selectedId} sudah selesai.\nBukti transaksi: ${url}`, nomorAdmin);
+        kirimNotifWA(`Halo ${pesananData.nama}, pesanan Anda sudah selesai.\nBukti transaksi: ${url}`, pesananData.nomor);
 
-        kirimNotifWA(`Pesanan ${selectedId} sudah selesai.\nBukti: ${url}`, nomorAdmin);
-        kirimNotifWA(`Halo ${pesananData.nama}, pesanan Anda sudah selesai.\nBukti: ${url}`, pesananData.nomor);
-
-        alert("Berhasil upload bukti & update status.");
+        alert("Bukti admin berhasil diupload dan status pesanan diperbarui.");
         fileInput.value = '';
         selectedId = null;
         tampilkanPesanan();
@@ -236,24 +243,25 @@
         alert("Gagal upload bukti: " + err.message);
       }
     }
-    document.getElementById("uploadBuktiBtn").addEventListener("click", uploadBukti);
+    document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
 
+    // --- Fungsi kirim notifikasi WA via API eksternal ---
     function kirimNotifWA(pesan, nomor) {
+      // Ganti dengan API kirim WA kamu, contoh menggunakan fetch ke ngirimwa.com
       fetch("https://ngirimwa.vercel.app/api/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           no: nomor,
           pesan: pesan,
           apikey: "APIKEY_NGIRIMWA_MU"
         })
-      })
-      .then(res => res.json())
-      .then(data => console.log("WA sent:", data))
-      .catch(err => console.error("WA error:", err));
+      }).then(res => res.json())
+        .then(data => console.log("WA sent:", data))
+        .catch(err => console.error("WA error:", err));
     }
 
-    // Produk
+    // --- Daftar Produk ---
     function tampilkanProduk() {
       produkRef.once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -275,6 +283,7 @@
       });
     }
 
+    // --- Hapus produk ---
     function hapusProduk(id) {
       if (!confirm("Hapus produk ini?")) return;
       produkRef.child(id).remove().then(() => {
@@ -282,7 +291,8 @@
         tampilkanProduk();
       });
     }
-    // Simpan produk baru / update
+
+    // --- Tambah/Edit Produk ---
     document.getElementById('formProduk').addEventListener('submit', e => {
       e.preventDefault();
       const kategori = document.getElementById('kategori').value.trim();
@@ -292,13 +302,16 @@
 
       if (!kategori || !varian || !harga || !cara) return alert("Semua kolom wajib diisi!");
 
+      // Cek produk varian sama (untuk edit)
       produkRef.orderByChild('varian').equalTo(varian).once('value').then(snapshot => {
         if (snapshot.exists()) {
+          // Update produk yang sama varian
           snapshot.forEach(childSnap => {
             produkRef.child(childSnap.key).update({ kategori, varian, harga, cara });
           });
           alert("Produk berhasil diperbarui.");
         } else {
+          // Tambah produk baru
           produkRef.push({ kategori, varian, harga, cara });
           alert("Produk baru berhasil ditambahkan.");
         }
@@ -307,7 +320,7 @@
       });
     });
 
-    // Fitur Dinamis
+    // --- Fitur Dinamis Admin ---
     function tampilkanFiturDinamisAdmin() {
       fiturRef.orderByChild('lokasi').equalTo('admin').once('value').then(snapshot => {
         const data = snapshot.val() || {};
@@ -336,7 +349,7 @@
       const html = document.getElementById('htmlFitur').value.trim();
       const targetId = document.getElementById('targetIdFitur').value.trim();
 
-      if (!lokasi || !html) return alert("Lokasi dan HTML wajib diisi!");
+      if(!lokasi || !html) return alert("Lokasi dan HTML wajib diisi!");
 
       const newKey = fiturRef.push().key;
       fiturRef.child(newKey).set({
@@ -356,7 +369,7 @@
         const data = snapshot.val() || {};
         const list = document.getElementById('listFiturDinamis');
         list.innerHTML = '';
-        for (let id in data) {
+        for(let id in data){
           const item = document.createElement('li');
           item.className = 'list-group-item d-flex justify-content-between align-items-center';
           item.innerHTML = `
@@ -371,10 +384,10 @@
       });
     }
 
-    function editFiturDinamis(id) {
+    function editFiturDinamis(id){
       fiturRef.child(id).once('value').then(snapshot => {
         const data = snapshot.val();
-        if (!data) return alert("Fitur tidak ditemukan");
+        if(!data) return alert("Fitur tidak ditemukan");
 
         document.getElementById('editFiturId').value = id;
         document.getElementById('editLokasiFitur').value = data.lokasi;
@@ -386,14 +399,14 @@
       });
     }
 
-    document.getElementById('formEditFitur').addEventListener('submit', function(e) {
+    document.getElementById('formEditFitur').addEventListener('submit', function(e){
       e.preventDefault();
       const id = document.getElementById('editFiturId').value;
       const lokasi = document.getElementById('editLokasiFitur').value.trim();
       const html = document.getElementById('editHtmlFitur').value.trim();
       const targetId = document.getElementById('editTargetIdFitur').value.trim();
 
-      if (!id || !lokasi || !html) return alert("Data lengkap wajib diisi");
+      if(!id || !lokasi || !html) return alert("Data lengkap wajib diisi");
 
       fiturRef.child(id).update({
         lokasi,
@@ -407,8 +420,8 @@
       });
     });
 
-    function hapusFiturDinamis(id) {
-      if (!confirm("Hapus fitur ini?")) return;
+    function hapusFiturDinamis(id){
+      if(!confirm("Hapus fitur ini?")) return;
       fiturRef.child(id).remove().then(() => {
         alert("Fitur dinamis dihapus.");
         tampilkanFiturDinamisAdmin();
@@ -416,10 +429,10 @@
       });
     }
 
-    // Export Data Pesanan ke CSV
+    // --- Export Data Pesanan ke CSV ---
     function exportCSV() {
       const rows = [["ID","Nama","Nomor","Kategori","Produk","Status","Waktu"]];
-      for (let id in allDataPesanan) {
+      for(let id in allDataPesanan){
         const p = allDataPesanan[id];
         rows.push([
           id,
@@ -431,7 +444,7 @@
           p.waktu || ""
         ]);
       }
-      let csvContent = "data:text/csv;charset=utf-8,"
+      let csvContent = "data:text/csv;charset=utf-8," 
         + rows.map(e => e.map(v => `"${v.toString().replace(/"/g, '""')}"`).join(",")).join("\n");
 
       const encodedUri = encodeURI(csvContent);
@@ -444,15 +457,16 @@
     }
     document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
 
-    // Event listener filter & search
+    // --- Event Listener Filter & Search ---
     document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
     document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
 
-    // Inisialisasi awal
+    // --- Inisialisasi ---
     tampilkanPesanan();
     tampilkanProduk();
     tampilkanFiturDinamisAdmin();
     tampilkanFiturDinamisList();
+
   </script>
 </body>
 </html>
