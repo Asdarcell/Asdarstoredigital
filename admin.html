@@ -504,5 +504,67 @@ function renderDinamisPreview() {
 loadDinamis();
 renderDinamisPreview();
 </script>
+
+  <!-- ... kode lainnya -->
+
+<!-- Tambahkan di bagian paling bawah sebelum </body> -->
+<script>
+async function uploadBukti() {
+  const fileInput = document.getElementById('buktiAdmin');
+  const file = fileInput.files[0];
+  if (!file) return alert("❗ Pilih gambar terlebih dahulu!");
+  if (!selectedId) return alert("❗ Pilih pesanan dulu!");
+
+  const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+      method: "POST",
+      body: formData
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error("Upload gagal");
+
+    const imageUrl = json.data.url;
+
+    const snapshot = await db.ref("pesanan/" + selectedId).once("value");
+    const data = snapshot.val();
+    const nomorWA = data.wa_aktif || data.nomor || "";
+
+    await db.ref("pesanan/" + selectedId).update({
+      buktiAdmin: imageUrl,
+      status: "Selesai"
+    });
+
+    const pesanBuyer = `✅ Pesanan ${selectedId} telah selesai. Silakan cek bukti transaksi dari admin.`;
+    const pesanAdmin = `✅ Pesanan ${selectedId} sudah dikirim bukti oleh admin.`;
+
+    if (nomorWA) kirimNotifWA(nomorWA, pesanBuyer);
+    kirimNotifWA("6281803004607", pesanAdmin);
+
+    alert("✅ Bukti berhasil dikirim ke pembeli & admin.");
+    selectedId = null;
+    fileInput.value = "";
+    tampilkanPesanan();
+  } catch (err) {
+    alert("❌ Upload Gagal: " + err.message);
+  }
+}
+
+function kirimNotifWA(nomor, pesan) {
+  fetch("https://api.ngirimwa.com/sendText", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+      authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+      to: nomor,
+      message: pesan
+    })
+  });
+}
+</script>
 </body>
 </html>
