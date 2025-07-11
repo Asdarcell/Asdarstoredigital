@@ -11,326 +11,215 @@
     .card { margin-bottom: 15px; }
     img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
     #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
-    .tooltip-inner { max-width: 250px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Dashboard Admin - Asdar Store</h1>
+<div class="container">
+  <h1>Dashboard Admin - Asdar Store</h1>
 
-    <!-- Statistik ringkas -->
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <div class="alert alert-primary text-center">
-          <h4 id="totalPesanan">0</h4>
-          <small>Total Pesanan Hari Ini</small>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="alert alert-success text-center">
-          <h4 id="totalPendapatan">Rp 0</h4>
-          <small>Total Pendapatan</small>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="alert alert-warning text-center">
-          <h4 id="produkTerlaris">-</h4>
-          <small>Produk Terlaris</small>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <button class="btn btn-outline-secondary w-100" id="refreshStatsBtn" title="Segarkan Statistik" data-bs-toggle="tooltip" data-bs-placement="top">🔄 Refresh</button>
-      </div>
+  <!-- Filter & Pencarian -->
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <select id="filterStatus" class="form-select">
+        <option value="">Filter Semua Status</option>
+        <option value="Belum Bayar">Belum Bayar</option>
+        <option value="Sudah Bayar">Sudah Bayar</option>
+        <option value="Diproses">Diproses</option>
+        <option value="Selesai">Selesai</option>
+      </select>
     </div>
-
-    <!-- Filter, Pencarian, dan Export -->
-    <div class="row mb-3 g-2 align-items-center">
-      <div class="col-md-3">
-        <select id="filterStatus" class="form-select" title="Filter Status Pesanan" data-bs-toggle="tooltip" data-bs-placement="top">
-          <option value="">Filter Semua Status</option>
-          <option value="Belum Bayar">Belum Bayar</option>
-          <option value="Sudah Bayar">Sudah Bayar</option>
-          <option value="Diproses">Diproses</option>
-          <option value="Selesai">Selesai</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <input type="date" id="filterTanggalMulai" class="form-control" title="Filter Tanggal Mulai" data-bs-toggle="tooltip" data-bs-placement="top" />
-      </div>
-      <div class="col-md-3">
-        <input type="date" id="filterTanggalAkhir" class="form-control" title="Filter Tanggal Akhir" data-bs-toggle="tooltip" data-bs-placement="top" />
-      </div>
-      <div class="col-md-3">
-        <input type="text" id="searchId" class="form-control" placeholder="Cari ID atau Nama Pesanan" title="Cari Pesanan berdasarkan ID atau Nama" data-bs-toggle="tooltip" data-bs-placement="top"/>
-      </div>
+    <div class="col-md-4">
+      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
     </div>
-    <div class="row mb-4">
-      <div class="col-md-4">
-        <button class="btn btn-success w-100" id="exportCSVBtn" title="Export semua pesanan ke file CSV" data-bs-toggle="tooltip" data-bs-placement="top">Export CSV</button>
-      </div>
-      <div class="col-md-4">
-        <button class="btn btn-outline-primary w-100" id="exportLogBtn" title="Export log aktivitas admin" data-bs-toggle="tooltip" data-bs-placement="top">Export Log Admin</button>
-      </div>
-      <div class="col-md-4">
-        <button class="btn btn-warning w-100" id="resetFiltersBtn" title="Reset semua filter dan pencarian" data-bs-toggle="tooltip" data-bs-placement="top">Reset Filter</button>
-      </div>
+    <div class="col-md-4">
+      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
     </div>
-    <!-- Daftar Pesanan -->
-    <div id="pesananList"></div>
+  </div>
 
-    <!-- Pilihan pesanan terpilih -->
-    <div class="mb-3">
-      <small><b>Pesanan terpilih:</b> <span id="selectedPesananId">-</span></small>
+  <!-- Daftar Pesanan -->
+  <div id="pesananList"></div>
+
+  <!-- Upload Bukti Admin -->
+  <h3>Upload Bukti Admin ke Pembeli</h3>
+  <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
+  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
+
+  <hr>
+
+  <!-- Form Produk -->
+  <h3>Tambah / Edit Produk</h3>
+  <form id="formProduk" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required />
     </div>
+    <div class="col-md-3">
+      <input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required />
+    </div>
+    <div class="col-md-2">
+      <input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required />
+    </div>
+    <div class="col-md-4">
+      <input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required />
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-success">Simpan / Edit Produk</button>
+    </div>
+  </form>
 
-    <!-- Upload Bukti Admin ke Pembeli -->
-    <h3>Upload Bukti Admin ke Pembeli</h3>
-    <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
-    <button id="uploadBuktiBtn" class="btn btn-primary mb-4">📤 Kirim Bukti & Tandai Selesai</button>
+  <!-- Daftar Produk -->
+  <h4>Daftar Produk</h4>
+  <ul id="daftarProduk" class="list-group mb-5"></ul>
 
-    <!-- History Status Pesanan -->
-    <h4>History Status Pesanan</h4>
-    <div id="historyStatus" class="mb-4" style="max-height: 150px; overflow-y: auto; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px;"></div>
+  <!-- Galeri Bukti Bayar -->
+  <h4>Galeri Bukti Transfer</h4>
+  <div id="galeri" class="d-flex flex-wrap"></div>
 
-    <hr />
-
-    <script>
-      let selectedId = null;
-      let allDataPesanan = {};
-
-      // Tampilkan semua pesanan dengan filter dan search
-      function tampilkanPesanan() {
-        db.ref('pesanan').once('value').then(snapshot => {
-          allDataPesanan = snapshot.val() || {};
-          const filter = document.getElementById('filterStatus').value;
-          const search = document.getElementById('searchId').value.toLowerCase();
-          const tglMulai = document.getElementById('filterTanggalMulai').value;
-          const tglAkhir = document.getElementById('filterTanggalAkhir').value;
-          let html = '';
-          for (let id in allDataPesanan) {
-            const p = allDataPesanan[id];
-
-            // Filter status
-            if (filter && p.status !== filter) continue;
-
-            // Filter tanggal (format yyyy-mm-dd)
-            if (tglMulai && (!p.waktu || p.waktu < tglMulai)) continue;
-            if (tglAkhir && (!p.waktu || p.waktu > tglAkhir)) continue;
-
-            // Filter pencarian ID/Nama
-            if (search && !id.toLowerCase().includes(search) && !(p.nama && p.nama.toLowerCase().includes(search))) continue;
-
-            html += `<div class="card"><div class="card-body">
-              <b>ID:</b> ${id}<br/>
-              <b>Nama:</b> ${p.nama}<br/>
-              <b>Nomor HP / ID SN:</b> ${p.nomor || '-'}<br/>
-              <b>Kategori:</b> ${p.kategori}<br/>
-              <b>Produk:</b> ${p.produk}<br/>
-              <b>Harga:</b> Rp${p.harga || '-'}<br/>
-              <b>Status:</b> ${p.status}<br/>
-              <b>Waktu:</b> ${p.waktu || '-'}<br/>
-              ${p.buktiBayar ? `<b>Bukti Pembeli:</b><br/><img src="${p.buktiBayar}" alt="Bukti Bayar" />` : ''}
-              ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" alt="Bukti Admin" />` : ''}
-              <br/><br/>
-              <button class="btn btn-warning btn-sm me-2" onclick="setSelected('${id}')">📤 Pilih Pesanan</button>
-              <button class="btn btn-info btn-sm me-2" onclick="ubahStatus('${id}', 'Diproses')">✅ Tandai Diproses</button>
-              <button class="btn btn-success btn-sm me-2" onclick="ubahStatus('${id}', 'Selesai')">✔️ Tandai Selesai</button>
-              <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
-            </div></div>`;
-          }
-          document.getElementById('pesananList').innerHTML = html;
-          if (!html) document.getElementById('pesananList').innerHTML = '<div class="alert alert-info">Tidak ada pesanan sesuai filter.</div>';
-          showHistoryStatus(null);
-        });
-      }
-
-      // Pilih pesanan untuk upload bukti admin
-      function setSelected(id) {
-        selectedId = id;
-        document.getElementById('selectedPesananId').textContent = id;
-        showHistoryStatus(id);
-        alert("Pesanan dipilih: " + id);
-      }
-
-      // Ubah status pesanan dan simpan histori status
-      function ubahStatus(id, statusBaru) {
-        if (!confirm(`Yakin ubah status pesanan ${id} jadi '${statusBaru}'?`)) return;
-        const waktuSekarang = new Date().toISOString().slice(0, 19).replace('T', ' ');
-        const historiRef = db.ref(`pesanan/${id}/historyStatus`);
-        historiRef.push({ status: statusBaru, waktu: waktuSekarang, oleh: 'Admin' });
-
-        db.ref('pesanan/' + id).update({ status: statusBaru }).then(() => {
-          kirimNotifWA(`🔔 Pesanan ${id} status berubah ke: ${statusBaru}`);
-          tampilkanPesanan();
-        });
-      }
-
-      // Upload bukti admin ke pesanan terpilih
-      async function uploadBukti() {
-        const fileInput = document.getElementById('buktiAdmin');
-        const file = fileInput.files[0];
-        if (!file) return alert("❗ Pilih gambar bukti dulu!");
-        if (!selectedId) return alert("❗ Pilih pesanan terlebih dahulu!");
-
-        const formData = new FormData();
-        formData.append("image", file);
-
-        const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33"; // Bisa diganti sesuai kebutuhan
-        try {
-          const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-            method: "POST", body: formData
-          });
-          const json = await res.json();
-          if (!json.success) throw new Error("Upload gagal");
-
-          const imageUrl = json.data.url;
-          const waktuSekarang = new Date().toISOString().slice(0, 19).replace('T', ' ');
-          const historiRef = db.ref(`pesanan/${selectedId}/historyStatus`);
-          historiRef.push({ status: 'Selesai', waktu: waktuSekarang, oleh: 'Admin' });
-
-          await db.ref('pesanan/' + selectedId).update({ buktiAdmin: imageUrl, status: 'Selesai' });
-          kirimNotifWA(`✅ Pesanan ${selectedId} selesai, bukti admin terkirim.`);
-          alert("✅ Bukti berhasil dikirim dan status selesai.");
-          selectedId = null;
-          fileInput.value = "";
-          document.getElementById('selectedPesananId').textContent = '-';
-          tampilkanPesanan();
-        } catch (e) {
-          alert("❌ Upload gambar gagal: " + e.message);
-        }
-      }
-
-      // Tampilkan history status pesanan
-      function showHistoryStatus(id) {
-        const container = document.getElementById('historyStatus');
-        container.innerHTML = '';
-        if (!id) {
-          container.innerHTML = '<i>Pilih pesanan untuk melihat histori status...</i>';
-          return;
-        }
-        db.ref(`pesanan/${id}/historyStatus`).once('value').then(snapshot => {
-          const data = snapshot.val();
-          if (!data) {
-            container.innerHTML = '<i>Belum ada histori status untuk pesanan ini.</i>';
-            return;
-          }
-          let listHtml = '<ul class="list-group">';
-          for (const key in data) {
-            const h = data[key];
-            listHtml += `<li class="list-group-item"><b>${h.status}</b> oleh ${h.oleh} pada ${h.waktu}</li>`;
-          }
-          listHtml += '</ul>';
-          container.innerHTML = listHtml;
-        });
-      }
-
-      // Hapus pesanan
-      function hapusPesanan(id) {
-        if (!confirm(`Yakin ingin menghapus pesanan ${id}?`)) return;
-        db.ref('pesanan/' + id).remove().then(() => {
-          alert("✅ Pesanan dihapus.");
-          if (selectedId === id) {
-            selectedId = null;
-            document.getElementById('selectedPesananId').textContent = '-';
-            document.getElementById('buktiAdmin').value = "";
-          }
-          tampilkanPesanan();
-        });
-      }
-
-      // Kirim notifikasi WA via API NgirimWA
-      function kirimNotifWA(pesan) {
-        fetch("https://starsender.online/api/sendText", {
-          method: "POST",
-          body: new URLSearchParams({
-            appkey: notifAPI.appkey,
-            authkey: notifAPI.authkey,
-            to: notifAPI.nomorAdmin,
-            message: pesan
-          })
-        }).catch(e => console.error("Gagal kirim notifikasi WA:", e));
-      }
-
-      // Event Listener upload bukti
-      document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
-
-      // Event listener filter dan search
-      document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
-      document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
-      document.getElementById('filterTanggalMulai').addEventListener('change', tampilkanPesanan);
-      document.getElementById('filterTanggalAkhir').addEventListener('change', tampilkanPesanan);
-            </script>
-
-    <!-- Form Produk Dinamis -->
-<h3>Tambah / Edit Produk</h3>
-<form id="formProduk" class="row g-3 mb-4">
-  <div class="col-md-3">
-    <input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required />
+  <hr/>
+  <h3>Hapus Semua Data</h3>
+  <div class="d-grid gap-2 d-md-block mb-5">
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaPesanan()">🧹 Hapus Semua Pesanan</button>
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaProduk()">🧹 Hapus Semua Produk</button>
+    <button class="btn btn-danger mb-2" onclick="hapusSemuaGaleri()">🧹 Hapus Semua Bukti Transfer</button>
+    <button class="btn btn-dark" onclick="hapusSemuaData()">🔥 Hapus SEMUA DATA</button>
   </div>
-  <div class="col-md-3">
-    <input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required />
-  </div>
-  <div class="col-md-2">
-    <input type="number" id="harga" class="form-control" placeholder="Harga (Rp)" required />
-  </div>
-  <div class="col-md-4">
-    <input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required />
-  </div>
-  <div class="col-12">
-    <button type="submit" class="btn btn-success">💾 Simpan / Edit Produk</button>
-  </div>
-</form>
-
-<!-- Daftar Produk -->
-<h4>Daftar Produk</h4>
-<ul id="daftarProduk" class="list-group mb-5"></ul>
-
-<!-- Galeri Bukti Transfer -->
-<h4>Galeri Bukti Transfer Pembeli</h4>
-<div id="galeri" class="d-flex flex-wrap mb-5" style="gap:10px;"></div>
-
-<hr />
-
-<!-- Hapus Semua Data -->
-<h3>Hapus Semua Data</h3>
-<div class="d-grid gap-2 d-md-block mb-5">
-  <button class="btn btn-danger mb-2" onclick="hapusSemuaPesanan()">🧹 Hapus Semua Pesanan</button>
-  <button class="btn btn-danger mb-2" onclick="hapusSemuaProduk()">🧹 Hapus Semua Produk</button>
-  <button class="btn btn-danger mb-2" onclick="hapusSemuaGaleri()">🧹 Hapus Semua Bukti Transfer</button>
-  <button class="btn btn-dark" onclick="hapusSemuaData()">🔥 Hapus SEMUA DATA</button>
 </div>
 
-<script>
-  // Simpan / Edit produk ke Firebase
-  document.getElementById('formProduk').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const kategori = document.getElementById('kategori').value.trim();
-    const varian = document.getElementById('varian').value.trim();
-    const harga = parseInt(document.getElementById('harga').value);
-    const cara = document.getElementById('cara').value.trim();
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-    if (!kategori || !varian || !harga || !cara) {
-      alert("❗ Semua field wajib diisi.");
-      return;
+  <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+    authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+    databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+    projectId: "asdarstoredigitalll-d89c4",
+    storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+    messagingSenderId: "220670500351",
+    appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+    measurementId: "G-CMRW37J19G"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const storage = firebase.storage();
+
+  const notifAPI = {
+    appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+    authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+    nomorAdmin: "6281803004607"
+  };
+
+  let selectedId = null;
+  let allDataPesanan = {};
+    function tampilkanPesanan() {
+    db.ref('pesanan').once('value').then(snapshot => {
+      allDataPesanan = snapshot.val() || {};
+      const filter = document.getElementById('filterStatus').value;
+      const search = document.getElementById('searchId').value.toLowerCase();
+      let html = '';
+      for (let id in allDataPesanan) {
+        const p = allDataPesanan[id];
+        if (filter && p.status !== filter) continue;
+        if (search && !id.toLowerCase().includes(search)) continue;
+
+        html += `
+        <div class="card">
+          <div class="card-body">
+            <b>ID:</b> ${id}<br/>
+            <b>Nama:</b> ${p.nama}<br/>
+            <b>Nomor:</b> ${p.nomor || '-'}<br/>
+            <b>Kategori:</b> ${p.kategori}<br/>
+            <b>Produk:</b> ${p.produk}<br/>
+            <b>Status:</b> ${p.status}<br/>
+            ${p.buktiBayar ? `<b>Bukti Bayar:</b><br/><img src="${p.buktiBayar}" alt="Bukti Bayar" class="img-thumbnail mb-2" />` : ''}
+            ${p.buktiAdmin ? `<b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" alt="Bukti Admin" class="img-thumbnail mb-2" />` : ''}
+            <br/>
+            <button class="btn btn-sm btn-warning" onclick="setSelected('${id}')">📤 Kirim Bukti</button>
+            <button class="btn btn-sm btn-success" onclick="verifikasi('${id}')">✅ Proses</button>
+            <button class="btn btn-sm btn-danger" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
+          </div>
+        </div>`;
+      }
+      document.getElementById('pesananList').innerHTML = html;
+    });
+  }
+
+  function setSelected(id) {
+    selectedId = id;
+    alert("Pesanan dipilih: " + id);
+  }
+
+  function verifikasi(id) {
+    db.ref('pesanan/' + id).update({ status: "Diproses" }).then(() => {
+      kirimNotifWA(`✅ Pesanan ${id} sedang diproses.`);
+      tampilkanPesanan();
+    });
+  }
+
+  async function uploadBukti() {
+    const fileInput = document.getElementById('buktiAdmin');
+    const file = fileInput.files[0];
+    if (!file) return alert("❗ Pilih gambar terlebih dahulu!");
+    if (!selectedId) return alert("❗ Pilih pesanan dulu!");
+
+    const formData = new FormData();
+    formData.append("image", file);
+    const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
+
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+        method: "POST", body: formData
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error("Upload gagal");
+
+      const imageUrl = json.data.url;
+      await db.ref('pesanan/' + selectedId).update({ buktiAdmin: imageUrl, status: "Selesai" });
+
+      kirimNotifWA(`✅ Pesanan ${selectedId} selesai. Bukti terkirim ke pembeli.`);
+      alert("✅ Bukti berhasil dikirim.");
+      selectedId = null;
+      fileInput.value = "";
+      tampilkanPesanan();
+    } catch (err) {
+      alert("❌ Upload Gagal: " + err.message);
     }
+  }
 
-    // Simpan produk ke path produk/{kategori}/{varian}
-    db.ref(`produk/${kategori}/${varian}`).set({ harga, cara })
-      .then(() => {
-        alert("✅ Produk berhasil disimpan.");
-        this.reset();
-        tampilkanProduk();
+  function kirimNotifWA(pesan) {
+    fetch("https://starsender.online/api/sendText", {
+      method: "POST",
+      body: new URLSearchParams({
+        appkey: notifAPI.appkey,
+        authkey: notifAPI.authkey,
+        to: notifAPI.nomorAdmin,
+        message: pesan
       })
-      .catch(e => alert("❌ Gagal menyimpan produk: " + e.message));
-  });
+    });
+  }
+    function exportCSV() {
+    let csv = "ID,Nama,Nomor,Kategori,Produk,Status,Waktu\n";
+    for (let id in allDataPesanan) {
+      const p = allDataPesanan[id];
+      csv += `"${id}","${p.nama}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}","${p.waktu || ''}"\n`;
+    }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pesanan.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 
-  // Tampilkan daftar produk dinamis dari Firebase
   function tampilkanProduk() {
     db.ref('produk').once('value').then(snapshot => {
       const produk = snapshot.val() || {};
       const list = document.getElementById('daftarProduk');
       list.innerHTML = "";
-
       for (const kategori in produk) {
         for (const varian in produk[kategori]) {
           const p = produk[kategori][varian];
@@ -339,59 +228,58 @@
           li.innerHTML = `
             <div>
               <b>${kategori} > ${varian}</b><br/>
-              Harga: Rp${p.harga.toLocaleString()}<br/>
-              Cara Beli: ${p.cara}
+              Harga: Rp${p.harga}<br/>
+              ${p.cara}
             </div>
-            <button class="btn btn-danger btn-sm" onclick="hapusProduk('${kategori}', '${varian}')">🗑️ Hapus</button>
-          `;
+            <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kategori}','${varian}')">🗑️ Hapus</button>`;
           list.appendChild(li);
         }
-      }
-
-      if (list.innerHTML === "") {
-        list.innerHTML = '<li class="list-group-item text-muted">Belum ada produk tersimpan.</li>';
       }
     });
   }
 
-  // Hapus produk spesifik
   function hapusProduk(kategori, varian) {
-    if (!confirm(`Yakin ingin menghapus produk:\nKategori: ${kategori}\nVarian: ${varian}`)) return;
-    db.ref(`produk/${kategori}/${varian}`).remove()
-      .then(() => {
-        alert("✅ Produk berhasil dihapus.");
+    if (confirm(`Hapus produk ${varian} dari kategori ${kategori}?`)) {
+      db.ref(`produk/${kategori}/${varian}`).remove().then(() => {
+        alert("✅ Produk dihapus.");
         tampilkanProduk();
-      })
-      .catch(e => alert("❌ Gagal hapus produk: " + e.message));
+      });
+    }
   }
 
-  // Tampilkan galeri bukti transfer pembeli
+  document.getElementById('formProduk').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const kategori = document.getElementById('kategori').value.trim();
+    const varian = document.getElementById('varian').value.trim();
+    const harga = parseInt(document.getElementById('harga').value);
+    const cara = document.getElementById('cara').value.trim();
+    if (!kategori || !varian || !harga || !cara) {
+      return alert("❗ Semua field wajib diisi.");
+    }
+    db.ref(`produk/${kategori}/${varian}`).set({ harga, cara }).then(() => {
+      alert("✅ Produk berhasil ditambahkan.");
+      this.reset();
+      tampilkanProduk();
+    });
+  });
+
   function tampilkanGaleri() {
     db.ref('pesanan').once('value').then(snapshot => {
       const data = snapshot.val() || {};
       const galeri = document.getElementById('galeri');
       galeri.innerHTML = "";
-
       for (const id in data) {
         if (data[id].buktiBayar) {
           const img = document.createElement('img');
           img.src = data[id].buktiBayar;
-          img.alt = `Bukti Bayar ${id}`;
-          img.style.maxWidth = '120px';
-          img.style.borderRadius = '6px';
-          img.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+          img.alt = "Bukti Bayar " + id;
           galeri.appendChild(img);
         }
-      }
-
-      if (galeri.innerHTML === "") {
-        galeri.innerHTML = "<p class='text-muted'>Belum ada bukti transfer yang diupload.</p>";
       }
     });
   }
 
-  // Fungsi hapus massal
-  function hapusSemuaPesanan() {
+    function hapusSemuaPesanan() {
     if (confirm("Yakin ingin menghapus SEMUA pesanan?")) {
       db.ref('pesanan').remove().then(() => {
         alert("✅ Semua pesanan dihapus.");
@@ -414,7 +302,7 @@
     if (confirm("Yakin ingin menghapus SEMUA bukti transfer dari galeri?")) {
       db.ref('pesanan').once('value').then(snapshot => {
         const data = snapshot.val() || {};
-        let promises = [];
+        const promises = [];
         for (const id in data) {
           promises.push(db.ref(`pesanan/${id}/buktiBayar`).remove());
         }
@@ -427,7 +315,7 @@
   }
 
   function hapusSemuaData() {
-    if (confirm("Yakin HAPUS SEMUA DATA PESANAN + PRODUK + BUKTI BAYAR?")) {
+    if (confirm("Yakin HAPUS SEMUA DATA PESANAN + PRODUK + BUKTI?")) {
       db.ref().remove().then(() => {
         alert("🔥 SEMUA DATA telah dihapus.");
         tampilkanPesanan();
@@ -437,690 +325,16 @@
     }
   }
 
-  // Inisialisasi tampilkan data saat load
+  // Event Listeners
+  document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
+  document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
+  document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
+  document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
+
+  // Inisialisasi tampilan awal
+  tampilkanPesanan();
   tampilkanProduk();
   tampilkanGaleri();
 </script>
-
-    <!-- Form Edit Konten Dinamis -->
-<h3>Edit Konten Halaman</h3>
-<form id="formKonten" class="mb-4">
-  <div class="mb-3">
-    <label for="kontenJudul" class="form-label">Judul Konten</label>
-    <input type="text" id="kontenJudul" class="form-control" placeholder="Judul Konten" required />
-  </div>
-  <div class="mb-3">
-    <label for="kontenIsi" class="form-label">Isi Konten (HTML diperbolehkan)</label>
-    <textarea id="kontenIsi" rows="6" class="form-control" placeholder="Isi konten..." required></textarea>
-  </div>
-  <button type="submit" class="btn btn-primary">💾 Simpan Konten</button>
-</form>
-
-<!-- Tampilan Konten Dinamis -->
-<h4>Preview Konten</h4>
-<div id="previewKonten" style="border:1px solid #ccc; padding:15px; min-height:150px; background:#fff; border-radius:6px;"></div>
-
-<hr />
-
-<!-- Log Aktivitas Admin -->
-<h3>Log Aktivitas Admin</h3>
-<ul id="logAktivitas" class="list-group mb-5" style="max-height: 250px; overflow-y: auto;"></ul>
-
-<script>
-  // Load konten dinamis dari Firebase
-  function loadKonten() {
-    db.ref('kontenHalaman').once('value').then(snapshot => {
-      const konten = snapshot.val() || { judul: '', isi: '' };
-      document.getElementById('kontenJudul').value = konten.judul;
-      document.getElementById('kontenIsi').value = konten.isi;
-      document.getElementById('previewKonten').innerHTML = konten.isi;
-    });
-  }
-
-  // Simpan konten dinamis ke Firebase
-  document.getElementById('formKonten').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const judul = document.getElementById('kontenJudul').value.trim();
-    const isi = document.getElementById('kontenIsi').value.trim();
-    if (!judul || !isi) {
-      alert("❗ Judul dan isi konten wajib diisi.");
-      return;
-    }
-    db.ref('kontenHalaman').set({ judul, isi })
-      .then(() => {
-        alert("✅ Konten berhasil disimpan.");
-        document.getElementById('previewKonten').innerHTML = isi;
-        tambahLog(`Konten halaman disimpan: ${judul}`);
-      })
-      .catch(e => alert("❌ Gagal menyimpan konten: " + e.message));
-  });
-
-  // Fungsi tambah log aktivitas admin ke Firebase
-  function tambahLog(pesan) {
-    const timestamp = new Date().toISOString();
-    const newLogRef = db.ref('logAktivitas').push();
-    newLogRef.set({ pesan, timestamp });
-    tampilkanLog();
-  }
-
-  // Tampilkan log aktivitas admin
-  function tampilkanLog() {
-    db.ref('logAktivitas').orderByChild('timestamp').limitToLast(100).once('value').then(snapshot => {
-      const logs = snapshot.val() || {};
-      const list = document.getElementById('logAktivitas');
-      list.innerHTML = "";
-      const entries = Object.entries(logs).sort((a,b) => new Date(b[1].timestamp) - new Date(a[1].timestamp));
-      if(entries.length === 0){
-        list.innerHTML = '<li class="list-group-item text-muted">Belum ada aktivitas tercatat.</li>';
-        return;
-      }
-      entries.forEach(([key, log]) => {
-        const li = document.createElement('li');
-        li.className = "list-group-item small";
-        li.textContent = `[${new Date(log.timestamp).toLocaleString()}] - ${log.pesan}`;
-        list.appendChild(li);
-      });
-    });
-  }
-
-  // Panggil fungsi load konten dan tampilkan log saat halaman siap
-  loadKonten();
-  tampilkanLog();
-
-  // Contoh tambah log otomatis saat admin buka dashboard
-  tambahLog("Admin membuka dashboard");
-</script>
-
-    <!-- Form Upload Bukti Bayar -->
-<h3>Upload Bukti Bayar dari Pelanggan</h3>
-<input type="file" id="uploadBuktiBayar" accept="image/*" class="form-control mb-2" />
-<button id="btnUploadBuktiBayar" class="btn btn-success mb-4">Upload Bukti Bayar</button>
-<div class="progress mb-3" style="height: 20px; display:none;">
-  <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
-</div>
-
-<!-- Form Tambah Testimoni Pelanggan -->
-<h3>Tambah Testimoni Pelanggan</h3>
-<form id="formTestimoni" class="mb-5">
-  <div class="mb-3">
-    <input type="text" id="namaTesti" class="form-control" placeholder="Nama Pelanggan" required />
-  </div>
-  <div class="mb-3">
-    <textarea id="isiTesti" rows="3" class="form-control" placeholder="Isi Testimoni" required></textarea>
-  </div>
-  <div class="mb-3">
-    <label>Rating:</label>
-    <select id="ratingTesti" class="form-select" required>
-      <option value="">Pilih Rating</option>
-      <option value="5">★★★★★ (Sangat Baik)</option>
-      <option value="4">★★★★ (Baik)</option>
-      <option value="3">★★★ (Cukup)</option>
-      <option value="2">★★ (Kurang)</option>
-      <option value="1">★ (Buruk)</option>
-    </select>
-  </div>
-  <button type="submit" class="btn btn-primary">Kirim Testimoni</button>
-</form>
-
-<!-- Daftar Testimoni -->
-<h4>Daftar Testimoni Pelanggan</h4>
-<ul id="daftarTestimoni" class="list-group mb-5" style="max-height: 300px; overflow-y: auto;"></ul>
-
-<script>
-  // Upload Bukti Bayar dengan progress bar
-  document.getElementById('btnUploadBuktiBayar').addEventListener('click', async () => {
-    const fileInput = document.getElementById('uploadBuktiBayar');
-    const file = fileInput.files[0];
-    if (!file) return alert("❗ Pilih gambar bukti bayar terlebih dahulu!");
-
-    const progressContainer = document.querySelector('.progress');
-    const progressBar = document.getElementById('progressBar');
-    progressContainer.style.display = 'block';
-    progressBar.style.width = '0%';
-    progressBar.textContent = '0%';
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    const imgbbApiKey = "f71ccc1a662c9f8656766990018d3a33";
-
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`);
-
-      xhr.upload.onprogress = function(event) {
-        if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          progressBar.style.width = percentComplete + '%';
-          progressBar.textContent = percentComplete + '%';
-        }
-      };
-
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          if (response.success) {
-            const imageUrl = response.data.url;
-            // Simpan URL bukti bayar ke Firebase di node khusus, contoh: 'buktiBayarTerbaru'
-            db.ref('buktiBayarTerbaru').push({ url: imageUrl, waktu: new Date().toISOString() });
-            alert('✅ Bukti bayar berhasil diupload.');
-            fileInput.value = '';
-            progressContainer.style.display = 'none';
-            tampilkanGaleri(); // Perbarui galeri bukti bayar
-            tambahLog('Admin upload bukti bayar baru');
-          } else {
-            alert('❌ Upload gagal: ' + (response.error.message || 'Unknown error'));
-            progressContainer.style.display = 'none';
-          }
-        } else {
-          alert('❌ Upload gagal, status: ' + xhr.status);
-          progressContainer.style.display = 'none';
-        }
-      };
-
-      xhr.onerror = function() {
-        alert('❌ Upload gagal karena error jaringan.');
-        progressContainer.style.display = 'none';
-      };
-
-      xhr.send(formData);
-    } catch (e) {
-      alert('❌ Upload gagal: ' + e.message);
-      progressContainer.style.display = 'none';
-    }
-  });
-
-  // Form tambah testimoni pelanggan
-  document.getElementById('formTestimoni').addEventListener('submit', e => {
-    e.preventDefault();
-    const nama = document.getElementById('namaTesti').value.trim();
-    const isi = document.getElementById('isiTesti').value.trim();
-    const rating = parseInt(document.getElementById('ratingTesti').value);
-
-    if (!nama || !isi || !rating) return alert('Semua field testimoni wajib diisi.');
-
-    const newTestiRef = db.ref('testimoni').push();
-    newTestiRef.set({
-      nama,
-      isi,
-      rating,
-      waktu: new Date().toISOString()
-    }).then(() => {
-      alert('✅ Testimoni berhasil dikirim.');
-      document.getElementById('formTestimoni').reset();
-      tampilkanTestimoni();
-      tambahLog(`Testimoni baru dari ${nama} dengan rating ${rating} dikirim`);
-      kirimNotifWA(`📢 Testimoni baru dari ${nama}: "${isi}" (Rating: ${rating} bintang)`);
-    }).catch(e => {
-      alert('❌ Gagal kirim testimoni: ' + e.message);
-    });
-  });
-
-  // Tampilkan daftar testimoni
-  function tampilkanTestimoni() {
-    db.ref('testimoni').orderByChild('waktu').limitToLast(50).once('value').then(snapshot => {
-      const testiData = snapshot.val() || {};
-      const list = document.getElementById('daftarTestimoni');
-      list.innerHTML = '';
-
-      // Urutkan terbaru dulu
-      const sorted = Object.entries(testiData).sort((a,b) => new Date(b[1].waktu) - new Date(a[1].waktu));
-
-      if(sorted.length === 0){
-        list.innerHTML = '<li class="list-group-item text-muted">Belum ada testimoni.</li>';
-        return;
-      }
-
-      sorted.forEach(([key, testi]) => {
-        const li = document.createElement('li');
-        li.className = 'list-group-item';
-
-        let stars = '';
-        for(let i=1; i<=5; i++){
-          stars += i <= testi.rating ? '⭐' : '☆';
-        }
-
-        li.innerHTML = `<b>${testi.nama}</b> <small class="text-muted">(${new Date(testi.waktu).toLocaleDateString()})</small><br/>
-                        <div>${stars}</div>
-                        <p>${testi.isi}</p>`;
-        list.appendChild(li);
-      });
-    });
-  }
-
-  // Perbarui galeri bukti bayar agar sinkron
-  function tampilkanGaleri() {
-    db.ref('buktiBayarTerbaru').limitToLast(20).once('value').then(snapshot => {
-      const data = snapshot.val() || {};
-      const galeri = document.getElementById('galeri');
-      galeri.innerHTML = "";
-      Object.values(data).forEach(item => {
-        const img = document.createElement('img');
-        img.src = item.url;
-        img.alt = "Bukti Bayar";
-        galeri.appendChild(img);
-      });
-    });
-  }
-
-  // Panggil tampilkan testimoni dan galeri saat load halaman
-  tampilkanTestimoni();
-  tampilkanGaleri();
-
-</script>
-
-    <!-- Log Aktivitas Admin -->
-<h3>Log Aktivitas Admin</h3>
-<div style="max-height: 250px; overflow-y: auto; background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 30px;" id="logAktivitas"></div>
-
-<!-- Pencarian & Filter Lanjutan Pesanan -->
-<h3>Filter & Pencarian Pesanan Lanjutan</h3>
-<div class="row mb-3">
-  <div class="col-md-3">
-    <input type="text" id="searchNama" class="form-control" placeholder="Cari Nama Pembeli" />
-  </div>
-  <div class="col-md-3">
-    <select id="filterProduk" class="form-select">
-      <option value="">Filter Semua Produk</option>
-      <!-- Produk akan diisi dinamis -->
-    </select>
-  </div>
-  <div class="col-md-3">
-    <input type="date" id="filterTanggalMulai" class="form-control" placeholder="Tanggal Mulai" />
-  </div>
-  <div class="col-md-3">
-    <input type="date" id="filterTanggalAkhir" class="form-control" placeholder="Tanggal Akhir" />
-  </div>
-</div>
-
-<button id="btnResetFilter" class="btn btn-secondary mb-4">Reset Filter</button>
-
-<!-- Tombol Backup Data -->
-<h3>Backup Data</h3>
-<button id="btnBackupData" class="btn btn-warning mb-5">Download Backup JSON Semua Data</button>
-
-<script>
-  // Log aktivitas akan disimpan di node Firebase: 'logAktivitas'
-  function tambahLog(pesan) {
-    const waktu = new Date().toISOString();
-    db.ref('logAktivitas').push({ pesan, waktu });
-  }
-
-  // Tampilkan log aktivitas terbaru (limit 50)
-  function tampilkanLog() {
-    db.ref('logAktivitas').orderByChild('waktu').limitToLast(50).once('value').then(snapshot => {
-      const logs = snapshot.val() || {};
-      const logDiv = document.getElementById('logAktivitas');
-      logDiv.innerHTML = '';
-
-      // Urutkan terbaru dulu
-      const sortedLogs = Object.entries(logs).sort((a,b) => new Date(b[1].waktu) - new Date(a[1].waktu));
-
-      sortedLogs.forEach(([key, log]) => {
-        const p = document.createElement('p');
-        p.style.fontSize = '0.9rem';
-        p.style.marginBottom = '4px';
-        p.textContent = `[${new Date(log.waktu).toLocaleString()}] - ${log.pesan}`;
-        logDiv.appendChild(p);
-      });
-    });
-  }
-
-  // Filter produk dinamis (isi pilihan dropdown filterProduk)
-  function isiFilterProduk() {
-    const select = document.getElementById('filterProduk');
-    db.ref('produk').once('value').then(snapshot => {
-      const produkData = snapshot.val() || {};
-      select.innerHTML = '<option value="">Filter Semua Produk</option>';
-      for (const kategori in produkData) {
-        for (const varian in produkData[kategori]) {
-          const opsi = document.createElement('option');
-          opsi.value = varian;
-          opsi.textContent = `${kategori} > ${varian}`;
-          select.appendChild(opsi);
-        }
-      }
-    });
-  }
-
-  // Fungsi filter pesanan lanjutan dengan beberapa kriteria
-  function tampilkanPesananLanjutan() {
-    db.ref('pesanan').once('value').then(snapshot => {
-      const pesanan = snapshot.val() || {};
-      const filterStatus = document.getElementById('filterStatus').value;
-      const searchId = document.getElementById('searchId').value.toLowerCase();
-      const searchNama = document.getElementById('searchNama').value.toLowerCase();
-      const filterProduk = document.getElementById('filterProduk').value;
-      const tanggalMulai = document.getElementById('filterTanggalMulai').value;
-      const tanggalAkhir = document.getElementById('filterTanggalAkhir').value;
-
-      let html = '';
-
-      for (const id in pesanan) {
-        const p = pesanan[id];
-
-        // Filter status
-        if (filterStatus && p.status !== filterStatus) continue;
-
-        // Filter ID pesanan
-        if (searchId && !id.toLowerCase().includes(searchId)) continue;
-
-        // Filter nama pembeli
-        if (searchNama && (!p.nama || !p.nama.toLowerCase().includes(searchNama))) continue;
-
-        // Filter produk
-        if (filterProduk && p.produk !== filterProduk) continue;
-
-        // Filter tanggal
-        if (tanggalMulai && new Date(p.waktu) < new Date(tanggalMulai)) continue;
-        if (tanggalAkhir && new Date(p.waktu) > new Date(tanggalAkhir + 'T23:59:59')) continue;
-
-        html += `<div class="card"><div class="card-body">
-          <b>ID:</b> ${id}<br/>
-          <b>Nama:</b> ${p.nama}<br/>
-          <b>Nomor HP / ID SN:</b> ${p.nomor || '-'}<br/>
-          <b>Kategori:</b> ${p.kategori}<br/>
-          <b>Produk:</b> ${p.produk}<br/>
-          <b>Status:</b> ${p.status}<br/>
-          <b>Waktu:</b> ${p.waktu || '-'}<br/>
-          ${p.buktiBayar ? `<b>Bukti Pembeli:</b><br/><img src="${p.buktiBayar}" alt="Bukti Bayar" style="max-width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
-          ${p.buktiAdmin ? `<br/><b>Bukti Admin:</b><br/><img src="${p.buktiAdmin}" alt="Bukti Admin" style="max-width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
-          <br/><button class="btn btn-warning btn-sm" onclick="setSelected('${id}')">📤 Kirim Bukti</button>
-          <button class="btn btn-info btn-sm" onclick="verifikasi('${id}')">✅ Proses</button>
-          <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button>
-        </div></div>`;
-      }
-
-      document.getElementById('pesananList').innerHTML = html;
-    });
-  }
-
-  // Reset semua filter input
-  document.getElementById('btnResetFilter').addEventListener('click', () => {
-    document.getElementById('filterStatus').value = '';
-    document.getElementById('searchId').value = '';
-    document.getElementById('searchNama').value = '';
-    document.getElementById('filterProduk').value = '';
-    document.getElementById('filterTanggalMulai').value = '';
-    document.getElementById('filterTanggalAkhir').value = '';
-    tampilkanPesananLanjutan();
-  });
-
-  // Backup semua data ke file JSON
-  document.getElementById('btnBackupData').addEventListener('click', () => {
-    Promise.all([
-      db.ref('pesanan').once('value'),
-      db.ref('produk').once('value'),
-      db.ref('testimoni').once('value'),
-      db.ref('logAktivitas').once('value')
-    ]).then(([snapPesanan, snapProduk, snapTestimoni, snapLog]) => {
-      const data = {
-        pesanan: snapPesanan.val() || {},
-        produk: snapProduk.val() || {},
-        testimoni: snapTestimoni.val() || {},
-        logAktivitas: snapLog.val() || {}
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup_asdar_store_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      tambahLog('Admin download backup data JSON');
-    });
-  });
-
-  // Event listener filter & search lanjutan
-  ['filterStatus','searchId','searchNama','filterProduk','filterTanggalMulai','filterTanggalAkhir'].forEach(id => {
-    document.getElementById(id).addEventListener('input', tampilkanPesananLanjutan);
-  });
-
-  // Inisialisasi isi filter produk & tampilkan pesanan lanjutan dan log aktivitas
-  isiFilterProduk();
-  tampilkanPesananLanjutan();
-  tampilkanLog();
-    </script>
-
-    <hr>
-<h3>Kelola Halaman Web Dinamis (Custom HTML)</h3>
-
-<!-- Form Tambah / Edit Halaman -->
-<form id="formHalaman" class="row g-3 mb-4">
-  <div class="col-md-3">
-    <input type="text" id="namaHalaman" class="form-control" placeholder="Nama Halaman (mis: bantuan)" required />
-  </div>
-  <div class="col-md-9">
-    <textarea id="kontenHalaman" class="form-control" placeholder="Masukkan HTML/JS halaman" rows="5" required></textarea>
-  </div>
-  <div class="col-12">
-    <button type="submit" class="btn btn-primary">Simpan / Update Halaman</button>
-  </div>
-</form>
-
-<!-- Daftar Halaman -->
-<h4>Daftar Halaman Dinamis</h4>
-<ul id="listHalaman" class="list-group mb-5"></ul>
-
-    // Fungsi untuk menampilkan semua halaman dinamis
-function tampilkanHalaman() {
-  db.ref('halaman').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const list = document.getElementById('listHalaman');
-    list.innerHTML = '';
-    for (const nama in data) {
-      const item = document.createElement('li');
-      item.className = 'list-group-item d-flex justify-content-between align-items-center';
-      item.innerHTML = `<div><b>${nama}</b></div>
-        <div>
-          <button class="btn btn-sm btn-warning" onclick="editHalaman('${nama}', \`${data[nama]}\`)">✏️ Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="hapusHalaman('${nama}')">🗑️ Hapus</button>
-        </div>`;
-      list.appendChild(item);
-    }
-  });
-}
-
-// Fungsi untuk simpan halaman
-document.getElementById('formHalaman').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const nama = document.getElementById('namaHalaman').value.trim();
-  const konten = document.getElementById('kontenHalaman').value.trim();
-  if (!nama || !konten) return alert("Isi semua field!");
-  db.ref('halaman/' + nama).set(konten).then(() => {
-    alert("✅ Halaman disimpan.");
-    this.reset();
-    tampilkanHalaman();
-    tambahLog('Admin menyimpan halaman: ' + nama);
-  });
-});
-
-// Fungsi edit halaman
-function editHalaman(nama, konten) {
-  document.getElementById('namaHalaman').value = nama;
-  document.getElementById('kontenHalaman').value = konten;
-}
-
-// Fungsi hapus halaman
-function hapusHalaman(nama) {
-  if (confirm("Yakin ingin menghapus halaman ini?")) {
-    db.ref('halaman/' + nama).remove().then(() => {
-      alert("✅ Halaman dihapus.");
-      tampilkanHalaman();
-      tambahLog('Admin menghapus halaman: ' + nama);
-    });
-  }
-}
-
-// Panggil saat awal
-tampilkanHalaman();
-
-    <!-- Ini di halaman publik seperti halaman.html -->
-<script>
-  const url = new URLSearchParams(window.location.search);
-  const namaHalaman = url.get('nama'); // misal halaman.html?nama=bantuan
-
-  firebase.database().ref('halaman/' + namaHalaman).once('value').then(snap => {
-    const isi = snap.val();
-    if (isi) {
-      document.getElementById('kontenDinamis').innerHTML = isi;
-    } else {
-      document.getElementById('kontenDinamis').innerHTML = "<h3>Halaman tidak ditemukan.</h3>";
-    }
-  });
-</script>
-<div id="kontenDinamis"></div>
-
-    <hr>
-<h3>Kelola FAQ (Tanya Jawab Umum)</h3>
-<form id="formFAQ" class="row g-3 mb-3">
-  <div class="col-md-5">
-    <input type="text" id="pertanyaanFAQ" class="form-control" placeholder="Pertanyaan" required />
-  </div>
-  <div class="col-md-5">
-    <input type="text" id="jawabanFAQ" class="form-control" placeholder="Jawaban" required />
-  </div>
-  <div class="col-md-2">
-    <button type="submit" class="btn btn-success w-100">Tambah FAQ</button>
-  </div>
-</form>
-
-<ul id="listFAQ" class="list-group mb-5"></ul>
-
-    // Tampilkan FAQ
-function tampilkanFAQ() {
-  db.ref('faq').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const list = document.getElementById('listFAQ');
-    list.innerHTML = '';
-    for (const id in data) {
-      const item = document.createElement('li');
-      item.className = 'list-group-item d-flex justify-content-between align-items-center';
-      item.innerHTML = `<div><b>${data[id].tanya}</b><br/>${data[id].jawab}</div>
-        <button class="btn btn-sm btn-danger" onclick="hapusFAQ('${id}')">🗑️</button>`;
-      list.appendChild(item);
-    }
-  });
-}
-
-// Simpan FAQ
-document.getElementById('formFAQ').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const tanya = document.getElementById('pertanyaanFAQ').value;
-  const jawab = document.getElementById('jawabanFAQ').value;
-  const id = Date.now();
-  db.ref('faq/' + id).set({ tanya, jawab }).then(() => {
-    alert("✅ FAQ ditambahkan.");
-    this.reset();
-    tampilkanFAQ();
-    tambahLog(`Admin menambah FAQ: ${tanya}`);
-  });
-});
-
-// Hapus FAQ
-function hapusFAQ(id) {
-  if (confirm("Hapus FAQ ini?")) {
-    db.ref('faq/' + id).remove().then(() => {
-      tampilkanFAQ();
-      tambahLog(`Admin menghapus FAQ ID: ${id}`);
-    });
-  }
-}
-
-tampilkanFAQ();
-
-    <hr>
-<h3>Kelola Promo / Banner Utama</h3>
-<form id="formPromo" class="row g-3 mb-3">
-  <div class="col-md-6">
-    <input type="text" id="gambarPromo" class="form-control" placeholder="URL Gambar Promo (imgbb/imgur)" required />
-  </div>
-  <div class="col-md-4">
-    <input type="text" id="linkPromo" class="form-control" placeholder="Link Tujuan Promo (opsional)" />
-  </div>
-  <div class="col-md-2">
-    <button type="submit" class="btn btn-primary w-100">Tambah</button>
-  </div>
-</form>
-
-<ul id="listPromo" class="list-group mb-5"></ul>
-
-    // Tampilkan Promo
-function tampilkanPromo() {
-  db.ref('promo').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const list = document.getElementById('listPromo');
-    list.innerHTML = '';
-    for (const id in data) {
-      const item = document.createElement('li');
-      item.className = 'list-group-item d-flex justify-content-between align-items-center';
-      item.innerHTML = `
-        <div>
-          <img src="${data[id].gambar}" style="max-width: 60px; margin-right:10px">
-          <a href="${data[id].link || '#'}" target="_blank">${data[id].link || 'Tidak ada link'}</a>
-        </div>
-        <button class="btn btn-sm btn-danger" onclick="hapusPromo('${id}')">🗑️</button>`;
-      list.appendChild(item);
-    }
-  });
-}
-
-// Simpan Promo
-document.getElementById('formPromo').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const gambar = document.getElementById('gambarPromo').value;
-  const link = document.getElementById('linkPromo').value;
-  const id = Date.now();
-  db.ref('promo/' + id).set({ gambar, link }).then(() => {
-    alert("✅ Promo ditambahkan.");
-    this.reset();
-    tampilkanPromo();
-    tambahLog(`Admin menambah promo baru.`);
-  });
-});
-
-// Hapus Promo
-function hapusPromo(id) {
-  if (confirm("Hapus promo ini?")) {
-    db.ref('promo/' + id).remove().then(() => {
-      tampilkanPromo();
-      tambahLog(`Admin menghapus promo ID: ${id}`);
-    });
-  }
-}
-
-tampilkanPromo();
-
-    <hr>
-<h3>Riwayat Aktivitas Admin</h3>
-<ul id="logAktivitas" class="list-group mb-5" style="max-height: 300px; overflow-y:auto;"></ul>
-
-    // Fungsi untuk tambah log
-function tambahLog(aksi) {
-  const waktu = new Date().toLocaleString();
-  const id = Date.now();
-  db.ref('log/' + id).set({ aksi, waktu });
-}
-
-// Tampilkan log
-function tampilkanLog() {
-  db.ref('log').limitToLast(50).once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const list = document.getElementById('logAktivitas');
-    list.innerHTML = '';
-    const keys = Object.keys(data).sort().reverse();
-    keys.forEach(id => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item';
-      li.innerHTML = `<b>${data[id].waktu}</b>: ${data[id].aksi}`;
-      list.appendChild(li);
-    });
-  });
-}
-
-tampilkanLog();
-  </script>
 </body>
 </html>
