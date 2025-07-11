@@ -5,13 +5,35 @@
   <title>Upload Bukti Bayar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f2f2f2; }
-    h2 { color: #3498db; }
-    input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
-    #statusBox { margin-top: 10px; padding: 10px; background: #eaf4ff; border-left: 5px solid #3498db; }
-    .loading { color: orange; }
-    .success { color: green; }
-    .error { color: red; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f2f2f2;
+    }
+    h2 {
+      color: #3498db;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 400px;
+    }
+    #statusBox {
+      margin-top: 10px;
+      padding: 10px;
+      background: #eaf4ff;
+      border-left: 5px solid #3498db;
+    }
+    .loading {
+      color: orange;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
   </style>
 </head>
 <body>
@@ -23,25 +45,25 @@
   <div id="statusBox">Silakan pilih dan upload bukti transfer Anda.</div>
 
   <script>
-    document.getElementById("uploadBtn").addEventListener("click", async function () {
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
       const fileInput = document.getElementById("fileInput");
       const statusBox = document.getElementById("statusBox");
-
       const file = fileInput.files[0];
+
       if (!file) {
         statusBox.innerHTML = "❗ Silakan pilih gambar terlebih dahulu.";
         statusBox.className = "error";
         return;
       }
 
-      statusBox.innerHTML = "⏳ Mengunggah gambar...";
-      statusBox.className = "loading";
-
       const formData = new FormData();
       formData.append("image", file);
 
+      statusBox.innerText = "⏳ Mengunggah gambar...";
+      statusBox.className = "loading";
+
       try {
-        const res = await fetch("https://asdar.imgbb.com/upload", {
+        const res = await fetch("https://asdarstoredigital.onrender.com/upload", {
           method: "POST",
           body: formData
         });
@@ -49,15 +71,19 @@
         const data = await res.json();
         if (data.success) {
           statusBox.className = "success";
-          statusBox.innerHTML = `✅ Bukti berhasil diunggah:<br><a href="${data.data.url}" target="_blank">${data.data.url}</a>`;
+          statusBox.innerHTML = `
+            ✅ Upload sukses!<br>
+            <a href="${data.data.url}" target="_blank">${data.data.url}</a>
+          `;
           fileInput.value = "";
         } else {
           statusBox.className = "error";
-          statusBox.innerHTML = "❌ Upload gagal. Silakan coba lagi.";
+          statusBox.innerHTML = "❌ Gagal upload: " + (data.error || "Terjadi kesalahan.");
         }
+
       } catch (err) {
         statusBox.className = "error";
-        statusBox.innerHTML = "❌ Gagal koneksi: " + err.message;
+        statusBox.innerText = "❌ Gagal koneksi ke server: " + err.message;
       }
     });
   </script>
