@@ -1,137 +1,89 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Upload Bukti Bayar - Imgbb</title>
+  <meta charset="UTF-8" />
+  <title>Upload Bukti Bayar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f2f2f2; }
-    h2 { color: #2c3e50; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f2f2f2;
+    }
+    h2 {
+      color: #3498db;
+    }
     input, button {
       padding: 10px;
       margin: 10px 0;
-      display: block;
       width: 100%;
       max-width: 400px;
     }
     #statusBox {
-      background: #eaf4ff;
-      padding: 10px;
-      border-left: 4px solid #3498db;
-      margin-bottom: 15px;
-    }
-    #loader {
-      display: none;
       margin-top: 10px;
+      padding: 10px;
+      background: #eaf4ff;
+      border-left: 5px solid #3498db;
+    }
+    .loading {
+      color: orange;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
     }
   </style>
 </head>
 <body>
 
   <h2>Upload Bukti Pembayaran</h2>
-  <div id="statusBox">Silakan upload bukti pembayaran Anda. File JPG/PNG maksimal 3MB.</div>
-
   <input type="file" id="fileInput" accept="image/*" />
-  <button id="uploadBtn" onclick="uploadBukti()">📤 Upload Sekarang</button>
-  <div id="loader">⏳ Mengupload, mohon tunggu...</div>
+  <button onclick="upload()">📤 Upload Sekarang</button>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <div id="statusBox">Silakan pilih dan upload bukti transfer Anda.</div>
 
   <script>
-    // Konfigurasi Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    async function upload() {
+      const fileInput = document.getElementById("fileInput");
+      const statusBox = document.getElementById("statusBox");
 
-    const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
-
-    async function uploadBukti() {
-      const fileInput = document.getElementById('fileInput');
-      const uploadBtn = document.getElementById('uploadBtn');
-      const loader = document.getElementById('loader');
-      const statusBox = document.getElementById('statusBox');
       const file = fileInput.files[0];
+      if (!file) {
+        statusBox.innerHTML = "❗ Silakan pilih gambar terlebih dahulu.";
+        statusBox.className = "error";
+        return;
+      }
 
-      // Validasi dasar
-      if (!file) return alert("❗ Pilih file gambar terlebih dahulu.");
-      if (!id) return alert("❗ ID pesanan tidak ditemukan di URL.");
-      if (!file.type.match('image.*')) return alert("❌ Format tidak didukung. Hanya gambar.");
-      if (file.size > 3 * 1024 * 1024) return alert("❌ File terlalu besar. Maksimal 3MB.");
+      statusBox.innerHTML = "⏳ Mengunggah gambar...";
+      statusBox.className = "loading";
 
-      uploadBtn.disabled = true;
-      loader.style.display = "block";
-      statusBox.innerText = "⏳ Mengunggah gambar ke Imgbb...";
+      const formData = new FormData();
+      formData.append("image", file);
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result.split(",")[1];
-        const form = new FormData();
-        form.append("key", imgbbApiKey);
-        form.append("image", base64);
-        form.append("name", "bukti_" + id);
+      try {
+        const res = await fetchhttps://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
 
-        try {
-          const res = await fetch("https://api.imgbb.com/1/upload", {
-            method: "POST",
-            body: form
-          });
-
-          const json = await res.json();
-          if (!json.success) throw new Error(json.error?.message || "Upload gagal");
-
-          const imageUrl = json.data.url;
-
-          // Simpan ke Firebase
-          await db.ref("pesanan/" + id).update({
-            buktiBayar: imageUrl,
-            status: "Sudah Bayar"
-          });
-
-          await db.ref("galeri_bukti").push({ url: imageUrl });
-
-          const snap = await db.ref("pesanan/" + id).once("value");
-          const data = snap.val();
-          const nama = data?.nama || "-";
-          const nomor = data?.nomor || "-";
-
-          const notifPesan = `📥 Bukti pembayaran diterima\n🆔 ID: ${id}\n👤 ${nama}\n📱 ${nomor}\n📎 Bukti: ${imageUrl}\n🔎 Admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`;
-
-          // Kirim notifikasi ke WhatsApp via NgirimWA
-          const waForm = new FormData();
-          waForm.append("appkey", "ab3727c5-e0be-40f9-bb3f-25d93b029f7a");
-          waForm.append("authkey", "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq");
-          waForm.append("to", "6281803004607");
-          waForm.append("message", notifPesan);
-          fetch("https://app.ngirimwa.com/api/create-message", {
-            method: "POST",
-            body: waForm
-          });
-
-          statusBox.innerHTML = `✅ Bukti berhasil diupload!<br><a href="${imageUrl}" target="_blank">📎 Lihat Bukti</a>`;
-        } catch (err) {
-          console.error(err);
-          statusBox.innerText = "❌ Gagal upload: " + err.message;
-        } finally {
-          loader.style.display = "none";
-          uploadBtn.disabled = false;
+        if (data.success) {
+          statusBox.className = "success";
+          statusBox.innerHTML = `✅ Bukti berhasil diunggah:<br><a href="${data.data.url}" target="_blank">${data.data.url}</a>`;
           fileInput.value = "";
+        } else {
+          statusBox.className = "error";
+          statusBox.innerHTML = "❌ Upload gagal. Silakan coba lagi.";
         }
-      };
 
-      reader.readAsDataURL(file);
+      } catch (err) {
+        statusBox.className = "error";
+        statusBox.innerHTML = "❌ Gagal terhubung ke server: " + err.message;
+      }
     }
   </script>
+
 </body>
 </html>
