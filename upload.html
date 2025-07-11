@@ -5,120 +5,60 @@
   <title>Upload Bukti Pembayaran</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
-    #status, #infoBayar { margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #3498db; }
-    .copy-btn { background: #3498db; color: #fff; border: none; cursor: pointer; }
+    #status { margin-top: 10px; background: #f0f8ff; padding: 10px; border-left: 4px solid #3498db; }
   </style>
 </head>
 <body>
   <h2>Upload Bukti Pembayaran</h2>
 
-  <div id="infoBayar">Memuat info pembayaran...</div>
-
+  <input type="text" id="idPesanan" placeholder="Masukkan ID Pesanan" />
   <input type="file" id="fileInput" accept="image/*" />
-  <button onclick="upload()">📤 Upload & Kirim ke WhatsApp</button>
-  <div id="status">Silakan pilih gambar dan klik tombol upload.</div>
+  <button onclick="upload()">Upload & Kirim Notif</button>
+  <div id="status">Silakan upload bukti pembayaran Anda.</div>
 
   <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const ngirimwaAppkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-    const ngirimwaAuthkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-    const waTujuan = "6281803004607";
-
-    const metode = {
-      dana: { nama: "Dana", no: "087755432880", warna: "#00a8e8" },
-      shopeepay: { nama: "ShopeePay", no: "081803004607", warna: "#ee4d2d" }
-    };
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const via = urlParams.get('via');
-    const harga = urlParams.get('harga') || '0';
-    const bayar = metode[via];
-
-    if (bayar) {
-      document.getElementById("infoBayar").innerHTML = `
-        <div style="background:${bayar.warna};color:#fff;padding:10px;border-radius:10px;">
-          🟣 <b>PAYMENT</b> (${bayar.nama})<br>
-          Nomor: <b id="nomorTujuan">${bayar.no}</b><br>
-          Total Bayar: <b>Rp${harga}</b><br>
-          <button class="copy-btn" onclick="salinNo()">📋 Salin Nomor</button><br><br>
-          Cara Bayar: Silakan transfer ke nomor di atas, lalu upload bukti pembayaran Anda.
-        </div>
-      `;
-    } else {
-      document.getElementById("infoBayar").innerText = "❌ Metode pembayaran tidak valid.";
-    }
-
-    function salinNo() {
-      const no = document.getElementById("nomorTujuan").innerText;
-      navigator.clipboard.writeText(no).then(() => alert("✅ Nomor disalin!"));
-    }
+    const nomorAdmin = "6281803004607";
 
     async function upload() {
+      const id = document.getElementById("idPesanan").value.trim();
       const file = document.getElementById("fileInput").files[0];
       const status = document.getElementById("status");
-      if (!file) return alert("❗ Pilih gambar dulu.");
-      status.innerText = "⏳ Upload ke ImgBB...";
 
+      if (!id || !file) return alert("Lengkapi ID & Gambar!");
+
+      status.innerText = "⏳ Uploading...";
       const base64 = await toBase64(file);
-      try {
-        const formData = new FormData();
-        formData.append("key", imgbbApiKey);
-        formData.append("image", base64.split(",")[1]);
 
-        const imgbbRes = await fetch("https://api.imgbb.com/1/upload", {
-          method: "POST",
-          body: formData
-        });
+      const formData = new FormData();
+      formData.append("key", imgbbApiKey);
+      formData.append("image", base64.split(",")[1]);
 
-        const imgbbJson = await imgbbRes.json();
-        if (!imgbbJson.success) throw new Error("Upload ke ImgBB gagal");
+      const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!json.success) return alert("Gagal upload ke ImgBB!");
 
-        const imageUrl = imgbbJson.data.url;
-        status.innerText = "✅ Upload berhasil. Mengirim ke WhatsApp...";
+      const imageUrl = json.data.url;
 
-        // Simpan ke Firebase
-        await db.ref("galeri_bukti").push({ url: imageUrl });
+      await db.ref("pesanan/" + id).update({
+        buktiBayar: imageUrl,
+        status: "Sudah Bayar"
+      });
 
-        // Kirim WA
-        const formWA = new FormData();
-        formWA.append("appkey", ngirimwaAppkey);
-        formWA.append("authkey", ngirimwaAuthkey);
-        formWA.append("to", waTujuan);
-        formWA.append("message", `📥 Bukti pembayaran diterima\nMetode: ${bayar.nama}\nNomor: ${bayar.no}\nTotal: Rp${harga}\nLink Gambar:\n${imageUrl}`);
-        formWA.append("image", imageUrl);
+      await fetch("https://ngirimwa.vercel.app/api/send-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nomor: nomorAdmin,
+          pesan: `📥 Pesanan *${id}* telah upload bukti dan menunggu verifikasi.\nCek sekarang di dashboard admin.`
+        })
+      });
 
-        const waRes = await fetch("https://app.ngirimwa.com/api/create-message", {
-          method: "POST",
-          body: formWA
-        });
-
-        const waJson = await waRes.json();
-
-        if (waJson.success) {
-          status.innerHTML = `✅ Sukses!<br><a href="${imageUrl}" target="_blank">Lihat Bukti Bayar</a>`;
-        } else {
-          throw new Error("Gagal kirim WA");
-        }
-      } catch (err) {
-        console.error(err);
-        status.innerText = "❌ Gagal: " + err.message;
-      }
+      status.innerHTML = `✅ Bukti terkirim!<br><a href="${imageUrl}" target="_blank">Lihat Gambar</a>`;
     }
 
     function toBase64(file) {
