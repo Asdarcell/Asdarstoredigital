@@ -246,11 +246,15 @@ async function uploadBukti() {
   const pesanan = allDataPesanan[selectedId];
   if (!pesanan) return alert("❗ Pesanan tidak ditemukan!");
 
-  // Ambil nomor WA aktif dari pesanan
+  // Ambil nomor WA aktif dari Firebase
   const snapshot = await db.ref("pesanan/" + selectedId).once("value");
-const data = snapshot.val();
-const nomorWA = data.wa_aktif || ""; // ambil wa_aktif dengan benar
-if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
+  const data = snapshot.val();
+
+  let nomorWA = data.wa_aktif || "";
+  if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
+  if (nomorWA.startsWith("0")) {
+    nomorWA = "62" + nomorWA.slice(1); // ubah 08... jadi 628...
+  }
 
   // Upload gambar ke imgbb
   const formData = new FormData();
@@ -265,13 +269,22 @@ if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
     if (!json.success) throw new Error("Upload gagal");
 
     const imageUrl = json.data.url;
-    await db.ref('pesanan/' + selectedId).update({ buktiAdmin: imageUrl, status: "Selesai" });
 
-    // Kirim WA ke nomor WA aktif dengan link gambar bukti
-    const pesan = `✅ Pesanan ${selectedId} sudah selesai.\nBukti pembayaran:\n${imageUrl}`;
-    await kirimNotifWAkeUser(nomorWA, pesan);
+    // Simpan URL dan update status ke Firebase
+    await db.ref('pesanan/' + selectedId).update({
+      buktiAdmin: imageUrl,
+      status: "Selesai"
+    });
 
-    alert("✅ Bukti berhasil dikirim dan status diupdate.");
+    // Kirim WA ke pembeli
+    const pesanUser = `✅ Pesanan ${selectedId} sudah selesai.\nBerikut bukti pembayaran:\n${imageUrl}`;
+    await kirimNotifWAkeUser(nomorWA, pesanUser);
+
+    // Kirim WA ke admin
+    const pesanAdmin = `📦 Admin telah upload bukti untuk ID ${selectedId}`;
+    await kirimNotifWA("6281803004607", pesanAdmin); // Ubah ke nomor admin jika perlu
+
+    alert("✅ Bukti berhasil dikirim ke pembeli dan status diupdate.");
     selectedId = null;
     fileInput.value = "";
     tampilkanPesanan();
@@ -280,41 +293,35 @@ if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
   }
 }
 
-// Kirim notif WA ke admin
-// Kirim notifikasi WA ke admin
-function kirimNotifWA(pesan) {
+// Kirim WA ke admin
+function kirimNotifWA(nomor, pesan) {
   fetch("https://api.ngirimwa.com/sendText", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" }, // Tambahkan header ini
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      appkey: notifAPI.appkey,
-      authkey: notifAPI.authkey,
-      to: notifAPI.nomorAdmin,
+      appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+      authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
+      to: nomor,
       message: pesan
     }).toString()
-  }).then(res => {
-    if (!res.ok) console.error("Gagal kirim WA ke admin:", res.statusText);
-  }).catch(err => {
-    console.error("Error kirim WA ke admin:", err);
   });
 }
 
-// Kirim WA ke user/pembeli via API (ngirimwa)
+// Kirim WA ke pembeli
 async function kirimNotifWAkeUser(nomor, pesan) {
   try {
-    const res = await fetch("https://api.ngirimwa.com/sendText", {
+    await fetch("https://api.ngirimwa.com/sendText", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" }, // Tambahkan header ini
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        appkey: notifAPI.appkey,
-        authkey: notifAPI.authkey,
+        appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+        authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
         to: nomor,
         message: pesan
       }).toString()
     });
-    if (!res.ok) console.error("Gagal kirim WA ke user:", res.statusText);
   } catch (err) {
-    console.error("Error kirim WA ke user:", err);
+    console.error("❌ Gagal kirim WA ke user:", err);
   }
 }
 
