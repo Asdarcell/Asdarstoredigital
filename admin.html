@@ -18,89 +18,6 @@
 <div class="container"> 
  <h1>Dashboard Admin - Asdar Store</h1>
 
-  <!-- Pilih halaman dinamis -->
-  <div class="mb-3">
-    <label for="halamanDinamis" class="form-label"><b>Pilih Halaman untuk Edit Konten Dinamis:</b></label>
-    <select id="halamanDinamis" class="form-select w-auto">
-      <option value="index">index.html</option>
-      <option value="admin">admin.html</option>
-      <option value="status">status.html</option>
-      <option value="upload">upload.html</option>
-    </select>
-  </div>
-
- <!-- Ace Editor CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
-
-<script>
-  const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/monokai" });
-  const editorCSS  = ace.edit("editorCSS",  { mode: "ace/mode/css",  theme: "ace/theme/monokai" });
-  const editorJS   = ace.edit("editorJS",   { mode: "ace/mode/javascript", theme: "ace/theme/monokai" });
-
-  document.getElementById("formFiturDinamis").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const halaman = document.getElementById("halamanFitur").value.trim();
-    const html = editorHTML.getValue();
-    const css = editorCSS.getValue();
-    const js = editorJS.getValue();
-
-    if (!halaman) return alert("⚠️ Nama halaman kosong!");
-
-    firebase.database().ref("fiturDinamis/" + halaman).set({ html, css, js })
-      .then(() => {
-        alert("✅ Fitur disimpan!");
-        tampilkanPreview(html, css, js);
-      });
-  });
-
-  function tampilkanPreview(html, css, js) {
-    const output = document.getElementById("previewDinamis");
-    output.innerHTML = html;
-
-    const styleTag = document.createElement("style");
-    styleTag.innerHTML = css;
-    output.appendChild(styleTag);
-
-    const scriptTag = document.createElement("script");
-    scriptTag.innerHTML = js;
-    output.appendChild(scriptTag);
-  }
-
-  function hapusFiturDinamis() {
-    const halaman = document.getElementById("halamanFitur").value.trim();
-    if (!halaman) return alert("❗ Masukkan nama halaman!");
-
-    if (confirm("Yakin hapus fitur dinamis ini?")) {
-      firebase.database().ref("fiturDinamis/" + halaman).remove()
-        .then(() => {
-          alert("✅ Fitur dihapus.");
-          editorHTML.setValue(""); editorCSS.setValue(""); editorJS.setValue("");
-          document.getElementById("previewDinamis").innerHTML = "";
-        });
-    }
-  }
-</script>
-
-<script>
-  const currentHalaman = location.pathname.split("/").pop(); // contoh: index.html
-  firebase.database().ref("fiturDinamis/" + currentHalaman).once("value").then(snap => {
-    const fitur = snap.val();
-    if (!fitur) return;
-
-    if (fitur.html) document.body.insertAdjacentHTML("beforeend", fitur.html);
-    if (fitur.css) {
-      const styleTag = document.createElement("style");
-      styleTag.innerHTML = fitur.css;
-      document.head.appendChild(styleTag);
-    }
-    if (fitur.js) {
-      const scriptTag = document.createElement("script");
-      scriptTag.innerHTML = fitur.js;
-      document.body.appendChild(scriptTag);
-    }
-  });
-</script>
-
   <!-- Filter & Pencarian Pesanan -->
   <div class="row mb-3">
     <div class="col-md-3">
@@ -234,37 +151,6 @@ const notifAPI = {
 let selectedId = null;
 let allDataPesanan = {};
 let allDataDinamis = {};
-
-// ====== Fitur Dinamis ======
-const halamanSelect = document.getElementById('halamanDinamis');
-const editorHTML = document.getElementById('editorHTML');
-const editorCSS = document.getElementById('editorCSS');
-const editorJS = document.getElementById('editorJS');
-const simpanDinamisBtn = document.getElementById('simpanDinamisBtn');
-
-function loadDinamis() {
-  const halaman = halamanSelect.value;
-  db.ref(`dinamis/${halaman}`).once('value').then(snapshot => {
-    const konten = snapshot.val() || {html: "", css: "", js: ""};
-    editorHTML.value = konten.html;
-    editorCSS.value = konten.css;
-    editorJS.value = konten.js;
-  });
-}
-
-halamanSelect.addEventListener('change', loadDinamis);
-
-simpanDinamisBtn.addEventListener('click', () => {
-  const halaman = halamanSelect.value;
-  const data = {
-    html: editorHTML.value,
-    css: editorCSS.value,
-    js: editorJS.value
-  };
-  db.ref(`dinamis/${halaman}`).set(data)
-    .then(() => alert(`✅ Konten dinamis ${halaman} berhasil disimpan.`))
-    .catch(err => alert(`❌ Gagal simpan konten: ${err.message}`));
-});
 
 // ====== Tampilkan Pesanan ======
 function tampilkanPesanan() {
@@ -522,72 +408,107 @@ tampilkanProduk();
 tampilkanGaleri();
 loadDinamis();
 
-// ====== Fungsi Load Konten Dinamis ======
-function loadDinamis() {
-  // Contoh load dinamis produk (bisa dikembangkan sesuai kebutuhan)
-  db.ref('dinamis/admin').once('value').then(snapshot => {
-    const data = snapshot.val();
-    if (!data) return;
+  <!-- Firebase CDN (jika belum ada) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-    if (data.html) {
-      // Contoh render ke elemen tertentu, misal ke div #dinamisAdminHTML (textarea)
-      const elHtml = document.getElementById('dinamisAdminHTML');
-      if (elHtml) elHtml.value = data.html;
-    }
-    if (data.css) {
-      const elCss = document.getElementById('dinamisAdminCSS');
-      if (elCss) elCss.value = data.css;
-    }
-    if (data.js) {
-      const elJs = document.getElementById('dinamisAdminJS');
-      if (elJs) elJs.value = data.js;
-    }
+<!-- Ace Editor CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+
+  <h4>🧩 Editor Fitur Dinamis</h4>
+<form id="formFiturDinamis" class="mb-4">
+  <input class="form-control mb-2" id="halamanFitur" placeholder="Contoh: index.html" required />
+
+  <label>HTML</label>
+  <div id="editorHTML" style="height: 150px; width: 100%;" class="mb-2"></div>
+
+  <label>CSS</label>
+  <div id="editorCSS" style="height: 100px; width: 100%;" class="mb-2"></div>
+
+  <label>JS</label>
+  <div id="editorJS" style="height: 100px; width: 100%;" class="mb-2"></div>
+
+  <button type="submit" class="btn btn-success">💾 Simpan Fitur</button>
+  <button type="button" class="btn btn-danger" onclick="hapusFiturDinamis()">🗑️ Hapus</button>
+</form>
+
+<h5>📺 Preview Langsung</h5>
+<div id="previewDinamis" class="border p-3 bg-light rounded"></div>
+
+  <script>
+  const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/github" });
+  const editorCSS = ace.edit("editorCSS", { mode: "ace/mode/css", theme: "ace/theme/github" });
+  const editorJS = ace.edit("editorJS", { mode: "ace/mode/javascript", theme: "ace/theme/github" });
+
+  const preview = document.getElementById("previewDinamis");
+  const form = document.getElementById("formFiturDinamis");
+
+  // Simpan Fitur Dinamis
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const halaman = document.getElementById("halamanFitur").value;
+    const html = editorHTML.getValue();
+    const css = editorCSS.getValue();
+    const js = editorJS.getValue();
+
+    db.ref("fiturDinamis/" + halaman).set({ html, css, js }).then(() => {
+      alert("✅ Fitur berhasil disimpan.");
+      tampilkanPreview(html, css, js);
+    });
   });
-}
 
-// Pastikan juga fungsi render preview konten dinamis ada,
-// seperti pada kode yang saya kirim sebelumnya.
+  // Tampilkan Preview Langsung
+  function tampilkanPreview(html, css, js) {
+    preview.innerHTML = `
+      <style>${css}</style>
+      ${html}
+      <script>${js}<\/script>
+    `;
+  }
 
-// Jika kamu belum menambahkan preview dinamis,
-// bisa menggunakan fungsi seperti ini:
-
-function renderDinamisPreview() {
-  db.ref('dinamis/admin').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const preview = document.getElementById('previewDinamisAdmin');
-    if (!preview) return;
-
-    if (!data.html && !data.css && !data.js) {
-      preview.innerHTML = "<i>Tidak ada konten dinamis.</i>";
-      return;
+  // Hapus Fitur Dinamis
+  function hapusFiturDinamis() {
+    const halaman = document.getElementById("halamanFitur").value;
+    if (confirm("Yakin ingin hapus fitur ini?")) {
+      db.ref("fiturDinamis/" + halaman).remove().then(() => {
+        alert("✅ Fitur dihapus.");
+        editorHTML.setValue("");
+        editorCSS.setValue("");
+        editorJS.setValue("");
+        preview.innerHTML = "";
+      });
     }
+  }
 
-    const styleTag = `<style>${data.css || ''}</style>`;
-    const htmlContent = data.html || '';
+  // Load data dari Firebase (jika ada)
+  window.addEventListener("DOMContentLoaded", () => {
+    const halaman = window.location.pathname.split("/").pop();
+    db.ref("fiturDinamis/" + halaman).once("value").then(snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        if (document.getElementById("halamanFitur")) {
+          document.getElementById("halamanFitur").value = halaman;
+          editorHTML.setValue(data.html, -1);
+          editorCSS.setValue(data.css, -1);
+          editorJS.setValue(data.js, -1);
+          tampilkanPreview(data.html, data.css, data.js);
+        } else {
+          // Kalau di luar admin.html, tampilkan langsung ke halaman
+          const style = document.createElement("style");
+          style.innerHTML = data.css;
+          document.head.appendChild(style);
 
-    // Gunakan iframe untuk isolasi script
-    const iframe = document.createElement('iframe');
-    iframe.style.width = '100%';
-    iframe.style.height = '300px';
-    preview.innerHTML = '';
-    preview.appendChild(iframe);
+          const div = document.createElement("div");
+          div.innerHTML = data.html;
+          document.body.appendChild(div);
 
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html><head>${styleTag}</head>
-      <body>${htmlContent}
-      <script>${data.js || ''}<\/script>
-      </body></html>
-    `);
-    doc.close();
+          const script = document.createElement("script");
+          script.innerHTML = data.js;
+          document.body.appendChild(script);
+        }
+      }
+    });
   });
-}
-
-// Panggil preview setelah load dinamis selesai
-loadDinamis();
-renderDinamisPreview();
 </script>
 </body>
 </html>
