@@ -250,9 +250,8 @@ async function uploadBukti() {
   const snapshot = await db.ref("pesanan/" + selectedId).once("value");
   const data = snapshot.val();
 
-let nomorWA = data.wa_aktif || "";
-if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
-// Hapus blok ubah ke 62
+  let nomorWA = data.wa_aktif || "";
+  if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
 
   // Upload gambar ke imgbb
   const formData = new FormData();
@@ -261,7 +260,8 @@ if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
 
   try {
     const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-      method: "POST", body: formData
+      method: "POST",
+      body: formData
     });
     const json = await res.json();
     if (!json.success) throw new Error("Upload gagal");
@@ -274,21 +274,20 @@ if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
       status: "Selesai"
     });
 
-    // Kirim WA ke pembeli
-    if (nomor.startsWith("0")) {
-  nomorWA = "62" + nomorWA.slice(1): nomorWA;
-    }
+    // Kirim WA ke pembeli (nomor langsung dari Firebase, tidak diubah jadi 62)
     const pesanUser = `✅ Pesanan ${selectedId} sudah selesai.\nBerikut bukti pembayaran:\n${imageUrl}`;
     await kirimNotifWAkeUser(nomorWA, pesanUser);
-console.log("📨 Kirim ke user:", nomorWA, pesanUser);
+    console.log("📨 Kirim ke user:", nomorWA, pesanUser);
+
     // Kirim WA ke admin
     const pesanAdmin = `📦 Admin telah upload bukti untuk ID ${selectedId}`;
-    await kirimNotifWA("6281803004607", pesanAdmin); // Ubah ke nomor admin jika perlu
+    await kirimNotifWA("6281803004607", pesanAdmin);
 
     alert("✅ Bukti berhasil dikirim ke pembeli dan status diupdate.");
     selectedId = null;
     fileInput.value = "";
     tampilkanPesanan();
+
   } catch (err) {
     alert("❌ Upload Gagal: " + err.message);
   }
@@ -310,9 +309,6 @@ function kirimNotifWA(nomor, pesan) {
 
 // Kirim WA ke pembeli
 async function kirimNotifWAkeUser(nomor, pesan) {
-  // Salin ke variabel baru
-  let nomorFix = nomor.startsWith("0") ? "62" + nomor.slice(1) : nomor;
-
   try {
     const res = await fetch("https://api.ngirimwa.com/sendText", {
       method: "POST",
@@ -322,7 +318,7 @@ async function kirimNotifWAkeUser(nomor, pesan) {
       body: new URLSearchParams({
         appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
         authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-        to: nomorFix,
+        to: nomor,
         message: pesan
       }).toString()
     });
