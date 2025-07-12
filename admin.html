@@ -18,6 +18,33 @@
 <div class="container"> 
  <h1>Dashboard Admin - Asdar Store</h1>
 
+  <!-- Pilih halaman dinamis -->
+  <div class="mb-3">
+    <label for="halamanDinamis" class="form-label"><b>Pilih Halaman untuk Edit Konten Dinamis:</b></label>
+    <select id="halamanDinamis" class="form-select w-auto">
+      <option value="index">index.html</option>
+      <option value="admin">admin.html</option>
+      <option value="status">status.html</option>
+      <option value="upload">upload.html</option>
+    </select>
+  </div>
+
+  <!-- Editor HTML -->
+  <label for="editorHTML" class="form-label"><b>HTML</b></label>
+  <textarea id="editorHTML" rows="8" class="form-control mb-2"></textarea>
+
+  <!-- Editor CSS -->
+  <label for="editorCSS" class="form-label"><b>CSS</b></label>
+  <textarea id="editorCSS" rows="6" class="form-control mb-2"></textarea>
+
+  <!-- Editor JS -->
+  <label for="editorJS" class="form-label"><b>JavaScript</b></label>
+  <textarea id="editorJS" rows="8" class="form-control mb-4"></textarea>
+
+  <button id="simpanDinamisBtn" class="btn btn-primary mb-4">💾 Simpan Konten Dinamis</button>
+
+  <hr/>
+
   <!-- Filter & Pencarian Pesanan -->
   <div class="row mb-3">
     <div class="col-md-3">
@@ -77,21 +104,6 @@
   <!-- Galeri Bukti Bayar -->
   <h4>Galeri Bukti Transfer</h4>
   <div id="galeri" class="d-flex flex-wrap"></div>
-   
-  <!-- Fitur Dinamis -->
-  <h4>🧩 Editor Fitur Dinamis</h4>
-  <form id="formFiturDinamis" class="mb-4">
-    <input class="form-control mb-2" id="halamanFitur" placeholder="Contoh: index.html" required />
-    <label>HTML</label>
-    <div id="editorHTML" style="height: 150px;" class="mb-2"></div>
-    <label>CSS</label>
-    <div id="editorCSS" style="height: 100px;" class="mb-2"></div>
-    <label>JS</label>
-    <div id="editorJS" style="height: 100px;" class="mb-2"></div>
-    <button class="btn btn-success">💾 Simpan Fitur</button>
-    <button type="button" class="btn btn-danger" onclick="hapusFiturDinamis()">🗑️ Hapus</button>
-  </form>
-  <div id="previewDinamis" class="border p-3 bg-light rounded mb-5"></div>
 
   <hr/>
   <h3>Hapus Semua Data</h3>
@@ -146,31 +158,36 @@ let selectedId = null;
 let allDataPesanan = {};
 let allDataDinamis = {};
 
-// Editor Dinamis
-const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/github" });
-const editorCSS = ace.edit("editorCSS", { mode: "ace/mode/css", theme: "ace/theme/github" });
-const editorJS = ace.edit("editorJS", { mode: "ace/mode/javascript", theme: "ace/theme/github" });
-function tampilkanPreview(html, css, js) {
-  previewDinamis.innerHTML = `<style>${css}</style>${html}<script>${js}<\/script>`;
-}
-formFiturDinamis.addEventListener("submit", e => {
-  e.preventDefault();
-  const halaman = halamanFitur.value.trim();
-  const html = editorHTML.getValue(), css = editorCSS.getValue(), js = editorJS.getValue();
-  db.ref("fiturDinamis/" + halaman).set({ html, css, js }).then(() => {
-    alert("✅ Fitur disimpan");
-    tampilkanPreview(html, css, js);
+// ====== Fitur Dinamis ======
+const halamanSelect = document.getElementById('halamanDinamis');
+const editorHTML = document.getElementById('editorHTML');
+const editorCSS = document.getElementById('editorCSS');
+const editorJS = document.getElementById('editorJS');
+const simpanDinamisBtn = document.getElementById('simpanDinamisBtn');
+
+function loadDinamis() {
+  const halaman = halamanSelect.value;
+  db.ref(`dinamis/${halaman}`).once('value').then(snapshot => {
+    const konten = snapshot.val() || {html: "", css: "", js: ""};
+    editorHTML.value = konten.html;
+    editorCSS.value = konten.css;
+    editorJS.value = konten.js;
   });
-});
-function hapusFiturDinamis() {
-  const halaman = halamanFitur.value.trim();
-  if (confirm("Hapus fitur ini?")) {
-    db.ref("fiturDinamis/" + halaman).remove().then(() => {
-      editorHTML.setValue(""); editorCSS.setValue(""); editorJS.setValue("");
-      previewDinamis.innerHTML = "";
-    });
-  }
 }
+
+halamanSelect.addEventListener('change', loadDinamis);
+
+simpanDinamisBtn.addEventListener('click', () => {
+  const halaman = halamanSelect.value;
+  const data = {
+    html: editorHTML.value,
+    css: editorCSS.value,
+    js: editorJS.value
+  };
+  db.ref(`dinamis/${halaman}`).set(data)
+    .then(() => alert(`✅ Konten dinamis ${halaman} berhasil disimpan.`))
+    .catch(err => alert(`❌ Gagal simpan konten: ${err.message}`));
+});
 
 // ====== Tampilkan Pesanan ======
 function tampilkanPesanan() {
@@ -214,7 +231,7 @@ function setSelected(id) {
 
 function verifikasi(id) {
   db.ref('pesanan/' + id).update({ status: "Diproses" }).then(() => {
-    kirimNotifWA(notifAPI.nomorAdmin, `✅ Pesanan ${id} sedang diproses.`);
+    kirimNotifWA(`✅ Pesanan ${id} sedang diproses.`);
     tampilkanPesanan();
   });
 }
@@ -282,7 +299,7 @@ function exportCSV() {
   let csv = "ID,Nama,Nomor WA Aktif,Nomor HP,Kategori,Produk,Status,Waktu\n";
   for (let id in allDataPesanan) {
     const p = allDataPesanan[id];
-    csv += `"${id}","${p.nama}","${p.wa_aktif || ''}",...`;
+    csv += `"${id}","${p.nama}","${p.nomorWAaktif || ''}","${p.nomor || ''}","${p.kategori}","${p.produk}","${p.status}","${p.waktu || ''}"\n`;
   }
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -430,15 +447,24 @@ loadDinamis();
 
 // ====== Fungsi Load Konten Dinamis ======
 function loadDinamis() {
-  const halaman = document.getElementById('halamanFitur').value.trim();
-  if (!halaman) return;
+  // Contoh load dinamis produk (bisa dikembangkan sesuai kebutuhan)
+  db.ref('dinamis/admin').once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
 
-  db.ref('fiturDinamis/' + halaman).once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    editorHTML.setValue(data.html || "", -1);
-    editorCSS.setValue(data.css || "", -1);
-    editorJS.setValue(data.js || "", -1);
-    tampilkanPreview(data.html || "", data.css || "", data.js || "");
+    if (data.html) {
+      // Contoh render ke elemen tertentu, misal ke div #dinamisAdminHTML (textarea)
+      const elHtml = document.getElementById('dinamisAdminHTML');
+      if (elHtml) elHtml.value = data.html;
+    }
+    if (data.css) {
+      const elCss = document.getElementById('dinamisAdminCSS');
+      if (elCss) elCss.value = data.css;
+    }
+    if (data.js) {
+      const elJs = document.getElementById('dinamisAdminJS');
+      if (elJs) elJs.value = data.js;
+    }
   });
 }
 
@@ -451,7 +477,7 @@ function loadDinamis() {
 function renderDinamisPreview() {
   db.ref('dinamis/admin').once('value').then(snapshot => {
     const data = snapshot.val() || {};
-    const preview = document.getElementById('previewDinamis');
+    const preview = document.getElementById('previewDinamisAdmin');
     if (!preview) return;
 
     if (!data.html && !data.css && !data.js) {
