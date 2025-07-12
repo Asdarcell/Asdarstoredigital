@@ -12,7 +12,6 @@
     img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
     #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
     textarea { font-family: monospace; }
-    #previewDinamisAdmin { border: 1px solid #ccc; padding: 10px; background: white; height: 320px; overflow: auto; }
   </style>
 </head>
 <body>
@@ -43,10 +42,6 @@
   <textarea id="editorJS" rows="8" class="form-control mb-4"></textarea>
 
   <button id="simpanDinamisBtn" class="btn btn-primary mb-4">💾 Simpan Konten Dinamis</button>
-
-  <!-- Preview Konten Dinamis -->
-  <h3>Preview Konten Dinamis <small>(halaman: <span id="previewHalaman"></span>)</small></h3>
-  <div id="previewDinamisAdmin"></div>
 
   <hr/>
 
@@ -92,7 +87,7 @@
       <input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required />
     </div>
     <div class="col-md-2">
-      <input type="text" id="harga" class="form-control" placeholder="Harga (contoh Rp 30.000)" required />
+      <input type="text" id="harga" class="form-control" placeholder="Harga (contoh 30000)" required />
     </div>
     <div class="col-md-4">
       <input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required />
@@ -141,6 +136,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
 
+// API Notifikasi WA NgirimWA (gunakan API key kamu sendiri)
 function kirimNotifWA(nomor, pesan) {
   fetch("https://api.ngirimwa.com/sendText", {
     method: "POST",
@@ -154,15 +150,8 @@ function kirimNotifWA(nomor, pesan) {
   });
 }
 
-const notifAPI = {
-  appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-  authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-  nomorAdmin: "6281803004607"
-};
-
 let selectedId = null;
 let allDataPesanan = {};
-let allDataDinamis = {};
 
 // ====== Fitur Dinamis ======
 const halamanSelect = document.getElementById('halamanDinamis');
@@ -178,14 +167,10 @@ function loadDinamis() {
     editorHTML.value = konten.html;
     editorCSS.value = konten.css;
     editorJS.value = konten.js;
-    renderDinamisPreview();
-    updatePreviewHalaman();
   });
 }
 
-halamanSelect.addEventListener('change', () => {
-  loadDinamis();
-});
+halamanSelect.addEventListener('change', loadDinamis);
 
 simpanDinamisBtn.addEventListener('click', () => {
   const halaman = halamanSelect.value;
@@ -195,54 +180,9 @@ simpanDinamisBtn.addEventListener('click', () => {
     js: editorJS.value
   };
   db.ref(`dinamis/${halaman}`).set(data)
-    .then(() => {
-      alert(`✅ Konten dinamis ${halaman} berhasil disimpan.`);
-      renderDinamisPreview();
-    })
+    .then(() => alert(`✅ Konten dinamis ${halaman} berhasil disimpan.`))
     .catch(err => alert(`❌ Gagal simpan konten: ${err.message}`));
 });
-
-function renderDinamisPreview() {
-  db.ref(`dinamis/${halamanSelect.value}`).once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const preview = document.getElementById('previewDinamisAdmin');
-    if (!preview) return;
-
-    if (!data.html && !data.css && !data.js) {
-      preview.innerHTML = "<i>Tidak ada konten dinamis.</i>";
-      return;
-    }
-
-    const styleTag = `<style>${data.css || ''}</style>`;
-    const htmlContent = data.html || '';
-
-    // Gunakan iframe untuk isolasi script
-    const iframe = document.createElement('iframe');
-    iframe.style.width = '100%';
-    iframe.style.height = '300px';
-    preview.innerHTML = '';
-    preview.appendChild(iframe);
-
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html><head>${styleTag}</head>
-      <body>${htmlContent}
-      <script>${data.js || ''}<\/script>
-      </body></html>
-    `);
-    doc.close();
-  });
-}
-
-function updatePreviewHalaman() {
-  const halaman = halamanSelect.value;
-  const span = document.getElementById('previewHalaman');
-  if (span) span.textContent = halaman + '.html';
-}
-
-updatePreviewHalaman();
 
 // ====== Tampilkan Pesanan ======
 function tampilkanPesanan() {
@@ -286,13 +226,13 @@ function setSelected(id) {
 
 function verifikasi(id) {
   db.ref('pesanan/' + id).update({ status: "Diproses" }).then(() => {
-    kirimNotifWA(notifAPI.nomorAdmin, `✅ Pesanan ${id} sedang diproses.`);
+    kirimNotifWA("6281803004607", `✅ Pesanan ${id} sedang diproses.`);
     tampilkanPesanan();
   });
 }
 
 function hapusPesanan(id) {
-  if (confirm(`Hapus pesanan dengan ID: ${id}?`)) {
+  if (confirm(`Hapus pesanan ID ${id}?`)) {
     db.ref('pesanan/' + id).remove().then(() => {
       alert("✅ Pesanan dihapus.");
       tampilkanPesanan();
@@ -349,13 +289,12 @@ async function uploadBukti() {
 
     // Kirim notifikasi ke admin via API NgirimWA
     const pesanAdmin = `📦 Admin telah upload bukti untuk pesanan ID: ${selectedId}`;
-    await kirimNotifWA(notifAPI.nomorAdmin, pesanAdmin);
+    await kirimNotifWA("6281803004607", pesanAdmin);
 
     alert("✅ Bukti berhasil dikirim ke pembeli dan status diupdate.");
     selectedId = null;
     fileInput.value = "";
     tampilkanPesanan();
-    tampilkanGaleri();
   } catch (err) {
     alert("❌ Upload Gagal: " + err.message);
   }
@@ -377,112 +316,82 @@ function exportCSV() {
   a.click();
   a.remove();
 }
-  
+
 function formatRupiah(angka) {
   return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
-  
+
 // ====== Produk ======
 function tampilkanProduk() {
   db.ref('produk').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
+    const produk = snapshot.val() || {};
     const list = document.getElementById('daftarProduk');
-    list.innerHTML = '';
-    for (let key in data) {
-      const p = data[key];
-      const item = document.createElement('li');
-      item.className = 'list-group-item d-flex justify-content-between align-items-center';
-      item.innerHTML = `
-        <div>
-          <b>${p.kategori}</b> - ${p.varian} - Rp ${p.harga} <br/>
-          <small>${p.cara}</small>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-warning me-2" onclick="editProduk('${key}')">✏️ Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="hapusProduk('${key}')">🗑️ Hapus</button>
-        </div>
-      `;
-      list.appendChild(item);
+    list.innerHTML = "";
+    for (const kategori in produk) {
+      for (const varian in produk[kategori]) {
+        const p = produk[kategori][varian];
+        const li = document.createElement('li');
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `
+          <div>
+            <b>${kategori} > ${varian}</b><br/>
+           Harga: Rp${formatRupiah(p.harga)}<br/>
+            ${p.cara}
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kategori}','${varian}')">🗑️ Hapus</button>`;
+        list.appendChild(li);
+      }
     }
   });
 }
 
+function hapusProduk(kategori, varian) {
+  if (confirm(`Hapus produk ${varian} dari kategori ${kategori}?`)) {
+    db.ref(`produk/${kategori}/${varian}`).remove().then(() => {
+      alert("✅ Produk dihapus.");
+      tampilkanProduk();
+    });
+  }
+}
+
 document.getElementById('formProduk').addEventListener('submit', function(e) {
   e.preventDefault();
+
   const kategori = document.getElementById('kategori').value.trim();
   const varian = document.getElementById('varian').value.trim();
-  const harga = document.getElementById('harga').value.trim();
+  let harga = document.getElementById('harga').value;
+  harga = harga.replace(/\D/g, ""); // Hapus non-digit
+  harga = parseInt(harga);
   const cara = document.getElementById('cara').value.trim();
 
   if (!kategori || !varian || !harga || !cara) {
-    alert('❗ Semua kolom harus diisi!');
-    return;
+    return alert("❗ Semua field wajib diisi.");
   }
 
-  let produkData = {
-    kategori, varian, harga, cara
-  };
-
-  if (selectedId && selectedId.startsWith('produk_')) {
-    // Edit produk existing
-    db.ref('produk/' + selectedId).set(produkData).then(() => {
-      alert('✅ Produk berhasil diedit.');
-      resetFormProduk();
-      tampilkanProduk();
-    });
-  } else {
-    // Tambah produk baru
-    const newKey = 'produk_' + Date.now();
-    db.ref('produk/' + newKey).set(produkData).then(() => {
-      alert('✅ Produk berhasil ditambahkan.');
-      resetFormProduk();
-      tampilkanProduk();
-    });
-  }
+  db.ref(`produk/${kategori}/${varian}`).set({
+    harga: harga,
+    cara: cara
+  }).then(() => {
+    alert("✅ Produk berhasil disimpan.");
+    document.getElementById('formProduk').reset();
+    tampilkanProduk();
+  }).catch(err => alert("❌ Gagal simpan produk: " + err.message));
 });
-
-function editProduk(key) {
-  db.ref('produk/' + key).once('value').then(snapshot => {
-    const p = snapshot.val();
-    if (!p) return alert('❌ Produk tidak ditemukan.');
-    selectedId = key;
-    document.getElementById('kategori').value = p.kategori;
-    document.getElementById('varian').value = p.varian;
-    document.getElementById('harga').value = p.harga;
-    document.getElementById('cara').value = p.cara;
-  });
-}
-
-function hapusProduk(key) {
-  if (confirm('Hapus produk ini?')) {
-    db.ref('produk/' + key).remove().then(() => {
-      alert('✅ Produk dihapus.');
-      if (selectedId === key) resetFormProduk();
-      tampilkanProduk();
-    });
-  }
-}
-
-function resetFormProduk() {
-  selectedId = null;
-  document.getElementById('kategori').value = '';
-  document.getElementById('varian').value = '';
-  document.getElementById('harga').value = '';
-  document.getElementById('cara').value = '';
-}
 
 // ====== Galeri Bukti Bayar ======
 function tampilkanGaleri() {
   db.ref('pesanan').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    const galeri = document.getElementById('galeri');
-    galeri.innerHTML = '';
-    for (let id in data) {
-      if (data[id].buktiBayar) {
+    const pesanan = snapshot.val() || {};
+    const galeriDiv = document.getElementById('galeri');
+    galeriDiv.innerHTML = "";
+    for (const id in pesanan) {
+      const p = pesanan[id];
+      if (p.buktiBayar) {
         const img = document.createElement('img');
-        img.src = data[id].buktiBayar;
-        img.title = `ID: ${id} | Status: ${data[id].status}`;
-        galeri.appendChild(img);
+        img.src = p.buktiBayar;
+        img.alt = `Bukti Bayar ID ${id}`;
+        img.title = `ID: ${id}\nNama: ${p.nama}`;
+        galeriDiv.appendChild(img);
       }
     }
   });
@@ -490,45 +399,49 @@ function tampilkanGaleri() {
 
 // ====== Hapus Semua Data ======
 function hapusSemuaPesanan() {
-  if (confirm('Yakin hapus SEMUA pesanan?')) {
+  if (confirm("Yakin ingin menghapus SEMUA data pesanan?")) {
     db.ref('pesanan').remove().then(() => {
-      alert('✅ Semua pesanan dihapus.');
+      alert("✅ Semua pesanan berhasil dihapus.");
       tampilkanPesanan();
       tampilkanGaleri();
     });
   }
 }
-
 function hapusSemuaProduk() {
-  if (confirm('Yakin hapus SEMUA produk?')) {
+  if (confirm("Yakin ingin menghapus SEMUA data produk?")) {
     db.ref('produk').remove().then(() => {
-      alert('✅ Semua produk dihapus.');
+      alert("✅ Semua produk berhasil dihapus.");
       tampilkanProduk();
     });
   }
 }
-
 function hapusSemuaGaleri() {
-  if (confirm('Yakin hapus SEMUA bukti bayar? (reset status dan hapus url bukti bayar di pesanan)')) {
+  if (confirm("Yakin ingin menghapus SEMUA bukti transfer?")) {
+    // Hapus hanya data buktiBayar di pesanan, tidak hapus pesanan
     db.ref('pesanan').once('value').then(snapshot => {
+      const pesanan = snapshot.val() || {};
       const updates = {};
-      snapshot.forEach(child => {
-        updates[child.key + '/buktiBayar'] = null;
+      for (const id in pesanan) {
+        if (pesanan[id].buktiBayar) {
+          updates[`${id}/buktiBayar`] = null;
+        }
+      }
+      db.ref('pesanan').update(updates).then(() => {
+        alert("✅ Semua bukti transfer dihapus.");
+        tampilkanPesanan();
+        tampilkanGaleri();
       });
-      return db.ref('pesanan').update(updates);
-    }).then(() => {
-      alert('✅ Semua bukti bayar direset.');
-      tampilkanGaleri();
-      tampilkanPesanan();
     });
   }
 }
-
 function hapusSemuaData() {
-  if (confirm('Yakin hapus SEMUA data (pesanan, produk, bukti bayar)?')) {
-    db.ref().remove().then(() => {
-      alert('🔥 SEMUA DATA DIHAPUS.');
-      resetFormProduk();
+  if (confirm("Yakin ingin menghapus SEMUA data (pesanan, produk, bukti)?")) {
+    Promise.all([
+      db.ref('pesanan').remove(),
+      db.ref('produk').remove(),
+      // Data bukti ada di pesanan, sudah dihapus
+    ]).then(() => {
+      alert("🔥 Semua data berhasil dihapus.");
       tampilkanPesanan();
       tampilkanProduk();
       tampilkanGaleri();
@@ -536,19 +449,18 @@ function hapusSemuaData() {
   }
 }
 
-// ====== Event Listeners ======
+// ====== Event Listener ======
 document.getElementById('filterStatus').addEventListener('change', tampilkanPesanan);
 document.getElementById('searchId').addEventListener('input', tampilkanPesanan);
 document.getElementById('exportCSVBtn').addEventListener('click', exportCSV);
 document.getElementById('refreshDataBtn').addEventListener('click', () => {
-  loadDinamis();
   tampilkanPesanan();
   tampilkanProduk();
   tampilkanGaleri();
 });
 document.getElementById('uploadBuktiBtn').addEventListener('click', uploadBukti);
 
-// Inisialisasi tampilan awal
+// Load data awal
 loadDinamis();
 tampilkanPesanan();
 tampilkanProduk();
