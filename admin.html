@@ -275,6 +275,9 @@ if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
     });
 
     // Kirim WA ke pembeli
+    if (nomor.startsWith("0")) {
+  nomor = "62" + nomor.slice(1);
+    }
     const pesanUser = `✅ Pesanan ${selectedId} sudah selesai.\nBerikut bukti pembayaran:\n${imageUrl}`;
     await kirimNotifWAkeUser(nomorWA, pesanUser);
 console.log("📨 Kirim ke user:", nomorWA, pesanUser);
@@ -307,12 +310,19 @@ function kirimNotifWA(nomor, pesan) {
 
 // Kirim WA ke pembeli
 async function kirimNotifWAkeUser(nomor, pesan) {
+  // Pastikan nomor diawali 62
+  if (nomor.startsWith("0")) {
+    nomor = "62" + nomor.slice(1);
+  }
+
   try {
     const res = await fetch("https://api.ngirimwa.com/sendText", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
       body: new URLSearchParams({
-        appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
+        appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a", // ganti sesuai kamu
         authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
         to: nomor,
         message: pesan
@@ -320,13 +330,13 @@ async function kirimNotifWAkeUser(nomor, pesan) {
     });
 
     const hasil = await res.json();
-    console.log("🔥 RESPON WA USER:", hasil);
+    console.log("🔥 Respon WA ke Buyer:", hasil);
 
     if (!hasil.success) {
-      alert("❌ Gagal kirim WA ke user: " + hasil.message);
+      alert("❌ Gagal kirim WA ke pembeli: " + hasil.message);
     }
   } catch (err) {
-    console.error("❌ Error kirim WA ke user:", err);
+    console.error("❌ Error kirim WA ke pembeli:", err);
   }
 }
 // ====== Export CSV Pesanan ======
