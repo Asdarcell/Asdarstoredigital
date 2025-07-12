@@ -250,11 +250,9 @@ async function uploadBukti() {
   const snapshot = await db.ref("pesanan/" + selectedId).once("value");
   const data = snapshot.val();
 
-  let nomorWA = data.wa_aktif || "";
-  if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
-  if (nomorWA.startsWith("0")) {
-    nomorWA = "62" + nomorWA.slice(1); // ubah 08... jadi 628...
-  }
+let nomorWA = data.wa_aktif || "";
+if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
+// Hapus blok ubah ke 62
 
   // Upload gambar ke imgbb
   const formData = new FormData();
@@ -279,7 +277,7 @@ async function uploadBukti() {
     // Kirim WA ke pembeli
     const pesanUser = `✅ Pesanan ${selectedId} sudah selesai.\nBerikut bukti pembayaran:\n${imageUrl}`;
     await kirimNotifWAkeUser(nomorWA, pesanUser);
-
+console.log("📨 Kirim ke user:", nomorWA, pesanUser);
     // Kirim WA ke admin
     const pesanAdmin = `📦 Admin telah upload bukti untuk ID ${selectedId}`;
     await kirimNotifWA("6281803004607", pesanAdmin); // Ubah ke nomor admin jika perlu
