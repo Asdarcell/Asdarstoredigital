@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard Admin - Asdar Store</title>
@@ -7,19 +8,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
   <style>
     body { padding: 20px; background-color: #f5f5f5; font-family: 'Poppins', sans-serif; }
-    h1 { margin-bottom: 20px; }
     .card { margin-bottom: 15px; }
-    img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
-    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; }
+    img { max-width: 120px; border-radius: 6px; }
     textarea { font-family: monospace; }
   </style>
 </head>
 <body>
-<div class="container"> 
-  <h1>Dashboard Admin - Asdar Store</h1>  <!-- Filter & Pencarian Pesanan -->  <div class="row mb-3">
+<div class="container">
+  <h1>Dashboard Admin - Asdar Store</h1>
+
+  <!-- Filter & Pencarian -->
+  <div class="row mb-3">
     <div class="col-md-3">
       <select id="filterStatus" class="form-select">
-        <option value="">Filter Semua Status</option>
+        <option value="">Filter Status</option>
         <option value="Belum Bayar">Belum Bayar</option>
         <option value="Sudah Bayar">Sudah Bayar</option>
         <option value="Diproses">Diproses</option>
@@ -27,104 +29,250 @@
       </select>
     </div>
     <div class="col-md-3">
-      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan" />
+      <input type="text" id="searchId" class="form-control" placeholder="Cari ID Pesanan">
     </div>
     <div class="col-md-3">
-      <button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button>
+      <button id="exportCSVBtn" class="btn btn-success w-100">Export CSV</button>
     </div>
     <div class="col-md-3">
-      <button class="btn btn-warning w-100" id="refreshDataBtn">Refresh Data</button>
+      <button id="refreshDataBtn" class="btn btn-warning w-100">Refresh</button>
     </div>
-  </div>  <!-- Daftar Pesanan -->  <div id="pesananList"></div>  <!-- Upload Bukti Admin -->  <h3>Upload Bukti Admin ke Pembeli</h3>
+  </div>
+
+  <!-- Daftar Pesanan -->
+  <div id="pesananList" class="mb-4"></div>
+
+  <!-- Upload Bukti -->
+  <h4>Upload Bukti Admin</h4>
   <input type="file" id="buktiAdmin" class="form-control mb-2" accept="image/*" />
-  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>  <!-- Form Produk -->  <h3>Tambah / Edit Produk</h3>
-  <form id="formProduk" class="row g-3 mb-4">
-    <div class="col-md-3">
-      <input type="text" id="kategori" class="form-control" placeholder="Kategori Produk" required />
-    </div>
-    <div class="col-md-3">
-      <input type="text" id="varian" class="form-control" placeholder="Varian / Nama Produk" required />
-    </div>
-    <div class="col-md-2">
-      <input type="text" id="harga" class="form-control" placeholder="Harga (contoh Rp 30.000)" required />
-    </div>
-    <div class="col-md-4">
-      <input type="text" id="cara" class="form-control" placeholder="Keterangan / Cara Beli" required />
-    </div>
-    <div class="col-12">
-      <button type="submit" class="btn btn-success">Simpan / Edit Produk</button>
-    </div>
-  </form>  <h4>Galeri Bukti Transfer</h4>
-  <div id="galeri" class="d-flex flex-wrap"></div>  <!-- Editor Fitur Dinamis -->  <hr>
+  <button id="uploadBuktiBtn" class="btn btn-primary mb-4">Kirim Bukti & Selesaikan</button>
+
+  <!-- Tambah Produk -->
+  <h4>Tambah / Edit Produk</h4>
+  <form id="formProduk" class="row g-2 mb-3">
+    <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
+    <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Varian / Produk" required /></div>
+    <div class="col-md-2"><input type="text" id="harga" class="form-control" placeholder="Harga (ex: 30000)" required /></div>
+    <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Deskripsi / Cara" required /></div>
+    <div class="col-12"><button class="btn btn-success">Simpan Produk</button></div>
+  </form>
+  <ul id="daftarProduk" class="list-group mb-4"></ul>
+
+  <!-- Galeri Bukti Transfer -->
+  <h4>Galeri Bukti Transfer</h4>
+  <div id="galeri" class="d-flex flex-wrap mb-4"></div>
+
+  <!-- Fitur Dinamis -->
   <h4>🧩 Editor Fitur Dinamis</h4>
   <form id="formFiturDinamis" class="mb-4">
-    <input class="form-control mb-2" id="halamanFitur" placeholder="Contoh: index.html" required /><label>HTML</label>
-<div id="editorHTML" style="height: 150px; width: 100%;" class="mb-2"></div>
+    <input class="form-control mb-2" id="halamanFitur" placeholder="Contoh: index.html" required />
+    <label>HTML</label>
+    <div id="editorHTML" style="height: 150px;" class="mb-2"></div>
+    <label>CSS</label>
+    <div id="editorCSS" style="height: 100px;" class="mb-2"></div>
+    <label>JS</label>
+    <div id="editorJS" style="height: 100px;" class="mb-2"></div>
+    <button class="btn btn-success">💾 Simpan Fitur</button>
+    <button type="button" class="btn btn-danger" onclick="hapusFiturDinamis()">🗑️ Hapus</button>
+  </form>
+  <div id="previewDinamis" class="border p-3 bg-light rounded mb-5"></div>
 
-<label>CSS</label>
-<div id="editorCSS" style="height: 100px; width: 100%;" class="mb-2"></div>
+  <!-- Hapus Semua -->
+  <h4>🔥 Hapus Semua Data</h4>
+  <button class="btn btn-danger mb-2" onclick="hapusSemuaProduk()">🗑️ Semua Produk</button>
+  <button class="btn btn-danger mb-2" onclick="hapusSemuaPesanan()">🗑️ Semua Pesanan</button>
+  <button class="btn btn-danger mb-2" onclick="hapusSemuaGaleri()">🗑️ Bukti Transfer</button>
+</div>
 
-<label>JS</label>
-<div id="editorJS" style="height: 100px; width: 100%;" class="mb-2"></div>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-<button type="submit" class="btn btn-success">💾 Simpan Fitur</button>
-<button type="button" class="btn btn-danger" onclick="hapusFiturDinamis()">🗑️ Hapus</button>
-
-  </form>  <h5>📺 Preview Langsung</h5>
-  <div id="previewDinamis" class="border p-3 bg-light rounded"></div>
-</div><!-- Firebase SDK --><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script><script>
+  <script>
 const firebaseConfig = {
   apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
   authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-  databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+  databaseURL: "https://asdarstoredigitalll-default-rtdb.firebaseio.com",
   projectId: "asdarstoredigitalll-d89c4",
-  storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+  storageBucket: "asdarstoredigitalll.appspot.com",
   messagingSenderId: "220670500351",
-  appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
-  measurementId: "G-CMRW37J19G"
+  appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
-const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/github" });
-const editorCSS = ace.edit("editorCSS", { mode: "ace/mode/css", theme: "ace/theme/github" });
-const editorJS = ace.edit("editorJS", { mode: "ace/mode/javascript", theme: "ace/theme/github" });
-
-const preview = document.getElementById("previewDinamis");
-const form = document.getElementById("formFiturDinamis");
-
-form.addEventListener("submit", function (e) {
+// Produk
+function tampilkanProduk() {
+  db.ref('produk').once('value').then(snapshot => {
+    const produk = snapshot.val() || {};
+    const list = document.getElementById('daftarProduk');
+    list.innerHTML = "";
+    for (const kategori in produk) {
+      for (const varian in produk[kategori]) {
+        const p = produk[kategori][varian];
+        const li = document.createElement('li');
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `<div><b>${kategori} > ${varian}</b><br/>Rp${p.harga.toLocaleString()}<br/>${p.cara}</div>
+          <button class="btn btn-sm btn-danger" onclick="hapusProduk('${kategori}','${varian}')">🗑️</button>`;
+        list.appendChild(li);
+      }
+    }
+  });
+}
+function hapusProduk(k, v) {
+  if (confirm("Yakin?")) db.ref(`produk/${k}/${v}`).remove().then(tampilkanProduk);
+}
+document.getElementById("formProduk").addEventListener("submit", e => {
   e.preventDefault();
-  const halaman = document.getElementById("halamanFitur").value;
-  const html = editorHTML.getValue();
-  const css = editorCSS.getValue();
-  const js = editorJS.getValue();
-
-  db.ref("fiturDinamis/" + halaman).set({ html, css, js }).then(() => {
-    alert("✅ Fitur berhasil disimpan.");
-    tampilkanPreview(html, css, js);
+  const kategori = kategori.value.trim(), varian = varian.value.trim();
+  const harga = parseInt(document.getElementById('harga').value.replace(/\D/g, ""));
+  const cara = cara.value.trim();
+  if (!kategori || !varian || !harga || !cara) return alert("Lengkapi data");
+  db.ref(`produk/${kategori}/${varian}`).set({ harga, cara }).then(() => {
+    alert("✅ Produk disimpan"); formProduk.reset(); tampilkanProduk();
   });
 });
 
+// Galeri
+function tampilkanGaleri() {
+  db.ref("pesanan").once("value").then(snap => {
+    const data = snap.val() || {};
+    galeri.innerHTML = "";
+    for (const id in data) {
+      const p = data[id];
+      if (p.buktiBayar) {
+        const img = document.createElement("img");
+        img.src = p.buktiBayar;
+        galeri.appendChild(img);
+      }
+    }
+  });
+}
+
+// Pesanan
+function tampilkanPesanan() {
+  db.ref("pesanan").once("value").then(snap => {
+    const data = snap.val() || {};
+    let html = "";
+    for (const id in data) {
+      const p = data[id];
+      if (filterStatus.value && p.status !== filterStatus.value) continue;
+      if (searchId.value && !id.includes(searchId.value)) continue;
+      html += `<div class="card p-2 mb-2"><b>ID:</b> ${id} | <b>Status:</b> ${p.status}<br/>
+        <b>Produk:</b> ${p.produk} - ${p.nomor || p.idsn}<br/>
+        <b>Total:</b> Rp${(p.harga || 0).toLocaleString()}<br/>
+        <b>WA:</b> <a href="https://wa.me/${p.nomor}" target="_blank">${p.nomor}</a><br/>
+        <b>Bukti:</b> ${p.buktiBayar ? `<a href="${p.buktiBayar}" target="_blank">Lihat</a>` : "❌"}<br/>
+        <button class="btn btn-success btn-sm" onclick="isiBukti('${id}')">✅ Selesaikan</button>
+        <button class="btn btn-danger btn-sm" onclick="hapusPesanan('${id}')">🗑️ Hapus</button></div>`;
+    }
+    pesananList.innerHTML = html || "Tidak ada pesanan.";
+  });
+}
+function hapusPesanan(id) {
+  if (confirm("Yakin hapus pesanan ini?")) db.ref(`pesanan/${id}`).remove().then(tampilkanPesanan);
+}
+function isiBukti(id) {
+  const file = document.getElementById("buktiAdmin").files[0];
+  if (!file) return alert("Pilih gambar dulu");
+  const ref = storage.ref("buktiAdmin/" + id + ".jpg");
+  ref.put(file).then(() => ref.getDownloadURL()).then(url => {
+    db.ref("pesanan/" + id).update({ buktiAdmin: url, status: "Selesai" });
+    kirimNotifWA(id, url);
+    alert("✅ Selesai & dikirim WA");
+    tampilkanPesanan();
+  });
+}
+function kirimNotifWA(id, url) {
+  db.ref("pesanan/" + id).once("value").then(snap => {
+    const p = snap.val();
+    const pesan = `Halo kak 👋 Pesanan Anda (${p.produk}) telah diproses. Berikut bukti transaksi:\n${url}`;
+    const nomor = p.nomor?.replace(/^0/, "62");
+    fetch(`https://api.ngirimwa.id/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ngirimwa_apikey_anda" },
+      body: JSON.stringify({ phone: nomor, message: pesan })
+    });
+  });
+}
+
+// Editor Dinamis
+const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/github" });
+const editorCSS = ace.edit("editorCSS", { mode: "ace/mode/css", theme: "ace/theme/github" });
+const editorJS = ace.edit("editorJS", { mode: "ace/mode/javascript", theme: "ace/theme/github" });
 function tampilkanPreview(html, css, js) {
-  preview.innerHTML = `<style>${css}</style>${html}<script>${js}<\/script>`;}
-
-function hapusFiturDinamis() { const halaman = document.getElementById("halamanFitur").value; if (confirm("Yakin ingin hapus fitur ini?")) { db.ref("fiturDinamis/" + halaman).remove().then(() => { alert("✅ Fitur dihapus."); editorHTML.setValue(""); editorCSS.setValue(""); editorJS.setValue(""); preview.innerHTML = ""; }); } }
-
-window.addEventListener("DOMContentLoaded", () => { const halaman = window.location.pathname.split("/").pop(); db.ref("fiturDinamis/" + halaman).once("value").then(snapshot => { const data = snapshot.val(); if (data) { if (document.getElementById("halamanFitur")) { document.getElementById("halamanFitur").value = halaman; editorHTML.setValue(data.html, -1); editorCSS.setValue(data.css, -1); editorJS.setValue(data.js, -1); tampilkanPreview(data.html, data.css, data.js); } else { const style = document.createElement("style"); style.innerHTML = data.css; document.head.appendChild(style);
-
-const div = document.createElement("div");
-    div.innerHTML = data.html;
-    document.body.appendChild(div);
-
-    const script = document.createElement("script");
-    script.innerHTML = data.js;
-    document.body.appendChild(script);
+  previewDinamis.innerHTML = `<style>${css}</style>${html}<script>${js}<\/script>`;
+}
+formFiturDinamis.addEventListener("submit", e => {
+  e.preventDefault();
+  const halaman = halamanFitur.value.trim();
+  const html = editorHTML.getValue(), css = editorCSS.getValue(), js = editorJS.getValue();
+  db.ref("fiturDinamis/" + halaman).set({ html, css, js }).then(() => {
+    alert("✅ Fitur disimpan");
+    tampilkanPreview(html, css, js);
+  });
+});
+function hapusFiturDinamis() {
+  const halaman = halamanFitur.value.trim();
+  if (confirm("Hapus fitur ini?")) {
+    db.ref("fiturDinamis/" + halaman).remove().then(() => {
+      editorHTML.setValue(""); editorCSS.setValue(""); editorJS.setValue("");
+      previewDinamis.innerHTML = "";
+    });
   }
 }
 
-}); }); </script>
+// Ekspor CSV
+document.getElementById("exportCSVBtn").onclick = () => {
+  db.ref("pesanan").once("value").then(snap => {
+    const data = snap.val() || {};
+    let csv = "ID,Nama Produk,Nomor,Status,Harga,Bukti\n";
+    for (const id in data) {
+      const p = data[id];
+      csv += `${id},${p.produk},${p.nomor || p.idsn},${p.status},${p.harga},"${p.buktiBayar || ''}"\n`;
+    }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "data_pesanan.csv";
+    a.click();
+  });
+};
 
+// Hapus Semua
+function hapusSemuaProduk() {
+  if (confirm("Yakin hapus semua produk?")) db.ref("produk").remove().then(tampilkanProduk);
+}
+function hapusSemuaPesanan() {
+  if (confirm("Yakin hapus semua pesanan?")) db.ref("pesanan").remove().then(tampilkanPesanan);
+}
+function hapusSemuaGaleri() {
+  if (confirm("Yakin hapus semua bukti transfer?")) {
+    storage.ref("buktiAdmin").listAll().then(res => {
+      res.items.forEach(i => i.delete());
+    });
+    alert("✅ Bukti dihapus dari Storage");
+  }
+}
+
+// Init
+refreshDataBtn.onclick = () => { tampilkanProduk(); tampilkanPesanan(); tampilkanGaleri(); };
+window.onload = () => {
+  tampilkanProduk(); tampilkanPesanan(); tampilkanGaleri();
+  const halaman = location.pathname.split("/").pop();
+  db.ref("fiturDinamis/" + halaman).once("value").then(snap => {
+    const data = snap.val();
+    if (data) {
+      halamanFitur.value = halaman;
+      editorHTML.setValue(data.html, -1);
+      editorCSS.setValue(data.css, -1);
+      editorJS.setValue(data.js, -1);
+      tampilkanPreview(data.html, data.css, data.js);
+    }
+  });
+};
+</script>
 </body>
 </html>
