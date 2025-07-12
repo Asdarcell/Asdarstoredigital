@@ -29,27 +29,83 @@
     </select>
   </div>
 
-  <!-- Editor HTML -->
-  <label for="editorHTML" class="form-label"><b>HTML</b></label>
-  <textarea id="editorHTML" rows="8" class="form-control mb-2"></textarea>
+ <!-- Ace Editor CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
 
-  <!-- Editor CSS -->
-  <label for="editorCSS" class="form-label"><b>CSS</b></label>
-  <textarea id="editorCSS" rows="6" class="form-control mb-2"></textarea>
+<script>
+  const editorHTML = ace.edit("editorHTML", { mode: "ace/mode/html", theme: "ace/theme/monokai" });
+  const editorCSS  = ace.edit("editorCSS",  { mode: "ace/mode/css",  theme: "ace/theme/monokai" });
+  const editorJS   = ace.edit("editorJS",   { mode: "ace/mode/javascript", theme: "ace/theme/monokai" });
 
-  <!-- Editor JS -->
-  <label for="editorJS" class="form-label"><b>JavaScript</b></label>
-  <textarea id="editorJS" rows="8" class="form-control mb-4"></textarea>
+  document.getElementById("formFiturDinamis").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const halaman = document.getElementById("halamanFitur").value.trim();
+    const html = editorHTML.getValue();
+    const css = editorCSS.getValue();
+    const js = editorJS.getValue();
 
-  <button id="simpanDinamisBtn" class="btn btn-primary mb-4">💾 Simpan Konten Dinamis</button>
+    if (!halaman) return alert("⚠️ Nama halaman kosong!");
 
-  <hr/>
+    firebase.database().ref("fiturDinamis/" + halaman).set({ html, css, js })
+      .then(() => {
+        alert("✅ Fitur disimpan!");
+        tampilkanPreview(html, css, js);
+      });
+  });
+
+  function tampilkanPreview(html, css, js) {
+    const output = document.getElementById("previewDinamis");
+    output.innerHTML = html;
+
+    const styleTag = document.createElement("style");
+    styleTag.innerHTML = css;
+    output.appendChild(styleTag);
+
+    const scriptTag = document.createElement("script");
+    scriptTag.innerHTML = js;
+    output.appendChild(scriptTag);
+  }
+
+  function hapusFiturDinamis() {
+    const halaman = document.getElementById("halamanFitur").value.trim();
+    if (!halaman) return alert("❗ Masukkan nama halaman!");
+
+    if (confirm("Yakin hapus fitur dinamis ini?")) {
+      firebase.database().ref("fiturDinamis/" + halaman).remove()
+        .then(() => {
+          alert("✅ Fitur dihapus.");
+          editorHTML.setValue(""); editorCSS.setValue(""); editorJS.setValue("");
+          document.getElementById("previewDinamis").innerHTML = "";
+        });
+    }
+  }
+</script>
+
+<script>
+  const currentHalaman = location.pathname.split("/").pop(); // contoh: index.html
+  firebase.database().ref("fiturDinamis/" + currentHalaman).once("value").then(snap => {
+    const fitur = snap.val();
+    if (!fitur) return;
+
+    if (fitur.html) document.body.insertAdjacentHTML("beforeend", fitur.html);
+    if (fitur.css) {
+      const styleTag = document.createElement("style");
+      styleTag.innerHTML = fitur.css;
+      document.head.appendChild(styleTag);
+    }
+    if (fitur.js) {
+      const scriptTag = document.createElement("script");
+      scriptTag.innerHTML = fitur.js;
+      document.body.appendChild(scriptTag);
+    }
+  });
+</script>
 
   <!-- Filter & Pencarian Pesanan -->
   <div class="row mb-3">
     <div class="col-md-3">
       <select id="filterStatus" class="form-select">
-        <option value="">Filter Semua Status</option>
+        <tiontion value="">Filter Semua Status</option>
         <option value="Belum Bayar">Belum Bayar</option>
         <option value="Sudah Bayar">Sudah Bayar</option>
         <option value="Diproses">Diproses</option>
@@ -97,9 +153,30 @@
     </div>
   </form>
 
-  <!-- Daftar Produk -->
+ <!-- Daftar Produk -->
   <h4>Daftar Produk</h4>
   <ul id="daftarProduk" class="list-group mb-5"></ul>
+  
+  //form fitur dinamis
+<h4>🧩 Editor Fitur Dinamis</h4>
+<form id="formFiturDinamis" class="mb-4">
+  <input class="form-control mb-2" id="halamanFitur" placeholder="Contoh: index.html" required />
+
+  <label>HTML</label>
+  <div id="editorHTML" style="height: 150px; width: 100%;" class="mb-2"></div>
+
+  <label>CSS</label>
+  <div id="editorCSS" style="height: 100px; width: 100%;" class="mb-2"></div>
+
+  <label>JS</label>
+  <div id="editorJS" style="height: 100px; width: 100%;" class="mb-2"></div>
+
+  <button type="submit" class="btn btn-success">💾 Simpan Fitur</button>
+  <button type="button" class="btn btn-danger" onclick="hapusFiturDinamis()">🗑️ Hapus</button>
+</form>
+
+<h5>📺 Preview Langsung</h5>
+<div id="previewDinamis" class="border p-3 bg-light rounded"></div>
 
   <!-- Galeri Bukti Bayar -->
   <h4>Galeri Bukti Transfer</h4>
