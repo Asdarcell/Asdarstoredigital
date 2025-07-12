@@ -246,12 +246,15 @@ async function uploadBukti() {
   const pesanan = allDataPesanan[selectedId];
   if (!pesanan) return alert("❗ Pesanan tidak ditemukan!");
 
-  // Ambil nomor WA aktif dari Firebase
+  // Ambil data pesanan dari Firebase
   const snapshot = await db.ref("pesanan/" + selectedId).once("value");
   const data = snapshot.val();
 
   let nomorWA = data.wa_aktif || "";
   if (!nomorWA) return alert("❌ WA Aktif tidak tersedia di pemesan ini.");
+  if (nomorWA.startsWith("0")) {
+    nomorWA = "62" + nomorWA.slice(1); // ubah 08... jadi 628...
+  }
 
   // Upload gambar ke imgbb
   const formData = new FormData();
@@ -268,69 +271,27 @@ async function uploadBukti() {
 
     const imageUrl = json.data.url;
 
-    // Simpan URL dan update status ke Firebase
+    // Simpan ke Firebase
     await db.ref('pesanan/' + selectedId).update({
       buktiAdmin: imageUrl,
       status: "Selesai"
     });
 
-    // Kirim WA ke pembeli (nomor langsung dari Firebase, tidak diubah jadi 62)
-    const pesanUser = `✅ Pesanan ${selectedId} sudah selesai.\nBerikut bukti pembayaran:\n${imageUrl}`;
-    await kirimNotifWAkeUser(nomorWA, pesanUser);
-    console.log("📨 Kirim ke user:", nomorWA, pesanUser);
+    // Kirim link status ke pembeli via WhatsApp
+    const linkStatus = `https://asdarstore.digital/status.html?id=${selectedId}`;
+    const pesanUser = `✅ Pesanan kamu dengan ID: ${selectedId} telah *SELESAI*.\n\n📄 Cek status & bukti transaksi:\n${linkStatus}\n\nTerima kasih telah berbelanja di Asdar Store! 😊`;
+    window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesanUser)}`, '_blank');
 
-    // Kirim WA ke admin
-    const pesanAdmin = `📦 Admin telah upload bukti untuk ID ${selectedId}`;
-    await kirimNotifWA("6281803004607", pesanAdmin);
+    // Kirim notifikasi ke admin via API NgirimWA
+    const pesanAdmin = `📦 Admin telah upload bukti untuk pesanan ID: ${selectedId}`;
+    await kirimNotifWA("6281803004607", pesanAdmin); // Nomor admin
 
     alert("✅ Bukti berhasil dikirim ke pembeli dan status diupdate.");
     selectedId = null;
     fileInput.value = "";
     tampilkanPesanan();
-
   } catch (err) {
     alert("❌ Upload Gagal: " + err.message);
-  }
-}
-
-// Kirim WA ke admin
-function kirimNotifWA(nomor, pesan) {
-  fetch("https://api.ngirimwa.com/sendText", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-      authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-      to: nomor,
-      message: pesan
-    }).toString()
-  });
-}
-
-// Kirim WA ke pembeli
-async function kirimNotifWAkeUser(nomor, pesan) {
-  try {
-    const res = await fetch("https://api.ngirimwa.com/sendText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        appkey: "ab3727c5-e0be-40f9-bb3f-25d93b029f7a",
-        authkey: "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq",
-        to: nomor,
-        message: pesan
-      }).toString()
-    });
-
-    const hasil = await res.json();
-    console.log("🔥 Respon WA ke Buyer:", hasil);
-
-    if (!hasil.success) {
-      alert("❌ Gagal kirim WA ke pembeli: " + hasil.message);
-    }
-  } catch (err) {
-    console.error("❌ Error kirim WA ke pembeli:", err);
   }
 }
 // ====== Export CSV Pesanan ======
