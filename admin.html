@@ -155,6 +155,11 @@
             background-color: var(--bg-body);
             cursor: not-allowed;
         }
+        input[type="file"] {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+        }
+
 
         /* Buttons */
         .btn {
@@ -494,7 +499,7 @@
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll.appspot.com",
+            storageBucket: "asdarstoredigitalll.appspot.com", 
             messagingSenderId: "220670500351",
             appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
         };
@@ -505,8 +510,15 @@
         // --- Konstanta NgirimWA & Admin ---
         const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-        const ADMIN_WA_NUMBER = "6281803004607"; // Ganti dengan nomor WA admin Anda (format 62xxxxxxxxxx)
+        const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA admin Anda (format 62xxxxxxxxxx)
         const CS_WA_NUMBER = "6281803004607"; // Nomor WA CS/Admin untuk notifikasi pembeli
+
+        // --- Konstanta ImgBB ---
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // API Key ImgBB Anda
+        const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
+        
+        // URL ke halaman status pesanan Anda
+        const STATUS_PAGE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html";
 
         // --- DOM Elements ---
         const orderListDiv = document.getElementById('orderList');
@@ -595,14 +607,24 @@
             selectedOrderId = order.id; // Set order yang sedang dipilih
             renderOrders(filterOrders(orderSearchInput.value)); // Perbarui highlight di daftar
 
-            let paymentProofHtml = '<p>Belum ada bukti pembayaran diunggah.</p>';
+            let paymentProofBuyerHtml = '<p class="text-sm text-text-secondary">Belum ada bukti pembayaran dari pembeli.</p>';
             if (order.bukti_pembayaran_url) {
-                paymentProofHtml = `
-                    <p class="font-medium mt-4">Bukti Pembayaran:</p>
+                paymentProofBuyerHtml = `
+                    <p class="font-medium mt-4">Bukti Pembayaran Pembeli:</p>
                     <a href="${order.bukti_pembayaran_url}" target="_blank" class="text-color-brand hover:underline block mb-2">Lihat Gambar Bukti Transfer</a>
-                    <img src="${order.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-preview object-cover">
+                    <img src="${order.bukti_pembayaran_url}" alt="Bukti Pembayaran Pembeli" class="img-preview object-cover">
                 `;
             }
+
+            let adminProofHtml = '<p class="text-sm text-text-secondary">Belum ada bukti yang diunggah Admin.</p>';
+            if (order.bukti_admin_url) {
+                adminProofHtml = `
+                    <p class="font-medium mt-4">Bukti Admin (Resi/Pengiriman):</p>
+                    <a href="${order.bukti_admin_url}" target="_blank" class="text-color-brand hover:underline block mb-2">Lihat Gambar Bukti Admin</a>
+                    <img src="${order.bukti_admin_url}" alt="Bukti Admin" class="img-preview object-cover">
+                `;
+            }
+
 
             orderDetailContent.innerHTML = `
                 <h3 class="text-xl font-semibold mb-4 text-color-brand">${order.id}</h3>
@@ -613,9 +635,18 @@
                 <p><strong>Waktu Pesan:</strong> ${new Date(order.timestamp).toLocaleString('id-ID')}</p>
                 <p class="mb-4"><strong>Status:</strong> <span class="order-status ${getStatusClass(order.status)}">${order.status}</span></p>
 
-                ${paymentProofHtml}
+                ${paymentProofBuyerHtml}
 
-                <div class="mt-6 flex flex-col gap-3">
+                <div class="mt-6 border-t pt-4 border-border-color">
+                    <h4 class="text-lg font-semibold mb-3">Upload Bukti Admin (Resi/Pengiriman)</h4>
+                    <input type="file" id="adminProofInput" accept="image/*" class="mb-3 w-full" />
+                    <button class="btn btn-primary w-full" onclick="uploadAdminProof('${order.id}')" id="uploadAdminProofBtn">
+                        <i class="fas fa-upload"></i> Unggah Bukti Admin
+                    </button>
+                    ${adminProofHtml}
+                </div>
+
+                <div class="mt-6 flex flex-col gap-3 border-t pt-4 border-border-color">
                     <button class="btn btn-green w-full" onclick="updateOrderStatus('${order.id}', 'Diproses', '${order.buyerWa}')">
                         <i class="fas fa-play"></i> Tandai Diproses
                     </button>
@@ -633,6 +664,72 @@
                     </button>
                 </div>
             `;
+            // Cek apakah ada bukti admin yang sudah ada saat menampilkan detail
+            if (order.bukti_admin_url) {
+                document.getElementById('uploadAdminProofBtn').textContent = 'Perbarui Bukti Admin';
+            } else {
+                document.getElementById('uploadAdminProofBtn').textContent = 'Unggah Bukti Admin';
+            }
+        }
+
+        async function uploadAdminProof(orderId) {
+            const adminProofInput = document.getElementById('adminProofInput');
+            const file = adminProofInput.files[0];
+
+            if (!file) {
+                showCustomAlert('Pilih file gambar untuk diunggah sebagai bukti admin.');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) { // 2 MB
+                showCustomAlert('Ukuran file bukti admin maksimal 2MB.');
+                return;
+            }
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!allowedTypes.includes(file.type)) {
+                showCustomAlert('Hanya file gambar (JPG, PNG, JPEG) yang diterima.');
+                return;
+            }
+
+            showLoading();
+            try {
+                const formData = new FormData();
+                formData.append('key', IMGBB_API_KEY);
+                formData.append('image', file);
+
+                const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                const imgbbResult = await imgbbResponse.json();
+
+                if (imgbbResult.success && imgbbResult.data && imgbbResult.data.url) {
+                    const imageUrl = imgbbResult.data.url;
+                    console.log("Bukti admin berhasil diunggah ke ImgBB. URL:", imageUrl);
+
+                    // Simpan URL bukti admin ke Firebase Realtime Database
+                    await db.ref(`pesanan/${orderId}`).update({
+                        bukti_admin_url: imageUrl,
+                        waktu_bukti_admin_unggah: new Date().toISOString()
+                    });
+                    
+                    hideLoading();
+                    showCustomAlert('Bukti admin berhasil diunggah dan disimpan!');
+                    // Refresh detail pesanan untuk menampilkan bukti baru
+                    const currentOrder = allOrders.find(o => o.id === orderId);
+                    if (currentOrder) {
+                        currentOrder.bukti_admin_url = imageUrl; // Update local data
+                        displayOrderDetail(currentOrder); // Re-render detail
+                    }
+                } else {
+                    console.error("Gagal mengunggah bukti admin ke ImgBB:", imgbbResult);
+                    const errorMessageFromImgBB = imgbbResult.error ? imgbbResult.error.message : 'Gagal mengunggah gambar ke ImgBB.';
+                    throw new Error(errorMessageFromImgBB);
+                }
+            } catch (error) {
+                hideLoading();
+                console.error("Error mengunggah bukti admin:", error);
+                showCustomAlert("Gagal mengunggah bukti admin: " + error.message);
+            }
         }
 
         async function updateOrderStatus(orderId, newStatus, buyerWa) {
@@ -642,16 +739,34 @@
                 hideLoading();
                 showCustomAlert(`Status pesanan ${orderId} berhasil diubah menjadi ${newStatus}.`);
 
-                // Kirim notifikasi WA ke pembeli
+                // Kirim notifikasi WA ke pembeli dengan link status
                 let messageToBuyer = '';
+                const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`; // Link ke halaman status pesanan buyer
+
                 if (newStatus === 'Diproses') {
-                    messageToBuyer = `Halo! Pesanan Anda dengan ID *${orderId}* sedang *Diproses*. Mohon tunggu sebentar ya. Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
+                    messageToBuyer = `Halo! Pesanan Anda dengan ID *${orderId}* sedang *Diproses*. Mohon tunggu sebentar ya. ` +
+                                     `Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
+                                     `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
                 } else if (newStatus === 'Selesai') {
-                    messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* sudah *Selesai*. Terima kasih telah berbelanja di Asdar Store Digital. Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
+                    // Jika pesanan selesai, sertakan link bukti admin jika ada
+                    const orderData = allOrders.find(o => o.id === orderId);
+                    let buktiAdminMsg = '';
+                    if (orderData && orderData.bukti_admin_url) {
+                        buktiAdminMsg = `\n\nBukti penyelesaian: ${orderData.bukti_admin_url}`;
+                    }
+
+                    messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* sudah *Selesai*. ` +
+                                     `Terima kasih telah berbelanja di Asdar Store Digital.${buktiAdminMsg}\n\n` +
+                                     `Anda bisa cek status lengkapnya di sini: ${statusLink}\n\n` +
+                                     `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
                 } else if (newStatus === 'Dibatalkan') {
-                    messageToBuyer = `Mohon maaf, pesanan Anda dengan ID *${orderId}* telah *Dibatalkan*. Silakan hubungi CS kami di ${CS_WA_NUMBER} untuk informasi lebih lanjut.`;
+                    messageToBuyer = `Mohon maaf, pesanan Anda dengan ID *${orderId}* telah *Dibatalkan*. ` +
+                                     `Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
+                                     `Silakan hubungi CS kami di ${CS_WA_NUMBER} untuk informasi lebih lanjut.`;
                 } else if (newStatus === 'Menunggu Konfirmasi') {
-                    messageToBuyer = `Pemberitahuan: Status pesanan Anda dengan ID *${orderId}* kini kembali *Menunggu Konfirmasi*. Mohon pastikan bukti pembayaran Anda sudah benar. Jika ada pertanyaan, hubungi CS kami di ${CS_WA_NUMBER}.`;
+                    messageToBuyer = `Pemberitahuan: Status pesanan Anda dengan ID *${orderId}* kini kembali *Menunggu Konfirmasi*. ` +
+                                     `Mohon pastikan bukti pembayaran Anda sudah benar. Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
+                                     `Jika ada pertanyaan, hubungi CS kami di ${CS_WA_NUMBER}.`;
                 }
 
                 if (messageToBuyer && buyerWa) {
