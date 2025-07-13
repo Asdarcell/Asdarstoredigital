@@ -305,7 +305,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
         // --- Theme Toggle ---
         function toggleTheme() {
@@ -362,28 +361,30 @@
 
         // --- Firebase Config & Init ---
         // PENTING: Ganti nilai placeholder ini dengan konfigurasi Firebase Anda yang sebenarnya.
-        // Sebaiknya konfigurasi ini TIDAK Terekspos langsung di sisi klien dalam aplikasi production.
-        // Gunakan Firebase Functions atau serverless backend untuk operasi sensitif.
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll.appspot.com",
+            storageBucket: "asdarstoredigitalll.appspot.com", // Tidak lagi digunakan untuk upload, tapi biarkan saja
             messagingSenderId: "220670500351",
             appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const storage = firebase.storage(); // Inisialisasi Firebase Storage
+        // Firebase Storage TIDAK lagi diinisialisasi karena kita pakai ImgBB
+        // const storage = firebase.storage(); 
 
         // --- Konstanta NgirimWA & Admin ---
-        // Ganti dengan API Key, Auth Key, dan Nomor Admin Anda dari ngirimwa.com
         const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-        const ADMIN_WA_NUMBER = "6281803004607"; // Ganti dengan nomor WA admin Anda (format 62xxxxxxxxxx)
-        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html"; // Pastikan ini URL yang benar ke status page Anda
+        const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA admin Anda (format 62xxxxxxxxxx)
+        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html"; 
+
+        // --- Konstanta ImgBB ---
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // API Key ImgBB Anda
+        const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
 
         // --- DOM Elements ---
         const uploadForm = document.getElementById('uploadForm');
@@ -463,16 +464,31 @@
                 return;
             }
 
-
-            const fileExtension = paymentProofFile.name.split('.').pop();
-            const fileNameInStorage = `${orderId}_${Date.now()}.${fileExtension}`;
-            const storageRef = storage.ref(`bukti_pembayaran/${fileNameInStorage}`);
+            let imageUrl = ''; // Variabel untuk menyimpan URL gambar dari ImgBB
 
             try {
-                // 1. Unggah file ke Firebase Storage
-                const snapshot = await storageRef.put(paymentProofFile);
-                const downloadURL = await snapshot.ref.getDownloadURL();
-                console.log("File uploaded successfully. URL:", downloadURL);
+                // --- BAGIAN UNGGAH KE IMGBB ---
+                const formData = new FormData();
+                formData.append('key', IMGBB_API_KEY);
+                formData.append('image', paymentProofFile); // 'image' adalah nama field untuk file di ImgBB API
+
+                const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const imgbbResult = await imgbbResponse.json();
+
+                if (imgbbResult.success && imgbbResult.data && imgbbResult.data.url) {
+                    imageUrl = imgbbResult.data.url;
+                    console.log("File berhasil diunggah ke ImgBB. URL:", imageUrl);
+                } else {
+                    console.error("Gagal mengunggah ke ImgBB:", imgbbResult);
+                    // Menampilkan pesan error spesifik dari ImgBB jika ada
+                    const errorMessageFromImgBB = imgbbResult.error ? imgbbResult.error.message : 'Gagal mengunggah gambar ke ImgBB.';
+                    throw new Error(errorMessageFromImgBB);
+                }
+                // --- AKHIR BAGIAN IMGBB ---
 
                 // 2. Periksa ID Pesanan di Realtime Database
                 const orderRef = db.ref(`pesanan/${orderId}`);
@@ -480,8 +496,7 @@
                 const orderData = orderSnapshot.val();
 
                 if (!orderData) {
-                    // Clean up the uploaded file if order ID is not found
-                    await storageRef.delete().catch(err => console.error("Error deleting orphaned file:", err));
+                    // Karena menggunakan ImgBB, tidak ada file di Firebase Storage untuk dihapus.
                     hideLoading();
                     submitBtn.disabled = false;
                     showCustomAlert(`ID Pesanan '${orderId}' tidak ditemukan. Mohon periksa kembali atau buat pesanan terlebih dahulu.`);
@@ -490,10 +505,10 @@
 
                 // 3. Update status pesanan di Realtime Database
                 await orderRef.update({
-                    status: 'Menunggu Konfirmasi', // Change status to 'Menunggu Konfirmasi'
-                    bukti_pembayaran_url: downloadURL, // Store the direct download URL
-                    bukti_transfer_details: { // Optional: store more details if needed
-                        nama_file: fileNameInStorage,
+                    status: 'Menunggu Konfirmasi', // Ubah status menjadi 'Menunggu Konfirmasi'
+                    bukti_pembayaran_url: imageUrl, // Simpan URL dari ImgBB
+                    bukti_transfer_details: { // Detail tambahan
+                        nama_file: paymentProofFile.name, // Simpan nama file asli
                         waktu_unggah: new Date().toISOString(),
                         nama_pengunggah: buyerName,
                         wa_pengunggah: buyerWa
@@ -501,14 +516,14 @@
                 });
 
                 // 4. Kirim notifikasi WA ke admin
-                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}?id=${orderId}`; // Link langsung ke pesanan di admin panel
+                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}?id=${orderId}`; 
                 const waMessage = `🔔 Pemberitahuan Pembayaran Baru 🔔\n\n` +
                                   `ID Pesanan: *${orderId}*\n` +
                                   `Produk: *${orderData.produk || 'N/A'}*\n` +
                                   `Nominal: *Rp${(orderData.harga || 0).toLocaleString('id-ID')}*\n` +
                                   `Nama Pembeli: *${buyerName}*\n` +
                                   `No. WA Pembeli: ${buyerWa}\n\n` +
-                                  `Lihat detail dan bukti bayar:\n${downloadURL}\n\n` + // Link langsung ke bukti
+                                  `Lihat detail dan bukti bayar:\n${imageUrl}\n\n` + // Link langsung ke gambar di ImgBB
                                   `Aksi di Admin Panel:\n${adminPanelLink}\n\n` +
                                   `Silakan segera konfirmasi pesanan ini.`;
 
@@ -516,10 +531,10 @@
 
                 hideLoading();
                 showCustomAlert('Bukti pembayaran berhasil diunggah! Pesanan Anda kini menunggu konfirmasi dari admin.');
-                uploadForm.reset(); // Clear the form fields
-                orderIdInput.value = orderId; // Keep order ID pre-filled for convenience
+                uploadForm.reset(); // Kosongkan form
+                orderIdInput.value = orderId; // Pertahankan ID pesanan di kolom input
 
-                // Optional: Redirect to status page after successful upload
+                // Opsional: Redirect ke halaman status setelah berhasil unggah
                 setTimeout(() => {
                     window.location.replace(`./status.html?id=${orderId}`);
                 }, 2000);
@@ -527,13 +542,11 @@
             } catch (error) {
                 hideLoading();
                 submitBtn.disabled = false;
-                console.error("Error uploading proof or sending notification:", error);
+                console.error("Error selama proses unggah atau notifikasi:", error);
                 let errorMessage = 'Terjadi kesalahan saat mengunggah bukti pembayaran. Silakan coba lagi.';
-                if (error.code === 'storage/unauthorized') {
-                    errorMessage = 'Gagal mengunggah. Pastikan aturan keamanan Firebase Storage Anda mengizinkan penulisan.';
-                } else if (error.code === 'storage/object-not-found') {
-                    errorMessage = 'Objek penyimpanan tidak ditemukan. Pastikan path Firebase Storage Anda benar.';
-                } else if (error.code === 'PERMISSION_DENIED') { // Database permission error
+                if (error.message.includes("ImgBB")) { 
+                    errorMessage = 'Gagal mengunggah gambar ke ImgBB: ' + error.message;
+                } else if (error.code === 'PERMISSION_DENIED') { 
                     errorMessage = 'Gagal mengakses database. Periksa aturan keamanan Firebase Realtime Database Anda.';
                 }
                 showCustomAlert(errorMessage);
