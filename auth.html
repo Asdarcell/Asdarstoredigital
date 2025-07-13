@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login / Daftar - Asdar Store Digital</title>
+    <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk ikon (misal: user, lock, email, social media) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Basic Reset & Body Styling */
@@ -24,6 +26,7 @@
             background-size: 200% 200%; /* For subtle animation */
             animation: backgroundPan 10s ease infinite; /* Subtle background movement */
             overflow: hidden; /* Hide scrollbar if content overflows slightly */
+            padding: 1rem; /* Padding for small screens to prevent content touching edges */
         }
 
         /* Keyframe for subtle background animation */
@@ -43,7 +46,7 @@
             width: 768px; /* Standard width for desktop view */
             max-width: 100%; /* Ensure it fits smaller screens */
             min-height: 480px; /* Standard height */
-            margin: 20px; /* Add some margin for mobile view */
+            transition: all 0.6s ease-in-out; /* Smooth transition for active state */
         }
 
         /* Form Containers (Login & Register) */
@@ -286,63 +289,77 @@
             color: #eee;
         }
 
-        /* Mobile Responsiveness */
+        /* Mobile Responsiveness (Adjusted for better stacking and transitions) */
         @media (max-width: 768px) {
+            body {
+                padding: 1rem; /* Ensure padding on very small screens */
+            }
             .container {
-                width: 95%; /* Adjust width for smaller screens */
-                min-height: 580px; /* Increase height for vertical stacking */
+                width: 100%; /* Full width on mobile */
+                max-width: 400px; /* Limit max width for better readability on larger phones */
+                min-height: 600px; /* Increased height for vertical stacking */
             }
 
+            /* Forms stack vertically */
             .form-container {
                 width: 100%; /* Forms take full width */
-                height: 50%; /* Each form takes half height */
-                padding: 0 20px; /* Reduce padding */
-            }
-
-            .sign-in-container, .sign-up-container {
+                height: 50%; /* Each form takes half height of the container */
+                padding: 0 20px; /* Reduce padding for mobile */
+                position: absolute; /* Keep absolute for stacking */
                 top: 0;
                 left: 0;
-                transform: translateY(0);
-                opacity: 1; /* Always visible to start stacking */
-                z-index: 2;
-                height: auto; /* Allow height to adjust */
-                min-height: 480px; /* Minimum height for form content */
-            }
-            .sign-up-container {
-                transform: translateY(100%); /* Stack below login form initially */
-                opacity: 0;
-                pointer-events: none; /* Disable interaction until active */
+                transform: translateY(0); /* Default position */
+                opacity: 1; /* Always visible to allow stacking */
+                z-index: 2; /* Default z-index */
+                transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out;
             }
 
+            .sign-in-container {
+                top: 0;
+                height: 100%; /* Login form takes full height initially */
+                z-index: 2;
+            }
+            .sign-up-container {
+                top: 0;
+                height: 100%; /* Sign-up form also takes full height */
+                z-index: 1; /* Behind sign-in initially */
+                opacity: 0; /* Hidden by default */
+                pointer-events: none; /* Disable interaction when hidden */
+            }
+
+            /* Active state for mobile (switching forms) */
             .container.active .sign-in-container {
-                transform: translateY(-100%); /* Slide login form up */
+                transform: translateY(-100%); /* Slide login form up and out */
                 opacity: 0;
                 pointer-events: none;
             }
             .container.active .sign-up-container {
-                transform: translateY(0); /* Slide register form up to visible position */
+                transform: translateY(0); /* Slide register form into view */
                 opacity: 1;
-                pointer-events: auto; /* Enable interaction when active */
+                z-index: 5; /* Bring to front */
+                pointer-events: auto;
             }
 
+            /* Overlay for mobile (slides vertically) */
             .overlay-container {
-                top: 50%; /* Position overlay in the bottom half */
+                top: 0;
                 left: 0;
-                width: 100%; /* Overlay takes full width */
-                height: 50%; /* Overlay takes half height */
-                transform: translateY(0);
+                width: 100%; /* Full width */
+                height: 100%; /* Full height */
+                transform: translateY(0); /* Default position */
+                z-index: 100; /* Always on top of forms for sliding */
             }
 
             .container.active .overlay-container {
-                transform: translateY(-100%); /* Slide overlay up */
+                transform: translateY(-100%); /* Slide overlay up and out */
             }
 
             .overlay {
-                flex-direction: column; /* Stack overlay content vertically */
-                width: 100%; /* Reset width */
-                left: 0;
+                flex-direction: column; /* Stack content vertically */
+                width: 100%; /* Full width */
                 height: 200%; /* Double height for vertical slide */
-                transform: translateY(0);
+                left: 0;
+                transform: translateY(0); /* Default position */
             }
 
             .container.active .overlay {
@@ -351,19 +368,19 @@
 
             .overlay-panel {
                 width: 100%; /* Panels take full width */
-                height: 50%; /* Each panel takes half height */
+                height: 50%; /* Each panel takes half height of the 200% overlay */
                 padding: 20px; /* Adjust padding */
                 transform: translateY(0); /* Reset horizontal transform */
             }
 
             .overlay-left {
                 top: 0; /* Position left panel on top half of overlay */
-                transform: translateY(-20%);
+                transform: translateY(-20%); /* Initial slight offset */
             }
 
             .overlay-right {
                 top: 50%; /* Position right panel on bottom half of overlay */
-                transform: translateY(0);
+                transform: translateY(0); /* Initial position */
             }
 
             .container.active .overlay-left {
@@ -373,24 +390,22 @@
                 transform: translateY(20%); /* Slide right panel further down */
             }
 
+            /* Adjust text sizes and margins for mobile */
             form {
-                padding: 0 20px; /* Smaller padding for forms */
+                padding: 0 20px;
             }
-
             h1 {
-                font-size: 1.8em; /* Adjust heading size */
+                font-size: 1.8em;
                 margin-bottom: 15px;
             }
-
             .overlay h1 {
                 font-size: 2em;
             }
-
             .overlay p {
-                margin: 15px 0 25px; /* Adjust paragraph margins */
+                margin: 15px 0 25px;
             }
             button {
-                padding: 10px 30px; /* Smaller button padding */
+                padding: 10px 30px;
                 font-size: 0.9em;
             }
         }
@@ -399,6 +414,7 @@
 <body>
 
     <div class="container" id="container">
+        <!-- Sign Up Form (Registration) -->
         <div class="form-container sign-up-container">
             <form action="#">
                 <h1>Buat Akun</h1>
@@ -415,6 +431,7 @@
             </form>
         </div>
 
+        <!-- Sign In Form (Login) -->
         <div class="form-container sign-in-container">
             <form action="#">
                 <h1>Login</h1>
@@ -431,6 +448,7 @@
             </form>
         </div>
 
+        <!-- Overlay for sliding effect -->
         <div class="overlay-container">
             <div class="overlay">
                 <div class="overlay-panel overlay-left">
