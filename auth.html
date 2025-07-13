@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Daftar - Asdar Store Digital</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for theme and font */
+        body {
+            font-family: 'Poppins', sans-serif;
+            @apply bg-gray-100 text-gray-800;
+        }
+        [data-theme="dark"] body {
+            @apply bg-gray-900 text-gray-200;
+        }
+        .card-auth {
+            @apply bg-white p-8 rounded-xl shadow-lg w-full max-w-md;
+        }
+        [data-theme="dark"] .card-auth {
+            @apply bg-gray-800;
+        }
+        .input-field {
+            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
+        }
+        [data-theme="dark"] .input-field {
+            @apply bg-gray-700 border-gray-600 text-gray-100;
+        }
+        .btn-primary {
+            @apply w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+        }
+        .btn-secondary {
+            @apply w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50;
+        }
+        [data-theme="dark"] .btn-secondary {
+            @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+        }
+        .theme-btn {
+            @apply absolute top-4 right-4 bg-gray-200 text-gray-800 p-2 rounded-full shadow-md hover:bg-gray-300 transition-colors duration-300;
+        }
+        [data-theme="dark"] .theme-btn {
+            @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen relative" data-theme="light">
+
+    <!-- Theme Toggle Button -->
+    <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+
+    <div class="card-auth">
+        <h2 class="text-3xl font-bold text-center mb-6 text-blue-600">Asdar Store Digital</h2>
+        <p class="text-center text-lg mb-8" id="auth-title">Login ke Akun Anda</p>
+
+        <form id="auth-form" class="space-y-4">
+            <div>
+                <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                <input type="email" id="email" class="input-field" placeholder="email@example.com" required>
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium mb-1">Password</label>
+                <input type="password" id="password" class="input-field" placeholder="Minimal 6 karakter" required>
+            </div>
+            <button type="submit" id="auth-submit-btn" class="btn-primary">Login</button>
+            <button type="button" id="toggle-auth-mode" class="btn-secondary mt-2">Belum punya akun? Daftar Sekarang</button>
+        </form>
+
+        <!-- Custom Modal for Alerts -->
+        <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+                <p id="modal-message" class="text-lg font-medium mb-4"></p>
+                <button id="modal-close-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', nextTheme);
+        }
+        // Set initial theme on load
+        if (localStorage.getItem('theme')) {
+            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+            document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+        } else {
+            document.body.setAttribute('data-theme', 'light');
+            document.getElementById('themeToggle').textContent = '🌙';
+        }
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        function showCustomAlert(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
+        });
+
+        // --- Firebase Config & Init ---
+        // IMPORTANT: In a Canvas environment, __firebase_config and __initial_auth_token are provided globally.
+        // For local testing or non-Canvas deployment, use your actual Firebase config.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll.appspot.com",
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // --- Auth Mode Toggle ---
+        let isLoginMode = true; // true for login, false for register
+        const authTitle = document.getElementById('auth-title');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+
+        toggleAuthModeBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.textContent = 'Login ke Akun Anda';
+                authSubmitBtn.textContent = 'Login';
+                toggleAuthModeBtn.textContent = 'Belum punya akun? Daftar Sekarang';
+            } else {
+                authTitle.textContent = 'Daftar Akun Baru';
+                authSubmitBtn.textContent = 'Daftar';
+                toggleAuthModeBtn.textContent = 'Sudah punya akun? Login Sekarang';
+            }
+        });
+
+        // --- Handle Form Submission ---
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (password.length < 6) {
+                showCustomAlert('Password minimal 6 karakter.');
+                return;
+            }
+
+            try {
+                if (isLoginMode) {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showCustomAlert('Login Berhasil! Mengarahkan ke halaman utama...');
+                    setTimeout(() => { window.location.replace('./index.html'); }, 1500); // Redirect to main page
+                } else {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    // Set default role for new users (e.g., 'buyer')
+                    await db.ref('users/' + userCredential.user.uid).set({
+                        email: userCredential.user.email,
+                        role: 'buyer' // Default role for new registrations
+                    });
+                    showCustomAlert('Registrasi Berhasil! Silakan login.');
+                    isLoginMode = true; // Switch to login mode after registration
+                    authTitle.textContent = 'Login ke Akun Anda';
+                    authSubmitBtn.textContent = 'Login';
+                    toggleAuthModeBtn.textContent = 'Belum punya akun? Daftar Sekarang';
+                }
+            } catch (error) {
+                console.error("Authentication Error:", error);
+                let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'Email tidak terdaftar.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Password salah.';
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Format email tidak valid.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
+                }
+                showCustomAlert(errorMessage);
+            }
+        });
+
+        // --- Initial Auth Check for Canvas Environment ---
+        // This ensures the initial auth token is used if available
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                    // If successful, user is already logged in, redirect to index.
+                    showCustomAlert('Autentikasi otomatis berhasil! Mengarahkan ke halaman utama...');
+                    setTimeout(() => { window.location.replace('./index.html'); }, 1500);
+                } catch (error) {
+                    console.warn("Custom token sign-in failed, proceeding with normal auth form:", error);
+                    // Fallback to anonymous or show login form if custom token fails
+                    await auth.signInAnonymously(); // Sign in anonymously if custom token not available/failed
+                }
+            } else {
+                // If no custom token, sign in anonymously or just show the form
+                await auth.signInAnonymously(); // For general access to public data if needed
+            }
+        });
+    </script>
+</body>
+</html>
