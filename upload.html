@@ -1,125 +1,352 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Upload Bukti Pembayaran</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f7f9fc; }
-    input, button { padding: 10px; margin: 10px 0; width: 100%; max-width: 400px; }
-    #status { margin-top: 10px; background: #e3f2fd; padding: 10px; border-left: 4px solid #2196f3; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Bukti Pembayaran - Asdar Store Digital</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Variabel Tema */
+        :root {
+            --bg: #f9f9f9;
+            --text: #2c3e50;
+            --primary: #3498db;
+            --card: #ffffff;
+            --border: #ddd;
+            --primary-rgb: 52, 152, 219;
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a2e;
+            --text: #e0e0e0;
+            --primary: #1abc9c;
+            --card: #2c2c40;
+            --border: #444;
+            --primary-rgb: 26, 188, 156;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            margin: 0;
+            line-height: 1.6;
+            @apply flex items-center justify-center min-h-screen p-4;
+        }
+        .upload-container {
+            @apply bg-white p-8 rounded-xl shadow-lg w-full max-w-md;
+        }
+        [data-theme="dark"] .upload-container {
+            @apply bg-gray-800;
+        }
+        .input-field {
+            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
+        }
+        [data-theme="dark"] .input-field {
+            @apply bg-gray-700 border-gray-600 text-gray-100;
+        }
+        .btn-primary {
+            @apply w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+        }
+        .btn-secondary {
+            @apply w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50;
+        }
+        [data-theme="dark"] .btn-secondary {
+            @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+        }
+        #status {
+            @apply mt-4 p-3 rounded-lg border-l-4;
+        }
+        #status.info {
+            @apply bg-blue-100 border-blue-500 text-blue-800;
+        }
+        #status.success {
+            @apply bg-green-100 border-green-500 text-green-800;
+        }
+        #status.error {
+            @apply bg-red-100 border-red-500 text-red-800;
+        }
+
+        /* Custom Modal Styling */
+        .custom-modal {
+            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] hidden;
+        }
+        .custom-modal-content {
+            @apply bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center;
+        }
+        [data-theme="dark"] .custom-modal-content {
+            @apply bg-gray-800 text-gray-200;
+        }
+        .custom-modal-content button {
+            @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mt-4;
+            width: auto;
+        }
+    </style>
 </head>
-<body>
-  <h2>Upload Bukti Pembayaran</h2>
+<body data-theme="light">
+    <div class="upload-container">
+        <h2 class="text-2xl font-bold text-center mb-6 text-blue-600">Upload Bukti Pembayaran</h2>
 
-  <input type="text" id="idPesanan" placeholder="Masukkan ID Pesanan" />
-  <input type="file" id="fileInput" accept="image/*" />
-  <button onclick="upload()">📤 Upload & Kirim Notifikasi</button>
-  <div id="status">Silakan upload bukti pembayaran Anda.</div>
+        <div class="space-y-4">
+            <div>
+                <label for="idPesanan" class="block text-sm font-medium mb-1">ID Pesanan</label>
+                <input type="text" id="idPesanan" placeholder="Masukkan ID Pesanan Anda" class="input-field" />
+            </div>
+            <div>
+                <label for="fileInput" class="block text-sm font-medium mb-1">Pilih Gambar Bukti</label>
+                <input type="file" id="fileInput" accept="image/*" class="input-field" />
+            </div>
+            <button onclick="upload()" id="uploadBtn" class="btn-primary">📤 Upload & Kirim Notifikasi</button>
+            <div id="status" class="info">Silakan upload bukti pembayaran Anda.</div>
+            <a href="./index.html" class="btn-secondary text-center block !mt-4">⬅ Kembali ke Halaman Utama</a>
+        </div>
 
-  <script>
-    // Konfigurasi Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        <!-- Fitur Dinamis Tambahan dari Admin -->
+        <div id="dynamic-content-area" class="mt-8 pt-4 border-t border-dashed border-gray-300">
+            <!-- Dynamic content will be loaded here -->
+        </div>
+    </div>
 
-    // API key ImgBB
-    const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+    <!-- Custom Modal for Alerts -->
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message" class="text-lg font-medium mb-4"></p>
+            <button id="modal-close-btn">OK</button>
+        </div>
+    </div>
 
-    // Nomor admin tujuan WA
-    const nomorAdmin = "6281803004607";
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    // API keys NgirimWA (gunakan form-data)
-    const appKey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-    const authKey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('theme', nextTheme);
+        }
+        // Set initial theme on load
+        if (localStorage.getItem('theme')) {
+            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+        } else {
+            document.body.setAttribute('data-theme', 'light');
+        }
 
-    async function upload() {
-      const id = document.getElementById("idPesanan").value.trim();
-      const file = document.getElementById("fileInput").files[0];
-      const status = document.getElementById("status");
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
 
-      if (!id || !file) {
-        alert("Lengkapi ID dan pilih gambar!");
-        return;
-      }
+        function showCustomAlert(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+        }
 
-      status.innerText = "⏳ Mengupload gambar...";
-      const base64 = await toBase64(file);
-
-      const formDataImg = new FormData();
-      formDataImg.append("key", imgbbApiKey);
-      formDataImg.append("image", base64.split(",")[1]);
-
-      try {
-        // Upload gambar ke ImgBB
-        const resImg = await fetch("https://api.imgbb.com/1/upload", {
-          method: "POST",
-          body: formDataImg
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
         });
-        const jsonImg = await resImg.json();
-        if (!jsonImg.success) throw new Error("Gagal upload ke ImgBB");
 
-        const imageUrl = jsonImg.data.url;
+        // --- Firebase Config & Init ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll.appspot.com",
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
 
-        // Update Firebase pesanan
-        await db.ref("pesanan/" + id).update({
-          buktiBayar: imageUrl,
-          status: "Sudah Bayar"
+        // API key ImgBB
+        const imgbbApiKey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+
+        // Nomor admin tujuan WA
+        const nomorAdmin = "6281803004607";
+
+        // API keys NgirimWA (gunakan form-data)
+        const appKey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+        const authKey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+
+        // DOM Elements
+        const idPesananInput = document.getElementById("idPesanan");
+        const fileInput = document.getElementById("fileInput");
+        const statusDiv = document.getElementById("status");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const dinamisRef = db.ref('dinamis'); // Reference to dynamic content
+
+        // --- Auto-fill ID Pesanan from URL ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const idFromUrl = urlParams.get('id');
+            if (idFromUrl) {
+                idPesananInput.value = idFromUrl;
+            }
+            renderDynamicContent(); // Load dynamic content on page load
         });
 
-        // Ambil data pesanan untuk nomor WA buyer
-        const snapPesanan = await db.ref("pesanan/" + id).once("value");
-        const dataPesanan = snapPesanan.val();
-        const nomorBuyer = dataPesanan && dataPesanan.nomor ? dataPesanan.nomor : "-";
+        async function upload() {
+            const id = idPesananInput.value.trim();
+            const file = fileInput.files[0];
 
-        // Buat pesan WA ke admin (termasuk nomor buyer & link gambar)
-        const pesanWA = 
-          `📥 Pesanan *${id}* telah mengupload bukti pembayaran dan menunggu verifikasi.\n` +
-          `Nomor Pembeli: ${nomorBuyer}\n` +
-          `Link Bukti: ${imageUrl}\n` +
-          `Silakan cek dashboard admin.`;
+            if (!id || !file) {
+                showCustomAlert("Lengkapi ID pesanan dan pilih gambar bukti pembayaran!");
+                return;
+            }
 
-        // Kirim notifikasi WA ke admin pakai API NgirimWA dengan form-data
-        const formDataWA = new FormData();
-        formDataWA.append("appkey", appKey);
-        formDataWA.append("authkey", authKey);
-        formDataWA.append("to", nomorAdmin);
-        formDataWA.append("message", pesanWA);
+            statusDiv.className = 'info';
+            statusDiv.innerText = "⏳ Mengupload gambar...";
+            uploadBtn.disabled = true; // Disable button during upload
 
-        const resWA = await fetch("https://app.ngirimwa.com/api/create-message", {
-          method: "POST",
-          body: formDataWA
-        });
-        const jsonWA = await resWA.json();
-        if (!jsonWA.success) throw new Error("Gagal kirim notifikasi WA ke admin");
+            try {
+                const base64 = await toBase64(file);
 
-        status.innerHTML = `✅ Bukti berhasil dikirim!<br><a href="${imageUrl}" target="_blank">Lihat Gambar</a>`;
+                const formDataImg = new FormData();
+                formDataImg.append("key", imgbbApiKey);
+                formDataImg.append("image", base64.split(",")[1]);
 
-      } catch (error) {
-        console.error(error);
-        status.innerText = "❌ Gagal upload atau kirim notifikasi: " + error.message;
-      }
-    }
+                // Upload gambar ke ImgBB
+                const resImg = await fetch("https://api.imgbb.com/1/upload", {
+                    method: "POST",
+                    body: formDataImg
+                });
+                const jsonImg = await resImg.json();
+                if (!jsonImg.success) throw new Error("Gagal upload ke ImgBB: " + (jsonImg.error?.message || 'Unknown error'));
 
-    // Fungsi helper convert file ke base64
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-  </script>
+                const imageUrl = jsonImg.data.url;
+
+                // Update Firebase pesanan
+                await db.ref("pesanan/" + id).update({
+                    buktiBayar: imageUrl,
+                    status: "Sudah Bayar"
+                });
+
+                // Ambil data pesanan untuk nomor WA buyer
+                const snapPesanan = await db.ref("pesanan/" + id).once("value");
+                const dataPesanan = snapPesanan.val();
+                const nomorBuyer = dataPesanan && dataPesanan.wa_aktif ? dataPesanan.wa_aktif : (dataPesanan && dataPesanan.nomor ? dataPesanan.nomor : "-");
+                const namaBuyer = dataPesanan && dataPesanan.nama ? dataPesanan.nama : "Pelanggan";
+
+                // Buat pesan WA ke admin (termasuk nomor buyer & link gambar)
+                const pesanWA =
+                    `📥 Pesanan *${id}* dari *${namaBuyer}* telah mengupload bukti pembayaran dan menunggu verifikasi.\n` +
+                    `Nomor Pembeli: ${nomorBuyer}\n` +
+                    `Link Bukti: ${imageUrl}\n` +
+                    `Silakan cek dashboard admin: https://asdarcell.github.io/Asdarstoredigital/admin.html`; // Pastikan URL admin ini benar
+
+                // Kirim notifikasi WA ke admin pakai API NgirimWA dengan form-data
+                const formDataWA = new URLSearchParams(); // Changed to URLSearchParams for x-www-form-urlencoded
+                formDataWA.append("appkey", appKey);
+                formDataWA.append("authkey", authKey);
+                formDataWA.append("to", nomorAdmin);
+                formDataWA.append("message", pesanWA);
+
+                const resWA = await fetch("https://api.ngirimwa.com/sendText", { // Changed endpoint to /sendText
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" }, // Required for URLSearchParams
+                    body: formDataWA
+                });
+                const jsonWA = await resWA.json();
+                if (!resWA.ok || jsonWA.status !== "success") throw new Error("Gagal kirim notifikasi WA ke admin: " + (jsonWA.message || 'Unknown error'));
+
+                statusDiv.className = 'success';
+                statusDiv.innerHTML = `✅ Bukti berhasil dikirim!<br><a href="${imageUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a><br>
+                                        <p class="mt-2">Anda akan dialihkan ke halaman status dalam beberapa detik...</p>`;
+                showCustomAlert("Bukti pembayaran berhasil diunggah! Admin akan segera memverifikasi pesanan Anda.");
+                setTimeout(() => {
+                    window.location.replace(`./status.html?id=${id}`); // Redirect to status page
+                }, 3000); // Redirect after 3 seconds
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.className = 'error';
+                statusDiv.innerText = "❌ Gagal upload atau kirim notifikasi: " + error.message;
+                showCustomAlert("Gagal upload atau kirim notifikasi: " + error.message);
+            } finally {
+                uploadBtn.disabled = false; // Re-enable button
+            }
+        }
+
+        // Fungsi helper convert file ke base64
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- Render Konten Dinamis dari Admin ---
+        async function renderDynamicContent() {
+            try {
+                const snapshot = await dinamisRef.child('upload').once('value');
+                const dynamicContentArea = document.getElementById('dynamic-content-area');
+                dynamicContentArea.innerHTML = ''; // Clear previous content
+
+                const blocks = snapshot.val() || {};
+                const sortedBlocks = Object.keys(blocks).map(key => ({ id: key, ...blocks[key] }))
+                                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                let combinedCss = '';
+                let combinedJs = '';
+
+                sortedBlocks.forEach(block => {
+                    if (block.html) {
+                        const section = document.createElement('div');
+                        section.className = 'dynamic-content-section'; // Apply basic styling
+                        section.innerHTML = block.html;
+                        dynamicContentArea.appendChild(section);
+
+                        // Re-execute scripts within dynamic HTML
+                        section.querySelectorAll('script').forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+                    }
+                    if (block.css) {
+                        combinedCss += block.css + '\n';
+                    }
+                    if (block.js) {
+                        combinedJs += block.js + '\n';
+                    }
+                });
+
+                // Apply combined CSS
+                let styleTag = document.getElementById('dynamic-css-upload');
+                if (!styleTag) {
+                    styleTag = document.createElement('style');
+                    styleTag.id = 'dynamic-css-upload';
+                    document.head.appendChild(styleTag);
+                }
+                styleTag.textContent = combinedCss;
+
+                // Execute combined JS
+                let scriptTag = document.getElementById('dynamic-js-upload');
+                if (scriptTag) {
+                    scriptTag.remove(); // Remove old script to re-execute
+                }
+                scriptTag = document.createElement('script');
+                scriptTag.id = 'dynamic-js-upload';
+                scriptTag.textContent = combinedJs;
+                document.body.appendChild(scriptTag);
+
+                console.log("Konten dinamis untuk upload.html berhasil dimuat.");
+            } catch (error) {
+                console.error("Gagal memuat konten dinamis untuk upload.html:", error);
+            }
+        }
+    </script>
 </body>
 </html>
