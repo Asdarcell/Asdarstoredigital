@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Asdar Store Digital</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Theme Variables - Consistent with index.html */
@@ -328,7 +325,6 @@
 
     <main>
         <div class="admin-panel-sections">
-            <!-- Section: Product Management -->
             <div id="productManagement" class="section-card">
                 <h2>Manajemen Produk</h2>
                 <form id="productForm">
@@ -362,13 +358,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Product data will be loaded here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Section: Order Management -->
             <div id="orderManagement" class="section-card">
                 <h2>Manajemen Pesanan</h2>
                 <div class="overflow-x-auto">
@@ -384,13 +378,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Order data will be loaded here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Section: Testimonial Management -->
             <div id="testimonialManagement" class="section-card">
                 <h2>Manajemen Testimoni</h2>
                 <form id="testimonialForm">
@@ -416,13 +408,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Testimonial data will be loaded here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Section: Dynamic Content Management -->
             <div id="dynamicContentManagement" class="section-card">
                 <h2>Manajemen Konten Dinamis (Index Page)</h2>
                 <form id="dynamicContentForm">
@@ -455,14 +445,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Dynamic content data will be loaded here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Live Preview Section -->
         <div class="live-preview-section">
             <h2>Pratinjau Toko (index.html)</h2>
             <div class="preview-controls">
@@ -473,7 +461,6 @@
         </div>
     </main>
 
-    <!-- Custom Modal for Alerts -->
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
             <p id="modal-message" class="text-lg font-medium mb-4"></p>
@@ -481,7 +468,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -650,13 +636,40 @@
             sortedOrders.forEach(([orderId, order]) => {
                 orderCount++;
                 const row = ordersTableBody.insertRow();
+                let actionButtons = '';
+                let statusColorClass = '';
+
+                // Determine button and status styling based on order status
+                switch (order.status) {
+                    case 'Belum Bayar':
+                        actionButtons = `<button class="btn-base btn-blue" onclick="sendPaymentReminder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', ${order.harga})"><i class="fab fa-whatsapp"></i> Ingatkan Pembayaran</button>`;
+                        statusColorClass = 'text-yellow-600 font-bold'; // Tailwind yellow for "Belum Bayar"
+                        break;
+                    case 'Menunggu Konfirmasi':
+                        actionButtons = `<button class="btn-base btn-green" onclick="processOrder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', '${order.nomor}')"><i class="fas fa-check-circle"></i> Proses & Kirim Bukti</button>`;
+                        statusColorClass = 'text-blue-600 font-bold'; // Tailwind blue for "Menunggu Konfirmasi"
+                        break;
+                    case 'Diproses':
+                        actionButtons = `<button class="btn-base btn-blue" onclick="sendUpdateMessage('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}')"><i class="fab fa-whatsapp"></i> Kirim Update</button>`;
+                        statusColorClass = 'text-purple-600 font-bold'; // Tailwind purple for "Diproses"
+                        break;
+                    case 'Selesai':
+                        statusColorClass = 'text-green-600 font-bold'; // Tailwind green for "Selesai"
+                        break;
+                    case 'Dibatalkan':
+                        statusColorClass = 'text-red-600 font-bold'; // Tailwind red for "Dibatalkan"
+                        break;
+                    default:
+                        statusColorClass = 'text-gray-600';
+                }
+
                 row.innerHTML = `
                     <td>${orderId}</td>
                     <td>${order.produk} (Rp${formatRupiah(order.harga)})</td>
                     <td>${order.nama} (${order.nomor})</td>
-                    <td>${order.wa_aktif}</td>
+                    <td><a href="https://wa.me/${order.wa_aktif}" target="_blank" class="text-blue-500 hover:underline">${order.wa_aktif}</a></td>
                     <td>
-                        <select onchange="updateOrderStatus('${orderId}', this.value)" class="p-1 rounded border" style="background-color: var(--card); color: var(--text);">
+                        <select onchange="updateOrderStatus('${orderId}', this.value)" class="p-1 rounded border ${statusColorClass}" style="background-color: var(--card); color: var(--text);">
                             <option value="Belum Bayar" ${order.status === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
                             <option value="Menunggu Konfirmasi" ${order.status === 'Menunggu Konfirmasi' ? 'selected' : ''}>Menunggu Konfirmasi</option>
                             <option value="Diproses" ${order.status === 'Diproses' ? 'selected' : ''}>Diproses</option>
@@ -665,6 +678,7 @@
                         </select>
                     </td>
                     <td class="actions">
+                        ${actionButtons}
                         <button class="btn-base btn-red" onclick="deleteOrder('${orderId}')"><i class="fas fa-trash"></i> Hapus</button>
                     </td>
                 `;
@@ -683,6 +697,44 @@
                 showCustomAlert('Gagal update status pesanan. Silakan coba lagi.');
             }
         }
+
+        async function sendPaymentReminder(orderId, whatsapp, customerName, productName, price) {
+            const formattedPrice = formatRupiah(price);
+            const message = encodeURIComponent(
+                `Halo ${customerName},\n\n` +
+                `Pesanan Anda (${productName} - Rp${formattedPrice}) dengan ID Pesanan *${orderId}* sedang menunggu pembayaran.\n\n` +
+                `Mohon segera selesaikan pembayaran Anda. Jika sudah, harap kirim bukti transfer agar pesanan bisa segera kami proses.\n\n` +
+                `Terima kasih!`
+            );
+            window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
+            showCustomAlert('Pengingat pembayaran dikirim via WhatsApp!');
+        }
+
+        async function processOrder(orderId, whatsapp, customerName, productName, customerNumber) {
+            // 1. Update order status to 'Diproses' in Firebase
+            await updateOrderStatus(orderId, 'Diproses');
+
+            // 2. Construct the WhatsApp message with order details and "proof" prompt
+            const message = encodeURIComponent(
+                `Halo ${customerName},\n\n` +
+                `Pesanan Anda (${productName} untuk ID: ${customerNumber}) dengan ID Pesanan *${orderId}* sedang kami proses.\n\n` +
+                `Mohon tunggu sebentar ya. Jika sudah selesai, kami akan segera memberitahukan Anda.\n\n` +
+                `Terima kasih atas kesabaran Anda!`
+            );
+            window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
+            showCustomAlert(`Pesanan ${orderId} sedang diproses dan notifikasi dikirim ke ${customerName}.`);
+        }
+
+        async function sendUpdateMessage(orderId, whatsapp, customerName, productName) {
+            const message = encodeURIComponent(
+                `Halo ${customerName},\n\n` +
+                `Pesanan Anda (${productName}) dengan ID Pesanan *${orderId}* masih dalam proses. Kami akan segera menginfokan setelah selesai.\n\n` +
+                `Terima kasih!`
+            );
+            window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
+            showCustomAlert('Update pesanan dikirim via WhatsApp!');
+        }
+
 
         async function deleteOrder(orderId) {
             if (confirm(`Anda yakin ingin menghapus pesanan '${orderId}'?`)) {
@@ -748,9 +800,9 @@
                 const row = testimonialsTableBody.insertRow();
                 row.innerHTML = `
                     <td>${testi.nama}</td>
-                    <td>${testi.pesan.substring(0, 50)}...</td>
+                    <td>${testi.pesan.substring(0, 70)}${testi.pesan.length > 70 ? '...' : ''}</td>
                     <td class="actions">
-                        <button class="btn-base btn-blue" onclick="editTestimonial('${id}', '${testi.nama}', '${testi.pesan}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-base btn-blue" onclick="editTestimonial('${id}', '${testi.nama}', \`${testi.pesan}\`)"><i class="fas fa-edit"></i> Edit</button>
                         <button class="btn-base btn-red" onclick="deleteTestimonial('${id}')"><i class="fas fa-trash"></i> Hapus</button>
                     </td>
                 `;
@@ -788,25 +840,37 @@
 
         dynamicContentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const contentId = document.getElementById('dynamicContentId').value || db.ref('dinamis/index').push().key; // Generate new ID if not editing
-            const order = parseInt(document.getElementById('dynamicContentOrder').value) || 0;
-            const html = document.getElementById('dynamicContentHtml').value.trim();
-            const css = document.getElementById('dynamicContentCss').value.trim();
-            const js = document.getElementById('dynamicContentJs').value.trim();
+            const dynamicContentId = document.getElementById('dynamicContentId').value;
+            const order = parseInt(document.getElementById('dynamicContentOrder').value);
+            const htmlContent = document.getElementById('dynamicContentHtml').value.trim();
+            const cssContent = document.getElementById('dynamicContentCss').value.trim();
+            const jsContent = document.getElementById('dynamicContentJs').value.trim();
 
-            if (!html) {
-                showCustomAlert('Konten HTML tidak boleh kosong.');
+            if (isNaN(order) || !htmlContent) {
+                showCustomAlert('Harap lengkapi urutan (angka) dan konten HTML.');
                 return;
             }
 
             try {
-                await db.ref(`dinamis/index/${contentId}`).set({
-                    order: order,
-                    html: html,
-                    css: css,
-                    js: js
-                });
-                showCustomAlert('Konten dinamis berhasil disimpan!');
+                if (dynamicContentId) { // Update existing content
+                    await db.ref(`dynamic_content/${dynamicContentId}`).update({
+                        order: order,
+                        html: htmlContent,
+                        css: cssContent,
+                        js: jsContent
+                    });
+                    showCustomAlert('Konten dinamis berhasil diupdate!');
+                } else { // Add new content
+                    const newContentRef = db.ref('dynamic_content').push();
+                    await newContentRef.set({
+                        order: order,
+                        html: htmlContent,
+                        css: cssContent,
+                        js: jsContent,
+                        created_at: new Date().toISOString()
+                    });
+                    showCustomAlert('Konten dinamis baru berhasil ditambahkan!');
+                }
                 clearForm('dynamicContentForm');
             } catch (error) {
                 console.error("Error saving dynamic content:", error);
@@ -814,21 +878,21 @@
             }
         });
 
-        db.ref('dinamis/index').on('value', (snapshot) => {
-            const dynamicContents = snapshot.val() || {};
+        db.ref('dynamic_content').orderByChild('order').on('value', (snapshot) => {
+            const contents = snapshot.val() || {};
             dynamicContentTableBody.innerHTML = '';
             let contentCount = 0;
-            const sortedContents = Object.entries(dynamicContents).sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
-
-            sortedContents.forEach(([id, content]) => {
+            snapshot.forEach((childSnapshot) => {
                 contentCount++;
+                const id = childSnapshot.key;
+                const content = childSnapshot.val();
                 const row = dynamicContentTableBody.insertRow();
                 row.innerHTML = `
                     <td>${id}</td>
-                    <td>${content.order || 0}</td>
-                    <td>${content.html.substring(0, 70)}...</td>
+                    <td>${content.order}</td>
+                    <td>${content.html.substring(0, 100)}${content.html.length > 100 ? '...' : ''}</td>
                     <td class="actions">
-                        <button class="btn-base btn-blue" onclick="editDynamicContent('${id}', ${content.order || 0}, \`${content.html || ''}\`, \`${content.css || ''}\`, \`${content.js || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-base btn-blue" onclick="editDynamicContent('${id}', ${content.order}, \`${content.html}\`, \`${content.css || ''}\`, \`${content.js || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
                         <button class="btn-base btn-red" onclick="deleteDynamicContent('${id}')"><i class="fas fa-trash"></i> Hapus</button>
                     </td>
                 `;
@@ -844,13 +908,13 @@
             document.getElementById('dynamicContentHtml').value = html;
             document.getElementById('dynamicContentCss').value = css;
             document.getElementById('dynamicContentJs').value = js;
-            showCustomAlert(`Mengedit konten dinamis: ${id}`);
+            showCustomAlert(`Mengedit konten dinamis ID: ${id}`);
         }
 
         async function deleteDynamicContent(id) {
-            if (confirm(`Anda yakin ingin menghapus konten dinamis ini? (ID: ${id})`)) {
+            if (confirm(`Anda yakin ingin menghapus konten dinamis ini?`)) {
                 try {
-                    await db.ref(`dinamis/index/${id}`).remove();
+                    await db.ref(`dynamic_content/${id}`).remove();
                     showCustomAlert('Konten dinamis berhasil dihapus!');
                 } catch (error) {
                     console.error("Error deleting dynamic content:", error);
@@ -859,12 +923,12 @@
             }
         }
 
-        // --- Live Preview Functionality ---
+        // --- Live Preview ---
         const livePreviewIframe = document.getElementById('livePreviewIframe');
 
         function refreshPreview() {
-            livePreviewIframe.src = livePreviewIframe.src; // Reloads the iframe content
-            showCustomAlert('Pratinjau diperbarui!');
+            livePreviewIframe.contentWindow.location.reload(true);
+            showCustomAlert('Pratinjau toko diperbarui!');
         }
 
         function openIndexInNewTab() {
