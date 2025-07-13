@@ -2,11 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login / Daftar - Asdar Store Digital</title>
-    <!-- Font Poppins -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Login / Daftar - Asdar Store Digital</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Basic Reset & Body Styling */
@@ -25,7 +22,7 @@
             background: linear-gradient(90deg, #e0f2f7, #e8eaf6); /* Soft blue-purple gradient */
             background-size: 200% 200%; /* For subtle animation */
             animation: backgroundPan 10s ease infinite; /* Subtle background movement */
-            overflow: hidden; /* Hide scrollbar if content overflows slightly */
+            overflow-x: hidden; /* Prevent horizontal scrollbar */
             padding: 1rem; /* Padding for small screens to prevent content touching edges */
         }
 
@@ -43,15 +40,24 @@
             box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
             position: relative;
             overflow: hidden;
-            width: 768px; /* Standard width for desktop view */
-            max-width: 100%; /* Ensure it fits smaller screens */
+            width: 100%; /* Default to 100% width on small screens */
+            max-width: 900px; /* Limit maximum width on larger screens */
             min-height: 480px; /* Standard height */
             transition: all 0.6s ease-in-out; /* Smooth transition for active state */
+            display: flex; /* Use flexbox for desktop layout */
         }
+
+        /* Apply min-width for desktop layout only */
+        @media (min-width: 769px) { /* Apply desktop layout when screen is 769px or wider */
+            .container {
+                min-width: 768px; /* Your desired minimum width for desktop view */
+            }
+        }
+
 
         /* Form Containers (Login & Register) */
         .form-container {
-            position: absolute;
+            position: absolute; /* Keep absolute for sliding effect */
             top: 0;
             height: 100%;
             transition: all 0.6s ease-in-out;
@@ -61,7 +67,7 @@
             justify-content: center;
             align-items: center;
             padding: 0 50px;
-            width: 50%; /* Default desktop width */
+            width: 50%; /* Default desktop width for form containers */
             left: 0; /* Default desktop position */
         }
 
@@ -327,165 +333,134 @@
                 padding: 0.5rem;
             }
             .container {
-                width: 95%; /* Adjust width to fit */
-                min-height: 400px; /* Smaller min-height to fit more screens */
-                /* Keep flex-direction: row (default) for desktop-like view */
+                /* On small screens, stack forms vertically and remove min-width */
+                flex-direction: column;
+                min-height: 550px; /* Adjust height for stacked layout */
+                max-width: 95%; /* Allow it to be smaller than 768px */
             }
 
-            /* Adjust font sizes and padding to fit two columns */
+            /* Adjust font sizes and padding for stacked mobile view */
             form {
-                padding: 0 15px; /* Reduce padding significantly */
+                padding: 0 25px; /* Adjust padding for forms */
             }
             h1 {
-                font-size: 1.5em; /* Smaller heading */
-                margin-bottom: 10px;
+                font-size: 1.8em; /* Smaller heading */
+                margin-bottom: 15px;
             }
             .social-container {
-                margin: 10px 0;
+                margin: 15px 0;
             }
             .social-container a {
-                height: 30px;
-                width: 30px;
-                font-size: 0.8em;
+                height: 35px;
+                width: 35px;
+                font-size: 0.9em;
             }
             input {
-                padding: 8px 10px; /* Smaller input padding */
-                margin: 5px 0;
-                font-size: 0.8em;
+                padding: 10px 12px; /* Smaller input padding */
+                margin: 6px 0;
+                font-size: 0.85em;
             }
             .forgot-password {
-                font-size: 0.8em;
-                margin: 10px 0;
+                font-size: 0.85em;
+                margin: 12px 0;
             }
             button {
-                padding: 8px 20px; /* Smaller button padding */
-                font-size: 0.8em;
+                padding: 10px 30px; /* Smaller button padding */
+                font-size: 0.9em;
                 margin-top: 15px;
             }
+
+            /* For mobile, forms take full width/height */
+            .form-container {
+                position: relative; /* Change to relative positioning for stacking */
+                width: 100%;
+                height: auto; /* Allow height to adjust */
+                padding: 20px; /* Revert padding for stacked view */
+                order: 2; /* Put forms below overlay initially */
+            }
+            .sign-in-container, .sign-up-container {
+                transform: none; /* Reset transforms for stacking */
+                opacity: 1; /* Both forms visible for a moment if not using JS to hide */
+                pointer-events: auto;
+            }
+             /* Manage visibility for stacked forms - only show one at a time */
+            .sign-up-container {
+                display: none; /* Hide sign-up by default on mobile */
+            }
+            .container.active .sign-up-container {
+                display: flex; /* Show sign-up when active */
+                order: 1; /* Place sign-up first when active */
+            }
+            .container.active .sign-in-container {
+                display: none; /* Hide sign-in when sign-up is active */
+            }
+
+
+            /* Overlay for mobile */
+            .overlay-container {
+                position: relative; /* Change to relative for stacking */
+                width: 100%;
+                height: 200px; /* Fixed height for overlay on mobile */
+                left: 0; /* Reset left */
+                order: 1; /* Put overlay first initially */
+            }
+
+            .container.active .overlay-container {
+                order: 2; /* Move overlay to bottom when active */
+            }
+
+
+            .overlay {
+                flex-direction: column; /* Stack overlay panels vertically */
+                width: 100%;
+                height: 100%; /* Overlay takes full height of its container */
+                left: 0;
+                transform: translateY(0); /* Reset transform */
+            }
+
+            .container.active .overlay {
+                 transform: translateY(0); /* No transform needed for active state on mobile */
+            }
+
+            .overlay-panel {
+                width: 100%;
+                height: 100%; /* Each panel takes full height of overlay */
+                padding: 20px;
+                transform: translateX(0); /* Reset transform */
+                position: relative; /* Change to relative for stacking */
+            }
+            .overlay-left, .overlay-right {
+                transform: none; /* Reset transforms */
+            }
+            .overlay-left {
+                display: none; /* Hide left panel on mobile by default */
+            }
+            .overlay-right {
+                display: flex; /* Show right panel (sign up button) by default */
+            }
+
+            .container.active .overlay-left {
+                display: flex; /* Show left panel (sign in button) when active */
+            }
+            .container.active .overlay-right {
+                display: none; /* Hide right panel when active */
+            }
+
             .overlay h1 {
-                font-size: 1.8em; /* Smaller overlay heading */
-                margin-bottom: 5px;
+                font-size: 2em; /* Smaller overlay heading */
+                margin-bottom: 10px;
             }
             .overlay p {
-                font-size: 0.8em;
+                font-size: 0.85em;
                 margin: 15px 0 20px;
             }
-            .overlay-panel {
-                padding: 0 15px;
-            }
 
-            /* Show the toggle button on mobile */
+            /* Hide the toggle button on mobile since it's already adapting */
             #toggleMobileViewBtn {
-                display: block;
+                display: none;
             }
         }
 
-        /* Mobile Responsive Layout (Activated by button) */
-        body.mobile-layout-active .container {
-            flex-direction: column; /* Stack columns vertically */
-            min-height: 600px; /* Restore larger height for stacked view */
-        }
-
-        body.mobile-layout-active .form-container {
-            width: 100%; /* Forms take full width */
-            height: 100%; /* Take full height of container */
-            left: 0; /* Reset left */
-            top: 0; /* Reset top */
-            padding: 0 20px; /* Restore original mobile padding */
-        }
-
-        body.mobile-layout-active .sign-in-container {
-            transform: translateY(0); /* Ensure no initial vertical transform */
-            opacity: 1;
-            pointer-events: auto;
-            z-index: 2;
-        }
-        body.mobile-layout-active .sign-up-container {
-            transform: translateY(0);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        body.mobile-layout-active .container.active .sign-in-container {
-            transform: translateY(-100%); /* Slide login form up and out */
-            opacity: 0;
-            pointer-events: none;
-        }
-        body.mobile-layout-active .container.active .sign-up-container {
-            transform: translateY(0); /* Slide register form into view */
-            opacity: 1;
-            z-index: 5;
-            pointer-events: auto;
-        }
-
-        body.mobile-layout-active .overlay-container {
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform: translateY(0);
-            z-index: 100;
-        }
-
-        body.mobile-layout-active .container.active .overlay-container {
-            transform: translateY(-100%);
-        }
-
-        body.mobile-layout-active .overlay {
-            flex-direction: column;
-            width: 100%;
-            height: 200%;
-            left: 0;
-            transform: translateY(0);
-        }
-
-        body.mobile-layout-active .container.active .overlay {
-            transform: translateY(50%);
-        }
-
-        body.mobile-layout-active .overlay-panel {
-            width: 100%;
-            height: 50%;
-            padding: 20px;
-            transform: translateX(0);
-        }
-
-        body.mobile-layout-active .overlay-left {
-            top: 0;
-            transform: translateY(-20%);
-        }
-
-        body.mobile-layout-active .overlay-right {
-            top: 50%;
-            transform: translateY(0);
-        }
-
-        body.mobile-layout-active .container.active .overlay-left {
-            transform: translateY(0);
-        }
-        body.mobile-layout-active .container.active .overlay-right {
-            transform: translateY(20%);
-        }
-
-        /* Restore larger text sizes for activated mobile layout */
-        body.mobile-layout-active form {
-            padding: 0 20px;
-        }
-        body.mobile-layout-active h1 {
-            font-size: 1.8em;
-            margin-bottom: 15px;
-        }
-        body.mobile-layout-active .overlay h1 {
-            font-size: 2em;
-        }
-        body.mobile-layout-active .overlay p {
-            margin: 15px 0 25px;
-        }
-        body.mobile-layout-active button {
-            padding: 10px 30px;
-            font-size: 0.9em;
-        }
 
         /* Custom Modal for Alerts */
         .custom-modal {
@@ -529,7 +504,6 @@
 <body>
 
     <div class="container" id="container">
-        <!-- Sign Up Form (Registration) -->
         <div class="form-container sign-up-container">
             <form id="signUpForm">
                 <h1>Buat Akun</h1>
@@ -545,7 +519,6 @@
             </form>
         </div>
 
-        <!-- Sign In Form (Login) -->
         <div class="form-container sign-in-container">
             <form id="signInForm">
                 <h1>Login</h1>
@@ -562,7 +535,6 @@
             </form>
         </div>
 
-        <!-- Overlay for sliding effect -->
         <div class="overlay-container">
             <div class="overlay">
                 <div class="overlay-panel overlay-left">
@@ -579,10 +551,8 @@
         </div>
     </div>
 
-    <!-- Toggle Mobile View Button -->
     <button id="toggleMobileViewBtn" onclick="toggleMobileLayout()">Tampilkan versi mobile</button>
 
-    <!-- Custom Modal for Alerts -->
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
             <p id="modal-message" class="text-lg font-medium mb-4"></p>
@@ -590,7 +560,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
@@ -701,6 +670,9 @@
         });
 
         // --- Toggle Mobile Layout Function ---
+        // This function and button are now largely redundant as the CSS handles responsiveness
+        // based on screen width. If you still want a *manual* toggle, you can keep it,
+        // but its styling will need adjustment for consistency.
         function toggleMobileLayout() {
             const body = document.body;
             const button = document.getElementById('toggleMobileViewBtn');
