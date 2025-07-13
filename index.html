@@ -9,25 +9,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-    <!-- Font Awesome untuk ikon (misal: panah accordion, ikon pengguna) -->
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Variabel Tema */
+        /* Theme Variables */
         :root {
-            --bg: #f9f9f9;
-            --text: #2c3e50;
-            --primary: #3498db;
-            --card: #ffffff;
-            --border: #ddd;
-            --primary-rgb: 52, 152, 219; /* RGB for primary color */
+            /* Light Mode Colors (White & Blue) */
+            --bg: #ffffff; /* Pure white background */
+            --text: #333333; /* Dark gray for main text, almost black */
+            --primary: #007bff; /* Bright blue for accents */
+            --card: #ffffff; /* White card background */
+            --border: #e0e0e0; /* Light gray border */
+            --secondary-text: #6b7280; /* Medium gray for secondary text */
+            --button-text-light: #ffffff; /* White text for primary buttons */
+            --button-bg-light: #007bff; /* Primary blue for buttons */
+            --button-hover-light: #0056b3; /* Darker blue on hover */
+            --primary-rgb: 0, 123, 255; /* RGB for primary blue */
         }
         [data-theme="dark"] {
-            --bg: #1a1a2e;
-            --text: #e0e0e0;
-            --primary: #1abc9c;
-            --card: #2c2c40;
-            --border: #444;
-            --primary-rgb: 26, 188, 156; /* RGB for dark primary color */
+            /* Dark Mode Colors (Light Grey Background, Black Text, Contrasting Accents) */
+            --bg: #f0f0f0; /* Very light gray background for dark mode */
+            --text: #333333; /* Dark gray for main text (readable on light background) */
+            --primary: #28a745; /* Green for dark mode primary (good contrast on light bg) */
+            --card: #e8e8e8; /* Slightly darker light gray card background */
+            --border: #cccccc; /* Medium gray border */
+            --secondary-text: #6b7280; /* Same as light mode, readable */
+            --button-text-dark: #ffffff; /* White text for buttons */
+            --button-bg-dark: #28a745; /* Primary green for buttons */
+            --button-hover-dark: #218838; /* Darker green on hover */
+            --primary-rgb: 40, 167, 69; /* RGB for primary green */
         }
 
         /* General Styles */
@@ -38,6 +48,7 @@
             transition: all 0.3s ease;
             margin: 0;
             line-height: 1.6;
+            padding: 1rem; /* Ensure padding on very small screens */
         }
         header {
             position: sticky;
@@ -49,11 +60,13 @@
             align-items: center;
             border-bottom: 1px solid var(--border);
             z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for header */
         }
         header h1 {
             margin: 0;
             font-size: 24px;
             color: var(--primary);
+            font-weight: bold;
         }
         .theme-btn {
             background: transparent;
@@ -61,23 +74,34 @@
             font-size: 22px;
             cursor: pointer;
             color: var(--text);
-            transition: color 0.3s ease;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            padding: 8px; /* Added padding for better touch target */
+            border-radius: 50%; /* Make it round */
         }
         .theme-btn:hover {
+            background-color: rgba(0,0,0,0.05); /* Subtle hover effect */
             color: var(--primary);
+        }
+        [data-theme="dark"] .theme-btn:hover {
+            background-color: rgba(0,0,0,0.1); /* Darker hover for light background in dark mode */
         }
         main {
             max-width: 700px;
             margin: 20px auto;
             padding: 0 20px;
         }
+        @media (max-width: 640px) { /* Adjust main padding for smaller screens */
+            main {
+                padding: 0 10px;
+            }
+        }
 
-        /* Form & Input Styles (retained for custom elements) */
+        /* Form & Input Styles */
         label {
             font-weight: 600;
             margin-top: 15px;
             display: block;
-            color: var(--text);
+            color: var(--text); /* Text color for labels */
         }
         input, select, textarea {
             width: 100%;
@@ -87,34 +111,129 @@
             border-radius: 8px;
             border: 1px solid var(--border);
             background-color: var(--card);
-            color: var(--text);
-            transition: border-color 0.3s ease, background-color 0.3s ease;
+            color: var(--text); /* Text color inside input fields */
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
         input:focus, select:focus, textarea:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 2px rgba(var(--primary-rgb, 52, 152, 219), 0.2);
+            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
         }
-        button {
+        .btn-base { /* Base style for all custom buttons */
             width: 100%;
             padding: 12px;
             margin-top: 10px;
             border-radius: 8px;
             border: none;
-            background: var(--primary);
-            color: white;
+            color: var(--button-text-light);
+            background: var(--button-bg-light);
             cursor: pointer;
             font-weight: bold;
             font-size: 16px;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
         }
-        button:hover {
+        [data-theme="dark"] .btn-base {
+            color: var(--button-text-dark);
+            background: var(--button-bg-dark);
+        }
+        .btn-base:hover {
+            background-color: var(--button-hover-light);
             opacity: 0.9;
             transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Slightly larger shadow on hover */
         }
-        button:active {
+        [data-theme="dark"] .btn-base:hover {
+            background-color: var(--button-hover-dark);
+        }
+        .btn-base:active {
             transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Smaller shadow on click */
         }
+
+        /* Specific button overrides */
+        .btn-auth {
+            padding: 8px 16px; /* Adjusted padding */
+            border-radius: 8px;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* font-semibold */
+            color: var(--button-text-light);
+            background: var(--button-bg-light);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.3s ease;
+        }
+        [data-theme="dark"] .btn-auth {
+            color: var(--button-text-dark);
+            background: var(--button-bg-dark);
+        }
+        .btn-auth:hover {
+            background-color: var(--button-hover-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] .btn-auth:hover {
+            background-color: var(--button-hover-dark);
+        }
+
+        .btn-logout {
+            background-color: #dc3545; /* Red color */
+            color: white !important; /* Ensure white text for red button */
+        }
+        .btn-logout:hover {
+            background-color: #c82333; /* Darker red on hover */
+        }
+        .btn-order-form {
+            background-color: var(--button-bg-light); /* Use primary button color */
+            color: var(--button-text-light);
+        }
+        [data-theme="dark"] .btn-order-form {
+            background-color: var(--button-bg-dark);
+            color: var(--button-text-dark);
+        }
+        .btn-order-form:hover {
+            background-color: var(--button-hover-light);
+        }
+        [data-theme="dark"] .btn-order-form:hover {
+            background-color: var(--button-hover-dark);
+        }
+
+        .btn-check-status {
+            background-color: #6c757d; /* Gray color */
+            color: white;
+        }
+        .btn-check-status:hover {
+            background-color: #5a6268; /* Darker gray on hover */
+        }
+
+        .qr-btn {
+            display: block; /* Ensure it takes full width */
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            color: white; /* QR buttons always have white text */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+        }
+        .qr-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .qr-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .qr-btn.dana {
+            background: #42b72a; /* Specific green for Dana */
+        }
+        .qr-btn.dana:hover { background-color: #3aa823; }
+        .qr-btn.shopeepay {
+            background: #ee4d2d; /* Specific orange for ShopeePay */
+        }
+        .qr-btn.shopeepay:hover { background-color: #d64126; }
+
 
         /* Info Box */
         .info {
@@ -143,6 +262,7 @@
             text-align: center;
             font-style: italic;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            color: var(--text);
         }
         #animTestimoni {
             position: absolute;
@@ -158,31 +278,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .qr-btn {
-            margin-top: 15px;
-            background: #333;
-            color: #fff;
-            padding: 12px 20px;
-            text-align: center;
-            border-radius: 8px;
-            text-decoration: none;
-            display: block;
-            font-weight: bold;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        .qr-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        .qr-btn:active {
-            transform: translateY(0);
-        }
-        .qr-btn.dana {
-            background: #42b72a;
-        }
-        .qr-btn.shopeepay {
-            background: #ee4d2d;
+            color: var(--text);
         }
 
         hr {
@@ -195,9 +291,17 @@
             margin-top: 30px;
             margin-bottom: 20px;
             text-align: center;
+            font-weight: bold;
+        }
+        h3 {
+            color: var(--primary);
+            margin-top: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
         }
 
-        /* Gaya untuk konten dinamis */
+        /* Dynamic content styles */
         .dynamic-content-section {
             margin-top: 40px;
             padding-top: 20px;
@@ -206,30 +310,30 @@
 
         /* Accordion Styles for Products */
         .accordion-item {
-            @apply mb-4 bg-white rounded-lg shadow-md overflow-hidden;
+            margin-bottom: 12px; /* mb-3 equivalent */
+            border-radius: 8px; /* rounded-lg equivalent */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* shadow-sm equivalent */
+            overflow: hidden;
             border: 1px solid var(--border);
-        }
-        [data-theme="dark"] .accordion-item {
-            @apply bg-gray-800;
+            background: var(--card);
         }
         .accordion-header {
-            @apply flex justify-between items-center p-4 cursor-pointer font-semibold text-lg;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px; /* p-4 equivalent */
+            cursor: pointer;
+            font-weight: 600; /* font-semibold equivalent */
+            font-size: 1.125rem; /* text-lg equivalent */
             background: var(--card);
             color: var(--text);
+            transition: background-color 0.2s ease;
         }
         .accordion-header:hover {
-            @apply bg-gray-50;
+            background-color: var(--border); /* Use border color for subtle hover */
         }
         [data-theme="dark"] .accordion-header:hover {
-            @apply bg-gray-700;
-        }
-        .accordion-content {
-            @apply p-4 border-t border-gray-200 hidden;
-            background: var(--card);
-            color: var(--text);
-        }
-        [data-theme="dark"] .accordion-content {
-            @apply border-gray-700;
+            background-color: var(--border); /* Consistent hover for dark mode */
         }
         .accordion-header .fa-chevron-down {
             transition: transform 0.3s ease;
@@ -237,42 +341,67 @@
         .accordion-header.active .fa-chevron-down {
             transform: rotate(180deg);
         }
-        .product-item {
-            @apply p-3 border-b border-gray-200 last:border-b-0;
+        .accordion-content {
+            padding: 16px; /* p-4 equivalent */
+            border-top: 1px solid var(--border);
+            display: none; /* hidden equivalent */
+            background: var(--card);
+            color: var(--text);
         }
-        [data-theme="dark"] .product-item {
-            @apply border-gray-700;
+        .product-item {
+            padding: 12px; /* p-3 equivalent */
+            display: flex;
+            flex-direction: column; /* flex-col equivalent */
+            justify-content: space-between;
+            align-items: flex-start; /* items-start equivalent */
+            border-bottom: 1px solid var(--border);
+        }
+        .product-item:last-child {
+            border-bottom: none; /* last:border-b-0 equivalent */
+        }
+        @media (min-width: 640px) { /* sm:breakpoint */
+            .product-item {
+                flex-direction: row; /* sm:flex-row equivalent */
+                align-items: center; /* sm:items-center equivalent */
+            }
         }
         .product-item:hover {
-            @apply bg-gray-50;
+            background-color: var(--border); /* Use border color for subtle hover */
         }
         [data-theme="dark"] .product-item:hover {
-            @apply bg-gray-700;
+            background-color: var(--border); /* Consistent hover for dark mode */
         }
         .product-item button {
-            @apply mt-2 px-4 py-2 text-sm rounded-md;
-            width: auto; /* Override global button width */
+            margin-top: 8px; /* mt-2 equivalent */
+            padding: 8px 16px; /* px-4 py-2 equivalent */
+            font-size: 0.875rem; /* text-sm equivalent */
+            border-radius: 6px; /* rounded-md equivalent */
+            width: auto;
+            color: var(--button-text-light);
+            background: var(--button-bg-light);
+        }
+        @media (min-width: 640px) { /* sm:breakpoint */
+            .product-item button {
+                margin-top: 0; /* sm:mt-0 equivalent */
+            }
+        }
+        [data-theme="dark"] .product-item button {
+            color: var(--button-text-dark);
+            background: var(--button-bg-dark);
+        }
+        .product-item button:hover {
+            background-color: var(--button-hover-light);
+        }
+        [data-theme="dark"] .product-item button:hover {
+            background-color: var(--button-hover-dark);
         }
         .product-item .price {
-            @apply font-bold text-blue-600;
+            font-weight: bold;
+            color: var(--primary);
         }
-        [data-theme="dark"] .product-item .price {
-            @apply text-teal-400;
-        }
-
-        /* Custom Modal Styling */
-        .custom-modal {
-            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] hidden;
-        }
-        .custom-modal-content {
-            @apply bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center;
-        }
-        [data-theme="dark"] .custom-modal-content {
-            @apply bg-gray-800 text-gray-200;
-        }
-        .custom-modal-content button {
-            @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mt-4;
-            width: auto;
+        .product-item .description {
+            font-size: 0.875rem; /* text-sm equivalent */
+            color: var(--secondary-text);
         }
     </style>
 </head>
@@ -282,8 +411,8 @@
         <div class="flex items-center space-x-4">
             <span id="user-status" class="text-sm">Memuat...</span>
             <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
-            <button id="auth-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors duration-300">Login</button>
-            <button id="logout-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors duration-300 hidden">Logout</button>
+            <button id="auth-btn" class="btn-auth">Login</button>
+            <button id="logout-btn" class="btn-auth btn-logout hidden">Logout</button>
         </div>
     </header>
     <main id="main-content">
@@ -321,7 +450,7 @@
 
             <div class="info" id="infoProduk">Harga dan deskripsi produk akan muncul di sini setelah Anda memilih produk.</div>
 
-            <button type="submit" class="btn-primary">Pesan Sekarang</button>
+            <button type="submit" class="btn-order-form">Pesan Sekarang</button>
         </form>
 
         <div id="hasil" class="hidden"></div>
@@ -332,7 +461,7 @@
         <form onsubmit="event.preventDefault(); cekStatus();" class="bg-white p-6 rounded-lg shadow-md">
             <label for="idCek" class="block text-sm font-medium mb-1 visually-hidden">Masukkan ID Pesanan</label>
             <input type="text" id="idCek" placeholder="Masukkan ID Pesanan Anda (Cth: P16789...)" required aria-label="ID Pesanan" class="input-field" />
-            <button type="submit" class="btn-primary">Cek Status</button>
+            <button type="submit" class="btn-check-status">Cek Status</button>
         </form>
 
         <hr>
@@ -369,13 +498,20 @@
             localStorage.setItem('theme', nextTheme);
         }
         // Set initial theme on load
-        if (localStorage.getItem('theme')) {
-            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
-            document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
-        } else {
-            document.body.setAttribute('data-theme', 'light');
-            document.getElementById('themeToggle').textContent = '🌙';
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            } else {
+                // Default to light mode if no theme is saved
+                document.body.setAttribute('data-theme', 'light');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+            // Call other initial load functions
+            loadProductsForAccordion();
+            renderDynamicContent();
+        });
 
         // --- Custom Alert Modal ---
         const customModal = document.getElementById('custom-modal');
@@ -392,8 +528,6 @@
         });
 
         // --- Firebase Config & Init ---
-        // IMPORTANT: In a Canvas environment, __firebase_config and __initial_auth_token are provided globally.
-        // For local testing or non-Canvas deployment, use your actual Firebase config.
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -438,7 +572,7 @@
         });
 
         authBtn.addEventListener('click', () => {
-            window.location.href = 'auth.html'; // Redirect to auth page
+            window.location.replace('./auth_animated.html'); // Redirect to new animated auth page
         });
 
         logoutBtn.addEventListener('click', async () => {
@@ -491,11 +625,11 @@
                     for (let namaProduk in data[kategori]) {
                         const produk = data[kategori][namaProduk];
                         accordionHtml += `
-                            <li class="product-item flex justify-between items-center">
-                                <div>
+                            <li class="product-item">
+                                <div class="flex-grow">
                                     <span class="font-semibold">${namaProduk}</span><br>
                                     <span class="price">Rp${formatRupiah(produk.harga)}</span><br>
-                                    <span class="text-sm text-gray-600">${produk.deskripsi || produk.cara || 'Tidak ada deskripsi.'}</span>
+                                    <span class="description">${produk.deskripsi || produk.cara || 'Tidak ada deskripsi.'}</span>
                                 </div>
                                 <button class="btn-primary" onclick="selectProductFromList('${kategori}', '${namaProduk}')">Pesan</button>
                             </li>
@@ -540,7 +674,7 @@
             kategoriSelect.value = kategori;
             kategoriSelect.dispatchEvent(new Event('change')); // Trigger change to load products
             setTimeout(() => { // Give a small delay for products to load
-                produkSelect.value = namaProduuk;
+                produkSelect.value = namaProduk;
                 produkSelect.dispatchEvent(new Event('change')); // Trigger change to show info
                 showCustomAlert(`Produk "${namaProduk}" dari kategori "${kategori}" telah dipilih di formulir pesanan.`);
                 document.getElementById('formPesanan').scrollIntoView({ behavior: 'smooth' }); // Scroll to form
@@ -593,7 +727,7 @@
                 }
             }).catch(error => {
                 console.error("Error loading product details:", error);
-                infoProduuk.innerHTML = 'Gagal memuat detail produk.';
+                infoProduk.innerHTML = 'Gagal memuat detail produk.';
             });
         });
 
@@ -631,7 +765,7 @@
                 hasilDiv.classList.remove('hidden');
                 hasilDiv.innerHTML = `
                     <p class="text-green-600 font-semibold text-lg">✅ Pesanan Anda berhasil dibuat!</p>
-                    <p class="text-gray-700"><b>ID Pesanan Anda:</b> <code class="bg-gray-200 p-1 rounded">${id}</code></p>
+                    <p class="text-gray-700"><b>ID Pesanan Anda:</b> <code class="bg-gray-200 p-1 rounded text-sm">${id}</code></p>
                     <div class="info">
                         <p class="font-bold text-lg"><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(harga)}</strong> ke salah satu rekening/ewallet berikut:</p>
                         <ul class="list-disc list-inside mt-2">
@@ -642,8 +776,8 @@
                         </ul>
                         <p class="mt-3">Mohon transfer sesuai nominal agar pesanan cepat diproses.</p>
                     </div>
-                    <a class='qr-btn bg-blue-600 hover:bg-blue-700' href="upload.html?id=${id}">📤 Upload Bukti Bayar Sekarang</a>
-                    <a class='qr-btn bg-gray-600 hover:bg-gray-700' href="status.html?id=${id}">📄 Cek Status Pesanan Anda</a>
+                    <a class='qr-btn bg-blue-600 hover:bg-blue-700' href="./upload.html?id=${id}">📤 Upload Bukti Bayar Sekarang</a>
+                    <a class='qr-btn bg-gray-600 hover:bg-gray-700' href="./status.html?id=${id}">📄 Cek Status Pesanan Anda</a>
                     <a class='qr-btn dana' href="https://link.dana.id/qr/d?c=${harga}&qr=EAE79493-21BC-4537-832F-C3D7EF3C1A1D" target="_blank" rel="noopener noreferrer">💸 Bayar via Dana (Klik Langsung)</a>
                     <a class='qr-btn shopeepay' href="https://link.shopeepay.co.id/?amount=${harga}&ref_id=${id}&callback=https://asdarcell.github.io/Asdarstoredigital/status.html?id=${id}" target="_blank" rel="noopener noreferrer">🛒 Bayar via ShopeePay (Klik Langsung)</a>
                 `;
@@ -667,7 +801,7 @@
         function cekStatus() {
             const id = document.getElementById('idCek').value.trim();
             if (id) {
-                window.location.href = `status.html?id=${id}`;
+                window.location.replace(`./status.html?id=${id}`);
             } else {
                 showCustomAlert("Mohon masukkan ID Pesanan Anda untuk cek status.");
             }
@@ -744,7 +878,6 @@
         });
 
         // --- Render Konten Dinamis dari Admin ---
-        // New structure for dynamic content: dinamis/{pageName}/{blockId}
         async function renderDynamicContent() {
             try {
                 const snapshot = await dinamisRef.child('index').once('value');
@@ -752,7 +885,6 @@
                 dynamicContentArea.innerHTML = ''; // Clear previous content
 
                 const blocks = snapshot.val() || {};
-                // Convert object to array and sort by 'order' property if it exists
                 const sortedBlocks = Object.keys(blocks).map(key => ({ id: key, ...blocks[key] }))
                                         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -806,12 +938,6 @@
                 console.error("Gagal memuat konten dinamis untuk index.html:", error);
             }
         }
-
-        // Panggil fungsi render konten dinamis dan produk saat DOM siap
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProductsForAccordion();
-            renderDynamicContent();
-        });
     </script>
 </body>
 </html>
