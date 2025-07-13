@@ -409,6 +409,44 @@
                 font-size: 0.9em;
             }
         }
+
+        /* Custom Modal for Alerts */
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; /* Controlled by JS .show class */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-modal.show {
+            display: flex;
+        }
+        .custom-modal-content {
+            background: #fff; /* White background for modal content */
+            color: #333; /* Dark text for modal content */
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .custom-modal-content button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #fff;
+            background: #007bff;
+            transition: background-color 0.3s ease;
+        }
+        .custom-modal-content button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -416,7 +454,7 @@
     <div class="container" id="container">
         <!-- Sign Up Form (Registration) -->
         <div class="form-container sign-up-container">
-            <form action="#">
+            <form id="signUpForm">
                 <h1>Buat Akun</h1>
                 <div class="social-container">
                     <a href="#" class="social"><i class="fab fa-google"></i></a>
@@ -424,16 +462,15 @@
                     <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                 </div>
                 <span>atau gunakan email Anda untuk registrasi</span>
-                <input type="text" placeholder="Username" />
-                <input type="email" placeholder="Email" />
-                <input type="password" placeholder="Password" />
-                <button>Daftar</button>
+                <input type="email" id="signUpEmail" placeholder="Email" required />
+                <input type="password" id="signUpPassword" placeholder="Password" required />
+                <button type="submit">Daftar</button>
             </form>
         </div>
 
         <!-- Sign In Form (Login) -->
         <div class="form-container sign-in-container">
-            <form action="#">
+            <form id="signInForm">
                 <h1>Login</h1>
                 <div class="social-container">
                     <a href="#" class="social"><i class="fab fa-google"></i></a>
@@ -441,10 +478,10 @@
                     <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                 </div>
                 <span>atau gunakan akun Anda</span>
-                <input type="text" placeholder="Username" />
-                <input type="password" placeholder="Password" />
+                <input type="email" id="signInEmail" placeholder="Email" required />
+                <input type="password" id="signInPassword" placeholder="Password" required />
                 <a href="#" class="forgot-password">Lupa password?</a>
-                <button>Login</button>
+                <button type="submit">Login</button>
             </form>
         </div>
 
@@ -465,17 +502,122 @@
         </div>
     </div>
 
+    <!-- Custom Modal for Alerts -->
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message" class="text-lg font-medium mb-4"></p>
+            <button id="modal-close-btn">OK</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
+        // --- DOM Elements ---
         const signUpButton = document.getElementById('signUp');
         const signInButton = document.getElementById('signIn');
         const container = document.getElementById('container');
 
+        const signUpForm = document.getElementById('signUpForm');
+        const signUpEmailInput = document.getElementById('signUpEmail');
+        const signUpPasswordInput = document.getElementById('signUpPassword');
+
+        const signInForm = document.getElementById('signInForm');
+        const signInEmailInput = document.getElementById('signInEmail');
+        const signInPasswordInput = document.getElementById('signInPassword');
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        function showCustomAlert(message) {
+            modalMessage.textContent = message;
+            customModal.classList.add('show');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+
+        // --- Firebase Config & Init ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll.appspot.com",
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // --- Auth State Listener (Redirect if already logged in) ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in, redirect to index.html
+                window.location.replace('./index.html');
+            }
+        });
+
+        // --- Form Event Listeners for Animation ---
         signUpButton.addEventListener('click', () => {
             container.classList.add("active");
         });
 
         signInButton.addEventListener('click', () => {
             container.classList.remove("active");
+        });
+
+        // --- Firebase Authentication Logic ---
+
+        // Sign Up (Daftar)
+        signUpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = signUpEmailInput.value;
+            const password = signUpPasswordInput.value;
+
+            try {
+                await auth.createUserWithEmailAndPassword(email, password);
+                showCustomAlert('Pendaftaran berhasil! Anda akan diarahkan ke halaman toko.');
+                // Redirection handled by onAuthStateChanged listener
+            } catch (error) {
+                console.error("Sign Up Error:", error);
+                let errorMessage = 'Gagal mendaftar. Silakan coba lagi.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email ini sudah terdaftar. Silakan login atau gunakan email lain.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Format email tidak valid.';
+                }
+                showCustomAlert(errorMessage);
+            }
+        });
+
+        // Sign In (Login)
+        signInForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = signInEmailInput.value;
+            const password = signInPasswordInput.value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showCustomAlert('Login berhasil! Anda akan diarahkan ke halaman toko.');
+                // Redirection handled by onAuthStateChanged listener
+            } catch (error) {
+                console.error("Sign In Error:", error);
+                let errorMessage = 'Gagal login. Silakan periksa email dan password Anda.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'Email atau password salah.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Format email tidak valid.';
+                }
+                showCustomAlert(errorMessage);
+            }
         });
     </script>
 
