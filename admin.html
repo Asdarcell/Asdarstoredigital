@@ -640,10 +640,10 @@
                 ${paymentProofBuyerHtml}
 
                 <div class="mt-6 border-t pt-4 border-border-color">
-                    <h4 class="text-lg font-semibold mb-3">Upload Bukti Admin (Resi/Pengiriman)</h4>
+                    <h4 class="text-lg font-semibold mb-3">Unggah Bukti Admin (Resi/Pengiriman)</h4>
                     <input type="file" id="adminProofInput" accept="image/*" class="mb-3 w-full" />
                     <button class="btn btn-primary w-full" onclick="uploadAdminProof('${order.id}')" id="uploadAdminProofBtn">
-                        <i class="fas fa-upload"></i> Unggah Bukti Admin
+                        <i class="fas fa-upload"></i> Unggah Bukti
                     </button>
                     ${adminProofHtml}
                 </div>
@@ -668,9 +668,9 @@
             `;
             // Cek apakah ada bukti admin yang sudah ada saat menampilkan detail
             if (order.bukti_admin_url) {
-                document.getElementById('uploadAdminProofBtn').textContent = 'Perbarui Bukti Admin';
+                document.getElementById('uploadAdminProofBtn').textContent = 'Perbarui Bukti';
             } else {
-                document.getElementById('uploadAdminProofBtn').textContent = 'Unggah Bukti Admin';
+                document.getElementById('uploadAdminProofBtn').textContent = 'Unggah Bukti';
             }
         }
 
@@ -696,7 +696,7 @@
             try {
                 const formData = new FormData();
                 formData.append('key', IMGBB_API_KEY);
-                formData.append('image', file);
+                formData.append('image', file); // Mengirim file langsung
 
                 const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, {
                     method: 'POST',
@@ -750,6 +750,7 @@
                                      `Anda bisa cek statusnya dan update terbaru di sini: ${statusLink}\n\n` +
                                      `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
                 } else if (newStatus === 'Selesai') {
+                    // Cukup kirim notifikasi selesai dan link status, TANPA URL BUKTI ADMIN
                     messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* sudah *Selesai*. Terima kasih telah berbelanja di Asdar Store Digital.\n\n` +
                                      `Cek detail dan bukti penyelesaian di sini: ${statusLink}\n\n` +
                                      `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
