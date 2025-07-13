@@ -4,220 +4,462 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login / Daftar - Asdar Store Digital</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Custom styles for theme and font */
+        /* Basic Reset & Body Styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            @apply bg-gray-100 text-gray-800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(90deg, #e0f2f7, #e8eaf6); /* Soft blue-purple gradient */
+            background-size: 200% 200%; /* For subtle animation */
+            animation: backgroundPan 10s ease infinite; /* Subtle background movement */
+            overflow: hidden; /* Hide scrollbar if content overflows slightly */
         }
-        [data-theme="dark"] body {
-            @apply bg-gray-900 text-gray-200;
+
+        /* Keyframe for subtle background animation */
+        @keyframes backgroundPan {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .card-auth {
-            @apply bg-white p-8 rounded-xl shadow-lg w-full max-w-md;
+
+        /* Main Container */
+        .container {
+            background-color: #fff;
+            border-radius: 20px; /* Softer rounded corners */
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            position: relative;
+            overflow: hidden;
+            width: 768px; /* Standard width for desktop view */
+            max-width: 100%; /* Ensure it fits smaller screens */
+            min-height: 480px; /* Standard height */
+            margin: 20px; /* Add some margin for mobile view */
         }
-        [data-theme="dark"] .card-auth {
-            @apply bg-gray-800;
+
+        /* Form Containers (Login & Register) */
+        .form-container {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            transition: all 0.6s ease-in-out;
+            background-color: #fff; /* Ensure forms have white background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 50px;
         }
-        .input-field {
-            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
+
+        .sign-in-container {
+            left: 0;
+            width: 50%;
+            z-index: 2; /* Ensure login form is on top initially */
         }
-        [data-theme="dark"] .input-field {
-            @apply bg-gray-700 border-gray-600 text-gray-100;
+
+        .sign-up-container {
+            left: 0;
+            width: 50%;
+            opacity: 0; /* Hidden initially */
+            z-index: 1; /* Below login form initially */
         }
-        .btn-primary {
-            @apply w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+
+        /* When container has 'active' class (for registration view) */
+        .container.active .sign-in-container {
+            transform: translateX(100%); /* Slide login form right */
         }
-        .btn-secondary {
-            @apply w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50;
+
+        .container.active .sign-up-container {
+            transform: translateX(100%); /* Slide register form right */
+            opacity: 1; /* Make register form visible */
+            z-index: 5; /* Bring register form to front */
+            animation: show 0.6s; /* Fade in animation for register form */
         }
-        [data-theme="dark"] .btn-secondary {
-            @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+
+        @keyframes show {
+            0%, 49% {
+                opacity: 0;
+                z-index: 1;
+            }
+            50%, 100% {
+                opacity: 1;
+                z-index: 5;
+            }
         }
-        .theme-btn {
-            @apply absolute top-4 right-4 bg-gray-200 text-gray-800 p-2 rounded-full shadow-md hover:bg-gray-300 transition-colors duration-300;
+
+        /* Form Elements */
+        form {
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 0 50px;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            width: 100%; /* Ensure form takes full width of its container */
         }
-        [data-theme="dark"] .theme-btn {
-            @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+
+        h1 {
+            font-weight: bold;
+            margin: 0;
+            color: #333; /* Dark text for headings */
+            font-size: 2.2em; /* Larger heading */
+            margin-bottom: 20px; /* Spacing below heading */
+        }
+
+        .social-container {
+            margin: 20px 0;
+        }
+
+        .social-container a {
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 5px;
+            height: 40px;
+            width: 40px;
+            color: #555; /* Icon color */
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .social-container a:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-2px); /* Lift on hover */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        input {
+            background-color: #eee;
+            border: none;
+            padding: 12px 15px;
+            margin: 8px 0;
+            width: 100%;
+            border-radius: 10px; /* Rounded input fields */
+            font-size: 0.9em;
+            color: #333;
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #d3d3d3; /* Subtle focus ring */
+        }
+
+        .forgot-password {
+            color: #333;
+            font-size: 0.9em;
+            text-decoration: none;
+            margin: 15px 0;
+            transition: color 0.3s ease;
+        }
+        .forgot-password:hover {
+            color: #3498db; /* Primary blue on hover */
+        }
+
+        /* Buttons */
+        button {
+            border-radius: 20px;
+            border: 1px solid #3498db;
+            background-color: #3498db;
+            color: #FFFFFF;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 12px 45px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: transform 0.2s ease-in, background-color 0.3s ease;
+            cursor: pointer;
+            margin-top: 20px; /* Spacing below inputs */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            transform: translateY(-2px); /* Lift button on hover */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            background-color: #2980b9; /* Darker blue on hover */
+        }
+        button:active {
+            transform: translateY(0); /* Press effect */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        button.ghost { /* Button for the overlay panels */
+            background-color: transparent;
+            border-color: #FFFFFF;
+            color: #FFFFFF;
+        }
+        button.ghost:hover {
+            background-color: rgba(255,255,255,0.15); /* Slight white tint on hover */
+        }
+        button.ghost:active {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Overlay Container & Panels */
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 50%; /* Starts on the right half */
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+            transition: transform 0.6s ease-in-out;
+            z-index: 100; /* Ensure overlay is on top */
+        }
+
+        .container.active .overlay-container {
+            transform: translateX(-100%); /* Slide overlay left */
+        }
+
+        .overlay {
+            background: linear-gradient(to right, #3498db, #2980b9); /* Primary blue gradient */
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: 0 0;
+            color: #FFFFFF;
+            position: relative;
+            left: -100%; /* Initially hidden to the left of its container */
+            height: 100%;
+            width: 200%; /* To allow sliding effect */
+            transform: translateX(0);
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .container.active .overlay {
+            transform: translateX(50%); /* Slide overlay content to the right */
+        }
+
+        .overlay-panel {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 40px;
+            text-align: center;
+            top: 0;
+            height: 100%;
+            width: 50%; /* Each panel takes half of the 200% width overlay */
+            transform: translateX(0);
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .overlay-left {
+            transform: translateX(-20%); /* Initially shifted left */
+        }
+
+        .overlay-right {
+            right: 0;
+            transform: translateX(0); /* Initially in normal position */
+        }
+
+        /* When container is active, switch overlay panel positions */
+        .container.active .overlay-left {
+            transform: translateX(0); /* Slide left panel to center */
+        }
+
+        .container.active .overlay-right {
+            transform: translateX(20%); /* Slide right panel further right */
+        }
+
+        .overlay h1 {
+            font-size: 2.5em; /* Larger heading in overlay */
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .overlay p {
+            font-size: 0.9em;
+            font-weight: 300;
+            line-height: 20px;
+            letter-spacing: 0.5px;
+            margin: 25px 0 35px;
+            color: #eee;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%; /* Adjust width for smaller screens */
+                min-height: 580px; /* Increase height for vertical stacking */
+            }
+
+            .form-container {
+                width: 100%; /* Forms take full width */
+                height: 50%; /* Each form takes half height */
+                padding: 0 20px; /* Reduce padding */
+            }
+
+            .sign-in-container, .sign-up-container {
+                top: 0;
+                left: 0;
+                transform: translateY(0);
+                opacity: 1; /* Always visible to start stacking */
+                z-index: 2;
+                height: auto; /* Allow height to adjust */
+                min-height: 480px; /* Minimum height for form content */
+            }
+            .sign-up-container {
+                transform: translateY(100%); /* Stack below login form initially */
+                opacity: 0;
+                pointer-events: none; /* Disable interaction until active */
+            }
+
+            .container.active .sign-in-container {
+                transform: translateY(-100%); /* Slide login form up */
+                opacity: 0;
+                pointer-events: none;
+            }
+            .container.active .sign-up-container {
+                transform: translateY(0); /* Slide register form up to visible position */
+                opacity: 1;
+                pointer-events: auto; /* Enable interaction when active */
+            }
+
+            .overlay-container {
+                top: 50%; /* Position overlay in the bottom half */
+                left: 0;
+                width: 100%; /* Overlay takes full width */
+                height: 50%; /* Overlay takes half height */
+                transform: translateY(0);
+            }
+
+            .container.active .overlay-container {
+                transform: translateY(-100%); /* Slide overlay up */
+            }
+
+            .overlay {
+                flex-direction: column; /* Stack overlay content vertically */
+                width: 100%; /* Reset width */
+                left: 0;
+                height: 200%; /* Double height for vertical slide */
+                transform: translateY(0);
+            }
+
+            .container.active .overlay {
+                transform: translateY(50%); /* Slide overlay content down */
+            }
+
+            .overlay-panel {
+                width: 100%; /* Panels take full width */
+                height: 50%; /* Each panel takes half height */
+                padding: 20px; /* Adjust padding */
+                transform: translateY(0); /* Reset horizontal transform */
+            }
+
+            .overlay-left {
+                top: 0; /* Position left panel on top half of overlay */
+                transform: translateY(-20%);
+            }
+
+            .overlay-right {
+                top: 50%; /* Position right panel on bottom half of overlay */
+                transform: translateY(0);
+            }
+
+            .container.active .overlay-left {
+                transform: translateY(0); /* Slide left panel down */
+            }
+            .container.active .overlay-right {
+                transform: translateY(20%); /* Slide right panel further down */
+            }
+
+            form {
+                padding: 0 20px; /* Smaller padding for forms */
+            }
+
+            h1 {
+                font-size: 1.8em; /* Adjust heading size */
+                margin-bottom: 15px;
+            }
+
+            .overlay h1 {
+                font-size: 2em;
+            }
+
+            .overlay p {
+                margin: 15px 0 25px; /* Adjust paragraph margins */
+            }
+            button {
+                padding: 10px 30px; /* Smaller button padding */
+                font-size: 0.9em;
+            }
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen relative" data-theme="light">
+<body>
 
-    <!-- Theme Toggle Button -->
-    <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    <div class="container" id="container">
+        <div class="form-container sign-up-container">
+            <form action="#">
+                <h1>Buat Akun</h1>
+                <div class="social-container">
+                    <a href="#" class="social"><i class="fab fa-google"></i></a>
+                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+                <span>atau gunakan email Anda untuk registrasi</span>
+                <input type="text" placeholder="Username" />
+                <input type="email" placeholder="Email" />
+                <input type="password" placeholder="Password" />
+                <button>Daftar</button>
+            </form>
+        </div>
 
-    <div class="card-auth">
-        <h2 class="text-3xl font-bold text-center mb-6 text-blue-600">Asdar Store Digital</h2>
-        <p class="text-center text-lg mb-8" id="auth-title">Login ke Akun Anda</p>
+        <div class="form-container sign-in-container">
+            <form action="#">
+                <h1>Login</h1>
+                <div class="social-container">
+                    <a href="#" class="social"><i class="fab fa-google"></i></a>
+                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+                <span>atau gunakan akun Anda</span>
+                <input type="text" placeholder="Username" />
+                <input type="password" placeholder="Password" />
+                <a href="#" class="forgot-password">Lupa password?</a>
+                <button>Login</button>
+            </form>
+        </div>
 
-        <form id="auth-form" class="space-y-4">
-            <div>
-                <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                <input type="email" id="email" class="input-field" placeholder="email@example.com" required>
-            </div>
-            <div>
-                <label for="password" class="block text-sm font-medium mb-1">Password</label>
-                <input type="password" id="password" class="input-field" placeholder="Minimal 6 karakter" required>
-            </div>
-            <button type="submit" id="auth-submit-btn" class="btn-primary">Login</button>
-            <button type="button" id="toggle-auth-mode" class="btn-secondary mt-2">Belum punya akun? Daftar Sekarang</button>
-        </form>
-
-        <!-- Custom Modal for Alerts -->
-        <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
-                <p id="modal-message" class="text-lg font-medium mb-4"></p>
-                <button id="modal-close-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">OK</button>
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <h1>Selamat Datang!</h1>
+                    <p>Masukkan detail pribadi Anda dan mulai perjalanan bersama kami</p>
+                    <button class="ghost" id="signIn">Login</button>
+                </div>
+                <div class="overlay-panel overlay-right">
+                    <h1>Halo, Teman!</h1>
+                    <p>Masukkan detail Anda dan mulai perjalanan dengan kami</p>
+                    <button class="ghost" id="signUp">Daftar</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <script>
-        // --- Theme Toggle ---
-        function toggleTheme() {
-            const body = document.body;
-            const btn = document.getElementById('themeToggle');
-            const currentTheme = body.getAttribute('data-theme');
-            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
-            body.setAttribute('data-theme', nextTheme);
-            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
-            localStorage.setItem('theme', nextTheme);
-        }
-        // Set initial theme on load
-        if (localStorage.getItem('theme')) {
-            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
-            document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
-        } else {
-            document.body.setAttribute('data-theme', 'light');
-            document.getElementById('themeToggle').textContent = '🌙';
-        }
+        const signUpButton = document.getElementById('signUp');
+        const signInButton = document.getElementById('signIn');
+        const container = document.getElementById('container');
 
-        // --- Custom Alert Modal ---
-        const customModal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
-
-        function showCustomAlert(message) {
-            modalMessage.textContent = message;
-            customModal.classList.remove('hidden');
-        }
-
-        modalCloseBtn.addEventListener('click', () => {
-            customModal.classList.add('hidden');
+        signUpButton.addEventListener('click', () => {
+            container.classList.add("active");
         });
 
-        // --- Firebase Config & Init ---
-        // IMPORTANT: In a Canvas environment, __firebase_config and __initial_auth_token are provided globally.
-        // For local testing or non-Canvas deployment, use your actual Firebase config.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-            projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll.appspot.com",
-            messagingSenderId: "220670500351",
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.database();
-
-        // --- Auth Mode Toggle ---
-        let isLoginMode = true; // true for login, false for register
-        const authTitle = document.getElementById('auth-title');
-        const authSubmitBtn = document.getElementById('auth-submit-btn');
-        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
-
-        toggleAuthModeBtn.addEventListener('click', () => {
-            isLoginMode = !isLoginMode;
-            if (isLoginMode) {
-                authTitle.textContent = 'Login ke Akun Anda';
-                authSubmitBtn.textContent = 'Login';
-                toggleAuthModeBtn.textContent = 'Belum punya akun? Daftar Sekarang';
-            } else {
-                authTitle.textContent = 'Daftar Akun Baru';
-                authSubmitBtn.textContent = 'Daftar';
-                toggleAuthModeBtn.textContent = 'Sudah punya akun? Login Sekarang';
-            }
-        });
-
-        // --- Handle Form Submission ---
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            if (password.length < 6) {
-                showCustomAlert('Password minimal 6 karakter.');
-                return;
-            }
-
-            try {
-                if (isLoginMode) {
-                    await auth.signInWithEmailAndPassword(email, password);
-                    showCustomAlert('Login Berhasil! Mengarahkan ke halaman utama...');
-                    setTimeout(() => { window.location.replace('./index.html'); }, 1500); // Redirect to main page
-                } else {
-                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                    // Set default role for new users (e.g., 'buyer')
-                    await db.ref('users/' + userCredential.user.uid).set({
-                        email: userCredential.user.email,
-                        role: 'buyer' // Default role for new registrations
-                    });
-                    showCustomAlert('Registrasi Berhasil! Silakan login.');
-                    isLoginMode = true; // Switch to login mode after registration
-                    authTitle.textContent = 'Login ke Akun Anda';
-                    authSubmitBtn.textContent = 'Login';
-                    toggleAuthModeBtn.textContent = 'Belum punya akun? Daftar Sekarang';
-                }
-            } catch (error) {
-                console.error("Authentication Error:", error);
-                let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = 'Email tidak terdaftar.';
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Password salah.';
-                } else if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Format email tidak valid.';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
-                }
-                showCustomAlert(errorMessage);
-            }
-        });
-
-        // --- Initial Auth Check for Canvas Environment ---
-        // This ensures the initial auth token is used if available
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                try {
-                    await auth.signInWithCustomToken(__initial_auth_token);
-                    // If successful, user is already logged in, redirect to index.
-                    showCustomAlert('Autentikasi otomatis berhasil! Mengarahkan ke halaman utama...');
-                    setTimeout(() => { window.location.replace('./index.html'); }, 1500);
-                } catch (error) {
-                    console.warn("Custom token sign-in failed, proceeding with normal auth form:", error);
-                    // Fallback to anonymous or show login form if custom token fails
-                    await auth.signInAnonymously(); // Sign in anonymously if custom token not available/failed
-                }
-            } else {
-                // If no custom token, sign in anonymously or just show the form
-                await auth.signInAnonymously(); // For general access to public data if needed
-            }
+        signInButton.addEventListener('click', () => {
+            container.classList.remove("active");
         });
     </script>
+
 </body>
 </html>
