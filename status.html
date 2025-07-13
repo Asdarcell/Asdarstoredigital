@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cek Status Pesanan - Asdar Store Digital</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Theme Variables - Consistent with index.html */
@@ -218,6 +215,16 @@
         .status-badge.dibatalkan { background-color: #dc3545; } /* Red */
         .status-badge.tidak-ditemukan { background-color: #6c757d; } /* Gray */
 
+        /* Styles for images within order status display */
+        .proof-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px auto; /* Center image and add vertical space */
+            display: block; /* Ensures margin auto works horizontally */
+            border: 1px solid var(--border);
+        }
+
         /* Custom Modal for Alerts - Consistent */
         .custom-modal {
             position: fixed;
@@ -284,12 +291,10 @@
             </form>
 
             <div id="orderStatusDisplay">
-                <!-- Order status details will be displayed here -->
-            </div>
+                </div>
         </div>
     </main>
 
-    <!-- Custom Modal for Alerts -->
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
             <p id="modal-message" class="text-lg font-medium mb-4"></p>
@@ -297,7 +302,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -347,7 +351,8 @@
         });
 
         // --- Firebase Config & Init ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        // PENTING: Pastikan konfigurasi Firebase ini sudah benar sesuai proyek Anda.
+        const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
@@ -367,7 +372,7 @@
 
         // --- Helper Function ---
         function formatRupiah(angka) {
-            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return parseFloat(angka).toLocaleString('id-ID'); // Menggunakan parseFloat untuk memastikan angka
         }
 
         // --- Check Order Status Function ---
@@ -404,19 +409,40 @@
                         default: statusClass = 'tidak-ditemukan'; break;
                     }
 
+                    // HTML untuk bukti pembayaran (buyer)
+                    let buyerProofHtml = '';
+                    if (orderData.bukti_pembayaran_url) {
+                        buyerProofHtml = `
+                            <p class="mt-4"><strong>Bukti Pembayaran (Buyer):</strong></p>
+                            <a href="${orderData.bukti_pembayaran_url}" target="_blank" class="text-blue-600 hover:underline block mb-2">Lihat Gambar Bukti Transfer</a>
+                            <img src="${orderData.bukti_pembayaran_url}" alt="Bukti Pembayaran Pembeli" class="proof-image">
+                        `;
+                    }
+
+                    // HTML untuk bukti admin
+                    let adminProofHtml = '';
+                    if (orderData.bukti_admin_url) {
+                        adminProofHtml = `
+                            <p class="mt-4"><strong>Bukti Admin (Resi/Pengiriman):</strong></p>
+                            <a href="${orderData.bukti_admin_url}" target="_blank" class="text-blue-600 hover:underline block mb-2">Lihat Gambar Bukti Admin</a>
+                            <img src="${orderData.bukti_admin_url}" alt="Bukti Admin" class="proof-image">
+                        `;
+                    }
+
+
                     orderStatusDisplay.innerHTML = `
                         <p><strong>ID Pesanan:</strong> ${orderId}</p>
-                        <p><strong>Produk:</strong> ${orderData.produk || '-'}</p>
-                        <p><strong>Kategori:</strong> ${orderData.kategori || '-'}</p>
+                        <p><strong>Produk:</strong> ${orderData.productName || orderData.produk || '-'}</p>
                         <p><strong>Harga:</strong> Rp${formatRupiah(orderData.harga || 0)}</p>
-                        <p><strong>Waktu Pesan:</strong> ${new Date(orderData.waktu).toLocaleString()}</p>
-                        <p><strong>Nama Pembeli:</strong> ${orderData.nama || '-'}</p>
+                        <p><strong>Waktu Pesan:</strong> ${new Date(orderData.timestamp || orderData.waktu).toLocaleString('id-ID')}</p>
+                        <p><strong>Nama Pembeli:</strong> ${orderData.buyerName || orderData.nama || '-'}</p>
                         <p><strong>Nomor HP/ID SN:</strong> ${orderData.nomor || '-'}</p>
-                        <p><strong>WA Aktif:</strong> ${orderData.wa_aktif || '-'}</p>
+                        <p><strong>WA Aktif:</strong> ${orderData.buyerWa || orderData.wa_aktif || '-'}</p>
                         <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${statusText}</span></p>
-                        ${orderData.bukti_transfer ? `
-                            <p class="mt-4"><strong>Bukti Transfer:</strong> <a href="${orderData.bukti_transfer.url}" target="_blank" class="text-blue-600 hover:underline">Lihat Bukti</a> (diunggah oleh ${orderData.bukti_transfer.nama_pengunggah || '-'} pada ${new Date(orderData.bukti_transfer.waktu_unggah).toLocaleString()})</p>
-                        ` : ''}
+                        
+                        ${buyerProofHtml}
+                        ${adminProofHtml}
+
                         ${statusText === 'Belum Bayar' ? `
                             <button class="btn-base btn-green mt-4" onclick="window.location.href='./upload.html?id=${orderId}'">
                                 <i class="fas fa-upload"></i> Unggah Bukti Bayar
