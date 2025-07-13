@@ -259,6 +259,9 @@
         .status-Diproses { color: #7c3aed; border-color: #7c3aed; } /* Violet */
         .status-Selesai { color: #10b981; border-color: #10b981; } /* Green */
         .status-Dibatalkan { color: #ef4444; border-color: #ef4444; } /* Red */
+        .status-OrderDibuat { color: #9ca3af; border-color: #9ca3af; } /* Gray */
+        .status-MenungguPembayaranPG { color: #3b82f6; border-color: #3b82f6; } /* Blue */
+
 
         /* Live Preview Iframe */
         #livePreviewIframe {
@@ -387,12 +390,12 @@
 
                 <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border border-border-color">
                     <h3 class="text-lg font-bold mb-2 text-color-brand">Kirim Bukti Foto (Untuk Admin)</h3>
-                    <p class="text-sm mb-3 text-text-secondary">Pilih foto bukti (misal: screenshot top-up berhasil, bukti transaksi) yang ingin Anda gunakan untuk dikirim ke pembeli.</p>
+                    <p class="text-sm mb-3 text-text-secondary">Unggah foto bukti (misal: screenshot top-up berhasil) dan dapatkan link-nya untuk dikirim ke pembeli.</p>
                     <label for="proofPhotoUpload" class="block text-text-primary font-semibold mb-2">Unggah Foto Bukti:</label>
                     <input type="file" id="proofPhotoUpload" accept="image/*" class="w-full">
                     <button class="btn btn-blue mt-3" onclick="uploadProofPhoto()"><i class="fas fa-upload"></i> Unggah & Dapatkan Link</button>
-                    <input type="text" id="proofPhotoLink" placeholder="Link bukti akan muncul di sini setelah diunggah" class="mt-2 text-sm bg-gray-100 dark:bg-gray-600 cursor-not-allowed" readonly>
-                    <p class="text-xs text-text-secondary mt-1">Salin link ini dan tempelkan di pesan WhatsApp setelah mengklik tombol "Proses & Kirim Bukti".</p>
+                    <input type="text" id="adminProofPhotoLink" placeholder="Link bukti akan muncul di sini setelah diunggah" class="mt-2 text-sm bg-gray-100 dark:bg-gray-600 cursor-not-allowed" readonly>
+                    <p class="text-xs text-text-secondary mt-1">Gunakan link ini saat mengklik "Proses & Kirim Bukti" untuk mengirim gambar ke WA pembeli.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -479,6 +482,62 @@
                     </table>
                 </div>
             </div>
+
+            <div id="paymentMethodManagement" class="section-card">
+                <h2>Manajemen Metode Pembayaran</h2>
+                <form id="paymentMethodForm">
+                    <input type="hidden" id="paymentMethodId" />
+                    <label for="methodName">ID Metode (Unik, Cth: bank_bri, dana_ewallet)</label>
+                    <input type="text" id="methodName" placeholder="Cth: bank_bri, dana_ewallet" required />
+
+                    <label for="methodDisplayName">Nama Tampilan</label>
+                    <input type="text" id="methodDisplayName" placeholder="Cth: Bank BRI, DANA" required />
+
+                    <label for="methodAccountNumber">Nomor Rekening/Tujuan</label>
+                    <input type="text" id="methodAccountNumber" placeholder="Cth: 1234567890, 08123456789" required />
+
+                    <label for="methodAccountName">Atas Nama</label>
+                    <input type="text" id="methodAccountName" placeholder="Cth: Asdar Digital" required />
+
+                    <label for="methodInstructions">Instruksi Pembayaran</label>
+                    <textarea id="methodInstructions" rows="3" placeholder="Deskripsi singkat cara pembayaran."></textarea>
+
+                    <label for="methodLogoUrl">URL Logo (Opsional)</label>
+                    <input type="text" id="methodLogoUrl" placeholder="URL gambar logo bank/e-wallet" />
+
+                    <label for="methodQrCodeUrl">URL QR Code (Opsional)</label>
+                    <input type="text" id="methodQrCodeUrl" placeholder="URL gambar QR code statis" />
+
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="methodIsActive" class="mr-2">
+                        <label for="methodIsActive">Aktifkan Metode Ini</label>
+                    </div>
+
+                    <label for="methodOrder">Urutan Tampilan</label>
+                    <input type="number" id="methodOrder" value="1" />
+
+                    <div class="flex flex-wrap gap-3 mt-4">
+                        <button type="submit" class="btn btn-green flex-grow"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-sync-alt"></i> Update Metode</button>
+                        <button type="button" id="clearPaymentMethodFormBtn" class="btn btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="data-table" id="paymentMethodsTable">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>No. Rek/Tujuan</th>
+                                <th>Aktif</th>
+                                <th>Urutan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="live-preview-section">
@@ -543,7 +602,7 @@
         // dan Firebase Security Rules yang ketat. Konfigurasi ini tidak disarankan
         // untuk production tanpa otentikasi.
         const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan Firebase API Key Anda
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
@@ -557,8 +616,18 @@
         const storage = firebase.storage(); // Initialize Firebase Storage
         const storageRef = storage.ref();
 
+        // --- ngirimwa.com API Configuration ---
+        // Ganti dengan API Key dan Device ID Anda dari ngirimwa.com
+        const NGIRIMWA_APP_KEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a"; // Ganti dengan appkey Anda
+        const NGIRIMWA_AUTH_KEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq"; // Ganti dengan authkey Anda
+        const ADMIN_WA_NUMBER = "6281234567890"; // Ganti dengan nomor WhatsApp admin Anda (tanpa + atau 0 di depan)
+
+        // Base URL for status page (PASTIKAN INI BENAR)
+        const STATUS_PAGE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html";
+
         // --- Helper Functions ---
         function formatRupiah(angka) {
+            if (isNaN(angka)) return '0';
             return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
@@ -567,8 +636,12 @@
             const hiddenId = document.querySelector(`#${formId} input[type="hidden"]`);
             if (hiddenId) hiddenId.value = '';
             if (formId === 'orderManagement') { // Specific clear for order photo link
-                document.getElementById('proofPhotoLink').value = '';
+                document.getElementById('adminProofPhotoLink').value = '';
                 document.getElementById('proofPhotoUpload').value = '';
+            }
+            // Clear specific fields for paymentMethodForm
+            if (formId === 'paymentMethodForm') {
+                document.getElementById('methodIsActive').checked = false;
             }
             showCustomAlert('Form berhasil dibersihkan!');
         }
@@ -594,7 +667,7 @@
             }
 
             try {
-                if (productId) { // Update existing product
+                if (productId) { // Update existing product (using category/name as implicit ID)
                     await db.ref(`produk/${category}/${name}`).update({
                         harga: price,
                         deskripsi: desc
@@ -640,7 +713,7 @@
         });
 
         function editProduct(category, name, price, desc) {
-            document.getElementById('productId').value = 'editing';
+            document.getElementById('productId').value = 'editing'; // Just a flag
             document.getElementById('productCategory').value = category;
             document.getElementById('productName').value = name;
             document.getElementById('productPrice').value = price;
@@ -679,7 +752,7 @@
                 showCustomAlert('Mengunggah foto bukti...');
                 const snapshot = await photoRef.put(file);
                 const downloadURL = await snapshot.ref.getDownloadURL();
-                document.getElementById('proofPhotoLink').value = downloadURL;
+                document.getElementById('adminProofPhotoLink').value = downloadURL;
                 showCustomAlert('Foto bukti berhasil diunggah! Link siap disalin.');
             } catch (error) {
                 console.error("Error uploading proof photo:", error);
@@ -691,13 +764,24 @@
             const orders = snapshot.val() || {};
             ordersTableBody.innerHTML = '';
             let orderCount = 0;
-            const sortedOrders = Object.entries(orders).sort(([, a], [, b]) => new Date(b.waktu) - new Date(a.waktu));
+            const sortedOrders = Object.entries(orders).sort(([, a], [, b]) => new Date(b.waktu || 0) - new Date(a.waktu || 0)); // handle missing waktu
 
             sortedOrders.forEach(([orderId, order]) => {
                 orderCount++;
                 const row = ordersTableBody.insertRow();
                 let actionButtons = '';
                 let statusColorClass = '';
+
+                // Add all possible status options
+                const statusOptions = `
+                    <option value="Order Dibuat" ${order.status === 'Order Dibuat' ? 'selected' : ''}>Order Dibuat</option>
+                    <option value="Belum Bayar" ${order.status === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
+                    <option value="Menunggu Pembayaran PG" ${order.status === 'Menunggu Pembayaran PG' ? 'selected' : ''}>Menunggu Pembayaran PG</option>
+                    <option value="Menunggu Konfirmasi" ${order.status === 'Menunggu Konfirmasi' ? 'selected' : ''}>Menunggu Konfirmasi</option>
+                    <option value="Diproses" ${order.status === 'Diproses' ? 'selected' : ''}>Diproses</option>
+                    <option value="Selesai" ${order.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                    <option value="Dibatalkan" ${order.status === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
+                `;
 
                 switch (order.status) {
                     case 'Belum Bayar':
@@ -718,6 +802,12 @@
                     case 'Dibatalkan':
                         statusColorClass = 'status-Dibatalkan';
                         break;
+                    case 'Order Dibuat':
+                        statusColorClass = 'status-OrderDibuat';
+                        break;
+                    case 'Menunggu Pembayaran PG':
+                        statusColorClass = 'status-MenungguPembayaranPG';
+                        break;
                     default:
                         statusColorClass = '';
                 }
@@ -732,11 +822,7 @@
                     <td><a href="https://wa.me/${order.wa_aktif}" target="_blank" class="text-color-brand hover:underline">${order.wa_aktif}</a></td>
                     <td>
                         <select onchange="updateOrderStatus('${orderId}', this.value)" class="status-select ${statusColorClass}">
-                            <option value="Belum Bayar" ${order.status === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
-                            <option value="Menunggu Konfirmasi" ${order.status === 'Menunggu Konfirmasi' ? 'selected' : ''}>Menunggu Konfirmasi</option>
-                            <option value="Diproses" ${order.status === 'Diproses' ? 'selected' : ''}>Diproses</option>
-                            <option value="Selesai" ${order.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
-                            <option value="Dibatalkan" ${order.status === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
+                            ${statusOptions}
                         </select>
                     </td>
                     <td class="actions">
@@ -760,12 +846,9 @@
             }
         }
 
-        // Base URL for status page (adjust if your domain is different)
-        const STATUS_PAGE_URL = `${window.location.origin}/status.html`;
-
         async function sendPaymentReminder(orderId, whatsapp, customerName, productName, price) {
             const formattedPrice = formatRupiah(price);
-            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
+            const statusCheckUrl = STATUS_PAGE_URL + "?orderId=" + orderId;
 
             const message = encodeURIComponent(
                 `Halo ${customerName},\n\n` +
@@ -778,23 +861,56 @@
             showCustomAlert('Pengingat pembayaran dikirim via WhatsApp!');
         }
 
+        // Modified processOrder to send image via Ngirimwa and update status to Selesai
         async function processOrder(orderId, whatsapp, customerName, productName, customerNumber) {
-            await updateOrderStatus(orderId, 'Diproses');
-            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
+            const adminProofPhotoUrl = document.getElementById('adminProofPhotoLink').value;
+            const statusCheckUrl = STATUS_PAGE_URL + "?orderId=" + orderId;
 
-            const message = encodeURIComponent(
-                `Halo ${customerName},\n\n` +
-                `Pesanan Anda (${productName} untuk ID: ${customerNumber}) dengan ID Pesanan *${orderId}* sedang kami proses.\n\n` +
-                `Mohon tunggu sebentar ya. Anda bisa menyalin *link bukti foto* dari kolom di atas dan menempelkannya di chat WhatsApp ini.\n\n` +
-                `Anda bisa cek status pesanan Anda di sini: ${statusCheckUrl}\n\n` +
-                `Terima kasih atas kesabaran Anda!`
-            );
-            window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
-            showCustomAlert(`Pesanan ${orderId} sedang diproses dan notifikasi dikirim ke ${customerName}.`);
+            if (!adminProofPhotoUrl) {
+                showCustomAlert('Mohon unggah bukti foto terlebih dahulu atau pastikan link bukti sudah ada di kolom.');
+                return;
+            }
+
+            showCustomAlert('Memproses pesanan dan mengirim bukti via WhatsApp...');
+
+            try {
+                // 1. Kirim pesan WA dengan bukti foto via ngirimwa.com
+                const formData = new FormData();
+                formData.append('appkey', NGIRIMWA_APP_KEY);
+                formData.append('authkey', NGIRIMWA_AUTH_KEY);
+                formData.append('to', whatsapp); // Nomor WA pembeli
+                formData.append('image', adminProofPhotoUrl); // URL gambar bukti
+                formData.append('caption', `Halo ${customerName},\n\nPesanan Anda (${productName} untuk ID: ${customerNumber}) dengan ID Pesanan *${orderId}* telah *SELESAI* diproses.\n\nBerikut bukti penyelesaiannya:\n${adminProofPhotoUrl}\n\nAnda bisa cek status pesanan Anda di sini: ${statusCheckUrl}\n\nTerima kasih banyak atas kepercayaannya!`);
+
+                const response = await fetch('https://ngirimwa.com/api/send_image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status) { // Asumsi ngirimwa.com mengembalikan { status: true } untuk sukses
+                    showCustomAlert('Bukti foto dan pesan berhasil dikirim via WhatsApp!');
+
+                    // 2. Update status pesanan di Firebase menjadi "Selesai"
+                    // Serta simpan URL bukti foto admin ke data pesanan
+                    await db.ref(`pesanan/${orderId}`).update({
+                        status: 'Selesai',
+                        admin_bukti_url: adminProofPhotoUrl // Simpan URL bukti admin
+                    });
+                    showCustomAlert(`Status pesanan ${orderId} berhasil diupdate menjadi: Selesai.`);
+
+                } else {
+                    console.error('Error sending image via ngirimwa:', data.message || data);
+                    showCustomAlert('Gagal mengirim bukti foto via WhatsApp API. Silakan cek respons API.');
+                }
+            } catch (error) {
+                console.error('Network error or API issue:', error);
+                showCustomAlert('Terjadi masalah jaringan saat mengirim bukti foto. Mohon coba lagi.');
+            }
         }
 
         async function sendUpdateMessage(orderId, whatsapp, customerName, productName) {
-            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
+            const statusCheckUrl = STATUS_PAGE_URL + "?orderId=" + orderId;
 
             const message = encodeURIComponent(
                 `Halo ${customerName},\n\n` +
@@ -865,7 +981,7 @@
             testimonialsTableBody.innerHTML = '';
             let testiCount = 0;
             // Sort testimonials by time (newest first)
-            const sortedTestimonials = Object.entries(testimonials).sort(([, a], [, b]) => new Date(b.waktu) - new Date(a.waktu));
+            const sortedTestimonials = Object.entries(testimonials).sort(([, a], [, b]) => new Date(b.waktu || 0) - new Date(a.waktu || 0));
 
             sortedTestimonials.forEach(([id, testi]) => {
                 testiCount++;
@@ -924,25 +1040,15 @@
             }
 
             try {
-                if (dynamicContentId) { // Update existing content
-                    await db.ref(`dynamic_content/${dynamicContentId}`).update({
-                        order: order,
-                        html: htmlContent,
-                        css: cssContent,
-                        js: jsContent
-                    });
-                    showCustomAlert('Konten dinamis berhasil diupdate!');
-                } else { // Add new content
-                    const newContentRef = db.ref('dynamic_content').push();
-                    await newContentRef.set({
-                        order: order,
-                        html: htmlContent,
-                        css: cssContent,
-                        js: jsContent,
-                        created_at: new Date().toISOString()
-                    });
-                    showCustomAlert('Konten dinamis baru berhasil ditambahkan!');
-                }
+                const ref = dynamicContentId ? db.ref(`dynamic_content/${dynamicContentId}`) : db.ref('dynamic_content').push();
+                await ref.set({
+                    order: order,
+                    html: htmlContent,
+                    css: cssContent,
+                    js: jsContent,
+                    created_at: dynamicContentId ? (await db.ref(`dynamic_content/${dynamicContentId}/created_at`).once('value')).val() : new Date().toISOString()
+                });
+                showCustomAlert(dynamicContentId ? 'Konten dinamis berhasil diupdate!' : 'Konten dinamis baru berhasil ditambahkan!');
                 clearForm('dynamicContentForm');
             } catch (error) {
                 console.error("Error saving dynamic content:", error);
@@ -991,6 +1097,104 @@
                 } catch (error) {
                     console.error("Error deleting dynamic content:", error);
                     showCustomAlert('Gagal menghapus konten dinamis. Silakan coba lagi.');
+                }
+            }
+        }
+
+        // --- Payment Method Management ---
+        const paymentMethodForm = document.getElementById('paymentMethodForm');
+        const paymentMethodsTableBody = document.querySelector('#paymentMethodsTable tbody');
+        const clearPaymentMethodFormBtn = document.getElementById('clearPaymentMethodFormBtn');
+
+        clearPaymentMethodFormBtn.addEventListener('click', () => clearForm('paymentMethodForm'));
+
+        paymentMethodForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const methodId = document.getElementById('paymentMethodId').value;
+            const methodName = document.getElementById('methodName').value.trim();
+            const methodDisplayName = document.getElementById('methodDisplayName').value.trim();
+            const accountNumber = document.getElementById('methodAccountNumber').value.trim();
+            const accountName = document.getElementById('methodAccountName').value.trim();
+            const instructions = document.getElementById('methodInstructions').value.trim();
+            const logoUrl = document.getElementById('methodLogoUrl').value.trim();
+            const qrCodeUrl = document.getElementById('methodQrCodeUrl').value.trim();
+            const isActive = document.getElementById('methodIsActive').checked;
+            const order = parseInt(document.getElementById('methodOrder').value);
+
+            if (!methodName || !methodDisplayName || !accountNumber || !accountName) {
+                showCustomAlert('Harap lengkapi semua field wajib untuk metode pembayaran.');
+                return;
+            }
+
+            const dataToSave = {
+                nama_tampilan: methodDisplayName,
+                nomor_rekening: accountNumber,
+                atas_nama: accountName,
+                instruksi: instructions,
+                logo_url: logoUrl || null,
+                qr_code_url: qrCodeUrl || null,
+                is_active: isActive,
+                order: isNaN(order) ? 99 : order
+            };
+
+            try {
+                const refId = methodId || methodName; // Jika edit, pakai ID yang ada. Jika tambah baru, pakai methodName sebagai ID (pastikan unik)
+                await db.ref(`metode_pembayaran/${refId}`).set(dataToSave);
+                showCustomAlert(methodId ? 'Metode pembayaran berhasil diupdate!' : 'Metode pembayaran baru berhasil ditambahkan!');
+                clearForm('paymentMethodForm');
+            } catch (error) {
+                console.error("Error saving payment method:", error);
+                showCustomAlert('Gagal menyimpan metode pembayaran. Silakan coba lagi.');
+            }
+        });
+
+        db.ref('metode_pembayaran').orderByChild('order').on('value', (snapshot) => {
+            const methods = snapshot.val() || {};
+            paymentMethodsTableBody.innerHTML = '';
+            let methodCount = 0;
+            snapshot.forEach((childSnapshot) => {
+                methodCount++;
+                const id = childSnapshot.key;
+                const method = childSnapshot.val();
+                const row = paymentMethodsTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${method.nama_tampilan}</td>
+                    <td>${method.nomor_rekening} (${method.atas_nama})</td>
+                    <td>${method.is_active ? 'Ya' : 'Tidak'}</td>
+                    <td>${method.order}</td>
+                    <td class="actions">
+                        <button class="btn btn-blue" onclick="editPaymentMethod('${id}', '${method.nama_tampilan}', '${method.nomor_rekening}', '${method.atas_nama}', \`${method.instruksi || ''}\`, '${method.logo_url || ''}', '${method.qr_code_url || ''}', ${method.is_active}, ${method.order})"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deletePaymentMethod('${id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
+                    </td>
+                `;
+            });
+            if (methodCount === 0) {
+                paymentMethodsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-text-secondary py-4">Belum ada metode pembayaran.</td></tr>';
+            }
+        });
+
+        function editPaymentMethod(id, displayName, accountNumber, accountName, instructions, logoUrl, qrCodeUrl, isActive, order) {
+            document.getElementById('paymentMethodId').value = id;
+            document.getElementById('methodName').value = id; // ID dipakai juga untuk nama unik
+            document.getElementById('methodDisplayName').value = displayName;
+            document.getElementById('methodAccountNumber').value = accountNumber;
+            document.getElementById('methodAccountName').value = accountName;
+            document.getElementById('methodInstructions').value = instructions;
+            document.getElementById('methodLogoUrl').value = logoUrl;
+            document.getElementById('methodQrCodeUrl').value = qrCodeUrl;
+            document.getElementById('methodIsActive').checked = isActive;
+            document.getElementById('methodOrder').value = order;
+            showCustomAlert(`Mengedit metode pembayaran: ${displayName}`);
+        }
+
+        async function deletePaymentMethod(id) {
+            if (confirm(`Anda yakin ingin menghapus metode pembayaran '${id}'?`)) {
+                try {
+                    await db.ref(`metode_pembayaran/${id}`).remove();
+                    showCustomAlert('Metode pembayaran berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting payment method:", error);
+                    showCustomAlert('Gagal menghapus metode pembayaran. Silakan coba lagi.');
                 }
             }
         }
