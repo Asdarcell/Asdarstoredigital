@@ -161,10 +161,6 @@
             outline: none;
             box-shadow: 0 0 0 3px var(--focus-ring);
         }
-        input[type="file"] {
-            padding: 0.5rem 0.8rem;
-            cursor: pointer;
-        }
         input[readonly] {
             background-color: var(--bg-body);
             cursor: not-allowed;
@@ -690,8 +686,8 @@
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq"; // SUDAH DIGANTI DARI INPUT ANDA
         const CS_WA_NUMBER = "6281803004607"; // PENTING: GANTI DENGAN NOMOR WA CS/ADMIN ANDA (format internasional tanpa +)
 
-        // --- Konstanta ImgBB ---
-        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // PENTING: GANTI DENGAN API KEY IMGBB ANDA
+        // ImgBB API Key (masih diperlukan untuk bukti foto admin)
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; 
         const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
         
         // URL ke halaman status pesanan Anda (sesuaikan dengan domain GitHub Pages Anda atau hosting lain)
@@ -699,7 +695,7 @@
 
         // --- Helper Functions ---
         function formatRupiah(angka) {
-            return parseFloat(angka).toLocaleString('id-ID');
+            return parseFloat(angka).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace('IDR', 'Rp');
         }
 
         function normalizePhoneNumber(number) {
@@ -708,10 +704,20 @@
             if (number.startsWith('0')) {
                 number = '62' + number.slice(1);
             }
+            // Tambahkan "62" jika diawali dengan 8 dan panjangnya kurang dari 11 (asumsi nomor Indo)
+            if (number.startsWith('8') && number.length > 7 && number.length < 13) {
+                 number = '62' + number;
+            }
             return number;
         }
 
         async function sendWhatsAppNotification(phoneNumber, message) {
+            if (!phoneNumber || phoneNumber.length < 10) {
+                console.error("Nomor telepon tidak valid untuk pengiriman WA:", phoneNumber);
+                showCustomAlert("Gagal mengirim notifikasi WA: Nomor telepon pembeli tidak valid.");
+                return;
+            }
+
             const formData = new FormData();
             formData.append('appkey', NGIRIMWA_APPKEY);
             formData.append('authkey', NGIRIMWA_AUTHKEY);
@@ -728,11 +734,11 @@
                     console.log('WA notification sent successfully:', result);
                 } else {
                     console.error('Failed to send WA notification:', result);
-                    showCustomAlert('Gagal mengirim notifikasi WA: ' + (result.message || 'Unknown error'));
+                    showCustomAlert('Gagal mengirim notifikasi WA: ' + (result.message || 'Error tidak diketahui dari NgirimWA.'));
                 }
             } catch (error) {
                 console.error('Error sending WA notification:', error);
-                showCustomAlert('Terjadi kesalahan saat mengirim notifikasi WA. Cek konsol browser untuk detail.');
+                showCustomAlert('Terjadi kesalahan saat mengirim notifikasi WA. Pastikan koneksi internet stabil atau cek konsol browser.');
             }
         }
 
@@ -747,10 +753,12 @@
         const productForm = document.getElementById('productForm');
         const productsTableBody = document.querySelector('#productsTable tbody');
         const clearProductFormBtn = document.getElementById('clearProductFormBtn');
+
         let allProducts = []; // Cache all products for sorting/filtering
 
         clearProductFormBtn.addEventListener('click', () => clearForm('productForm'));
 
+        // START: Perbaikan - Logika submit produk tanpa gambar
         productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const productId = document.getElementById('productId').value;
@@ -759,6 +767,7 @@
             const price = parseFloat(document.getElementById('productPrice').value);
             const desc = document.getElementById('productDesc').value.trim();
 
+            // Validasi: pastikan setidaknya ada kategori, nama, harga
             if (!category || !name || isNaN(price) || price <= 0) {
                 showCustomAlert('Harap lengkapi semua field produk dengan benar (Kategori, Nama, Harga positif).');
                 return;
@@ -766,421 +775,363 @@
 
             showLoading();
             try {
+                const productData = {
+                    kategori: category,
+                    nama: name,
+                    harga: price,
+                    deskripsi: desc
+                    // Properti 'gambar' dihapus
+                };
+
                 if (productId) { // Update existing product
-                    await db.ref(`produk/${productId}`).update({
-                        kategori: category,
-                        nama: name,
-                        harga: price,
-                        deskripsi: desc
-                    });
+                    await db.ref(`produk/${productId}`).update(productData);
                     showCustomAlert('Produk berhasil diupdate!');
                 } else { // Add new product
-                    const newProductRef = db.ref('produk').push();
-                    const newId = newProductRef.key;
-                    await newProductRef.set({
-                        id: newId, // Simpan ID di dalam objek produk
-                        kategori: category,
-                        nama: name,
-                        harga: price,
-                        deskripsi: desc,
-                        order: allProducts.length // New item gets placed at the end
-                    });
-                    showCustomAlert('Produk baru berhasil ditambahkan!');
+                    await db.ref('produk').push(productData);
+                    showCustomAlert('Produk berhasil ditambahkan!');
                 }
-                clearForm('productForm');
+                
+                clearForm('productForm'); // Bersihkan form setelah sukses
+                refreshPreview(); // Refresh preview iframe setelah update/tambah produk
+
             } catch (error) {
-                console.error("Error saving product:", error);
-                showCustomAlert('Gagal menyimpan produk. Silakan coba lagi.');
+                console.error('Error adding/updating product:', error);
+                showCustomAlert('Gagal menambah/mengupdate produk. Cek konsol browser untuk detail.');
             } finally {
                 hideLoading();
             }
         });
+        // END: Perbaikan
 
-        db.ref('produk').orderByChild('order').on('value', (snapshot) => {
-            const productsData = snapshot.val() || {};
-            productsTableBody.innerHTML = '';
-            let productCount = 0;
-            const productsArray = [];
-
-            // Convert object to array, ensure 'order' property exists
+        // Dapatkan data produk dari Firebase
+        db.ref('produk').on('value', (snapshot) => {
+            const products = [];
             snapshot.forEach((childSnapshot) => {
-                const product = childSnapshot.val();
-                if (product.order === undefined || product.order === null) {
-                    // Assign a default order if missing (e.g., at the end)
-                    product.order = productsArray.length;
-                    // Optional: update this in Firebase immediately if you want to persist the default order
-                    // db.ref(`produk/${product.id}/order`).set(product.order);
-                }
-                productsArray.push(product);
+                products.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
+            allProducts = products; 
+            renderProductsTable();
+        }, (error) => {
+            console.error("Gagal memuat produk:", error);
+            showCustomAlert('Gagal memuat daftar produk. Silakan coba lagi nanti.');
+        });
 
-            // Sort again just to be safe, by 'order' property
-            productsArray.sort((a, b) => a.order - b.order);
-            allProducts = productsArray; // Update cached products
-
-            allProducts.forEach(product => {
-                productCount++;
+        function renderProductsTable() {
+            productsTableBody.innerHTML = '';
+            allProducts.forEach((product, index) => {
                 const row = productsTableBody.insertRow();
-                row.className = 'product-item'; // Class for SortableJS
-                row.setAttribute('data-id', product.id); // Data attribute for SortableJS
+                row.className = 'product-item';
+                row.setAttribute('data-id', product.id);
 
                 row.innerHTML = `
-                    <td><i class="fas fa-grip-vertical handle"></i> ${product.order !== undefined ? product.order + 1 : '-'}</td>
-                    <td>${product.kategori}</td>
-                    <td>${product.nama}</td>
-                    <td>Rp${formatRupiah(product.harga)}</td>
+                    <td class="handle"><i class="fas fa-grip-vertical"></i> ${index + 1}</td>
+                    <td>${product.kategori || 'N/A'}</td>
+                    <td>${product.nama || 'N/A'}</td>
+                    <td>Rp ${formatRupiah(product.harga || 0)}</td>
                     <td class="actions">
-                        <button class="btn btn-blue" onclick="editProduct('${product.id}', '${product.kategori}', '${product.nama}', ${product.harga}, \`${product.deskripsi || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-red" onclick="deleteProduct('${product.id}')"><i class="fas fa-trash"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="editProduct('${product.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deleteProduct('${product.id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
-            if (productCount === 0) {
-                productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-text-secondary py-4">Belum ada produk.</td></tr>';
-            }
-            initSortableProducts(); // Re-initialize SortableJS after re-rendering
-        });
+            initSortableProducts();
+        }
 
-        let sortableProductsInstance = null;
-        function initSortableProducts() {
-            const sortableList = document.querySelector('#productsTable tbody.sortable-list');
-            if (!sortableList) return;
-
-            if (sortableProductsInstance) {
-                sortableProductsInstance.destroy(); // Destroy previous instance
-            }
-
-            sortableProductsInstance = Sortable.create(sortableList, {
-                animation: 150,
-                handle: '.handle', // Only drag handle
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                onEnd: async (evt) => {
-                    const movedItem = allProducts.splice(evt.oldIndex, 1)[0];
-                    allProducts.splice(evt.newIndex, 0, movedItem);
-
-                    showLoading();
-                    try {
-                        const updates = {};
-                        allProducts.forEach((product, index) => {
-                            updates[`produk/${product.id}/order`] = index;
-                        });
-                        await db.ref().update(updates);
-                        hideLoading();
-                        showCustomAlert('Urutan produk berhasil diperbarui!');
-                    } catch (error) {
-                        hideLoading();
-                        console.error("Error updating product order:", error);
-                        showCustomAlert("Gagal memperbarui urutan produk. " + error.message);
-                        // Revert UI to original order if update fails (optional)
-                        db.ref('produk').orderByChild('order').once('value', (snapshot) => {
-                            const productsData = snapshot.val();
-                            const productsArray = [];
-                            for(let id in productsData) { productsArray.push({id, ...productsData[id]}); }
-                            productsArray.sort((a,b) => a.order - b.order);
-                            allProducts = productsArray;
-                            // This will re-trigger the 'value' listener, re-rendering the table correctly.
-                        });
-                    }
+        // START: Perbaikan - Edit produk tanpa mengurus gambar
+        async function editProduct(productId) {
+            showLoading();
+            try {
+                const snapshot = await db.ref(`produk/${productId}`).once('value');
+                const product = snapshot.val();
+                if (product) {
+                    document.getElementById('productId').value = productId;
+                    document.getElementById('productCategory').value = product.kategori || '';
+                    document.getElementById('productName').value = product.nama || '';
+                    document.getElementById('productPrice').value = product.harga || 0;
+                    document.getElementById('productDesc').value = product.deskripsi || '';
+                } else {
+                    showCustomAlert('Produk tidak ditemukan.');
                 }
-            });
+            } catch (error) {
+                console.error('Error editing product:', error);
+                showCustomAlert('Gagal memuat data produk untuk edit.');
+            } finally {
+                hideLoading();
+            }
         }
+        // END: Perbaikan
 
-
-        function editProduct(id, category, name, price, desc) {
-            document.getElementById('productId').value = id;
-            document.getElementById('productCategory').value = category;
-            document.getElementById('productName').value = name;
-            document.getElementById('productPrice').value = price;
-            document.getElementById('productDesc').value = desc;
-            showCustomAlert(`Mengedit produk: ${name}`);
-        }
-
-        async function deleteProduct(id) {
-            if (confirm(`Anda yakin ingin menghapus produk ini?`)) {
+        async function deleteProduct(productId) {
+            if (confirm('Anda yakin ingin menghapus produk ini?')) {
                 showLoading();
                 try {
-                    await db.ref(`produk/${id}`).remove();
+                    await db.ref(`produk/${productId}`).remove();
                     showCustomAlert('Produk berhasil dihapus!');
                 } catch (error) {
-                    console.error("Error deleting product:", error);
-                    showCustomAlert('Gagal menghapus produk. Silakan coba lagi.');
+                    console.error('Error deleting product:', error);
+                    showCustomAlert('Gagal menghapus produk.');
                 } finally {
                     hideLoading();
                 }
             }
         }
 
-        // --- Order Management (with Modal) ---
+        // SortableJS for Products
+        function initSortableProducts() {
+            if (productsTableBody.sortableInstance) {
+                productsTableBody.sortableInstance.destroy();
+            }
+            productsTableBody.sortableInstance = Sortable.create(productsTableBody, {
+                animation: 150,
+                handle: '.handle',
+                onEnd: async (evt) => {
+                    showLoading();
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
+
+                    const movedProduct = allProducts.splice(oldIndex, 1)[0];
+                    allProducts.splice(newIndex, 0, movedProduct);
+
+                    const updates = {};
+                    allProducts.forEach((product, idx) => {
+                        updates[product.id] = { ...product, order: idx };
+                    });
+
+                    try {
+                        await db.ref('produk').set(updates);
+                        showCustomAlert('Urutan produk berhasil diperbarui!');
+                        refreshPreview();
+                    } catch (error) {
+                        console.error('Error updating product order:', error);
+                        showCustomAlert('Gagal memperbarui urutan produk.');
+                    } finally {
+                        hideLoading();
+                    }
+                }
+            });
+        }
+
+        // --- Order Management ---
         const ordersTableBody = document.querySelector('#ordersTable tbody');
-        const orderDetailModal = document.getElementById('orderDetailModal');
-        const orderDetailModalContent = document.getElementById('orderDetailModalContent');
-        let currentEditingOrder = null; // To store the order being edited
+        let currentOrders = [];
 
-        function showOrderDetailModal() {
-            orderDetailModal.classList.add('show');
-        }
+        db.ref('pesanan').orderByChild('timestamp').on('value', (snapshot) => {
+            const orders = [];
+            snapshot.forEach((childSnapshot) => {
+                orders.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            currentOrders = orders.reverse();
+            renderOrdersTable();
+        }, (error) => {
+            console.error("Gagal memuat pesanan:", error);
+            showCustomAlert('Gagal memuat daftar pesanan. Silakan coba lagi nanti.');
+        });
 
-        function closeOrderDetailModal() {
-            orderDetailModal.classList.remove('show');
-            currentEditingOrder = null;
-        }
-
-        db.ref('pesanan').on('value', (snapshot) => {
-            const orders = snapshot.val() || {};
+        function renderOrdersTable() {
             ordersTableBody.innerHTML = '';
-            let orderCount = 0;
-            const sortedOrders = Object.entries(orders).map(([id, data]) => ({ id, ...data })).sort((a, b) => new Date(b.timestamp || b.waktu) - new Date(a.timestamp || a.waktu));
+            currentOrders.forEach(order => {
+                const product = allProducts.find(p => p.id === order.productId);
+                const productName = product ? product.nama : (order.namaProduk || 'Produk Tidak Ditemukan');
+                const productCategory = product ? product.kategori : (order.kategoriProduk || 'N/A');
 
-            sortedOrders.forEach((order) => {
-                orderCount++;
+                const statusClass = `status-${order.status || 'BelumBayar'}`;
+                
                 const row = ordersTableBody.insertRow();
-                const statusClass = getStatusClass(order.status);
-
                 row.innerHTML = `
-                    <td>${order.id}</td>
-                    <td>${order.productName || order.produk} (Rp${formatRupiah(order.harga)})</td>
-                    <td>${order.buyerName || order.nama} (${order.nomor || 'N/A'})</td>
-                    <td><a href="https://wa.me/${normalizePhoneNumber(order.buyerWa || order.wa_aktif)}" target="_blank" class="text-color-brand hover:underline">${normalizePhoneNumber(order.buyerWa || order.wa_aktif)}</a></td>
-                    <td>
-                        <span class="status-label ${statusClass}">${order.status}</span>
-                    </td>
+                    <td>${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</td>
+                    <td>${productName} (${productCategory})</td>
+                    <td>${order.namaPembeli || 'N/A'}</td>
+                    <td>${order.nomorWa || 'N/A'}</td>
+                    <td><span class="status-label ${statusClass}">${order.status || 'Belum Bayar'}</span></td>
                     <td class="actions">
-                        <button class="btn btn-blue" onclick="editOrder('${order.id}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-red" onclick="deleteOrder('${order.id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="showOrderDetailModal('${order.id}')"><i class="fas fa-info-circle"></i> Detail</button>
+                        <button class="btn btn-yellow" onclick="updateOrderStatus('${order.id}', 'MenungguKonfirmasi')"><i class="fas fa-check-circle"></i> Konfirmasi</button>
+                        <button class="btn btn-green" onclick="updateOrderStatus('${order.id}', 'Diproses')"><i class="fas fa-cogs"></i> Proses</button>
+                        <button class="btn btn-red" onclick="updateOrderStatus('${order.id}', 'Dibatalkan')"><i class="fas fa-times-circle"></i> Batal</button>
+                        <button class="btn btn-gray" onclick="deleteOrder('${order.id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
-            if (orderCount === 0) {
-                ordersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-text-secondary py-4">Belum ada pesanan.</td></tr>';
-            }
-        });
-
-        function getStatusClass(status) {
-            switch (status) {
-                case 'Belum Bayar': return 'status-BelumBayar';
-                case 'Menunggu Konfirmasi': return 'status-MenungguKonfirmasi';
-                case 'Diproses': return 'status-Diproses';
-                case 'Selesai': return 'status-Selesai';
-                case 'Dibatalkan': return 'status-Dibatalkan';
-                default: return 'status-BelumBayar';
-            }
         }
 
-        async function editOrder(orderId) {
-            showLoading();
-            try {
-                const snapshot = await db.ref(`pesanan/${orderId}`).once('value');
-                const order = { id: orderId, ...snapshot.val() };
-                currentEditingOrder = order;
-
-                let paymentProofBuyerHtml = '<p class="text-sm text-text-secondary">Belum ada bukti pembayaran dari pembeli.</p>';
-                if (order.bukti_pembayaran_url) {
-                    paymentProofBuyerHtml = `
-                        <p class="font-medium mt-4">Bukti Pembayaran Pembeli:</p>
-                        <a href="${order.bukti_pembayaran_url}" target="_blank" class="text-color-brand hover:underline block mb-2">Lihat Gambar Bukti Transfer</a>
-                        <img src="${order.bukti_pembayaran_url}" alt="Bukti Pembayaran Pembeli" class="img-preview object-cover">
-                    `;
-                }
-
-                let adminProofHtml = '<p class="text-sm text-text-secondary">Belum ada bukti yang diunggah Admin.</p>';
-                if (order.bukti_admin_url) {
-                    adminProofHtml = `
-                        <p class="font-medium mt-4">Bukti Admin (Resi/Pengiriman):</p>
-                        <a href="${order.bukti_admin_url}" target="_blank" class="text-color-brand hover:underline block mb-2">Lihat Gambar Bukti Admin</a>
-                        <img src="${order.bukti_admin_url}" alt="Bukti Admin" class="img-preview object-cover">
-                    `;
-                }
-
-                orderDetailModalContent.innerHTML = `
-                    <h3 class="text-xl font-semibold mb-4 text-color-brand">${order.id}</h3>
-                    <p><strong>Nama Pembeli:</strong> ${order.buyerName || order.nama || 'N/A'}</p>
-                    <p><strong>WA Pembeli:</strong> <a href="https://wa.me/${normalizePhoneNumber(order.buyerWa || order.wa_aktif)}" target="_blank" class="text-color-brand hover:underline">${normalizePhoneNumber(order.buyerWa || order.wa_aktif)}</a></p>
-                    <p><strong>Produk:</strong> ${order.productName || order.produk || 'N/A'}</p>
-                    <p><strong>Nomor/ID Pembeli:</strong> ${order.nomor || 'N/A'}</p>
-                    <p><strong>Jumlah:</strong> Rp${formatRupiah(order.harga || 0)})</p>
-                    <p><strong>Waktu Pesan:</strong> ${new Date(order.timestamp || order.waktu).toLocaleString('id-ID')}</p>
-                    <p class="mb-4"><strong>Status:</strong> <span class="status-label ${getStatusClass(order.status)}">${order.status}</span></p>
-
-                    ${paymentProofBuyerHtml}
-
-                    <div class="mt-6 border-t pt-4 border-border-color">
-                        <h4 class="text-lg font-semibold mb-3">Unggah Bukti Admin (Resi/Pengiriman)</h4>
-                        <input type="file" id="adminProofInput" accept="image/*" class="mb-3 w-full" />
-                        <button class="btn btn-primary w-full" onclick="uploadAdminProofModal()" id="uploadAdminProofBtn">
-                            <i class="fas fa-upload"></i> Unggah Bukti
-                        </button>
-                        ${adminProofHtml}
-                    </div>
-
-                    <div class="mt-6 flex flex-col gap-3 border-t pt-4 border-border-color">
-                        <h4 class="text-lg font-semibold mb-3">Aksi Cepat Pesanan</h4>
-                        <button class="btn btn-green w-full" onclick="updateOrderStatusAndNotify('${order.id}', 'Diproses')">
-                            <i class="fas fa-play"></i> Tandai Diproses
-                        </button>
-                        <button class="btn btn-blue w-full" onclick="updateOrderStatusAndNotify('${order.id}', 'Selesai')">
-                            <i class="fas fa-check"></i> Tandai Selesai
-                        </button>
-                        <button class="btn btn-red w-full" onclick="updateOrderStatusAndNotify('${order.id}', 'Dibatalkan')">
-                            <i class="fas fa-times"></i> Tandai Dibatalkan
-                        </button>
-                        <button class="btn btn-yellow w-full" onclick="updateOrderStatusAndNotify('${order.id}', 'Menunggu Konfirmasi')">
-                            <i class="fas fa-hourglass-half"></i> Tandai Menunggu Konfirmasi
-                        </button>
-                        <button class="btn btn-gray w-full" onclick="updateOrderStatusAndNotify('${order.id}', 'Belum Bayar')">
-                            <i class="fas fa-wallet"></i> Tandai Belum Bayar
-                        </button>
-                    </div>
-                `;
-                // Cek apakah ada bukti admin yang sudah ada saat menampilkan detail
-                if (order.bukti_admin_url) {
-                    document.getElementById('uploadAdminProofBtn').textContent = 'Perbarui Bukti';
-                } else {
-                    document.getElementById('uploadAdminProofBtn').textContent = 'Unggah Bukti';
-                }
-                showOrderDetailModal();
-            } catch (error) {
-                console.error("Error fetching order details:", error);
-                showCustomAlert("Gagal memuat detail pesanan. " + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function uploadAdminProofModal() {
-            const orderId = currentEditingOrder ? currentEditingOrder.id : null;
-            if (!orderId) {
-                showCustomAlert('Tidak ada pesanan yang sedang diedit.');
-                return;
-            }
-
-            const adminProofInput = document.getElementById('adminProofInput');
-            const file = adminProofInput.files[0];
-
-            if (!file) {
-                showCustomAlert('Pilih file gambar untuk diunggah sebagai bukti admin.');
-                return;
-            }
-            if (file.size > 2 * 1024 * 1024) { // 2 MB
-                showCustomAlert('Ukuran file bukti admin maksimal 2MB.');
-                return;
-            }
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-            if (!allowedTypes.includes(file.type)) {
-                showCustomAlert('Hanya file gambar (JPG, PNG, JPEG) yang diterima.');
-                return;
-            }
-
-            showLoading();
-            try {
-                const formData = new FormData();
-                formData.append('key', IMGBB_API_KEY);
-                formData.append('image', file); // Mengirim file langsung
-
-                const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-                const imgbbResult = await imgbbResponse.json();
-
-                if (imgbbResult.success && imgbbResult.data && imgbbResult.data.url) {
-                    const imageUrl = imgbbResult.data.url;
-                    console.log("Bukti admin berhasil diunggah ke ImgBB. URL:", imageUrl);
-
-                    // Simpan URL bukti admin ke Firebase Realtime Database
-                    await db.ref(`pesanan/${orderId}`).update({
-                        bukti_admin_url: imageUrl,
-                        waktu_bukti_admin_unggah: new Date().toISOString()
-                    });
-                    
-                    hideLoading();
-                    showCustomAlert('Bukti admin berhasil diunggah dan disimpan!');
-                    // Refresh detail pesanan di modal
-                    editOrder(orderId); // Re-open modal to refresh content
-                } else {
-                    console.error("Gagal mengunggah bukti admin ke ImgBB:", imgbbResult);
-                    const errorMessageFromImgBB = imgbbResult.error ? imgbbResult.error.message : 'Gagal mengunggah gambar ke ImgBB.';
-                    throw new Error(errorMessageFromImgBB);
-                }
-            } catch (error) {
-                hideLoading();
-                console.error("Error mengunggah bukti admin:", error);
-                showCustomAlert("Gagal mengunggah bukti admin: " + error.message);
-            }
-        }
-
-        async function updateOrderStatusAndNotify(orderId, newStatus) {
+        async function updateOrderStatus(orderId, newStatus) {
             showLoading();
             try {
                 await db.ref(`pesanan/${orderId}`).update({ status: newStatus });
-                showCustomAlert(`Status pesanan ${orderId} berhasil diubah menjadi ${newStatus}.`);
-                
-                const orderData = currentEditingOrder; // Use the currently loaded order data
-                if (!orderData) {
-                    console.warn("No order data found for notification.");
+                showCustomAlert(`Status pesanan ${orderId ? orderId.substring(0,8) + '...' : 'N/A'} diperbarui menjadi ${newStatus}!`);
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                showCustomAlert('Gagal memperbarui status pesanan.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            if (confirm('Anda yakin ingin menghapus pesanan ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`pesanan/${orderId}`).remove();
+                    showCustomAlert('Pesanan berhasil dihapus!');
+                } catch (error) {
+                    console.error('Error deleting order:', error);
+                    showCustomAlert('Gagal menghapus pesanan.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        const orderDetailModal = document.getElementById('orderDetailModal');
+        const orderDetailModalContent = document.getElementById('orderDetailModalContent');
+
+        function closeOrderDetailModal() {
+            orderDetailModal.classList.remove('show');
+        }
+
+        // START: Perbaikan - Tampilan modal detail pesanan tanpa gambar produk
+        async function showOrderDetailModal(orderId) {
+            showLoading();
+            try {
+                const snapshot = await db.ref(`pesanan/${orderId}`).once('value');
+                const order = snapshot.val();
+                if (!order) {
+                    showCustomAlert('Detail pesanan tidak ditemukan.');
+                    hideLoading();
                     return;
                 }
 
-                // Kirim notifikasi WA ke pembeli dengan link status
-                let messageToBuyer = '';
-                const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`; // Link ke halaman status pesanan buyer
-                const buyerWaNumber = normalizePhoneNumber(orderData.buyerWa || orderData.wa_aktif);
-                const customerName = orderData.buyerName || orderData.nama;
-                const productName = orderData.productName || orderData.produk;
+                const productSnapshot = await db.ref(`produk/${order.productId}`).once('value');
+                const product = productSnapshot.val();
 
-                if (newStatus === 'Diproses') {
-                    messageToBuyer = `Halo ${customerName}! Pesanan Anda dengan ID *${orderId}* (${productName}) sedang *Diproses*. Mohon tunggu sebentar ya.\n\n` +
-                                     `Anda bisa cek statusnya dan update terbaru di sini: ${statusLink}\n\n` +
-                                     `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
-                } else if (newStatus === 'Selesai') {
-                    messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* (${productName}) sudah *Selesai*. Terima kasih telah berbelanja di Asdar Store Digital.\n\n` +
-                                     `Cek detail dan bukti penyelesaian di sini: ${statusLink}\n\n` +
-                                     `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
-                } else if (newStatus === 'Dibatalkan') {
-                    messageToBuyer = `Mohon maaf, pesanan Anda dengan ID *${orderId}* (${productName}) telah *Dibatalkan*.\n\n` +
-                                     `Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
-                                     `Silakan hubungi CS kami di ${CS_WA_NUMBER} untuk informasi lebih lanjut.`;
-                } else if (newStatus === 'Menunggu Konfirmasi') {
-                    messageToBuyer = `Pemberitahuan: Status pesanan Anda dengan ID *${orderId}* (${productName}) kini kembali *Menunggu Konfirmasi*.\n\n` +
-                                     `Mohon pastikan bukti pembayaran Anda sudah benar. Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
-                                     `Jika ada pertanyaan, hubungi CS kami di ${CS_WA_NUMBER}.`;
-                } else if (newStatus === 'Belum Bayar') {
-                     messageToBuyer = `Halo ${customerName}!\n\n` +
-                                     `Pesanan Anda (${productName}) dengan ID Pesanan *${orderId}* masih *Menunggu Pembayaran*.\n\n` +
-                                     `Mohon segera selesaikan pembayaran Anda. Jika sudah, harap kirim bukti transfer agar pesanan bisa segera kami proses.\n\n` +
-                                     `Anda bisa cek status pesanan Anda di sini: ${statusLink}\n\n` +
-                                     `Terima kasih!`;
-                }
+                const productName = product ? product.nama : (order.namaProduk || 'Produk Tidak Ditemukan');
+                const productCategory = product ? product.kategori : (order.kategoriProduk || 'N/A');
+                const productPrice = product ? formatRupiah(product.harga) : (order.jumlahHarga ? formatRupiah(order.jumlahHarga) : 'N/A');
+                
+                const statusClass = `status-${order.status || 'BelumBayar'}`;
 
-                if (messageToBuyer && buyerWaNumber) {
-                    await sendWhatsAppNotification(buyerWaNumber, messageToBuyer);
-                }
+                orderDetailModalContent.innerHTML = `
+                    <h3>Detail Pesanan #${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</h3>
+                    <p><strong>Produk:</strong> ${productName} (${productCategory})</p>
+                    <p><strong>Harga:</strong> ${productPrice}</p>
+                    <p><strong>Pembeli:</strong> ${order.namaPembeli || 'N/A'}</p>
+                    <p><strong>Nomor WA:</strong> ${order.nomorWa || 'N/A'}</p>
+                    <p><strong>Metode Pembayaran:</strong> ${order.metodePembayaran || 'N/A'}</p>
+                    <p><strong>Status:</strong> <span class="status-label ${statusClass}">${order.status || 'Belum Bayar'}</span></p>
+                    ${order.buktiFotoUrl ? `<p><strong>Bukti Foto Pembayaran:</strong></p><img src="${order.buktiFotoUrl}" alt="Bukti Pembayaran" />` : '<p>Belum ada bukti foto pembayaran.</p>'}
+                    <p><strong>Catatan Pembeli:</strong> ${order.catatanPembeli || '-'}</p>
+                    <p><strong>Timestamp:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+                    <div class="flex flex-col gap-2 mt-4">
+                        <input type="file" id="adminBuktiFotoUpload" accept="image/*" class="mb-2" />
+                        ${order.adminBuktiFotoUrl ? `<p><strong>Bukti Foto Admin:</strong></p><img src="${order.adminBuktiFotoUrl}" alt="Bukti Admin" id="adminBuktiFotoPreview" />` : '<p id="adminBuktiFotoPlaceholder">Belum ada bukti foto dari admin.</p><img id="adminBuktiFotoPreview" class="hidden" src="" alt="Pratinjau Bukti Admin" />'}
+                        <button id="uploadAdminBuktiBtn" class="btn btn-blue" ${order.status === 'Selesai' ? 'disabled' : ''}><i class="fas fa-upload"></i> Unggah Bukti Foto (Untuk Admin)</button>
+                        <button id="processAndSendBtn" class="btn btn-green mt-3" ${order.status === 'Selesai' ? 'disabled' : ''}><i class="fab fa-whatsapp"></i> Proses & Kirim Bukti</button>
+                    </div>
+                `;
 
+                const adminBuktiFotoUpload = document.getElementById('adminBuktiFotoUpload');
+                const uploadAdminBuktiBtn = document.getElementById('uploadAdminBuktiBtn');
+                const adminBuktiFotoPreview = document.getElementById('adminBuktiFotoPreview');
+                const adminBuktiFotoPlaceholder = document.getElementById('adminBuktiFotoPlaceholder');
+
+                adminBuktiFotoUpload.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            adminBuktiFotoPreview.src = e.target.result;
+                            adminBuktiFotoPreview.classList.remove('hidden');
+                            if (adminBuktiFotoPlaceholder) adminBuktiFotoPlaceholder.classList.add('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                uploadAdminBuktiBtn.onclick = async () => {
+                    if (adminBuktiFotoUpload.files.length === 0) {
+                        showCustomAlert('Pilih file bukti foto admin terlebih dahulu.');
+                        return;
+                    }
+                    showLoading();
+                    try {
+                        const file = adminBuktiFotoUpload.files[0];
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('key', IMGBB_API_KEY);
+
+                        const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, { method: 'POST', body: formData });
+                        const imgbbResult = await imgbbResponse.json();
+
+                        if (imgbbResult.success) {
+                            const newAdminBuktiFotoUrl = imgbbResult.data.url;
+                            await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: newAdminBuktiFotoUrl });
+                            showCustomAlert('Bukti foto admin berhasil diunggah!');
+                            showOrderDetailModal(orderId);
+                        } else {
+                            showCustomAlert('Gagal mengunggah bukti foto admin: ' + (imgbbResult.error?.message || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        console.error('Error uploading admin proof photo:', error);
+                        showCustomAlert('Terjadi kesalahan saat mengunggah bukti foto admin.');
+                    } finally {
+                        hideLoading();
+                    }
+                };
+
+                const processAndSendBtn = document.getElementById('processAndSendBtn');
+                processAndSendBtn.onclick = async () => {
+                    showLoading();
+                    try {
+                        let finalAdminBuktiUrl = order.adminBuktiFotoUrl || '';
+                        if (adminBuktiFotoUpload.files.length > 0) {
+                            const file = adminBuktiFotoUpload.files[0];
+                            const formData = new FormData();
+                            formData.append('image', file);
+                            formData.append('key', IMGBB_API_KEY);
+                            const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, { method: 'POST', body: formData });
+                            const imgbbResult = await imgbbResponse.json();
+                            if (imgbbResult.success) {
+                                finalAdminBuktiUrl = imgbbResult.data.url;
+                                await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: finalAdminBuktiUrl });
+                            } else {
+                                showCustomAlert('Gagal mengunggah bukti foto admin sebelum mengirim WA: ' + (imgbbResult.error?.message || 'Unknown error'));
+                                hideLoading();
+                                return;
+                            }
+                        }
+
+                        await db.ref(`pesanan/${orderId}`).update({ status: 'Selesai' });
+
+                        const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`;
+                        let waMessage = `Halo ${order.namaPembeli || 'Pelanggan'}, pesanan Anda (${productName}) dengan ID *${orderId ? order.id.substring(0, 8) : 'N/A'}* telah *Selesai diproses* dan bukti telah dikirim. \n\nSilakan cek status pesanan Anda di sini: ${statusLink}`;
+                        
+                        if (finalAdminBuktiUrl) {
+                            waMessage += `\n\nLihat bukti foto admin: ${finalAdminBuktiUrl}`;
+                        } else {
+                             waMessage += `\n\nBukti foto admin tidak tersedia.`;
+                        }
+
+                        await sendWhatsAppNotification(normalizePhoneNumber(order.nomorWa), waMessage);
+                        
+                        showCustomAlert('Pesanan berhasil diproses, status diperbarui, dan notifikasi WA dikirim!');
+                        closeOrderDetailModal();
+                    } catch (error) {
+                        console.error('Error processing order and sending WA:', error);
+                        showCustomAlert('Terjadi kesalahan saat memproses pesanan dan mengirim notifikasi WA.');
+                    } finally {
+                        hideLoading();
+                    }
+                };
+
+                orderDetailModal.classList.add('show');
             } catch (error) {
-                console.error("Error updating order status or sending WA:", error);
-                showCustomAlert("Gagal mengubah status pesanan atau mengirim notifikasi. " + error.message);
+                console.error('Error showing order detail modal:', error);
+                showCustomAlert('Gagal menampilkan detail pesanan.');
             } finally {
                 hideLoading();
-                closeOrderDetailModal(); // Close modal after update
             }
         }
-
-
-        async function deleteOrder(orderId) {
-            if (!confirm(`Apakah Anda yakin ingin menghapus pesanan ${orderId}?`)) {
-                return;
-            }
-            showLoading();
-            try {
-                await db.ref(`pesanan/${orderId}`).remove();
-                hideLoading();
-                showCustomAlert(`Pesanan ${orderId} berhasil dihapus.`);
-            } catch (error) {
-                hideLoading();
-                console.error("Error deleting order:", error);
-                showCustomAlert("Gagal menghapus pesanan. " + error.message);
-            }
-        }
+        // END: Perbaikan
 
         // --- Testimonial Management ---
         const testimonialForm = document.getElementById('testimonialForm');
@@ -1194,79 +1145,92 @@
             const testimonialId = document.getElementById('testimonialId').value;
             const name = document.getElementById('testiName').value.trim();
             const message = document.getElementById('testiMessage').value.trim();
-            const timestamp = new Date().toISOString();
 
             if (!name || !message) {
-                showCustomAlert('Harap lengkapi nama dan pesan testimoni.');
+                showCustomAlert('Nama dan pesan testimoni tidak boleh kosong.');
                 return;
             }
 
             showLoading();
             try {
-                if (testimonialId) { // Update existing testimonial
-                    await db.ref(`testimoni/${testimonialId}`).update({
-                        nama: name,
-                        pesan: message
-                    });
+                const testimonialData = {
+                    nama: name,
+                    pesan: message,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                if (testimonialId) {
+                    await db.ref(`testimoni/${testimonialId}`).update(testimonialData);
                     showCustomAlert('Testimoni berhasil diupdate!');
-                } else { // Add new testimonial
-                    const newTestiRef = db.ref('testimoni').push();
-                    await newTestiRef.set({
-                        nama: name,
-                        pesan: message,
-                        waktu: timestamp
-                    });
-                    showCustomAlert('Testimoni baru berhasil ditambahkan!');
+                } else {
+                    await db.ref('testimoni').push(testimonialData);
+                    showCustomAlert('Testimoni berhasil ditambahkan!');
                 }
                 clearForm('testimonialForm');
+                refreshPreview();
             } catch (error) {
-                console.error("Error saving testimonial:", error);
-                showCustomAlert('Gagal menyimpan testimoni. Silakan coba lagi.');
+                console.error('Error adding/updating testimonial:', error);
+                showCustomAlert('Gagal menambah/mengupdate testimoni.');
             } finally {
                 hideLoading();
             }
         });
 
-        db.ref('testimoni').on('value', (snapshot) => {
-            const testimonials = snapshot.val() || {};
-            testimonialsTableBody.innerHTML = '';
-            let testiCount = 0;
-            // Sort testimonials by time (newest first)
-            const sortedTestimonials = Object.entries(testimonials).sort(([, a], [, b]) => new Date(b.waktu) - new Date(a.waktu));
+        db.ref('testimoni').orderByChild('timestamp').on('value', (snapshot) => {
+            const testimonials = [];
+            snapshot.forEach((childSnapshot) => {
+                testimonials.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            renderTestimonialsTable(testimonials.reverse());
+        }, (error) => {
+            console.error("Gagal memuat testimoni:", error);
+            showCustomAlert('Gagal memuat daftar testimoni. Silakan coba lagi nanti.');
+        });
 
-            sortedTestimonials.forEach(([id, testi]) => {
-                testiCount++;
+        function renderTestimonialsTable(testimonials) {
+            testimonialsTableBody.innerHTML = '';
+            testimonials.forEach(testi => {
                 const row = testimonialsTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${testi.nama}</td>
-                    <td>${testi.pesan.substring(0, 70)}${testi.pesan.length > 70 ? '...' : ''}</td>
+                    <td>${testi.nama || 'N/A'}</td>
+                    <td>${testi.pesan || 'N/A'}</td>
                     <td class="actions">
-                        <button class="btn btn-blue" onclick="editTestimonial('${id}', '${testi.nama}', \`${testi.pesan}\`)"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-red" onclick="deleteTestimonial('${id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="editTestimonial('${testi.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deleteTestimonial('${testi.id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
-            if (testiCount === 0) {
-                testimonialsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary py-4">Belum ada testimoni.</td></tr>';
-            }
-        });
-
-        function editTestimonial(id, name, message) {
-            document.getElementById('testimonialId').value = id;
-            document.getElementById('testiName').value = name;
-            document.getElementById('testiMessage').value = message;
-            showCustomAlert(`Mengedit testimoni dari: ${name}`);
         }
 
-        async function deleteTestimonial(id) {
-            if (confirm(`Anda yakin ingin menghapus testimoni ini?`)) {
+        async function editTestimonial(testiId) {
+            showLoading();
+            try {
+                const snapshot = await db.ref(`testimoni/${testiId}`).once('value');
+                const testi = snapshot.val();
+                if (testi) {
+                    document.getElementById('testimonialId').value = testiId;
+                    document.getElementById('testiName').value = testi.nama || '';
+                    document.getElementById('testiMessage').value = testi.pesan || '';
+                } else {
+                    showCustomAlert('Testimoni tidak ditemukan.');
+                }
+            } catch (error) {
+                console.error('Error editing testimonial:', error);
+                showCustomAlert('Gagal memuat data testimoni untuk edit.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteTestimonial(testiId) {
+            if (confirm('Anda yakin ingin menghapus testimoni ini?')) {
                 showLoading();
                 try {
-                    await db.ref(`testimoni/${id}`).remove();
+                    await db.ref(`testimoni/${testiId}`).remove();
                     showCustomAlert('Testimoni berhasil dihapus!');
                 } catch (error) {
-                    console.error("Error deleting testimonial:", error);
-                    showCustomAlert('Gagal menghapus testimoni. Silakan coba lagi.');
+                    console.error('Error deleting testimonial:', error);
+                    showCustomAlert('Gagal menghapus testimoni.');
                 } finally {
                     hideLoading();
                 }
@@ -1282,107 +1246,122 @@
 
         dynamicContentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const dynamicContentId = document.getElementById('dynamicContentId').value;
+            const contentId = document.getElementById('dynamicContentId').value;
             const order = parseInt(document.getElementById('dynamicContentOrder').value);
-            const htmlContent = document.getElementById('dynamicContentHtml').value.trim();
-            const cssContent = document.getElementById('dynamicContentCss').value.trim();
-            const jsContent = document.getElementById('dynamicContentJs').value.trim();
+            const html = document.getElementById('dynamicContentHtml').value.trim();
+            const css = document.getElementById('dynamicContentCss').value.trim();
+            const js = document.getElementById('dynamicContentJs').value.trim();
 
-            if (isNaN(order) || order < 1 || !htmlContent) {
-                showCustomAlert('Harap lengkapi urutan (angka positif) dan konten HTML.');
+            if (!html) {
+                showCustomAlert('Konten HTML tidak boleh kosong.');
+                return;
+            }
+            if (isNaN(order) || order < 1) {
+                showCustomAlert('Urutan harus berupa angka positif.');
                 return;
             }
 
             showLoading();
             try {
-                if (dynamicContentId) { // Update existing content
-                    await db.ref(`dynamic_content/${dynamicContentId}`).update({
-                        order: order,
-                        html: htmlContent,
-                        css: cssContent,
-                        js: jsContent
-                    });
+                const contentData = {
+                    order: order,
+                    htmlContent: html,
+                    cssContent: css,
+                    jsContent: js
+                };
+
+                if (contentId) {
+                    await db.ref(`dinamis/${contentId}`).update(contentData);
                     showCustomAlert('Konten dinamis berhasil diupdate!');
-                } else { // Add new content
-                    const newContentRef = db.ref('dynamic_content').push();
-                    await newContentRef.set({
-                        order: order,
-                        html: htmlContent,
-                        css: cssContent,
-                        js: jsContent,
-                        created_at: new Date().toISOString()
-                    });
-                    showCustomAlert('Konten dinamis baru berhasil ditambahkan!');
+                } else {
+                    await db.ref('dinamis').push(contentData);
+                    showCustomAlert('Konten dinamis berhasil ditambahkan!');
                 }
                 clearForm('dynamicContentForm');
+                refreshPreview();
             } catch (error) {
-                console.error("Error saving dynamic content:", error);
-                showCustomAlert('Gagal menyimpan konten dinamis. Silakan coba lagi.');
+                console.error('Error adding/updating dynamic content:', error);
+                showCustomAlert('Gagal menambah/mengupdate konten dinamis.');
             } finally {
                 hideLoading();
             }
         });
 
-        db.ref('dynamic_content').orderByChild('order').on('value', (snapshot) => {
-            const contents = snapshot.val() || {};
-            dynamicContentTableBody.innerHTML = '';
-            let contentCount = 0;
+        db.ref('dinamis').orderByChild('order').on('value', (snapshot) => {
+            const dynamicContents = [];
             snapshot.forEach((childSnapshot) => {
-                contentCount++;
-                const id = childSnapshot.key;
-                const content = childSnapshot.val();
+                dynamicContents.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            renderDynamicContentTable(dynamicContents);
+        }, (error) => {
+            console.error("Gagal memuat konten dinamis:", error);
+            showCustomAlert('Gagal memuat daftar konten dinamis. Silakan coba lagi nanti.');
+        });
+
+        function renderDynamicContentTable(contents) {
+            dynamicContentTableBody.innerHTML = '';
+            contents.forEach(content => {
                 const row = dynamicContentTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${id}</td>
-                    <td>${content.order}</td>
-                    <td><pre class="text-xs max-h-24 overflow-y-auto bg-gray-100 dark:bg-gray-700 p-2 rounded">${content.html.substring(0, 150)}${content.html.length > 150 ? '...' : ''}</pre></td>
+                    <td>${content.id ? content.id.substring(0, 8) + '...' : 'N/A'}</td>
+                    <td>${content.order || 'N/A'}</td>
+                    <td>${content.htmlContent ? content.htmlContent.substring(0, 50) + '...' : 'Kosong'}</td>
                     <td class="actions">
-                        <button class="btn btn-blue" onclick="editDynamicContent('${id}', ${content.order}, \`${content.html}\`, \`${content.css || ''}\`, \`${content.js || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-red" onclick="deleteDynamicContent('${id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="editDynamicContent('${content.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deleteDynamicContent('${content.id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
-            if (contentCount === 0) {
-                dynamicContentTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-text-secondary py-4">Belum ada konten dinamis.</td></tr>';
-            }
-        });
-
-        function editDynamicContent(id, order, html, css, js) {
-            document.getElementById('dynamicContentId').value = id;
-            document.getElementById('dynamicContentOrder').value = order;
-            document.getElementById('dynamicContentHtml').value = html;
-            document.getElementById('dynamicContentCss').value = css;
-            document.getElementById('dynamicContentJs').value = js;
-            showCustomAlert(`Mengedit konten dinamis ID: ${id}`);
         }
 
-        async function deleteDynamicContent(id) {
-            if (confirm(`Anda yakin ingin menghapus konten dinamis ini?`)) {
+        async function editDynamicContent(contentId) {
+            showLoading();
+            try {
+                const snapshot = await db.ref(`dinamis/${contentId}`).once('value');
+                const content = snapshot.val();
+                if (content) {
+                    document.getElementById('dynamicContentId').value = contentId;
+                    document.getElementById('dynamicContentOrder').value = content.order || 1;
+                    document.getElementById('dynamicContentHtml').value = content.htmlContent || '';
+                    document.getElementById('dynamicContentCss').value = content.cssContent || '';
+                    document.getElementById('dynamicContentJs').value = content.jsContent || '';
+                } else {
+                    showCustomAlert('Konten dinamis tidak ditemukan.');
+                }
+            } catch (error) {
+                console.error('Error editing dynamic content:', error);
+                showCustomAlert('Gagal memuat data konten dinamis untuk edit.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteDynamicContent(contentId) {
+            if (confirm('Anda yakin ingin menghapus konten dinamis ini?')) {
                 showLoading();
                 try {
-                    await db.ref(`dynamic_content/${id}`).remove();
+                    await db.ref(`dinamis/${contentId}`).remove();
                     showCustomAlert('Konten dinamis berhasil dihapus!');
                 } catch (error) {
-                    console.error("Error deleting dynamic content:", error);
-                    showCustomAlert('Gagal menghapus konten dinamis. Silakan coba lagi.');
+                    console.error('Error deleting dynamic content:', error);
+                    showCustomAlert('Gagal menghapus konten dinamis.');
                 } finally {
                     hideLoading();
                 }
             }
         }
 
-
         // --- Live Preview ---
-        const livePreviewIframe = document.getElementById('livePreviewIframe');
-
         function refreshPreview() {
-            livePreviewIframe.contentWindow.location.reload(true);
+            const iframe = document.getElementById('livePreviewIframe');
+            iframe.src = iframe.src;
             showCustomAlert('Pratinjau toko diperbarui!');
         }
 
         function openIndexInNewTab() {
             window.open('./index.html', '_blank');
         }
+
     </script>
 </body>
 </html>
