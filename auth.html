@@ -67,22 +67,28 @@
 
         .sign-in-container {
             z-index: 2; /* Ensure login form is on top initially */
+            opacity: 1; /* Ensure it's visible by default */
+            pointer-events: auto; /* Ensure it's clickable by default */
         }
 
         .sign-up-container {
             z-index: 1; /* Below login form initially */
             opacity: 0; /* Hidden initially */
+            pointer-events: none; /* Disable interaction when hidden */
         }
 
         /* When container has 'active' class (for registration view) */
         .container.active .sign-in-container {
             transform: translateX(100%); /* Slide login form right */
+            opacity: 0; /* Fade out login form */
+            pointer-events: none; /* Disable interaction */
         }
 
         .container.active .sign-up-container {
             transform: translateX(100%); /* Slide register form right */
             opacity: 1; /* Make register form visible */
             z-index: 5; /* Bring register form to front */
+            pointer-events: auto; /* Enable interaction */
             animation: show 0.6s; /* Fade in animation for register form */
         }
 
@@ -305,14 +311,15 @@
                 left: 0; /* Override desktop left */
                 top: 0; /* Override desktop top */
                 padding: 0 20px; /* Reduce padding for mobile */
-                /* No initial transform, rely on active state */
+                position: absolute; /* Keep absolute for stacking */
+                transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out, z-index 0.6s step-end; /* Add z-index transition */
             }
 
             .sign-in-container {
                 z-index: 2; /* Still on top initially */
-                transform: translateY(0); /* Ensure no initial vertical transform */
                 opacity: 1; /* Ensure visible initially */
                 pointer-events: auto; /* Ensure clickable initially */
+                transform: translateY(0); /* Ensure no initial vertical transform */
             }
             .sign-up-container {
                 z-index: 1; /* Still behind initially */
@@ -321,31 +328,15 @@
                 transform: translateY(0); /* Ensure no initial vertical transform */
             }
 
-            /* Active state for mobile (switching forms) */
-            .container.active .sign-in-container {
-                transform: translateY(-100%); /* Slide login form up and out */
-                opacity: 0; /* Fade out login form */
-                pointer-events: none;
-            }
-            .container.active .sign-up-container {
-                transform: translateY(0); /* Slide register form into view */
-                opacity: 1; /* Fade in register form */
-                z-index: 5; /* Bring to front */
-                pointer-events: auto;
-            }
-
-            /* Overlay for mobile (slides vertically) */
+            /* Overlay for mobile (initially visible, then slides out) */
             .overlay-container {
                 top: 0; /* Override desktop top */
                 left: 0; /* Override desktop left */
                 width: 100%; /* Full width */
                 height: 100%; /* Full height of container */
                 transform: translateY(0); /* Default position */
-                z-index: 100;
-            }
-
-            .container.active .overlay-container {
-                transform: translateY(-100%); /* Slide overlay up and out */
+                z-index: 100; /* Always on top of forms for sliding */
+                transition: transform 0.6s ease-in-out;
             }
 
             .overlay {
@@ -354,10 +345,6 @@
                 height: 200%; /* Double height for vertical slide */
                 left: 0; /* Override desktop left */
                 transform: translateY(0); /* Default position */
-            }
-
-            .container.active .overlay {
-                transform: translateY(50%); /* Slide overlay content down */
             }
 
             .overlay-panel {
@@ -377,6 +364,25 @@
                 transform: translateY(0); /* Initial position */
             }
 
+            /* Active state for mobile */
+            .container.active .sign-in-container {
+                transform: translateY(-100%); /* Slide login form up and out */
+                opacity: 0; /* Fade out login form */
+                pointer-events: none; /* Disable interaction */
+                z-index: 1; /* Move behind overlay */
+            }
+            .container.active .sign-up-container {
+                transform: translateY(0); /* Slide register form into view */
+                opacity: 1; /* Fade in register form */
+                z-index: 5; /* Bring to front */
+                pointer-events: auto; /* Enable interaction */
+            }
+            .container.active .overlay-container {
+                transform: translateY(-100%); /* Slide overlay up and out */
+            }
+            .container.active .overlay {
+                transform: translateY(50%); /* Slide overlay content down */
+            }
             .container.active .overlay-left {
                 transform: translateY(0); /* Slide left panel down */
             }
