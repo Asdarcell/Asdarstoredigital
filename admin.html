@@ -495,30 +495,30 @@
         // --- Firebase Config & Init ---
         // PENTING: Ganti nilai placeholder ini dengan konfigurasi Firebase Anda yang sebenarnya.
         const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-            projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll.appspot.com", 
-            messagingSenderId: "220670500351",
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI DENGAN API KEY FIREBASE ANDA
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI DENGAN AUTH DOMAIN FIREBASE ANDA
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI DENGAN DATABASE URL FIREBASE ANDA
+            projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN PROJECT ID FIREBASE ANDA
+            storageBucket: "asdarstoredigitalll.appspot.com", // GANTI DENGAN STORAGE BUCKET FIREBASE ANDA
+            messagingSenderId: "220670500351", // GANTI DENGAN MESSAGING SENDER ID FIREBASE ANDA
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca" // GANTI DENGAN APP ID FIREBASE ANDA
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         // --- Konstanta NgirimWA & Admin ---
-        const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-        const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+        const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a"; // GANTI DENGAN APP KEY NGIRIMWA ANDA
+        const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq"; // GANTI DENGAN AUTH KEY NGIRIMWA ANDA
         const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA admin Anda (format 62xxxxxxxxxx)
         const CS_WA_NUMBER = "6281803004607"; // Nomor WA CS/Admin untuk notifikasi pembeli
 
         // --- Konstanta ImgBB ---
-        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // API Key ImgBB Anda
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // GANTI DENGAN API KEY IMGBB ANDA
         const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
         
         // URL ke halaman status pesanan Anda
-        const STATUS_PAGE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html";
+        const STATUS_PAGE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html"; // Pastikan ini URL yang benar
 
         // --- DOM Elements ---
         const orderListDiv = document.getElementById('orderList');
@@ -558,9 +558,11 @@
                     console.log('WA notification sent successfully:', result);
                 } else {
                     console.error('Failed to send WA notification:', result);
+                    showCustomAlert('Gagal mengirim notifikasi WA: ' + (result.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error sending WA notification:', error);
+                showCustomAlert('Terjadi kesalahan saat mengirim notifikasi WA. Cek konsol.');
             }
         }
 
@@ -744,27 +746,19 @@
                 const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`; // Link ke halaman status pesanan buyer
 
                 if (newStatus === 'Diproses') {
-                    messageToBuyer = `Halo! Pesanan Anda dengan ID *${orderId}* sedang *Diproses*. Mohon tunggu sebentar ya. ` +
-                                     `Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
+                    messageToBuyer = `Halo! Pesanan Anda dengan ID *${orderId}* sedang *Diproses*. Mohon tunggu sebentar ya.\n\n` +
+                                     `Anda bisa cek statusnya dan update terbaru di sini: ${statusLink}\n\n` +
                                      `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
                 } else if (newStatus === 'Selesai') {
-                    // Jika pesanan selesai, sertakan link bukti admin jika ada
-                    const orderData = allOrders.find(o => o.id === orderId);
-                    let buktiAdminMsg = '';
-                    if (orderData && orderData.bukti_admin_url) {
-                        buktiAdminMsg = `\n\nBukti penyelesaian: ${orderData.bukti_admin_url}`;
-                    }
-
-                    messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* sudah *Selesai*. ` +
-                                     `Terima kasih telah berbelanja di Asdar Store Digital.${buktiAdminMsg}\n\n` +
-                                     `Anda bisa cek status lengkapnya di sini: ${statusLink}\n\n` +
+                    messageToBuyer = `Selamat! Pesanan Anda dengan ID *${orderId}* sudah *Selesai*. Terima kasih telah berbelanja di Asdar Store Digital.\n\n` +
+                                     `Cek detail dan bukti penyelesaian di sini: ${statusLink}\n\n` +
                                      `Jika ada pertanyaan, balas pesan ini atau hubungi CS kami di ${CS_WA_NUMBER}.`;
                 } else if (newStatus === 'Dibatalkan') {
-                    messageToBuyer = `Mohon maaf, pesanan Anda dengan ID *${orderId}* telah *Dibatalkan*. ` +
+                    messageToBuyer = `Mohon maaf, pesanan Anda dengan ID *${orderId}* telah *Dibatalkan*.\n\n` +
                                      `Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
                                      `Silakan hubungi CS kami di ${CS_WA_NUMBER} untuk informasi lebih lanjut.`;
                 } else if (newStatus === 'Menunggu Konfirmasi') {
-                    messageToBuyer = `Pemberitahuan: Status pesanan Anda dengan ID *${orderId}* kini kembali *Menunggu Konfirmasi*. ` +
+                    messageToBuyer = `Pemberitahuan: Status pesanan Anda dengan ID *${orderId}* kini kembali *Menunggu Konfirmasi*.\n\n` +
                                      `Mohon pastikan bukti pembayaran Anda sudah benar. Anda bisa cek statusnya di sini: ${statusLink}\n\n` +
                                      `Jika ada pertanyaan, hubungi CS kami di ${CS_WA_NUMBER}.`;
                 }
