@@ -5,201 +5,180 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Asdar Store Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Theme Variables - Consistent with index.html */
+        /* Modern Theme Variables */
         :root {
-            /* Light Mode Colors (White & Blue) */
-            --bg: #ffffff; /* Pure white background */
-            --text: #333333; /* Dark gray for main text, almost black */
-            --primary: #007bff; /* Bright blue for accents */
-            --card: #ffffff; /* White card background */
-            --border: #e0e0e0; /* Light gray border */
-            --secondary-text: #6b7280; /* Medium gray for secondary text */
-            --button-text-light: #ffffff; /* White text for primary buttons */
-            --button-bg-light: #007bff; /* Primary blue for buttons */
-            --button-hover-light: #0056b3; /* Darker blue on hover */
-            --primary-rgb: 0, 123, 255; /* RGB for primary blue */
-        }
-        [data-theme="dark"] {
-            /* Dark Mode Colors (Light Grey Background, Black Text, Contrasting Accents) */
-            --bg: #f0f0f0; /* Very light gray background for dark mode */
-            --text: #333333; /* Dark gray for main text (readable on light background) */
-            --primary: #28a745; /* Green for dark mode primary (good contrast on light bg) */
-            --card: #e8e8e8; /* Slightly darker light gray card background */
-            --border: #cccccc; /* Medium gray border */
-            --secondary-text: #6b7280; /* Same as light mode, readable */
-            --button-text-dark: #ffffff; /* White text for buttons */
-            --button-bg-dark: #28a745; /* Primary green for buttons */
-            --button-hover-dark: #218838; /* Darker green on hover */
-            --primary-rgb: 40, 167, 69; /* RGB for primary green */
+            --bg-body: #f7f9fc; /* Light background for the overall page */
+            --bg-card: #ffffff; /* White background for cards/sections */
+            --text-primary: #212529; /* Dark text for readability */
+            --text-secondary: #6c757d; /* Lighter text for secondary info */
+            --color-brand: #007bff; /* Primary brand color (blue) */
+            --color-brand-hover: #0056b3; /* Darker blue on hover */
+            --border-color: #e0e0e0; /* Light border for separation */
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); /* Subtle shadow for depth */
+            --focus-ring: rgba(0, 123, 255, 0.25); /* Focus ring for inputs */
         }
 
-        /* General Styles */
+        [data-theme="dark"] {
+            --bg-body: #1a202c; /* Dark background */
+            --bg-card: #2d3748; /* Darker card background */
+            --text-primary: #e2e8f0; /* Light text for dark mode */
+            --text-secondary: #a0aec0; /* Muted light text */
+            --color-brand: #4fd1c5; /* Teal for dark mode brand color */
+            --color-brand-hover: #38b2ac; /* Darker teal on hover */
+            --border-color: #4a5568; /* Darker border */
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); /* Darker shadow */
+            --focus-ring: rgba(79, 209, 197, 0.35); /* Focus ring for inputs */
+        }
+
+        /* Base Styles */
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            transition: all 0.3s ease;
-            margin: 0;
-            line-height: 1.6;
-            padding: 1rem;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
         }
+
+        /* Header */
         header {
-            position: sticky;
-            top: 0;
-            background: var(--card);
-            padding: 15px 20px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            z-index: 999;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
         header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
             margin: 0;
-            font-size: 24px;
-            color: var(--primary);
-            font-weight: bold;
         }
-        .theme-btn {
-            background: transparent;
+        .theme-toggle-btn {
+            background: none;
             border: none;
-            font-size: 22px;
+            font-size: 1.5rem;
             cursor: pointer;
-            color: var(--text);
-            transition: color 0.3s ease, background-color 0.3s ease;
-            padding: 8px;
+            color: var(--text-primary);
+            padding: 0.5rem;
             border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
         }
-        .theme-btn:hover {
-            background-color: rgba(0,0,0,0.05);
-            color: var(--primary);
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
         }
-        [data-theme="dark"] .theme-btn:hover {
-            background-color: rgba(0,0,0,0.1);
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
+        /* Main Layout */
         main {
             display: flex;
-            flex-grow: 1; /* Allow main content to take available space */
-            gap: 20px;
-            padding: 20px;
-        }
-        @media (max-width: 1024px) { /* Adjust for tablet/smaller desktop */
-            main {
-                flex-direction: column; /* Stack columns on smaller screens */
-                padding: 10px;
-            }
-        }
-        @media (max-width: 640px) { /* Adjust for mobile */
-            main {
-                padding: 5px;
-            }
+            flex-wrap: wrap; /* Allows wrapping for responsiveness */
+            gap: 1.5rem;
+            padding: 1.5rem;
+            flex-grow: 1;
         }
 
-        .admin-panel-sections {
-            flex: 2; /* Takes 2/3 of space on desktop */
+        .admin-sections {
+            flex: 2; /* Takes more space for forms and tables */
+            min-width: 300px; /* Minimum width for stacking */
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 1.5rem;
         }
 
         .live-preview-section {
-            flex: 1; /* Takes 1/3 of space on desktop */
-            background: var(--card);
+            flex: 1; /* Takes less space, but still expands */
+            min-width: 280px; /* Minimum width */
+            background-color: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            padding: 20px;
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
         }
-        @media (max-width: 1024px) {
-            .admin-panel-sections, .live-preview-section {
-                flex: none; /* Reset flex on smaller screens */
-                width: 100%; /* Take full width */
-            }
-        }
 
+        /* Section Cards */
         .section-card {
-            background: var(--card);
+            background-color: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            padding: 20px;
-            color: var(--text);
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
         }
         .section-card h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: var(--primary);
-            font-size: 1.8em;
-            font-weight: bold;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
             text-align: center;
         }
 
-        /* Form & Input Styles - Consistent */
+        /* Form Elements */
         label {
-            font-weight: 600;
-            margin-top: 15px;
+            font-weight: 500;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
             display: block;
-            color: var(--text);
+            color: var(--text-primary);
         }
-        input, select, textarea {
+        input:not([type="checkbox"]), select, textarea {
             width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            margin-bottom: 15px;
+            padding: 0.8rem 1rem;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: var(--card);
-            color: var(--text);
-            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
+            -webkit-appearance: none; /* For consistent styling across browsers */
+            -moz-appearance: none;
+            appearance: none;
         }
         input:focus, select:focus, textarea:focus {
-            border-color: var(--primary);
+            border-color: var(--color-brand);
             outline: none;
-            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        input[type="file"] {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
         }
 
-        /* Button Styles - Consistent */
-        .btn-base {
-            padding: 10px 20px;
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.25rem;
             border-radius: 8px;
             border: none;
-            color: var(--button-text-light);
-            background: var(--button-bg-light);
+            font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 1em;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: inline-flex; /* For icon alignment */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 0.5rem;
+            white-space: nowrap; /* Prevent text wrapping on buttons */
         }
-        [data-theme="dark"] .btn-base {
-            color: var(--button-text-dark);
-            background: var(--button-bg-dark);
+        .btn-primary {
+            background-color: var(--color-brand);
+            color: white;
         }
-        .btn-base:hover {
-            background-color: var(--button-hover-light);
+        .btn-primary:hover {
+            background-color: var(--color-brand-hover);
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        [data-theme="dark"] .btn-base:hover {
-            background-color: var(--button-hover-dark);
-        }
-        .btn-base:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
         .btn-green { background-color: #28a745; color: white; }
         .btn-green:hover { background-color: #218838; }
         .btn-red { background-color: #dc3545; color: white; }
@@ -209,69 +188,100 @@
         .btn-gray { background-color: #6c757d; color: white; }
         .btn-gray:hover { background-color: #5a6268; }
 
-        .btn-full-width {
-            width: 100%;
-            margin-top: 20px;
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
         }
 
-        /* Table Styles */
+        /* Tables */
         .data-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            border-collapse: separate; /* For rounded corners */
+            border-spacing: 0;
+            margin-top: 1.5rem;
+            border-radius: 8px; /* Rounded corners for the table */
+            overflow: hidden; /* Ensures rounded corners are visible */
+            box-shadow: var(--shadow-light);
         }
         .data-table th, .data-table td {
-            border: 1px solid var(--border);
-            padding: 10px;
+            padding: 0.8rem 1rem;
             text-align: left;
             font-size: 0.9em;
-            color: var(--text);
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
         }
         .data-table th {
-            background-color: var(--border);
-            font-weight: bold;
-            color: var(--text);
+            background-color: var(--border-color); /* Lighter header background */
+            font-weight: 600;
+            color: var(--text-primary);
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Ensure header is above content when scrolling */
         }
-        .data-table tr:nth-child(even) {
-            background-color: rgba(0,0,0,0.02);
+        .data-table tbody tr:last-child td {
+            border-bottom: none; /* No border for the last row */
         }
-        [data-theme="dark"] .data-table tr:nth-child(even) {
-            background-color: rgba(0,0,0,0.05);
+        .data-table tbody tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02); /* Subtle zebra striping */
+        }
+        [data-theme="dark"] .data-table tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
         }
         .data-table td.actions {
-            white-space: nowrap; /* Prevent wrapping for action buttons */
+            white-space: nowrap;
+            display: flex;
+            gap: 0.5rem; /* Spacing between buttons */
+            flex-wrap: wrap; /* Allow buttons to wrap if too many */
         }
-        .data-table td.actions button {
-            margin-right: 5px;
-            padding: 6px 10px;
+        .data-table td.actions .btn {
+            padding: 0.4rem 0.7rem;
             font-size: 0.8em;
-            width: auto;
-            box-shadow: none;
         }
-        .data-table td.actions button:hover {
-            box-shadow: none;
+
+        /* Specific Status Styling for Select */
+        .status-select {
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            appearance: none; /* Hide default arrow */
+            background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"%3e%3cpath fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/%3e%3c/svg%3e');
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
         }
+
+        .status-BelumBayar { color: #d97706; border-color: #d97706; } /* Amber */
+        .status-MenungguKonfirmasi { color: #059669; border-color: #059669; } /* Emerald Green */
+        .status-Diproses { color: #7c3aed; border-color: #7c3aed; } /* Violet */
+        .status-Selesai { color: #10b981; border-color: #10b981; } /* Green */
+        .status-Dibatalkan { color: #ef4444; border-color: #ef4444; } /* Red */
 
         /* Live Preview Iframe */
         #livePreviewIframe {
             width: 100%;
-            height: 100%; /* Take full height of its container */
-            border: 1px solid var(--border);
+            height: 100%;
+            min-height: 400px; /* Minimum height for visibility */
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            background-color: var(--bg); /* Ensure iframe background matches theme */
-            flex-grow: 1; /* Allow iframe to expand */
+            background-color: var(--bg-card);
+            flex-grow: 1; /* Allows iframe to take available height */
         }
         .preview-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
-        .preview-controls button {
-            flex-grow: 1; /* Allow buttons to grow */
+        .preview-controls .btn {
+            flex-grow: 1;
+            min-width: 120px;
         }
 
-        /* Custom Modal for Alerts - Consistent */
+        /* Custom Modal for Alerts */
         .custom-modal {
             position: fixed;
             top: 0;
@@ -279,52 +289,61 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000; /* Ensure it's on top */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .custom-modal.show {
-            display: flex;
+            opacity: 1;
+            visibility: visible;
         }
         .custom-modal-content {
-            background: var(--card);
-            color: var(--text);
-            padding: 25px;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-light);
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-content p {
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
         }
         .custom-modal-content button {
-            padding: 10px 20px;
+            background-color: var(--color-brand);
+            color: white;
+            padding: 0.7rem 1.5rem;
             border-radius: 8px;
-            margin-top: 20px;
-            color: var(--button-text-light);
-            background: var(--button-bg-light);
-            transition: background-color 0.3s ease;
-        }
-        [data-theme="dark"] .custom-modal-content button {
-            color: var(--button-text-dark);
-            background: var(--button-bg-dark);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
         .custom-modal-content button:hover {
-            background-color: var(--button-hover-light);
-        }
-        [data-theme="dark"] .custom-modal-content button:hover {
-            background-color: var(--button-hover-dark);
+            background-color: var(--color-brand-hover);
         }
     </style>
 </head>
 <body data-theme="light">
     <header>
         <h1>Admin Panel Asdar Store</h1>
-        <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
     </header>
 
     <main>
-        <div class="admin-panel-sections">
+        <div class="admin-sections">
             <div id="productManagement" class="section-card">
                 <h2>Manajemen Produk</h2>
                 <form id="productForm">
@@ -341,9 +360,9 @@
                     <label for="productDesc">Deskripsi / Cara Penggunaan</label>
                     <textarea id="productDesc" rows="3" placeholder="Deskripsi singkat atau cara penggunaan produk."></textarea>
 
-                    <div class="flex gap-2 mt-4">
-                        <button type="submit" class="btn-base btn-green flex-grow"><i class="fas fa-plus"></i> Tambah / <i class="fas fa-edit"></i> Update Produk</button>
-                        <button type="button" id="clearProductFormBtn" class="btn-base btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
+                    <div class="flex flex-wrap gap-3 mt-4">
+                        <button type="submit" class="btn btn-green flex-grow"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-sync-alt"></i> Update Produk</button>
+                        <button type="button" id="clearProductFormBtn" class="btn btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
                     </div>
                 </form>
 
@@ -365,6 +384,17 @@
 
             <div id="orderManagement" class="section-card">
                 <h2>Manajemen Pesanan</h2>
+
+                <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border border-border-color">
+                    <h3 class="text-lg font-bold mb-2 text-color-brand">Kirim Bukti Foto (Untuk Admin)</h3>
+                    <p class="text-sm mb-3 text-text-secondary">Pilih foto bukti (misal: screenshot top-up berhasil, bukti transaksi) yang ingin Anda gunakan untuk dikirim ke pembeli.</p>
+                    <label for="proofPhotoUpload" class="block text-text-primary font-semibold mb-2">Unggah Foto Bukti:</label>
+                    <input type="file" id="proofPhotoUpload" accept="image/*" class="w-full">
+                    <button class="btn btn-blue mt-3" onclick="uploadProofPhoto()"><i class="fas fa-upload"></i> Unggah & Dapatkan Link</button>
+                    <input type="text" id="proofPhotoLink" placeholder="Link bukti akan muncul di sini setelah diunggah" class="mt-2 text-sm bg-gray-100 dark:bg-gray-600 cursor-not-allowed" readonly>
+                    <p class="text-xs text-text-secondary mt-1">Salin link ini dan tempelkan di pesan WhatsApp setelah mengklik tombol "Proses & Kirim Bukti".</p>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="data-table" id="ordersTable">
                         <thead>
@@ -393,9 +423,9 @@
                     <label for="testiMessage">Pesan Testimoni</label>
                     <textarea id="testiMessage" rows="3" placeholder="Tulis testimoni di sini..." required></textarea>
 
-                    <div class="flex gap-2 mt-4">
-                        <button type="submit" class="btn-base btn-green flex-grow"><i class="fas fa-plus"></i> Tambah / <i class="fas fa-edit"></i> Update Testimoni</button>
-                        <button type="button" id="clearTestiFormBtn" class="btn-base btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
+                    <div class="flex flex-wrap gap-3 mt-4">
+                        <button type="submit" class="btn btn-green flex-grow"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-sync-alt"></i> Update Testimoni</button>
+                        <button type="button" id="clearTestiFormBtn" class="btn btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
                     </div>
                 </form>
                 <div class="overflow-x-auto">
@@ -429,9 +459,9 @@
                     <label for="dynamicContentJs">Skrip JavaScript (Opsional)</label>
                     <textarea id="dynamicContentJs" rows="3" placeholder="Masukkan kode JavaScript tambahan untuk konten ini."></textarea>
 
-                    <div class="flex gap-2 mt-4">
-                        <button type="submit" class="btn-base btn-green flex-grow"><i class="fas fa-plus"></i> Tambah / <i class="fas fa-edit"></i> Update Konten</button>
-                        <button type="button" id="clearDynamicContentFormBtn" class="btn-base btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
+                    <div class="flex flex-wrap gap-3 mt-4">
+                        <button type="submit" class="btn btn-green flex-grow"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-sync-alt"></i> Update Konten</button>
+                        <button type="button" id="clearDynamicContentFormBtn" class="btn btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
                     </div>
                 </form>
                 <div class="overflow-x-auto">
@@ -454,8 +484,8 @@
         <div class="live-preview-section">
             <h2>Pratinjau Toko (index.html)</h2>
             <div class="preview-controls">
-                <button class="btn-base btn-blue" onclick="refreshPreview()"><i class="fas fa-sync-alt"></i> Refresh Pratinjau</button>
-                <button class="btn-base btn-blue" onclick="openIndexInNewTab()"><i class="fas fa-external-link-alt"></i> Buka di Tab Baru</button>
+                <button class="btn btn-primary" onclick="refreshPreview()"><i class="fas fa-sync-alt"></i> Refresh Pratinjau</button>
+                <button class="btn btn-primary" onclick="openIndexInNewTab()"><i class="fas fa-external-link-alt"></i> Buka di Tab Baru</button>
             </div>
             <iframe id="livePreviewIframe" src="./index.html"></iframe>
         </div>
@@ -463,13 +493,14 @@
 
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
-            <p id="modal-message" class="text-lg font-medium mb-4"></p>
-            <button id="modal-close-btn">OK</button>
+            <p id="modal-message"></p>
+            <button id="modal-close-btn">Oke</button>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script>
         // --- Theme Toggle ---
@@ -482,7 +513,6 @@
             btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
             localStorage.setItem('theme', nextTheme);
         }
-        // Set initial theme on load
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
@@ -509,9 +539,10 @@
         });
 
         // --- Firebase Config & Init ---
-        // IMPORTANT: No authentication for admin page as per user request.
-        // This is a security risk for real applications.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        // PENTING: Untuk aplikasi sungguhan, HARUS pakai Firebase Authentication
+        // dan Firebase Security Rules yang ketat. Konfigurasi ini tidak disarankan
+        // untuk production tanpa otentikasi.
+        const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
@@ -523,6 +554,8 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const storage = firebase.storage(); // Initialize Firebase Storage
+        const storageRef = storage.ref();
 
         // --- Helper Functions ---
         function formatRupiah(angka) {
@@ -531,9 +564,13 @@
 
         function clearForm(formId) {
             document.getElementById(formId).reset();
-            // Clear hidden ID fields
             const hiddenId = document.querySelector(`#${formId} input[type="hidden"]`);
             if (hiddenId) hiddenId.value = '';
+            if (formId === 'orderManagement') { // Specific clear for order photo link
+                document.getElementById('proofPhotoLink').value = '';
+                document.getElementById('proofPhotoUpload').value = '';
+            }
+            showCustomAlert('Form berhasil dibersihkan!');
         }
 
         // --- Product Management ---
@@ -551,8 +588,8 @@
             const price = parseFloat(document.getElementById('productPrice').value);
             const desc = document.getElementById('productDesc').value.trim();
 
-            if (!category || !name || isNaN(price)) {
-                showCustomAlert('Harap lengkapi semua field produk (Kategori, Nama, Harga).');
+            if (!category || !name || isNaN(price) || price <= 0) {
+                showCustomAlert('Harap lengkapi semua field produk dengan benar (Kategori, Nama, Harga positif).');
                 return;
             }
 
@@ -591,19 +628,19 @@
                         <td>${name}</td>
                         <td>Rp${formatRupiah(product.harga)}</td>
                         <td class="actions">
-                            <button class="btn-base btn-blue" onclick="editProduct('${category}', '${name}', ${product.harga}, '${product.deskripsi || ''}')"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="btn-base btn-red" onclick="deleteProduct('${category}', '${name}')"><i class="fas fa-trash"></i> Hapus</button>
+                            <button class="btn btn-blue" onclick="editProduct('${category}', '${name}', ${product.harga}, '${product.deskripsi || ''}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-red" onclick="deleteProduct('${category}', '${name}')"><i class="fas fa-trash"></i> Hapus</button>
                         </td>
                     `;
                 }
             }
             if (productCount === 0) {
-                productsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500">Belum ada produk.</td></tr>';
+                productsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-text-secondary py-4">Belum ada produk.</td></tr>';
             }
         });
 
         function editProduct(category, name, price, desc) {
-            document.getElementById('productId').value = 'editing'; // Use a dummy value to indicate editing mode
+            document.getElementById('productId').value = 'editing';
             document.getElementById('productCategory').value = category;
             document.getElementById('productName').value = name;
             document.getElementById('productPrice').value = price;
@@ -626,11 +663,34 @@
         // --- Order Management ---
         const ordersTableBody = document.querySelector('#ordersTable tbody');
 
+        // Function to upload proof photo from admin side
+        async function uploadProofPhoto() {
+            const file = document.getElementById('proofPhotoUpload').files[0];
+            if (!file) {
+                showCustomAlert('Pilih foto bukti terlebih dahulu!');
+                return;
+            }
+
+            // Generate a more robust unique filename
+            const fileName = `admin_proofs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`; // Sanitize filename
+            const photoRef = storageRef.child(fileName);
+
+            try {
+                showCustomAlert('Mengunggah foto bukti...');
+                const snapshot = await photoRef.put(file);
+                const downloadURL = await snapshot.ref.getDownloadURL();
+                document.getElementById('proofPhotoLink').value = downloadURL;
+                showCustomAlert('Foto bukti berhasil diunggah! Link siap disalin.');
+            } catch (error) {
+                console.error("Error uploading proof photo:", error);
+                showCustomAlert('Gagal mengunggah foto bukti. Pastikan koneksi dan ukuran file.');
+            }
+        }
+
         db.ref('pesanan').on('value', (snapshot) => {
             const orders = snapshot.val() || {};
             ordersTableBody.innerHTML = '';
             let orderCount = 0;
-            // Sort orders by timestamp (ID) in descending order
             const sortedOrders = Object.entries(orders).sort(([, a], [, b]) => new Date(b.waktu) - new Date(a.waktu));
 
             sortedOrders.forEach(([orderId, order]) => {
@@ -639,37 +699,39 @@
                 let actionButtons = '';
                 let statusColorClass = '';
 
-                // Determine button and status styling based on order status
                 switch (order.status) {
                     case 'Belum Bayar':
-                        actionButtons = `<button class="btn-base btn-blue" onclick="sendPaymentReminder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', ${order.harga})"><i class="fab fa-whatsapp"></i> Ingatkan Pembayaran</button>`;
-                        statusColorClass = 'text-yellow-600 font-bold'; // Tailwind yellow for "Belum Bayar"
+                        actionButtons = `<button class="btn btn-blue" onclick="sendPaymentReminder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', ${order.harga})"><i class="fab fa-whatsapp"></i> Ingatkan Pembayaran</button>`;
+                        statusColorClass = 'status-BelumBayar';
                         break;
                     case 'Menunggu Konfirmasi':
-                        actionButtons = `<button class="btn-base btn-green" onclick="processOrder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', '${order.nomor}')"><i class="fas fa-check-circle"></i> Proses & Kirim Bukti</button>`;
-                        statusColorClass = 'text-blue-600 font-bold'; // Tailwind blue for "Menunggu Konfirmasi"
+                        actionButtons = `<button class="btn btn-green" onclick="processOrder('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}', '${order.nomor}')"><i class="fas fa-check-circle"></i> Proses & Kirim Bukti</button>`;
+                        statusColorClass = 'status-MenungguKonfirmasi';
                         break;
                     case 'Diproses':
-                        actionButtons = `<button class="btn-base btn-blue" onclick="sendUpdateMessage('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}')"><i class="fab fa-whatsapp"></i> Kirim Update</button>`;
-                        statusColorClass = 'text-purple-600 font-bold'; // Tailwind purple for "Diproses"
+                        actionButtons = `<button class="btn btn-blue" onclick="sendUpdateMessage('${orderId}', '${order.wa_aktif}', '${order.nama}', '${order.produk}')"><i class="fab fa-whatsapp"></i> Kirim Update</button>`;
+                        statusColorClass = 'status-Diproses';
                         break;
                     case 'Selesai':
-                        statusColorClass = 'text-green-600 font-bold'; // Tailwind green for "Selesai"
+                        statusColorClass = 'status-Selesai';
                         break;
                     case 'Dibatalkan':
-                        statusColorClass = 'text-red-600 font-bold'; // Tailwind red for "Dibatalkan"
+                        statusColorClass = 'status-Dibatalkan';
                         break;
                     default:
-                        statusColorClass = 'text-gray-600';
+                        statusColorClass = '';
                 }
 
                 row.innerHTML = `
                     <td>${orderId}</td>
                     <td>${order.produk} (Rp${formatRupiah(order.harga)})</td>
-                    <td>${order.nama} (${order.nomor})</td>
-                    <td><a href="https://wa.me/${order.wa_aktif}" target="_blank" class="text-blue-500 hover:underline">${order.wa_aktif}</a></td>
                     <td>
-                        <select onchange="updateOrderStatus('${orderId}', this.value)" class="p-1 rounded border ${statusColorClass}" style="background-color: var(--card); color: var(--text);">
+                        ${order.nama} (${order.nomor})
+                        ${order.bukti_pembayaran_url ? `<br><a href="${order.bukti_pembayaran_url}" target="_blank" class="text-blue-500 hover:underline text-xs block mt-1"><i class="fas fa-image"></i> Bukti Pembayaran Pembeli</a>` : ''}
+                    </td>
+                    <td><a href="https://wa.me/${order.wa_aktif}" target="_blank" class="text-color-brand hover:underline">${order.wa_aktif}</a></td>
+                    <td>
+                        <select onchange="updateOrderStatus('${orderId}', this.value)" class="status-select ${statusColorClass}">
                             <option value="Belum Bayar" ${order.status === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
                             <option value="Menunggu Konfirmasi" ${order.status === 'Menunggu Konfirmasi' ? 'selected' : ''}>Menunggu Konfirmasi</option>
                             <option value="Diproses" ${order.status === 'Diproses' ? 'selected' : ''}>Diproses</option>
@@ -679,31 +741,37 @@
                     </td>
                     <td class="actions">
                         ${actionButtons}
-                        <button class="btn-base btn-red" onclick="deleteOrder('${orderId}')"><i class="fas fa-trash"></i> Hapus</button>
+                        <button class="btn btn-red" onclick="deleteOrder('${orderId}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
             if (orderCount === 0) {
-                ordersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500">Belum ada pesanan.</td></tr>';
+                ordersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-text-secondary py-4">Belum ada pesanan.</td></tr>';
             }
         });
 
         async function updateOrderStatus(orderId, newStatus) {
             try {
                 await db.ref(`pesanan/${orderId}`).update({ status: newStatus });
-                showCustomAlert(`Status pesanan ${orderId} diupdate menjadi: ${newStatus}`);
+                showCustomAlert(`Status pesanan ${orderId} berhasil diupdate menjadi: ${newStatus}`);
             } catch (error) {
                 console.error("Error updating order status:", error);
                 showCustomAlert('Gagal update status pesanan. Silakan coba lagi.');
             }
         }
 
+        // Base URL for status page (adjust if your domain is different)
+        const STATUS_PAGE_URL = `${window.location.origin}/status.html`;
+
         async function sendPaymentReminder(orderId, whatsapp, customerName, productName, price) {
             const formattedPrice = formatRupiah(price);
+            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
+
             const message = encodeURIComponent(
                 `Halo ${customerName},\n\n` +
                 `Pesanan Anda (${productName} - Rp${formattedPrice}) dengan ID Pesanan *${orderId}* sedang menunggu pembayaran.\n\n` +
                 `Mohon segera selesaikan pembayaran Anda. Jika sudah, harap kirim bukti transfer agar pesanan bisa segera kami proses.\n\n` +
+                `Anda bisa cek status pesanan Anda di sini: ${statusCheckUrl}\n\n` +
                 `Terima kasih!`
             );
             window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
@@ -711,14 +779,14 @@
         }
 
         async function processOrder(orderId, whatsapp, customerName, productName, customerNumber) {
-            // 1. Update order status to 'Diproses' in Firebase
             await updateOrderStatus(orderId, 'Diproses');
+            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
 
-            // 2. Construct the WhatsApp message with order details and "proof" prompt
             const message = encodeURIComponent(
                 `Halo ${customerName},\n\n` +
                 `Pesanan Anda (${productName} untuk ID: ${customerNumber}) dengan ID Pesanan *${orderId}* sedang kami proses.\n\n` +
-                `Mohon tunggu sebentar ya. Jika sudah selesai, kami akan segera memberitahukan Anda.\n\n` +
+                `Mohon tunggu sebentar ya. Anda bisa menyalin *link bukti foto* dari kolom di atas dan menempelkannya di chat WhatsApp ini.\n\n` +
+                `Anda bisa cek status pesanan Anda di sini: ${statusCheckUrl}\n\n` +
                 `Terima kasih atas kesabaran Anda!`
             );
             window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
@@ -726,15 +794,17 @@
         }
 
         async function sendUpdateMessage(orderId, whatsapp, customerName, productName) {
+            const statusCheckUrl = `${STATUS_PAGE_URL}?orderId=${orderId}`;
+
             const message = encodeURIComponent(
                 `Halo ${customerName},\n\n` +
                 `Pesanan Anda (${productName}) dengan ID Pesanan *${orderId}* masih dalam proses. Kami akan segera menginfokan setelah selesai.\n\n` +
+                `Anda bisa cek status pesanan Anda di sini: ${statusCheckUrl}\n\n` +
                 `Terima kasih!`
             );
             window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank');
             showCustomAlert('Update pesanan dikirim via WhatsApp!');
         }
-
 
         async function deleteOrder(orderId) {
             if (confirm(`Anda yakin ingin menghapus pesanan '${orderId}'?`)) {
@@ -794,21 +864,23 @@
             const testimonials = snapshot.val() || {};
             testimonialsTableBody.innerHTML = '';
             let testiCount = 0;
-            for (let id in testimonials) {
+            // Sort testimonials by time (newest first)
+            const sortedTestimonials = Object.entries(testimonials).sort(([, a], [, b]) => new Date(b.waktu) - new Date(a.waktu));
+
+            sortedTestimonials.forEach(([id, testi]) => {
                 testiCount++;
-                const testi = testimonials[id];
                 const row = testimonialsTableBody.insertRow();
                 row.innerHTML = `
                     <td>${testi.nama}</td>
                     <td>${testi.pesan.substring(0, 70)}${testi.pesan.length > 70 ? '...' : ''}</td>
                     <td class="actions">
-                        <button class="btn-base btn-blue" onclick="editTestimonial('${id}', '${testi.nama}', \`${testi.pesan}\`)"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn-base btn-red" onclick="deleteTestimonial('${id}')"><i class="fas fa-trash"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="editTestimonial('${id}', '${testi.nama}', \`${testi.pesan}\`)"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deleteTestimonial('${id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
-            }
+            });
             if (testiCount === 0) {
-                testimonialsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500">Belum ada testimoni.</td></tr>';
+                testimonialsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary py-4">Belum ada testimoni.</td></tr>';
             }
         });
 
@@ -846,8 +918,8 @@
             const cssContent = document.getElementById('dynamicContentCss').value.trim();
             const jsContent = document.getElementById('dynamicContentJs').value.trim();
 
-            if (isNaN(order) || !htmlContent) {
-                showCustomAlert('Harap lengkapi urutan (angka) dan konten HTML.');
+            if (isNaN(order) || order < 1 || !htmlContent) {
+                showCustomAlert('Harap lengkapi urutan (angka positif) dan konten HTML.');
                 return;
             }
 
@@ -890,15 +962,15 @@
                 row.innerHTML = `
                     <td>${id}</td>
                     <td>${content.order}</td>
-                    <td>${content.html.substring(0, 100)}${content.html.length > 100 ? '...' : ''}</td>
+                    <td><pre class="text-xs max-h-24 overflow-y-auto bg-gray-100 dark:bg-gray-700 p-2 rounded">${content.html.substring(0, 150)}${content.html.length > 150 ? '...' : ''}</pre></td>
                     <td class="actions">
-                        <button class="btn-base btn-blue" onclick="editDynamicContent('${id}', ${content.order}, \`${content.html}\`, \`${content.css || ''}\`, \`${content.js || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn-base btn-red" onclick="deleteDynamicContent('${id}')"><i class="fas fa-trash"></i> Hapus</button>
+                        <button class="btn btn-blue" onclick="editDynamicContent('${id}', ${content.order}, \`${content.html}\`, \`${content.css || ''}\`, \`${content.js || ''}\`)"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-red" onclick="deleteDynamicContent('${id}')"><i class="fas fa-trash-alt"></i> Hapus</button>
                     </td>
                 `;
             });
             if (contentCount === 0) {
-                dynamicContentTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500">Belum ada konten dinamis.</td></tr>';
+                dynamicContentTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-text-secondary py-4">Belum ada konten dinamis.</td></tr>';
             }
         });
 
