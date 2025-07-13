@@ -161,10 +161,6 @@
             outline: none;
             box-shadow: 0 0 0 3px var(--focus-ring);
         }
-        input[type="file"] {
-            padding: 0.5rem 0.8rem;
-            cursor: pointer;
-        }
         input[readonly] {
             background-color: var(--bg-body);
             cursor: not-allowed;
@@ -479,11 +475,6 @@
                     <label for="productDesc">Deskripsi / Cara Penggunaan</label>
                     <textarea id="productDesc" rows="3" placeholder="Deskripsi singkat atau cara penggunaan produk."></textarea>
 
-                    <label for="productImage">Gambar Produk</label>
-                    <input type="file" id="productImageFile" accept="image/*" class="mb-2"/>
-                    <p class="text-sm text-text-secondary">Atau masukkan URL gambar langsung:</p>
-                    <input type="text" id="productImageUrl" placeholder="https://example.com/gambar-produk.jpg" />
-                    <img id="currentProductImagePreview" src="" alt="Pratinjau Gambar" class="mt-2 rounded-md max-w-xs hidden" />
                     <div class="flex flex-wrap gap-3 mt-4">
                         <button type="submit" class="btn btn-green flex-grow"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-sync-alt"></i> Update Produk</button>
                         <button type="button" id="clearProductFormBtn" class="btn btn-gray"><i class="fas fa-eraser"></i> Bersihkan</button>
@@ -517,7 +508,8 @@
                                 <th>Produk</th>
                                 <th>Pembeli</th>
                                 <th>WA</th>
-                                <th>Status</th> <th>Aksi</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -694,8 +686,8 @@
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq"; // SUDAH DIGANTI DARI INPUT ANDA
         const CS_WA_NUMBER = "6281803004607"; // PENTING: GANTI DENGAN NOMOR WA CS/ADMIN ANDA (format internasional tanpa +)
 
-        // --- Konstanta ImgBB ---
-        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // PENTING: GANTI DENGAN API KEY IMGBB ANDA
+        // ImgBB API Key (masih diperlukan untuk bukti foto admin)
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; 
         const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
         
         // URL ke halaman status pesanan Anda (sesuaikan dengan domain GitHub Pages Anda atau hosting lain)
@@ -719,10 +711,8 @@
             return number;
         }
 
-        // START: Perbaikan - Fungsi pengiriman WhatsApp
         async function sendWhatsAppNotification(phoneNumber, message) {
-            // Periksa apakah nomor telepon valid setelah normalisasi
-            if (!phoneNumber || phoneNumber.length < 10) { // Angka ini bisa disesuaikan
+            if (!phoneNumber || phoneNumber.length < 10) {
                 console.error("Nomor telepon tidak valid untuk pengiriman WA:", phoneNumber);
                 showCustomAlert("Gagal mengirim notifikasi WA: Nomor telepon pembeli tidak valid.");
                 return;
@@ -742,7 +732,6 @@
                 const result = await response.json();
                 if (result.status === 'success') {
                     console.log('WA notification sent successfully:', result);
-                    // Tidak perlu alert sukses, hanya log saja. Alert di tempat lain sudah cukup.
                 } else {
                     console.error('Failed to send WA notification:', result);
                     showCustomAlert('Gagal mengirim notifikasi WA: ' + (result.message || 'Error tidak diketahui dari NgirimWA.'));
@@ -752,22 +741,11 @@
                 showCustomAlert('Terjadi kesalahan saat mengirim notifikasi WA. Pastikan koneksi internet stabil atau cek konsol browser.');
             }
         }
-        // END: Perbaikan
 
         function clearForm(formId) {
             document.getElementById(formId).reset();
             const hiddenId = document.querySelector(`#${formId} input[type="hidden"]`);
             if (hiddenId) hiddenId.value = '';
-
-            // START: Perbaikan - Bersihkan input gambar dan pratinjau saat membersihkan form produk
-            if (formId === 'productForm') {
-                document.getElementById('productImageFile').value = '';
-                document.getElementById('productImageUrl').value = '';
-                document.getElementById('currentProductImagePreview').src = '';
-                document.getElementById('currentProductImagePreview').classList.add('hidden');
-            }
-            // END: Perbaikan
-
             showCustomAlert('Form berhasil dibersihkan!');
         }
 
@@ -775,40 +753,10 @@
         const productForm = document.getElementById('productForm');
         const productsTableBody = document.querySelector('#productsTable tbody');
         const clearProductFormBtn = document.getElementById('clearProductFormBtn');
-        const productImageFile = document.getElementById('productImageFile'); // Tambah ini
-        const productImageUrl = document.getElementById('productImageUrl'); // Tambah ini
-        const currentProductImagePreview = document.getElementById('currentProductImagePreview'); // Tambah ini
 
         let allProducts = []; // Cache all products for sorting/filtering
 
         clearProductFormBtn.addEventListener('click', () => clearForm('productForm'));
-
-        // START: Perbaikan - Event listener untuk pratinjau gambar saat input file atau URL berubah
-        productImageFile.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    currentProductImagePreview.src = e.target.result;
-                    currentProductImagePreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-                productImageUrl.value = ''; // Hapus URL jika file diunggah
-            }
-        });
-
-        productImageUrl.addEventListener('input', (e) => {
-            const url = e.target.value.trim();
-            if (url) {
-                currentProductImagePreview.src = url;
-                currentProductImagePreview.classList.remove('hidden');
-                productImageFile.value = ''; // Hapus file jika URL dimasukkan
-            } else {
-                currentProductImagePreview.src = '';
-                currentProductImagePreview.classList.add('hidden');
-            }
-        });
-        // END: Perbaikan
 
         productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -818,9 +766,6 @@
             const price = parseFloat(document.getElementById('productPrice').value);
             const desc = document.getElementById('productDesc').value.trim();
 
-            // START: Perbaikan - Logika penanganan gambar sebelum menyimpan produk
-            let imageUrl = currentProductImagePreview.src; // Ambil dari pratinjau aktif
-
             // Validasi: pastikan setidaknya ada kategori, nama, harga
             if (!category || !name || isNaN(price) || price <= 0) {
                 showCustomAlert('Harap lengkapi semua field produk dengan benar (Kategori, Nama, Harga positif).');
@@ -829,38 +774,11 @@
 
             showLoading();
             try {
-                // Jika ada file gambar baru yang dipilih, unggah ke ImgBB
-                if (productImageFile.files.length > 0) {
-                    const file = productImageFile.files[0];
-                    const formData = new FormData();
-                    formData.append('image', file);
-                    formData.append('key', IMGBB_API_KEY);
-                    
-                    const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, { method: 'POST', body: formData });
-                    const imgbbResult = await imgbbResponse.json();
-
-                    if (imgbbResult.success) {
-                        imageUrl = imgbbResult.data.url;
-                    } else {
-                        showCustomAlert('Gagal mengunggah gambar ke ImgBB: ' + (imgbbResult.error?.message || 'Unknown error'));
-                        hideLoading();
-                        return;
-                    }
-                } else if (productImageUrl.value.trim()) {
-                    // Jika URL dimasukkan secara manual dan tidak ada file baru, gunakan URL tersebut
-                    imageUrl = productImageUrl.value.trim();
-                } else {
-                    // Jika tidak ada file baru dan tidak ada URL manual, dan ini bukan update yang menjaga gambar lama, maka kosongkan
-                    // Untuk kasus update, imageUrl akan tetap yang lama jika tidak diubah.
-                    // Untuk kasus tambah, imageUrl akan kosong.
-                }
-
                 const productData = {
                     kategori: category,
                     nama: name,
                     harga: price,
-                    deskripsi: desc,
-                    gambar: imageUrl || '' // Pastikan properti 'gambar' selalu ada, meskipun kosong
+                    deskripsi: desc
                 };
 
                 if (productId) { // Update existing product
@@ -881,7 +799,6 @@
                 hideLoading();
             }
         });
-        // END: Perbaikan
 
         // Dapatkan data produk dari Firebase
         db.ref('produk').on('value', (snapshot) => {
@@ -889,9 +806,6 @@
             snapshot.forEach((childSnapshot) => {
                 products.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-            // Urutkan produk berdasarkan urutan yang tersimpan, jika ada. Jika tidak, tetap seperti Firebase (key order)
-            // Ini akan memerlukan properti 'order' di setiap produk yang dikelola SortableJS.
-            // Untuk sekarang, kita asumsikan SortableJS akan mengatur urutan visual saja dan perlu disave kembali.
             allProducts = products; 
             renderProductsTable();
         }, (error) => {
@@ -901,11 +815,10 @@
 
         function renderProductsTable() {
             productsTableBody.innerHTML = '';
-            // Pastikan allProducts sudah terurut jika ada logika pengurutan Firebase
             allProducts.forEach((product, index) => {
                 const row = productsTableBody.insertRow();
-                row.className = 'product-item'; // Tambahkan class untuk SortableJS
-                row.setAttribute('data-id', product.id); // Simpan ID di data-attribute
+                row.className = 'product-item';
+                row.setAttribute('data-id', product.id);
 
                 row.innerHTML = `
                     <td class="handle"><i class="fas fa-grip-vertical"></i> ${index + 1}</td>
@@ -918,7 +831,6 @@
                     </td>
                 `;
             });
-            // Setelah tabel dirender, inisialisasi SortableJS
             initSortableProducts();
         }
 
@@ -933,18 +845,6 @@
                     document.getElementById('productName').value = product.nama || '';
                     document.getElementById('productPrice').value = product.harga || 0;
                     document.getElementById('productDesc').value = product.deskripsi || '';
-
-                    // START: Perbaikan - Tampilkan gambar yang sudah ada saat edit
-                    document.getElementById('productImageUrl').value = product.gambar || '';
-                    if (product.gambar) {
-                        currentProductImagePreview.src = product.gambar;
-                        currentProductImagePreview.classList.remove('hidden');
-                    } else {
-                        currentProductImagePreview.src = '';
-                        currentProductImagePreview.classList.add('hidden');
-                    }
-                    productImageFile.value = ''; // Reset file input
-                    // END: Perbaikan
                 } else {
                     showCustomAlert('Produk tidak ditemukan.');
                 }
@@ -974,7 +874,7 @@
         // SortableJS for Products
         function initSortableProducts() {
             if (productsTableBody.sortableInstance) {
-                productsTableBody.sortableInstance.destroy(); // Hancurkan instance sebelumnya jika ada
+                productsTableBody.sortableInstance.destroy();
             }
             productsTableBody.sortableInstance = Sortable.create(productsTableBody, {
                 animation: 150,
@@ -987,61 +887,53 @@
                     const movedProduct = allProducts.splice(oldIndex, 1)[0];
                     allProducts.splice(newIndex, 0, movedProduct);
 
-                    // Update order in Firebase for all products
-                    // Ini akan menulis ulang seluruh node produk, jadi pastikan data yang ada di allProducts adalah yang paling baru
                     const updates = {};
                     allProducts.forEach((product, idx) => {
-                        updates[product.id] = { ...product, order: idx }; // Tambahkan properti order
+                        updates[product.id] = { ...product, order: idx };
                     });
 
                     try {
-                        await db.ref('produk').set(updates); // Gunakan set untuk menimpa semua data produk dengan urutan baru
+                        await db.ref('produk').set(updates);
                         showCustomAlert('Urutan produk berhasil diperbarui!');
-                        refreshPreview(); // Refresh preview iframe setelah urutan berubah
+                        refreshPreview();
                     } catch (error) {
                         console.error('Error updating product order:', error);
                         showCustomAlert('Gagal memperbarui urutan produk.');
                     } finally {
                         hideLoading();
-                        // re-render tabel untuk memastikan tampilan konsisten dengan data Firebase baru
-                        // (onValue listener seharusnya sudah memicu renderProductsTable)
                     }
                 }
             });
         }
 
-
         // --- Order Management ---
         const ordersTableBody = document.querySelector('#ordersTable tbody');
-        let currentOrders = []; // Cache for orders
+        let currentOrders = [];
 
-        // Dapatkan data pesanan dari Firebase
-        db.ref('pesanan').orderByChild('timestamp').on('value', (snapshot) => { // Order by timestamp
+        db.ref('pesanan').orderByChild('timestamp').on('value', (snapshot) => {
             const orders = [];
             snapshot.forEach((childSnapshot) => {
                 orders.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-            currentOrders = orders.reverse(); // Tampilkan yang terbaru di atas
+            currentOrders = orders.reverse();
             renderOrdersTable();
         }, (error) => {
             console.error("Gagal memuat pesanan:", error);
             showCustomAlert('Gagal memuat daftar pesanan. Silakan coba lagi nanti.');
         });
 
-        // START: Perbaikan - Render tabel pesanan dengan status dan tombol aksi
         function renderOrdersTable() {
             ordersTableBody.innerHTML = '';
             currentOrders.forEach(order => {
-                const row = ordersTableBody.insertRow();
-                // Dapatkan detail produk dari cache allProducts
                 const product = allProducts.find(p => p.id === order.productId);
                 const productName = product ? product.nama : (order.namaProduk || 'Produk Tidak Ditemukan');
                 const productCategory = product ? product.kategori : (order.kategoriProduk || 'N/A');
 
-                const statusClass = `status-${order.status || 'BelumBayar'}`; // Default status
+                const statusClass = `status-${order.status || 'BelumBayar'}`;
                 
+                const row = ordersTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${order.id.substring(0, 8)}...</td>
+                    <td>${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</td>
                     <td>${productName} (${productCategory})</td>
                     <td>${order.namaPembeli || 'N/A'}</td>
                     <td>${order.nomorWa || 'N/A'}</td>
@@ -1056,13 +948,12 @@
                 `;
             });
         }
-        // END: Perbaikan
 
         async function updateOrderStatus(orderId, newStatus) {
             showLoading();
             try {
                 await db.ref(`pesanan/${orderId}`).update({ status: newStatus });
-                showCustomAlert(`Status pesanan ${orderId.substring(0,8)}... diperbarui menjadi ${newStatus}!`);
+                showCustomAlert(`Status pesanan ${orderId ? orderId.substring(0,8) + '...' : 'N/A'} diperbarui menjadi ${newStatus}!`);
             } catch (error) {
                 console.error('Error updating order status:', error);
                 showCustomAlert('Gagal memperbarui status pesanan.');
@@ -1093,7 +984,6 @@
             orderDetailModal.classList.remove('show');
         }
 
-        // START: Perbaikan - Tampilan modal detail pesanan dan tombol kirim bukti WA
         async function showOrderDetailModal(orderId) {
             showLoading();
             try {
@@ -1105,19 +995,17 @@
                     return;
                 }
 
-                // Dapatkan detail produk terkait
                 const productSnapshot = await db.ref(`produk/${order.productId}`).once('value');
                 const product = productSnapshot.val();
 
                 const productName = product ? product.nama : (order.namaProduk || 'Produk Tidak Ditemukan');
                 const productCategory = product ? product.kategori : (order.kategoriProduk || 'N/A');
                 const productPrice = product ? formatRupiah(product.harga) : (order.jumlahHarga ? formatRupiah(order.jumlahHarga) : 'N/A');
-                const productImage = product ? product.gambar : 'https://via.placeholder.com/150?text=No+Image'; // Gambar default
-
+                
                 const statusClass = `status-${order.status || 'BelumBayar'}`;
 
                 orderDetailModalContent.innerHTML = `
-                    <h3>Detail Pesanan #${order.id.substring(0, 8)}...</h3>
+                    <h3>Detail Pesanan #${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</h3>
                     <p><strong>Produk:</strong> ${productName} (${productCategory})</p>
                     <p><strong>Harga:</strong> ${productPrice}</p>
                     <p><strong>Pembeli:</strong> ${order.namaPembeli || 'N/A'}</p>
@@ -1135,13 +1023,11 @@
                     </div>
                 `;
 
-                // Event listener untuk unggah bukti foto admin
                 const adminBuktiFotoUpload = document.getElementById('adminBuktiFotoUpload');
                 const uploadAdminBuktiBtn = document.getElementById('uploadAdminBuktiBtn');
                 const adminBuktiFotoPreview = document.getElementById('adminBuktiFotoPreview');
                 const adminBuktiFotoPlaceholder = document.getElementById('adminBuktiFotoPlaceholder');
 
-                // Pratinjau gambar admin saat memilih file
                 adminBuktiFotoUpload.addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         const file = e.target.files[0];
@@ -1174,7 +1060,7 @@
                             const newAdminBuktiFotoUrl = imgbbResult.data.url;
                             await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: newAdminBuktiFotoUrl });
                             showCustomAlert('Bukti foto admin berhasil diunggah!');
-                            showOrderDetailModal(orderId); // Reload modal untuk update tampilan
+                            showOrderDetailModal(orderId);
                         } else {
                             showCustomAlert('Gagal mengunggah bukti foto admin: ' + (imgbbResult.error?.message || 'Unknown error'));
                         }
@@ -1186,16 +1072,13 @@
                     }
                 };
 
-
                 const processAndSendBtn = document.getElementById('processAndSendBtn');
                 processAndSendBtn.onclick = async () => {
                     showLoading();
                     try {
-                        // Pastikan ada adminBuktiFotoUrl sebelum mengirim
                         let finalAdminBuktiUrl = order.adminBuktiFotoUrl || '';
                         if (adminBuktiFotoUpload.files.length > 0) {
-                            // Jika ada file baru di input, unggah dulu
-                             const file = adminBuktiFotoUpload.files[0];
+                            const file = adminBuktiFotoUpload.files[0];
                             const formData = new FormData();
                             formData.append('image', file);
                             formData.append('key', IMGBB_API_KEY);
@@ -1203,7 +1086,7 @@
                             const imgbbResult = await imgbbResponse.json();
                             if (imgbbResult.success) {
                                 finalAdminBuktiUrl = imgbbResult.data.url;
-                                await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: finalAdminBuktiUrl }); // Simpan URL baru
+                                await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: finalAdminBuktiUrl });
                             } else {
                                 showCustomAlert('Gagal mengunggah bukti foto admin sebelum mengirim WA: ' + (imgbbResult.error?.message || 'Unknown error'));
                                 hideLoading();
@@ -1211,14 +1094,12 @@
                             }
                         }
 
-                        // Update status pesanan ke "Selesai" (atau "Diproses" jika Anda mau)
                         await db.ref(`pesanan/${orderId}`).update({ status: 'Selesai' });
 
                         const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`;
-                        const waMessage = `Halo ${order.namaPembeli || 'Pelanggan'}, pesanan Anda (${productName}) dengan ID *${orderId.substring(0, 8)}* telah *Selesai diproses* dan bukti telah dikirim. \n\nSilakan cek status pesanan Anda di sini: ${statusLink}`;
+                        let waMessage = `Halo ${order.namaPembeli || 'Pelanggan'}, pesanan Anda (${productName}) dengan ID *${orderId ? order.id.substring(0, 8) : 'N/A'}* telah *Selesai diproses* dan bukti telah dikirim. \n\nSilakan cek status pesanan Anda di sini: ${statusLink}`;
                         
                         if (finalAdminBuktiUrl) {
-                            // Tambahkan bukti foto admin ke pesan jika ada
                             waMessage += `\n\nLihat bukti foto admin: ${finalAdminBuktiUrl}`;
                         } else {
                              waMessage += `\n\nBukti foto admin tidak tersedia.`;
@@ -1244,7 +1125,6 @@
                 hideLoading();
             }
         }
-        // END: Perbaikan
 
         // --- Testimonial Management ---
         const testimonialForm = document.getElementById('testimonialForm');
@@ -1269,7 +1149,7 @@
                 const testimonialData = {
                     nama: name,
                     pesan: message,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP // Tambah timestamp
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
                 };
 
                 if (testimonialId) {
@@ -1280,7 +1160,7 @@
                     showCustomAlert('Testimoni berhasil ditambahkan!');
                 }
                 clearForm('testimonialForm');
-                refreshPreview(); // Refresh preview iframe
+                refreshPreview();
             } catch (error) {
                 console.error('Error adding/updating testimonial:', error);
                 showCustomAlert('Gagal menambah/mengupdate testimoni.');
@@ -1294,7 +1174,7 @@
             snapshot.forEach((childSnapshot) => {
                 testimonials.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-            renderTestimonialsTable(testimonials.reverse()); // Tampilkan yang terbaru di atas
+            renderTestimonialsTable(testimonials.reverse());
         }, (error) => {
             console.error("Gagal memuat testimoni:", error);
             showCustomAlert('Gagal memuat daftar testimoni. Silakan coba lagi nanti.');
@@ -1391,7 +1271,7 @@
                     showCustomAlert('Konten dinamis berhasil ditambahkan!');
                 }
                 clearForm('dynamicContentForm');
-                refreshPreview(); // Refresh preview iframe
+                refreshPreview();
             } catch (error) {
                 console.error('Error adding/updating dynamic content:', error);
                 showCustomAlert('Gagal menambah/mengupdate konten dinamis.');
@@ -1416,7 +1296,7 @@
             contents.forEach(content => {
                 const row = dynamicContentTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${content.id.substring(0, 8)}...</td>
+                    <td>${content.id ? content.id.substring(0, 8) + '...' : 'N/A'}</td>
                     <td>${content.order || 'N/A'}</td>
                     <td>${content.htmlContent ? content.htmlContent.substring(0, 50) + '...' : 'Kosong'}</td>
                     <td class="actions">
@@ -1467,7 +1347,7 @@
         // --- Live Preview ---
         function refreshPreview() {
             const iframe = document.getElementById('livePreviewIframe');
-            iframe.src = iframe.src; // Reloads the iframe
+            iframe.src = iframe.src;
             showCustomAlert('Pratinjau toko diperbarui!');
         }
 
