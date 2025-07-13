@@ -8,175 +8,161 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Theme Variables - Consistent with index.html */
+        /* Theme Variables - Consistent with index.html & admin.html */
         :root {
-            /* Light Mode Colors (White & Blue) */
-            --bg: #ffffff; /* Pure white background */
-            --text: #333333; /* Dark gray for main text, almost black */
-            --primary: #007bff; /* Bright blue for accents */
-            --card: #ffffff; /* White card background */
-            --border: #e0e0e0; /* Light gray border */
-            --secondary-text: #6b7280; /* Medium gray for secondary text */
-            --button-text-light: #ffffff; /* White text for primary buttons */
-            --button-bg-light: #007bff; /* Primary blue for buttons */
-            --button-hover-light: #0056b3; /* Darker blue on hover */
-            --primary-rgb: 0, 123, 255; /* RGB for primary blue */
-        }
-        [data-theme="dark"] {
-            /* Dark Mode Colors (Light Grey Background, Black Text, Contrasting Accents) */
-            --bg: #f0f0f0; /* Very light gray background for dark mode */
-            --text: #333333; /* Dark gray for main text (readable on light background) */
-            --primary: #28a745; /* Green for dark mode primary (good contrast on light bg) */
-            --card: #e8e8e8; /* Slightly darker light gray card background */
-            --border: #cccccc; /* Medium gray border */
-            --secondary-text: #6b7280; /* Same as light mode, readable */
-            --button-text-dark: #ffffff; /* White text for buttons */
-            --button-bg-dark: #28a745; /* Primary green for buttons */
-            --button-hover-dark: #218838; /* Darker green on hover */
-            --primary-rgb: 40, 167, 69; /* RGB for primary green */
+            --bg-body: #f7f9fc; /* Light background for the overall page */
+            --bg-card: #ffffff; /* White background for cards/sections */
+            --text-primary: #212529; /* Dark text for readability */
+            --text-secondary: #6c757d; /* Lighter text for secondary info */
+            --color-brand: #007bff; /* Primary brand color (blue) */
+            --color-brand-hover: #0056b3; /* Darker blue on hover */
+            --border-color: #e0e0e0; /* Light border for separation */
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); /* Subtle shadow for depth */
+            --focus-ring: rgba(0, 123, 255, 0.25); /* Focus ring for inputs */
         }
 
-        /* General Styles */
+        [data-theme="dark"] {
+            --bg-body: #1a202c; /* Dark background */
+            --bg-card: #2d3748; /* Darker card background */
+            --text-primary: #e2e8f0; /* Light text for dark mode */
+            --text-secondary: #a0aec0; /* Muted light text */
+            --color-brand: #4fd1c5; /* Teal for dark mode brand color */
+            --color-brand-hover: #38b2ac; /* Darker teal on hover */
+            --border-color: #4a5568; /* Darker border */
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); /* Darker shadow */
+            --focus-ring: rgba(79, 209, 197, 0.35); /* Focus ring for inputs */
+        }
+
+        /* Base Styles */
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            transition: all 0.3s ease;
-            margin: 0;
-            line-height: 1.6;
-            padding: 1rem;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            padding: 1.5rem; /* Consistent padding */
         }
         header {
-            position: sticky;
-            top: 0;
-            background: var(--card);
-            padding: 15px 20px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            z-index: 999;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-radius: 12px; /* Consistent border radius */
+            margin-bottom: 1.5rem; /* Space below header */
         }
         header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
             margin: 0;
-            font-size: 24px;
-            color: var(--primary);
-            font-weight: bold;
         }
-        .theme-btn {
-            background: transparent;
+        .theme-toggle-btn {
+            background: none;
             border: none;
-            font-size: 22px;
+            font-size: 1.5rem;
             cursor: pointer;
-            color: var(--text);
-            transition: color 0.3s ease, background-color 0.3s ease;
-            padding: 8px;
+            color: var(--text-primary);
+            padding: 0.5rem;
             border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
         }
-        .theme-btn:hover {
-            background-color: rgba(0,0,0,0.05);
-            color: var(--primary);
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
         }
-        [data-theme="dark"] .theme-btn:hover {
-            background-color: rgba(0,0,0,0.1);
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         main {
             flex-grow: 1;
-            max-width: 500px; /* Max width for the form */
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-        @media (max-width: 640px) {
-            main {
-                padding: 0 10px;
-            }
+            max-width: 500px;
+            margin: auto; /* Center the form horizontally */
+            width: 100%; /* Ensure it takes full width up to max */
+            padding: 0; /* Remove main padding, section-card has it */
         }
 
         .section-card {
-            background: var(--card);
+            background-color: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            padding: 20px;
-            color: var(--text);
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
         }
         .section-card h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: var(--primary);
-            font-size: 1.8em;
-            font-weight: bold;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
             text-align: center;
         }
 
-        /* Form & Input Styles - Consistent */
+        /* Form Elements */
         label {
-            font-weight: 600;
-            margin-top: 15px;
+            font-weight: 500;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
             display: block;
-            color: var(--text);
+            color: var(--text-primary);
         }
-        input[type="text"], input[type="tel"], input[type="file"] {
+        input:not([type="checkbox"]), select, textarea {
             width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            margin-bottom: 15px;
+            padding: 0.8rem 1rem;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: var(--card);
-            color: var(--text);
-            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
+            -webkit-appearance: none; /* For consistent styling across browsers */
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--color-brand);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
         input[type="file"] {
-            padding: 8px; /* Adjust padding for file input */
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
         }
-        input[type="text"]:focus, input[type="tel"]:focus, input[type="file"]:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+        input[readonly] {
+            background-color: var(--bg-body); /* Lighter background for readonly */
+            cursor: not-allowed;
         }
 
-        /* Button Styles - Consistent */
-        .btn-base {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.25rem;
             border-radius: 8px;
             border: none;
-            color: var(--button-text-light);
-            background: var(--button-bg-light);
+            font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 0.5rem;
+            white-space: nowrap; /* Prevent text wrapping on buttons */
         }
-        [data-theme="dark"] .btn-base {
-            color: var(--button-text-dark);
-            background: var(--button-bg-dark);
+        .btn-primary {
+            background-color: var(--color-brand);
+            color: white;
         }
-        .btn-base:hover {
-            background-color: var(--button-hover-light);
-            opacity: 0.9;
+        .btn-primary:hover {
+            background-color: var(--color-brand-hover);
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        [data-theme="dark"] .btn-base:hover {
-            background-color: var(--button-hover-dark);
-        }
-        .btn-base:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
         .btn-green { background-color: #28a745; color: white; }
         .btn-green:hover { background-color: #218838; }
         .btn-red { background-color: #dc3545; color: white; }
@@ -186,7 +172,12 @@
         .btn-gray { background-color: #6c757d; color: white; }
         .btn-gray:hover { background-color: #5a6268; }
 
-        /* Custom Modal for Alerts - Consistent */
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Custom Modal for Alerts */
         .custom-modal {
             position: fixed;
             top: 0;
@@ -194,41 +185,50 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
-            display: none; /* Controlled by JS .show class */
+            display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000; /* Ensure it's on top */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .custom-modal.show {
-            display: flex;
+            opacity: 1;
+            visibility: visible;
         }
         .custom-modal-content {
-            background: var(--card);
-            color: var(--text);
-            padding: 25px;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-light);
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-content p {
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
         }
         .custom-modal-content button {
-            padding: 10px 20px;
+            background-color: var(--color-brand);
+            color: white;
+            padding: 0.7rem 1.5rem;
             border-radius: 8px;
-            margin-top: 20px;
-            color: var(--button-text-light);
-            background: var(--button-bg-light);
-            transition: background-color 0.3s ease;
-        }
-        [data-theme="dark"] .custom-modal-content button {
-            color: var(--button-text-dark);
-            background: var(--button-bg-dark);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
         .custom-modal-content button:hover {
-            background-color: var(--button-hover-light);
-        }
-        [data-theme="dark"] .custom-modal-content button:hover {
-            background-color: var(--button-hover-dark);
+            background-color: var(--color-brand-hover);
         }
 
         /* Loading Spinner Styles */
@@ -239,11 +239,10 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            display: none; /* Hidden by default */
             justify-content: center;
             align-items: center;
-            z-index: 1001;
-            display: none;
+            z-index: 2001; /* Above modal */
         }
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -262,40 +261,41 @@
 <body data-theme="light">
     <header>
         <h1>Unggah Bukti Bayar</h1>
-        <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
     </header>
 
     <main>
         <div class="section-card">
             <h2>Form Unggah Bukti Pembayaran</h2>
-            <p class="text-sm text-gray-600 mb-4 text-center">
+            <p class="text-sm text-text-secondary mb-4 text-center">
                 Mohon lengkapi detail dan unggah bukti transfer Anda.
             </p>
             <form id="uploadForm">
                 <label for="orderId">ID Pesanan</label>
                 <input type="text" id="orderId" placeholder="Masukkan ID Pesanan Anda" required readonly />
-                <p class="text-xs text-gray-500 mt-1 mb-3">ID Pesanan akan terisi otomatis jika Anda datang dari halaman utama.</p>
+                <p class="text-xs text-text-secondary mt-1 mb-3">ID Pesanan akan terisi otomatis jika Anda datang dari halaman utama.</p>
 
                 <label for="buyerName">Nama Lengkap</label>
                 <input type="text" id="buyerName" placeholder="Nama Anda" required />
 
                 <label for="buyerWa">Nomor WhatsApp Aktif</label>
-                <input type="tel" id="buyerWa" placeholder="Cth: 081234567890" pattern="^(08|62)[0-9]{8,15}$" title="Format nomor WA: 08xxxxxxxxxx atau 62xxxxxxxxxx" required />
+                <input type="tel" id="buyerWa" placeholder="Cth: 081234567890 atau 6281234567890" pattern="^(08|62)[0-9]{8,15}$" title="Format nomor WA: 08xxxxxxxxxx atau 62xxxxxxxxxx" required />
+                <p class="text-xs text-text-secondary mt-1 mb-3">Gunakan format 08xxxxxxxxxx atau 62xxxxxxxxxx.</p>
 
                 <label for="paymentProof">Unggah Bukti Transfer (Gambar)</label>
                 <input type="file" id="paymentProof" accept="image/*" required />
-                <p class="text-xs text-gray-500 mt-1 mb-3">Hanya file gambar (JPG, PNG, JPEG) yang diterima. Ukuran maksimal 2MB.</p>
+                <p class="text-xs text-text-secondary mt-1 mb-3">Hanya file gambar (JPG, PNG, JPEG) yang diterima. Ukuran maksimal 2MB.</p>
 
-                <button type="submit" class="btn-base btn-green" id="submitBtn"><i class="fas fa-upload"></i> Unggah Bukti Bayar</button>
-                <button type="button" class="btn-base btn-gray mt-4" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> Kembali</button>
+                <button type="submit" class="btn btn-green w-full mt-4" id="submitBtn"><i class="fas fa-upload"></i> Unggah Bukti Bayar</button>
+                <button type="button" class="btn btn-gray w-full mt-3" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> Kembali</button>
             </form>
         </div>
     </main>
 
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
-            <p id="modal-message" class="text-lg font-medium mb-4"></p>
-            <button id="modal-close-btn">OK</button>
+            <p id="modal-message"></p>
+            <button id="modal-close-btn">Oke</button>
         </div>
     </div>
 
@@ -305,7 +305,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> <script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script>
         // --- Theme Toggle ---
         function toggleTheme() {
             const body = document.body;
@@ -316,6 +317,7 @@
             btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
             localStorage.setItem('theme', nextTheme);
         }
+
         // Set initial theme on load
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme');
@@ -326,6 +328,7 @@
                 document.body.setAttribute('data-theme', 'light');
                 document.getElementById('themeToggle').textContent = '🌙';
             }
+
             // Pre-fill Order ID from URL
             const urlParams = new URLSearchParams(window.location.search);
             const orderIdFromUrl = urlParams.get('id');
@@ -359,9 +362,10 @@
 
         // --- Firebase Config & Init ---
         // PENTING: Ganti nilai placeholder ini dengan konfigurasi Firebase Anda yang sebenarnya.
-        // Sebaiknya konfigurasi ini disimpan di file terpisah atau diambil dari server.
+        // Sebaiknya konfigurasi ini TIDAK Terekspos langsung di sisi klien dalam aplikasi production.
+        // Gunakan Firebase Functions atau serverless backend untuk operasi sensitif.
         const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
@@ -375,10 +379,11 @@
         const storage = firebase.storage(); // Inisialisasi Firebase Storage
 
         // --- Konstanta NgirimWA & Admin ---
+        // Ganti dengan API Key, Auth Key, dan Nomor Admin Anda dari ngirimwa.com
         const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-        const ADMIN_WA_NUMBER = "6282276588629"; // Ganti dengan nomor WA admin yang aktif (format 62xxxxxxxxxx)
-        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html"; // Base URL admin panel Anda
+        const ADMIN_WA_NUMBER = "6281803004607"; // Ganti dengan nomor WA admin Anda (format 62xxxxxxxxxx)
+        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/status.html"; // Pastikan ini URL yang benar ke status page Anda
 
         // --- DOM Elements ---
         const uploadForm = document.getElementById('uploadForm');
@@ -391,7 +396,7 @@
         // --- Helper Functions ---
         function normalizePhoneNumber(number) {
             if (!number) return '';
-            number = number.replace(/[^0-9]/g, ''); // Hapus semua karakter non-angka
+            number = number.replace(/[^0-9]/g, ''); // Remove all non-digit characters
             if (number.startsWith('0')) {
                 number = '62' + number.slice(1);
             }
@@ -412,12 +417,12 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    console.log('Notifikasi WA berhasil dikirim:', result);
+                    console.log('WA notification sent successfully:', result);
                 } else {
-                    console.error('Gagal mengirim notifikasi WA:', result);
+                    console.error('Failed to send WA notification:', result);
                 }
             } catch (error) {
-                console.error('Error saat mengirim notifikasi WA:', error);
+                console.error('Error sending WA notification:', error);
             }
         }
 
@@ -425,14 +430,15 @@
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            showLoading(); // Tampilkan loading overlay
-            submitBtn.disabled = true; // Nonaktifkan tombol submit
+            showLoading(); // Show loading overlay
+            submitBtn.disabled = true; // Disable submit button
 
             const orderId = orderIdInput.value.trim();
             const buyerName = buyerNameInput.value.trim();
             const buyerWa = normalizePhoneNumber(buyerWaInput.value.trim());
             const paymentProofFile = paymentProofInput.files[0];
 
+            // Basic client-side validation
             if (!orderId || !buyerName || !buyerWa || !paymentProofFile) {
                 hideLoading();
                 submitBtn.disabled = false;
@@ -440,13 +446,23 @@
                 return;
             }
 
-            // Validasi ukuran file (misal, maks 2MB)
+            // Validate file size (e.g., max 2MB)
             if (paymentProofFile.size > 2 * 1024 * 1024) { // 2 MB
                 hideLoading();
                 submitBtn.disabled = false;
                 showCustomAlert('Ukuran file bukti transfer maksimal 2MB.');
                 return;
             }
+
+            // Validate file type (simple check)
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!allowedTypes.includes(paymentProofFile.type)) {
+                hideLoading();
+                submitBtn.disabled = false;
+                showCustomAlert('Hanya file gambar (JPG, PNG, JPEG) yang diterima.');
+                return;
+            }
+
 
             const fileExtension = paymentProofFile.name.split('.').pop();
             const fileNameInStorage = `${orderId}_${Date.now()}.${fileExtension}`;
@@ -456,7 +472,7 @@
                 // 1. Unggah file ke Firebase Storage
                 const snapshot = await storageRef.put(paymentProofFile);
                 const downloadURL = await snapshot.ref.getDownloadURL();
-                console.log("File berhasil diunggah. URL:", downloadURL);
+                console.log("File uploaded successfully. URL:", downloadURL);
 
                 // 2. Periksa ID Pesanan di Realtime Database
                 const orderRef = db.ref(`pesanan/${orderId}`);
@@ -464,18 +480,20 @@
                 const orderData = orderSnapshot.val();
 
                 if (!orderData) {
+                    // Clean up the uploaded file if order ID is not found
+                    await storageRef.delete().catch(err => console.error("Error deleting orphaned file:", err));
                     hideLoading();
                     submitBtn.disabled = false;
-                    showCustomAlert(`ID Pesanan '${orderId}' tidak ditemukan. Mohon periksa kembali.`);
+                    showCustomAlert(`ID Pesanan '${orderId}' tidak ditemukan. Mohon periksa kembali atau buat pesanan terlebih dahulu.`);
                     return;
                 }
 
                 // 3. Update status pesanan di Realtime Database
                 await orderRef.update({
-                    status: 'Menunggu Konfirmasi',
-                    bukti_transfer: {
+                    status: 'Menunggu Konfirmasi', // Change status to 'Menunggu Konfirmasi'
+                    bukti_pembayaran_url: downloadURL, // Store the direct download URL
+                    bukti_transfer_details: { // Optional: store more details if needed
                         nama_file: fileNameInStorage,
-                        url: downloadURL,
                         waktu_unggah: new Date().toISOString(),
                         nama_pengunggah: buyerName,
                         wa_pengunggah: buyerWa
@@ -483,20 +501,23 @@
                 });
 
                 // 4. Kirim notifikasi WA ke admin
-                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}?id=${orderId}`;
+                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}?id=${orderId}`; // Link langsung ke pesanan di admin panel
                 const waMessage = `🔔 Pemberitahuan Pembayaran Baru 🔔\n\n` +
                                   `ID Pesanan: *${orderId}*\n` +
+                                  `Produk: *${orderData.produk || 'N/A'}*\n` +
+                                  `Nominal: *Rp${(orderData.harga || 0).toLocaleString('id-ID')}*\n` +
                                   `Nama Pembeli: *${buyerName}*\n` +
                                   `No. WA Pembeli: ${buyerWa}\n\n` +
-                                  `Lihat detail dan bukti bayar:\n${adminPanelLink}\n\n` +
+                                  `Lihat detail dan bukti bayar:\n${downloadURL}\n\n` + // Link langsung ke bukti
+                                  `Aksi di Admin Panel:\n${adminPanelLink}\n\n` +
                                   `Silakan segera konfirmasi pesanan ini.`;
 
                 await sendWhatsAppNotification(ADMIN_WA_NUMBER, waMessage);
 
                 hideLoading();
-                showCustomAlert('Bukti pembayaran berhasil diunggah! Pesanan Anda kini menunggu konfirmasi.');
-                uploadForm.reset(); // Clear the form
-                orderIdInput.value = orderId; // Keep order ID for convenience if user uploads again
+                showCustomAlert('Bukti pembayaran berhasil diunggah! Pesanan Anda kini menunggu konfirmasi dari admin.');
+                uploadForm.reset(); // Clear the form fields
+                orderIdInput.value = orderId; // Keep order ID pre-filled for convenience
 
                 // Optional: Redirect to status page after successful upload
                 setTimeout(() => {
@@ -512,6 +533,8 @@
                     errorMessage = 'Gagal mengunggah. Pastikan aturan keamanan Firebase Storage Anda mengizinkan penulisan.';
                 } else if (error.code === 'storage/object-not-found') {
                     errorMessage = 'Objek penyimpanan tidak ditemukan. Pastikan path Firebase Storage Anda benar.';
+                } else if (error.code === 'PERMISSION_DENIED') { // Database permission error
+                    errorMessage = 'Gagal mengakses database. Periksa aturan keamanan Firebase Realtime Database Anda.';
                 }
                 showCustomAlert(errorMessage);
             }
