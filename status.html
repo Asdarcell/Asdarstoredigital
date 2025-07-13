@@ -1,139 +1,344 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Status Transaksi</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      background: #f9f9f9;
-      padding: 20px;
-    }
-    img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-    a, button {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      padding: 10px 20px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-    }
-    .alert {
-      background: #fff3cd;
-      padding: 15px;
-      border-left: 5px solid #ffc107;
-      margin-top: 20px;
-    }
-    #fiturDinamisStatus {
-      margin-top: 30px;
-      background: #ffffff;
-      border-left: 5px solid #17a2b8;
-      padding: 15px;
-      border-radius: 6px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Status Transaksi - Asdar Store Digital</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk ikon (misal: panah accordion, ikon pengguna) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variabel Tema */
+        :root {
+            --bg: #f9f9f9;
+            --text: #2c3e50;
+            --primary: #3498db;
+            --card: #ffffff;
+            --border: #ddd;
+            --primary-rgb: 52, 152, 219;
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a2e;
+            --text: #e0e0e0;
+            --primary: #1abc9c;
+            --card: #2c2c40;
+            --border: #444;
+            --primary-rgb: 26, 188, 156;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            margin: 0;
+            line-height: 1.6;
+            @apply p-4; /* Add some padding */
+        }
+        main {
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 0 20px;
+            @apply bg-white p-6 rounded-lg shadow-md;
+        }
+        [data-theme="dark"] main {
+            @apply bg-gray-800;
+        }
+        h2 {
+            @apply text-2xl font-bold text-center mb-6;
+            color: var(--primary);
+        }
+        img {
+            @apply max-w-full h-auto mt-4 rounded-lg shadow-sm border border-gray-200;
+        }
+        [data-theme="dark"] img {
+            @apply border-gray-700;
+        }
+        .alert-info {
+            @apply bg-blue-100 text-blue-800 p-4 rounded-lg border-l-4 border-blue-500 my-4;
+        }
+        .alert-warning {
+            @apply bg-yellow-100 text-yellow-800 p-4 rounded-lg border-l-4 border-yellow-500 my-4;
+        }
+        .alert-success {
+            @apply bg-green-100 text-green-800 p-4 rounded-lg border-l-4 border-green-500 my-4;
+        }
+        .btn {
+            @apply inline-block mt-5 px-6 py-3 text-white font-semibold rounded-lg transition-all duration-300;
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700;
+        }
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700;
+        }
+        .btn-upload {
+            @apply bg-purple-600 hover:bg-purple-700;
+        }
+        .btn-dana {
+            @apply bg-green-500 hover:bg-green-600;
+        }
+        .btn-shopeepay {
+            @apply bg-orange-500 hover:bg-orange-600;
+        }
+
+        /* Custom Modal Styling */
+        .custom-modal {
+            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] hidden;
+        }
+        .custom-modal-content {
+            @apply bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center;
+        }
+        [data-theme="dark"] .custom-modal-content {
+            @apply bg-gray-800 text-gray-200;
+        }
+        .custom-modal-content button {
+            @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mt-4;
+            width: auto;
+        }
+    </style>
 </head>
-<body>
-  <h2>Status Transaksi</h2>
-  <div id="statusInfo">Memuat...</div>
+<body data-theme="light">
+    <main>
+        <h2 class="text-2xl font-bold text-center mb-6">Status Transaksi Anda</h2>
+        <div id="statusInfo" class="bg-gray-50 p-4 rounded-lg shadow-sm text-gray-700">
+            <p class="text-center text-gray-500">Memuat informasi pesanan...</p>
+        </div>
 
-  <!-- Fitur Dinamis Tambahan dari Admin -->
-  <div id="fiturDinamisStatus"></div>
+        <!-- Fitur Dinamis Tambahan dari Admin -->
+        <div id="dynamic-content-area" class="mt-8 pt-4 border-t border-dashed border-gray-300">
+            <!-- Dynamic content will be loaded here -->
+        </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+        <div class="flex justify-center mt-8">
+            <a href="./index.html" class="btn btn-secondary">⬅ Kembali ke Halaman Utama</a>
+        </div>
+    </main>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <!-- Custom Modal for Alerts -->
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message" class="text-lg font-medium mb-4"></p>
+            <button id="modal-close-btn">OK</button>
+        </div>
+    </div>
 
-    const id = new URLSearchParams(window.location.search).get('id');
-    const statusInfo = document.getElementById('statusInfo');
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    db.ref('pesanan/' + id).once('value').then(snapshot => {
-      const data = snapshot.val();
-      if (!data) {
-        statusInfo.textContent = '❌ ID pesanan tidak ditemukan.';
-        return;
-      }
-
-      let html = `
-        <p><strong>ID Pesanan:</strong> ${id}</p>
-        <p><strong>Nama:</strong> ${data.nama}</p>
-        <p><strong>Produk:</strong> ${data.produk}</p>
-        <p><strong>Status:</strong> ${data.status}</p>
-      `;
-
-      if (data.buktiBayar) {
-        html += `<p><strong>Bukti Pembayaran:</strong><br><img src="${data.buktiBayar}" /></p>`;
-      }
-
-      if (data.status === 'Belum Bayar') {
-        html += `
-          <div class="alert">
-            <b>❗ Pesanan Anda belum dibayar.</b><br>
-            Silakan transfer ke:
-            <ul>
-              <li>DANA: <b>087755432880</b></li>
-              <li>ShopeePay: <b>081803004607</b></li>
-            </ul>
-            Setelah transfer, upload bukti pembayaran Anda.
-            <br><br>
-            <a href="upload.html?id=${id}">Upload Bukti Pembayaran</a>
-          </div>
-        `;
-      }
-
-      if (data.status === 'Diproses' || data.status === 'Selesai') {
-        if (data.buktiAdmin) {
-          html += `<p><strong>Bukti dari Admin:</strong><br><img src="${data.buktiAdmin}" /></p>`;
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle'); // This button is not present on this page, but function is here for consistency
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('theme', nextTheme);
+            // If a theme toggle button were present, its text would be updated here
+        }
+        // Set initial theme on load
+        if (localStorage.getItem('theme')) {
+            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
         } else {
-          html += `<p><em>Admin sedang memproses pesanan Anda...</em></p>`;
+            document.body.setAttribute('data-theme', 'light');
         }
-      }
 
-      html += `<br><a href="index.html">⬅ Kembali ke Halaman Utama</a>`;
-      statusInfo.innerHTML = html;
-    }).catch(err => {
-      statusInfo.textContent = '❌ Gagal mengambil data.';
-      console.error(err);
-    });
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
 
-    // 🔁 Tampilkan fitur dinamis (lokasi: "status")
-    const fiturRef = db.ref("fitur_dinamis");
-    function tampilkanFiturDinamisStatus() {
-      fiturRef.once("value").then((snap) => {
-        const data = snap.val() || {};
-        let isi = "";
-        for (let id in data) {
-          const f = data[id];
-          if (f.lokasi === "status") {
-            isi += f.html;
-          }
+        function showCustomAlert(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
         }
-        document.getElementById("fiturDinamisStatus").innerHTML = isi;
-      });
-    }
 
-    tampilkanFiturDinamisStatus();
-  </script>
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
+        });
+
+        // --- Firebase Config & Init ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll.appspot.com",
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        const id = new URLSearchParams(window.location.search).get('id');
+        const statusInfo = document.getElementById('statusInfo');
+        const dinamisRef = db.ref('dinamis'); // Reference to dynamic content
+
+        // --- Helper Functions ---
+        function formatRupiah(angka) {
+            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // --- Load Order Status ---
+        async function loadOrderStatus() {
+            if (!id) {
+                statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ ID pesanan tidak ditemukan di URL.</p>';
+                showCustomAlert('ID pesanan tidak ditemukan di URL. Silakan kembali ke halaman utama dan coba lagi.');
+                return;
+            }
+
+            try {
+                const snapshot = await db.ref('pesanan/' + id).once('value');
+                const data = snapshot.val();
+
+                if (!data) {
+                    statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ ID pesanan tidak ditemukan.</p>';
+                    showCustomAlert('ID pesanan tidak ditemukan. Mungkin ID salah atau pesanan sudah dihapus.');
+                    return;
+                }
+
+                let html = `
+                    <p class="text-lg font-semibold mb-2">Detail Pesanan Anda:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>ID Pesanan:</strong> <code class="bg-gray-200 p-1 rounded text-sm">${id}</code></li>
+                        <li><strong>Nama:</strong> ${data.nama || '-'}</li>
+                        <li><strong>Produk:</strong> ${data.produk || '-'}</li>
+                        <li><strong>Harga:</strong> Rp${formatRupiah(data.harga || 0)}</li>
+                        <li><strong>Waktu Pesan:</strong> ${data.waktu ? new Date(data.waktu).toLocaleString('id-ID') : '-'}</li>
+                        <li><strong>Status:</strong> <span class="font-bold text-blue-600">${data.status || '-'}</span></li>
+                    </ul>
+                `;
+
+                if (data.buktiBayar) {
+                    html += `<p class="mt-4 font-semibold">Bukti Pembayaran Anda:</p><img src="${data.buktiBayar}" alt="Bukti Pembayaran" class="w-full max-w-xs" />`;
+                }
+
+                if (data.status === 'Belum Bayar') {
+                    html += `
+                        <div class="alert-warning">
+                            <p class="font-bold text-lg">❗ Pesanan Anda belum dibayar.</p>
+                            <p class="mt-2">Silakan transfer sejumlah <strong>Rp${formatRupiah(data.harga || 0)}</strong> ke:</p>
+                            <ul class="list-disc list-inside mt-1">
+                                <li>DANA: <b>087755432880</b></li>
+                                <li>ShopeePay: <b>081803004607</b></li>
+                                <li>OVO: <b>087755432880</b></li>
+                                <li>GoPay: <b>087755432880</b></li>
+                            </ul>
+                            <p class="mt-2">Setelah transfer, segera upload bukti pembayaran Anda.</p>
+                            <a href="./upload.html?id=${id}" class="btn btn-upload">📤 Upload Bukti Pembayaran</a>
+                        </div>
+                    `;
+                } else if (data.status === 'Sudah Bayar') {
+                    html += `
+                        <div class="alert-info">
+                            <p class="font-bold text-lg">⏳ Pesanan Anda sudah dibayar dan menunggu verifikasi admin.</p>
+                            <p class="mt-2">Admin akan segera memproses pesanan Anda. Mohon tunggu.</p>
+                        </div>
+                    `;
+                } else if (data.status === 'Diproses') {
+                    html += `
+                        <div class="alert-info">
+                            <p class="font-bold text-lg">🔄 Pesanan Anda sedang diproses oleh admin.</p>
+                            <p class="mt-2">Mohon bersabar, pesanan Anda akan segera selesai.</p>
+                        </div>
+                    `;
+                } else if (data.status === 'Selesai') {
+                    html += `
+                        <div class="alert-success">
+                            <p class="font-bold text-lg">✅ Pesanan Anda telah selesai!</p>
+                            <p class="mt-2">Terima kasih telah berbelanja di Asdar Store Digital.</p>
+                        </div>
+                    `;
+                }
+
+                if (data.buktiAdmin) {
+                    html += `<p class="mt-4 font-semibold">Bukti dari Admin:</p><img src="${data.buktiAdmin}" alt="Bukti dari Admin" class="w-full max-w-xs" />`;
+                } else if (data.status === 'Diproses' || data.status === 'Selesai') {
+                    html += `<p class="mt-4 italic text-gray-500">Admin sedang memproses pesanan Anda atau belum mengunggah bukti penyelesaian.</p>`;
+                }
+
+                statusInfo.innerHTML = html;
+            } catch (err) {
+                statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ Gagal mengambil data pesanan. Silakan coba lagi.</p>';
+                console.error("Error loading order status:", err);
+                showCustomAlert('Gagal mengambil data pesanan. Silakan coba lagi.');
+            }
+        }
+
+        // --- Render Konten Dinamis dari Admin ---
+        async function renderDynamicContent() {
+            try {
+                const snapshot = await dinamisRef.child('status').once('value');
+                const dynamicContentArea = document.getElementById('dynamic-content-area');
+                dynamicContentArea.innerHTML = ''; // Clear previous content
+
+                const blocks = snapshot.val() || {};
+                const sortedBlocks = Object.keys(blocks).map(key => ({ id: key, ...blocks[key] }))
+                                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                let combinedCss = '';
+                let combinedJs = '';
+
+                sortedBlocks.forEach(block => {
+                    if (block.html) {
+                        const section = document.createElement('div');
+                        section.className = 'dynamic-content-section'; // Apply basic styling
+                        section.innerHTML = block.html;
+                        dynamicContentArea.appendChild(section);
+
+                        // Re-execute scripts within dynamic HTML
+                        section.querySelectorAll('script').forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                        });
+                    }
+                    if (block.css) {
+                        combinedCss += block.css + '\n';
+                    }
+                    if (block.js) {
+                        combinedJs += block.js + '\n';
+                    }
+                });
+
+                // Apply combined CSS
+                let styleTag = document.getElementById('dynamic-css-status');
+                if (!styleTag) {
+                    styleTag = document.createElement('style');
+                    styleTag.id = 'dynamic-css-status';
+                    document.head.appendChild(styleTag);
+                }
+                styleTag.textContent = combinedCss;
+
+                // Execute combined JS
+                let scriptTag = document.getElementById('dynamic-js-status');
+                if (scriptTag) {
+                    scriptTag.remove(); // Remove old script to re-execute
+                }
+                scriptTag = document.createElement('script');
+                scriptTag.id = 'dynamic-js-status';
+                scriptTag.textContent = combinedJs;
+                document.body.appendChild(scriptTag);
+
+                console.log("Konten dinamis untuk status.html berhasil dimuat.");
+            } catch (error) {
+                console.error("Gagal memuat konten dinamis untuk status.html:", error);
+            }
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrderStatus();
+            renderDynamicContent();
+        });
+    </script>
 </body>
 </html>
