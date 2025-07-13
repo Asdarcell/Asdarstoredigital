@@ -1,34 +1,45 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Status Transaksi - Asdar Store Digital</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Status Pesanan - Asdar Store Digital</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome untuk ikon (misal: panah accordion, ikon pengguna) -->
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Variabel Tema */
+        /* Theme Variables - Consistent with index.html */
         :root {
-            --bg: #f9f9f9;
-            --text: #2c3e50;
-            --primary: #3498db;
-            --card: #ffffff;
-            --border: #ddd;
-            --primary-rgb: 52, 152, 219;
+            /* Light Mode Colors (White & Blue) */
+            --bg: #ffffff; /* Pure white background */
+            --text: #333333; /* Dark gray for main text, almost black */
+            --primary: #007bff; /* Bright blue for accents */
+            --card: #ffffff; /* White card background */
+            --border: #e0e0e0; /* Light gray border */
+            --secondary-text: #6b7280; /* Medium gray for secondary text */
+            --button-text-light: #ffffff; /* White text for primary buttons */
+            --button-bg-light: #007bff; /* Primary blue for buttons */
+            --button-hover-light: #0056b3; /* Darker blue on hover */
+            --primary-rgb: 0, 123, 255; /* RGB for primary blue */
         }
         [data-theme="dark"] {
-            --bg: #1a1a2e;
-            --text: #e0e0e0;
-            --primary: #1abc9c;
-            --card: #2c2c40;
-            --border: #444;
-            --primary-rgb: 26, 188, 156;
+            /* Dark Mode Colors (Light Grey Background, Black Text, Contrasting Accents) */
+            --bg: #f0f0f0; /* Very light gray background for dark mode */
+            --text: #333333; /* Dark gray for main text (readable on light background) */
+            --primary: #28a745; /* Green for dark mode primary (good contrast on light bg) */
+            --card: #e8e8e8; /* Slightly darker light gray card background */
+            --border: #cccccc; /* Medium gray border */
+            --secondary-text: #6b7280; /* Same as light mode, readable */
+            --button-text-dark: #ffffff; /* White text for buttons */
+            --button-bg-dark: #28a745; /* Primary green for buttons */
+            --button-hover-dark: #218838; /* Darker green on hover */
+            --primary-rgb: 40, 167, 69; /* RGB for primary green */
         }
 
+        /* General Styles */
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--bg);
@@ -36,85 +47,245 @@
             transition: all 0.3s ease;
             margin: 0;
             line-height: 1.6;
-            @apply p-4; /* Add some padding */
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        main {
-            max-width: 700px;
-            margin: 20px auto;
-            padding: 0 20px;
-            @apply bg-white p-6 rounded-lg shadow-md;
+        header {
+            position: sticky;
+            top: 0;
+            background: var(--card);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        [data-theme="dark"] main {
-            @apply bg-gray-800;
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            font-weight: bold;
         }
-        h2 {
-            @apply text-2xl font-bold text-center mb-6;
+        .theme-btn {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text);
+            transition: color 0.3s ease, background-color 0.3s ease;
+            padding: 8px;
+            border-radius: 50%;
+        }
+        .theme-btn:hover {
+            background-color: rgba(0,0,0,0.05);
             color: var(--primary);
         }
-        img {
-            @apply max-w-full h-auto mt-4 rounded-lg shadow-sm border border-gray-200;
-        }
-        [data-theme="dark"] img {
-            @apply border-gray-700;
-        }
-        .alert-info {
-            @apply bg-blue-100 text-blue-800 p-4 rounded-lg border-l-4 border-blue-500 my-4;
-        }
-        .alert-warning {
-            @apply bg-yellow-100 text-yellow-800 p-4 rounded-lg border-l-4 border-yellow-500 my-4;
-        }
-        .alert-success {
-            @apply bg-green-100 text-green-800 p-4 rounded-lg border-l-4 border-green-500 my-4;
-        }
-        .btn {
-            @apply inline-block mt-5 px-6 py-3 text-white font-semibold rounded-lg transition-all duration-300;
-        }
-        .btn-primary {
-            @apply bg-blue-600 hover:bg-blue-700;
-        }
-        .btn-secondary {
-            @apply bg-gray-600 hover:bg-gray-700;
-        }
-        .btn-upload {
-            @apply bg-purple-600 hover:bg-purple-700;
-        }
-        .btn-dana {
-            @apply bg-green-500 hover:bg-green-600;
-        }
-        .btn-shopeepay {
-            @apply bg-orange-500 hover:bg-orange-600;
+        [data-theme="dark"] .theme-btn:hover {
+            background-color: rgba(0,0,0,0.1);
         }
 
-        /* Custom Modal Styling */
+        main {
+            flex-grow: 1;
+            max-width: 600px; /* Max width for the content */
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        @media (max-width: 640px) {
+            main {
+                padding: 0 10px;
+            }
+        }
+
+        .section-card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            color: var(--text);
+        }
+        .section-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 1.8em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Form & Input Styles - Consistent */
+        label {
+            font-weight: 600;
+            margin-top: 15px;
+            display: block;
+            color: var(--text);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: var(--card);
+            color: var(--text);
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+        }
+
+        /* Button Styles - Consistent */
+        .btn-base {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: none;
+            color: var(--button-text-light);
+            background: var(--button-bg-light);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        [data-theme="dark"] .btn-base {
+            color: var(--button-text-dark);
+            background: var(--button-bg-dark);
+        }
+        .btn-base:hover {
+            background-color: var(--button-hover-light);
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] .btn-base:hover {
+            background-color: var(--button-hover-dark);
+        }
+        .btn-base:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-green { background-color: #28a745; color: white; }
+        .btn-green:hover { background-color: #218838; }
+        .btn-red { background-color: #dc3545; color: white; }
+        .btn-red:hover { background-color: #c82333; }
+        .btn-blue { background-color: #007bff; color: white; }
+        .btn-blue:hover { background-color: #0056b3; }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .btn-gray:hover { background-color: #5a6268; }
+
+        /* Order Status Display */
+        #orderStatusDisplay {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: var(--card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: none; /* Hidden by default */
+        }
+        #orderStatusDisplay p {
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        #orderStatusDisplay p strong {
+            color: var(--primary);
+        }
+        #orderStatusDisplay .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-top: 10px;
+        }
+        .status-badge.belum-bayar { background-color: #ffc107; color: #333; } /* Yellow */
+        .status-badge.menunggu-konfirmasi { background-color: #17a2b8; } /* Cyan */
+        .status-badge.diproses { background-color: #007bff; } /* Blue */
+        .status-badge.selesai { background-color: #28a745; } /* Green */
+        .status-badge.dibatalkan { background-color: #dc3545; } /* Red */
+        .status-badge.tidak-ditemukan { background-color: #6c757d; } /* Gray */
+
+        /* Custom Modal for Alerts - Consistent */
         .custom-modal {
-            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; /* Controlled by JS .show class */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-modal.show {
+            display: flex;
         }
         .custom-modal-content {
-            @apply bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center;
-        }
-        [data-theme="dark"] .custom-modal-content {
-            @apply bg-gray-800 text-gray-200;
+            background: var(--card);
+            color: var(--text);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
         }
         .custom-modal-content button {
-            @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mt-4;
-            width: auto;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: var(--button-text-light);
+            background: var(--button-bg-light);
+            transition: background-color 0.3s ease;
+        }
+        [data-theme="dark"] .custom-modal-content button {
+            color: var(--button-text-dark);
+            background: var(--button-bg-dark);
+        }
+        .custom-modal-content button:hover {
+            background-color: var(--button-hover-light);
+        }
+        [data-theme="dark"] .custom-modal-content button:hover {
+            background-color: var(--button-hover-dark);
         }
     </style>
 </head>
 <body data-theme="light">
+    <header>
+        <h1>Cek Status Pesanan</h1>
+        <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    </header>
+
     <main>
-        <h2 class="text-2xl font-bold text-center mb-6">Status Transaksi Anda</h2>
-        <div id="statusInfo" class="bg-gray-50 p-4 rounded-lg shadow-sm text-gray-700">
-            <p class="text-center text-gray-500">Memuat informasi pesanan...</p>
-        </div>
+        <div class="section-card">
+            <h2>Cek Status Pesanan Anda</h2>
+            <p class="text-sm text-gray-600 mb-4 text-center">
+                Masukkan ID Pesanan Anda untuk melihat status terbaru.
+            </p>
+            <form id="statusCheckForm">
+                <label for="orderIdInput">ID Pesanan</label>
+                <input type="text" id="orderIdInput" placeholder="Cth: P16789..." required />
+                <button type="submit" class="btn-base btn-blue"><i class="fas fa-search"></i> Cek Status</button>
+                <button type="button" class="btn-base btn-gray mt-4" onclick="window.location.href='./index.html'"><i class="fas fa-home"></i> Kembali ke Beranda</button>
+            </form>
 
-        <!-- Fitur Dinamis Tambahan dari Admin -->
-        <div id="dynamic-content-area" class="mt-8 pt-4 border-t border-dashed border-gray-300">
-            <!-- Dynamic content will be loaded here -->
-        </div>
-
-        <div class="flex justify-center mt-8">
-            <a href="./index.html" class="btn btn-secondary">⬅ Kembali ke Halaman Utama</a>
+            <div id="orderStatusDisplay">
+                <!-- Order status details will be displayed here -->
+            </div>
         </div>
     </main>
 
@@ -126,28 +297,40 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
         // --- Theme Toggle ---
         function toggleTheme() {
             const body = document.body;
-            const btn = document.getElementById('themeToggle'); // This button is not present on this page, but function is here for consistency
+            const btn = document.getElementById('themeToggle');
             const currentTheme = body.getAttribute('data-theme');
             const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
             body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
             localStorage.setItem('theme', nextTheme);
-            // If a theme toggle button were present, its text would be updated here
         }
         // Set initial theme on load
-        if (localStorage.getItem('theme')) {
-            document.body.setAttribute('data-theme', localStorage.getItem('theme'));
-        } else {
-            document.body.setAttribute('data-theme', 'light');
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+
+            // Pre-fill Order ID from URL if available
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderIdFromUrl = urlParams.get('id');
+            if (orderIdFromUrl) {
+                document.getElementById('orderIdInput').value = orderIdFromUrl;
+                checkOrderStatus(orderIdFromUrl); // Automatically check status if ID is in URL
+            }
+        });
 
         // --- Custom Alert Modal ---
         const customModal = document.getElementById('custom-modal');
@@ -156,11 +339,11 @@
 
         function showCustomAlert(message) {
             modalMessage.textContent = message;
-            customModal.classList.remove('hidden');
+            customModal.classList.add('show');
         }
 
         modalCloseBtn.addEventListener('click', () => {
-            customModal.classList.add('hidden');
+            customModal.classList.remove('show');
         });
 
         // --- Firebase Config & Init ---
@@ -173,172 +356,92 @@
             messagingSenderId: "220670500351",
             appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
         };
+
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.database();
 
-        const id = new URLSearchParams(window.location.search).get('id');
-        const statusInfo = document.getElementById('statusInfo');
-        const dinamisRef = db.ref('dinamis'); // Reference to dynamic content
+        // --- DOM Elements ---
+        const statusCheckForm = document.getElementById('statusCheckForm');
+        const orderIdInput = document.getElementById('orderIdInput');
+        const orderStatusDisplay = document.getElementById('orderStatusDisplay');
 
-        // --- Helper Functions ---
+        // --- Helper Function ---
         function formatRupiah(angka) {
             return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
-        // --- Load Order Status ---
-        async function loadOrderStatus() {
-            if (!id) {
-                statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ ID pesanan tidak ditemukan di URL.</p>';
-                showCustomAlert('ID pesanan tidak ditemukan di URL. Silakan kembali ke halaman utama dan coba lagi.');
-                return;
+        // --- Check Order Status Function ---
+        statusCheckForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const orderId = orderIdInput.value.trim();
+            if (orderId) {
+                checkOrderStatus(orderId);
+            } else {
+                showCustomAlert('Mohon masukkan ID Pesanan Anda.');
             }
-
-            try {
-                const snapshot = await db.ref('pesanan/' + id).once('value');
-                const data = snapshot.val();
-
-                if (!data) {
-                    statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ ID pesanan tidak ditemukan.</p>';
-                    showCustomAlert('ID pesanan tidak ditemukan. Mungkin ID salah atau pesanan sudah dihapus.');
-                    return;
-                }
-
-                let html = `
-                    <p class="text-lg font-semibold mb-2">Detail Pesanan Anda:</p>
-                    <ul class="list-disc list-inside space-y-1">
-                        <li><strong>ID Pesanan:</strong> <code class="bg-gray-200 p-1 rounded text-sm">${id}</code></li>
-                        <li><strong>Nama:</strong> ${data.nama || '-'}</li>
-                        <li><strong>Produk:</strong> ${data.produk || '-'}</li>
-                        <li><strong>Harga:</strong> Rp${formatRupiah(data.harga || 0)}</li>
-                        <li><strong>Waktu Pesan:</strong> ${data.waktu ? new Date(data.waktu).toLocaleString('id-ID') : '-'}</li>
-                        <li><strong>Status:</strong> <span class="font-bold text-blue-600">${data.status || '-'}</span></li>
-                    </ul>
-                `;
-
-                if (data.buktiBayar) {
-                    html += `<p class="mt-4 font-semibold">Bukti Pembayaran Anda:</p><img src="${data.buktiBayar}" alt="Bukti Pembayaran" class="w-full max-w-xs" />`;
-                }
-
-                if (data.status === 'Belum Bayar') {
-                    html += `
-                        <div class="alert-warning">
-                            <p class="font-bold text-lg">❗ Pesanan Anda belum dibayar.</p>
-                            <p class="mt-2">Silakan transfer sejumlah <strong>Rp${formatRupiah(data.harga || 0)}</strong> ke:</p>
-                            <ul class="list-disc list-inside mt-1">
-                                <li>DANA: <b>087755432880</b></li>
-                                <li>ShopeePay: <b>081803004607</b></li>
-                                <li>OVO: <b>087755432880</b></li>
-                                <li>GoPay: <b>087755432880</b></li>
-                            </ul>
-                            <p class="mt-2">Setelah transfer, segera upload bukti pembayaran Anda.</p>
-                            <a href="./upload.html?id=${id}" class="btn btn-upload">📤 Upload Bukti Pembayaran</a>
-                        </div>
-                    `;
-                } else if (data.status === 'Sudah Bayar') {
-                    html += `
-                        <div class="alert-info">
-                            <p class="font-bold text-lg">⏳ Pesanan Anda sudah dibayar dan menunggu verifikasi admin.</p>
-                            <p class="mt-2">Admin akan segera memproses pesanan Anda. Mohon tunggu.</p>
-                        </div>
-                    `;
-                } else if (data.status === 'Diproses') {
-                    html += `
-                        <div class="alert-info">
-                            <p class="font-bold text-lg">🔄 Pesanan Anda sedang diproses oleh admin.</p>
-                            <p class="mt-2">Mohon bersabar, pesanan Anda akan segera selesai.</p>
-                        </div>
-                    `;
-                } else if (data.status === 'Selesai') {
-                    html += `
-                        <div class="alert-success">
-                            <p class="font-bold text-lg">✅ Pesanan Anda telah selesai!</p>
-                            <p class="mt-2">Terima kasih telah berbelanja di Asdar Store Digital.</p>
-                        </div>
-                    `;
-                }
-
-                if (data.buktiAdmin) {
-                    html += `<p class="mt-4 font-semibold">Bukti dari Admin:</p><img src="${data.buktiAdmin}" alt="Bukti dari Admin" class="w-full max-w-xs" />`;
-                } else if (data.status === 'Diproses' || data.status === 'Selesai') {
-                    html += `<p class="mt-4 italic text-gray-500">Admin sedang memproses pesanan Anda atau belum mengunggah bukti penyelesaian.</p>`;
-                }
-
-                statusInfo.innerHTML = html;
-            } catch (err) {
-                statusInfo.innerHTML = '<p class="text-red-500 font-semibold">❌ Gagal mengambil data pesanan. Silakan coba lagi.</p>';
-                console.error("Error loading order status:", err);
-                showCustomAlert('Gagal mengambil data pesanan. Silakan coba lagi.');
-            }
-        }
-
-        // --- Render Konten Dinamis dari Admin ---
-        async function renderDynamicContent() {
-            try {
-                const snapshot = await dinamisRef.child('status').once('value');
-                const dynamicContentArea = document.getElementById('dynamic-content-area');
-                dynamicContentArea.innerHTML = ''; // Clear previous content
-
-                const blocks = snapshot.val() || {};
-                const sortedBlocks = Object.keys(blocks).map(key => ({ id: key, ...blocks[key] }))
-                                        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                let combinedCss = '';
-                let combinedJs = '';
-
-                sortedBlocks.forEach(block => {
-                    if (block.html) {
-                        const section = document.createElement('div');
-                        section.className = 'dynamic-content-section'; // Apply basic styling
-                        section.innerHTML = block.html;
-                        dynamicContentArea.appendChild(section);
-
-                        // Re-execute scripts within dynamic HTML
-                        section.querySelectorAll('script').forEach(oldScript => {
-                            const newScript = document.createElement('script');
-                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                            oldScript.parentNode.replaceChild(newScript, oldScript);
-                        });
-                    }
-                    if (block.css) {
-                        combinedCss += block.css + '\n';
-                    }
-                    if (block.js) {
-                        combinedJs += block.js + '\n';
-                    }
-                });
-
-                // Apply combined CSS
-                let styleTag = document.getElementById('dynamic-css-status');
-                if (!styleTag) {
-                    styleTag = document.createElement('style');
-                    styleTag.id = 'dynamic-css-status';
-                    document.head.appendChild(styleTag);
-                }
-                styleTag.textContent = combinedCss;
-
-                // Execute combined JS
-                let scriptTag = document.getElementById('dynamic-js-status');
-                if (scriptTag) {
-                    scriptTag.remove(); // Remove old script to re-execute
-                }
-                scriptTag = document.createElement('script');
-                scriptTag.id = 'dynamic-js-status';
-                scriptTag.textContent = combinedJs;
-                document.body.appendChild(scriptTag);
-
-                console.log("Konten dinamis untuk status.html berhasil dimuat.");
-            } catch (error) {
-                console.error("Gagal memuat konten dinamis untuk status.html:", error);
-            }
-        }
-
-        // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadOrderStatus();
-            renderDynamicContent();
         });
+
+        async function checkOrderStatus(orderId) {
+            orderStatusDisplay.style.display = 'none'; // Hide previous results
+            orderStatusDisplay.innerHTML = '<p class="text-center text-gray-500">Memuat status pesanan...</p>';
+            orderStatusDisplay.style.display = 'block'; // Show loading message
+
+            try {
+                const snapshot = await db.ref(`pesanan/${orderId}`).once('value');
+                const orderData = snapshot.val();
+
+                if (orderData) {
+                    let statusClass = '';
+                    let statusText = orderData.status || 'Tidak Diketahui';
+
+                    // Determine status class for styling
+                    switch (statusText) {
+                        case 'Belum Bayar': statusClass = 'belum-bayar'; break;
+                        case 'Menunggu Konfirmasi': statusClass = 'menunggu-konfirmasi'; break;
+                        case 'Diproses': statusClass = 'diproses'; break;
+                        case 'Selesai': statusClass = 'selesai'; break;
+                        case 'Dibatalkan': statusClass = 'dibatalkan'; break;
+                        default: statusClass = 'tidak-ditemukan'; break;
+                    }
+
+                    orderStatusDisplay.innerHTML = `
+                        <p><strong>ID Pesanan:</strong> ${orderId}</p>
+                        <p><strong>Produk:</strong> ${orderData.produk || '-'}</p>
+                        <p><strong>Kategori:</strong> ${orderData.kategori || '-'}</p>
+                        <p><strong>Harga:</strong> Rp${formatRupiah(orderData.harga || 0)}</p>
+                        <p><strong>Waktu Pesan:</strong> ${new Date(orderData.waktu).toLocaleString()}</p>
+                        <p><strong>Nama Pembeli:</strong> ${orderData.nama || '-'}</p>
+                        <p><strong>Nomor HP/ID SN:</strong> ${orderData.nomor || '-'}</p>
+                        <p><strong>WA Aktif:</strong> ${orderData.wa_aktif || '-'}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${statusText}</span></p>
+                        ${orderData.bukti_transfer ? `
+                            <p class="mt-4"><strong>Bukti Transfer:</strong> <a href="${orderData.bukti_transfer.url}" target="_blank" class="text-blue-600 hover:underline">Lihat Bukti</a> (diunggah oleh ${orderData.bukti_transfer.nama_pengunggah || '-'} pada ${new Date(orderData.bukti_transfer.waktu_unggah).toLocaleString()})</p>
+                        ` : ''}
+                        ${statusText === 'Belum Bayar' ? `
+                            <button class="btn-base btn-green mt-4" onclick="window.location.href='./upload.html?id=${orderId}'">
+                                <i class="fas fa-upload"></i> Unggah Bukti Bayar
+                            </button>
+                        ` : ''}
+                    `;
+                } else {
+                    orderStatusDisplay.innerHTML = `
+                        <p class="text-center text-red-600 font-semibold">
+                            <i class="fas fa-exclamation-circle"></i> ID Pesanan '${orderId}' tidak ditemukan.
+                        </p>
+                        <p class="text-center text-gray-600 mt-2">Mohon periksa kembali ID yang Anda masukkan.</p>
+                    `;
+                }
+                orderStatusDisplay.scrollIntoView({ behavior: 'smooth' }); // Scroll to result
+            } catch (error) {
+                console.error("Error fetching order status:", error);
+                orderStatusDisplay.innerHTML = `
+                    <p class="text-center text-red-600 font-semibold">
+                        <i class="fas fa-exclamation-triangle"></i> Terjadi kesalahan saat mengambil status pesanan.
+                    </p>
+                    <p class="text-center text-gray-600 mt-2">Silakan coba lagi nanti.</p>
+                `;
+            }
+        }
     </script>
 </body>
 </html>
