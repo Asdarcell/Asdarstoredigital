@@ -41,7 +41,6 @@
     </style>
 </head>
 <body data-theme="light">
-    <noscript>This page requires JavaScript to function properly.</noscript>
     <header>
         <h1>Asdar Store Digital</h1>
         <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
@@ -66,16 +65,16 @@
             <h2>Detail Pemesanan</h2>
             <form id="orderForm">
                 <label for="productName">Produk Dipilih</label>
-                <input type="text" id="productName" readonly required placeholder="Pilih produk terlebih dahulu" />
+                <input type="text" id="productName" readonly required />
                 <label for="harga">Harga</label>
-                <input type="text" id="harga" readonly required placeholder="Pilih produk terlebih dahulu" />
+                <input type="text" id="harga" readonly required />
                 <label for="buyerName">Nama Lengkap</label>
-                <input type="text" id="buyerName" placeholder="Masukkan nama lengkap Anda" required disabled autocomplete="name" />
+                <input type="text" id="buyerName" placeholder="Pilih produk terlebih dahulu" required disabled />
                 <label for="nomor">Nomor HP / ID Game</label>
-                <input type="text" id="nomor" placeholder="Masukkan nomor HP atau ID Game Anda" required disabled autocomplete="tel" />
+                <input type="text" id="nomor" placeholder="Pilih produk terlebih dahulu" required disabled />
                 <label for="buyerWa">Nomor WhatsApp Aktif</label>
-                <input type="tel" id="buyerWa" placeholder="Masukkan nomor WhatsApp Anda (Contoh: 08...)" pattern="^(08|62)[0-9]{8,15}$" required disabled autocomplete="tel" />
-
+                <input type="tel" id="buyerWa" placeholder="Pilih produk terlebih dahulu" pattern="^(08|62)[0-9]{8,15}$" required disabled />
+                
                 <div class="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
                     <h3 class="text-lg font-semibold text-center mb-3 text-color-brand">Cara Pembayaran Manual</h3>
                     <ol class="payment-steps">
@@ -97,7 +96,8 @@
                     <input type="text" id="shopeepayId" value="081803004607" readonly />
                     <button type="button" class="btn btn-primary" onclick="copyToClipboard('081803004607', this)">Salin</button>
                 </div>
-                <button type="button" class="btn btn-primary w-full mt-6" id="confirmOrderBtn" disabled>Saya Mengerti & Lanjutkan</button>
+                <!-- PERBAIKAN: Mengganti type="submit" menjadi type="button" dan menambahkan ID -->
+                <button type="button" class="btn btn-primary w-full mt-6" id="confirmOrderBtn" disabled>Saya Mengerti & Konfirmasi Pesanan</button>
             </form>
         </div>
     </main>
@@ -136,7 +136,7 @@
         const categorySelect = document.getElementById('category-select');
         const productVariantsContainer = document.getElementById('product-variants-container');
         const productVariantsList = document.getElementById('product-variants-list');
-
+        
         let productsData = {}, groupedProducts = {}, selectedProductId = null;
 
         // --- Helper Functions ---
@@ -225,7 +225,7 @@
             const product = productsData[id];
             document.querySelectorAll('.product-item').forEach(el => el.classList.remove('selected'));
             event.currentTarget.classList.add('selected');
-
+            
             document.getElementById('productName').value = product.name;
             document.getElementById('harga').value = `Rp${formatRupiah(product.price)}`;
             ['buyerName', 'nomor', 'buyerWa', 'confirmOrderBtn'].forEach(elId => {
@@ -245,9 +245,9 @@
 
             if (!selectedProductId) { showModal('Mohon pilih produk terlebih dahulu.'); return; }
             if (!buyerName || !nomor || !buyerWa) { showModal('Mohon lengkapi semua detail pemesanan.'); return; }
-
+            
             showLoading();
-
+            
             const product = productsData[selectedProductId];
             const orderId = 'P' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
             const orderData = {
@@ -266,16 +266,16 @@
                 await db.ref(`pesanan/${orderId}`).set(orderData);
                 const adminMsg = `Pesanan Baru Diterima!\n\nID: *${orderId}*\nProduk: *${product.name}*\nHarga: *Rp${formatRupiah(product.price)}*\nPembeli: *${orderData.buyerName}*\nWA: ${orderData.buyerWa}`;
                 await sendWhatsApp(ADMIN_WA_NUMBER, adminMsg);
-
+                
                 const successMessage = `Pesanan Anda dengan ID <b>${orderId}</b> berhasil dibuat!`;
                 const successActions = `
                     <button class="btn btn-primary" onclick="window.location.href='./upload.html?id=${orderId}'">Lanjut Unggah Bukti</button>
                     <button class="btn btn-gray mt-2" onclick="closeModal()">Tutup</button>
                 `;
                 showModal(successMessage, successActions);
-
+                
                 orderForm.reset();
-                ['productName', 'harga'].forEach(id => document.getElementById(id).value = '';
+                ['productName', 'harga'].forEach(id => document.getElementById(id).value = '');
                 ['buyerName', 'nomor', 'buyerWa', 'confirmOrderBtn'].forEach(elId => {
                     const el = document.getElementById(elId);
                     el.disabled = true;
@@ -291,7 +291,7 @@
                 hideLoading();
             }
         });
-
+        
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || 'light';
