@@ -37,10 +37,10 @@
             --border-color: #4a5568;
             --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4);
             --focus-ring: rgba(79, 209, 197, 0.35);
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
+            --success-color: #28a745; /* Tetap hijau, kontras baik */
+            --warning-color: #ffc107; /* Tetap kuning, kontras baik */
+            --danger-color: #dc3545; /* Tetap merah, kontras baik */
+            --info-color: #17a2b8; /* Tetap biru muda, kontras baik */
             --primary-rgb: 79, 209, 197; /* Added for consistency */
         }
 
@@ -303,6 +303,7 @@
             background-repeat: no-repeat;
             background-position: right 0.5rem center;
             background-size: 1em;
+            max-width: 150px; /* Limit width for status select */
         }
 
         .status-BelumBayar { background-color: #d97706; color: white; } /* Amber */
@@ -673,19 +674,20 @@
         // --- Firebase Config & Init ---
         // PENTING: GANTI nilai placeholder ini dengan konfigurasi Firebase Anda yang sebenarnya.
         const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // PENTING: GANTI DENGAN API KEY FIREBASE ANDA
-            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // PENTING: GANTI DENGAN AUTH DOMAIN FIREBASE ANDA
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // PENTING: GANTI DENGAN DATABASE URL FIREBASE ANDA
-            projectId: "asdarstoredigitalll-d89c4", // PENTING: GANTI DENGAN PROJECT ID FIREBASE ANDA
-            storageBucket: "asdarstoredigitalll.appspot.com", // PENTING: GANTI DENGAN STORAGE BUCKET FIREBASE ANDA
-            messagingSenderId: "220670500351", // PENTING: GANTI DENGAN MESSAGING SENDER ID FIREBASE ANDA
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca" // PENTING: GANTI DENGAN APP ID FIREBASE ANDA
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", 
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", 
+            projectId: "asdarstoredigitalll-d89c4", 
+            storageBucket: "asdarstoredigitalll.appspot.com", 
+            messagingSenderId: "220670500351", 
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca" 
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         // --- Konstanta NgirimWA & Admin ---
+        // PASTIKAN API KEY DAN NOMOR WA INI BENAR DAN SESUAI KEBUTUHAN ANDA
         const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a"; 
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
         const CS_WA_NUMBER = "6281803004607"; // PENTING: GANTI DENGAN NOMOR WA CS/ADMIN ANDA (format internasional tanpa +)
@@ -708,7 +710,7 @@
             if (number.startsWith('0')) {
                 number = '62' + number.slice(1);
             }
-            // Tambahkan "62" jika diawali dengan 8 dan panjangnya kurang dari 11 (asumsi nomor Indo)
+            // Tambahkan "62" jika diawali dengan 8 dan panjangnya kurang dari 13 (asumsi nomor Indo, bisa disesuaikan)
             if (number.startsWith('8') && number.length > 7 && number.length < 13) {
                  number = '62' + number;
             }
@@ -729,7 +731,7 @@
             formData.append('message', message);
 
             try {
-                const response = await fetch('https://ngirimwa.com/api/send-message', {
+                const response = await fetch('https://ngirimwa.com/api/send-message', { // Pastikan endpoint NgirimWA Anda
                     method: 'POST',
                     body: formData
                 });
@@ -790,7 +792,8 @@
                     showCustomAlert('Produk berhasil diupdate!');
                 } else { // Add new product with a new unique ID
                     const newProductRef = db.ref('produk').push();
-                    productData.order = allProducts.length; // Assign initial order for new product
+                    // Assign initial order for new product, based on current length of allProducts
+                    productData.order = allProducts.length; 
                     await newProductRef.set(productData);
                     showCustomAlert('Produk berhasil ditambahkan!');
                 }
@@ -806,7 +809,8 @@
             }
         });
 
-        // Dapatkan data produk dari Firebase
+        // Dapatkan data produk dari Firebase, diurutkan berdasarkan 'order'
+        // This will now fetch the flat product structure
         db.ref('produk').orderByChild('order').on('value', (snapshot) => {
             const products = [];
             snapshot.forEach((childSnapshot) => {
@@ -877,7 +881,7 @@
             }
         }
 
-        // SortableJS for Products
+        // SortableJS for Products (already correctly implemented for flat structure)
         function initSortableProducts() {
             if (productsTableBody.sortableInstance) {
                 productsTableBody.sortableInstance.destroy();
@@ -918,6 +922,7 @@
         const ordersTableBody = document.querySelector('#ordersTable tbody');
         let currentOrders = [];
 
+        // Fetch orders, ordered by 'waktu' (timestamp)
         db.ref('pesanan').orderByChild('waktu').on('value', (snapshot) => {
             const orders = [];
             snapshot.forEach((childSnapshot) => {
@@ -937,6 +942,8 @@
                 const statusClass = `status-${(order.status || 'Belum Bayar').replace(/\s/g, '')}`;
                 
                 const row = ordersTableBody.insertRow();
+                // Add data-id to the row for easier selection when status is updated
+                row.setAttribute('data-id', order.id); 
                 row.innerHTML = `
                     <td>${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</td>
                     <td>${order.nama_produk || 'N/A'} (${order.kategori_produk || 'N/A'})</td>
@@ -1012,13 +1019,14 @@
                 
                 const statusClass = `status-label status-${(order.status || 'Belum Bayar').replace(/\s/g, '')}`;
 
+                // Display order details using the consistent property names
                 orderDetailModalContent.innerHTML = `
-                    <h3>Detail Pesanan #${order.id ? order.id.substring(0, 8) + '...' : 'N/A'}</h3>
+                    <h3>Detail Pesanan #${order.id || 'N/A'}</h3>
                     <p><strong>Nama Pembeli:</strong> ${order.nama_pembeli || 'N/A'}</p>
-                    <p><strong>ID SN / Nomor HP:</strong> ${order.nomor || 'N/A'}</p>
-                    <p><strong>Nomor WhatsApp Aktif:</strong> ${order.wa_aktif || 'N/A'}</p>
-                    <p><strong>Kategori Produk:</strong> ${order.kategori || 'N/A'}</p>
-                    <p><strong>Produk Dipesan:</strong> ${order.produk || 'N/A'}</p>
+                    <p><strong>ID SN / Nomor HP:</strong> ${order.id_sn_atau_nomor || 'N/A'}</p>
+                    <p><strong>Nomor WhatsApp Aktif:</strong> ${order.nomor_wa || 'N/A'}</p>
+                    <p><strong>Kategori Produk:</strong> ${order.kategori_produk || 'N/A'}</p>
+                    <p><strong>Produk Dipesan:</strong> ${order.nama_produk || 'N/A'}</p>
                     <p><strong>Harga:</strong> ${formatRupiah(order.harga || 0)}</p>
                     <p><strong>Waktu Pesan:</strong> ${new Date(order.waktu).toLocaleString()}</p>
                     <p><strong>Status:</strong> <span class="${statusClass}">${order.status || 'Belum Bayar'}</span></p>
@@ -1041,6 +1049,13 @@
                 const adminBuktiFotoPlaceholder = document.getElementById('adminBuktiFotoPlaceholder');
                 const processAndSendBtn = document.getElementById('processAndSendBtn');
 
+                // If order is already 'Selesai', disable file input and buttons
+                if (order.status === 'Selesai') {
+                    adminBuktiFotoUpload.disabled = true;
+                    uploadAdminBuktiBtn.disabled = true;
+                    processAndSendBtn.disabled = true;
+                }
+
                 adminBuktiFotoUpload.addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         const file = e.target.files[0];
@@ -1051,6 +1066,10 @@
                             if (adminBuktiFotoPlaceholder) adminBuktiFotoPlaceholder.classList.add('hidden');
                         };
                         reader.readAsDataURL(file);
+                    } else { // If file cleared
+                        adminBuktiFotoPreview.src = '';
+                        adminBuktiFotoPreview.classList.add('hidden');
+                        if (adminBuktiFotoPlaceholder) adminBuktiFotoPlaceholder.classList.remove('hidden');
                     }
                 });
 
@@ -1073,7 +1092,7 @@
                             const newAdminBuktiFotoUrl = imgbbResult.data.url;
                             await db.ref(`pesanan/${orderId}`).update({ adminBuktiFotoUrl: newAdminBuktiFotoUrl });
                             showCustomAlert('Bukti foto admin berhasil diunggah!');
-                            // Re-open modal to refresh with new image
+                            // Re-open modal to refresh with new image and state
                             showOrderDetailModal(orderId);
                         } else {
                             showCustomAlert('Gagal mengunggah bukti foto admin: ' + (imgbbResult.error?.message || 'Unknown error'));
@@ -1115,7 +1134,7 @@
                         await db.ref(`pesanan/${orderId}`).update({ status: 'Selesai' });
 
                         const statusLink = `${STATUS_PAGE_URL}?id=${orderId}`;
-                        let waMessage = `Halo ${order.nama_pembeli || 'Pelanggan'}, pesanan Anda (${order.produk || 'N/A'}) dengan ID *${orderId}* telah *Selesai diproses*.`;
+                        let waMessage = `Halo ${order.nama_pembeli || 'Pelanggan'}, pesanan Anda (${order.nama_produk || 'N/A'}) dengan ID *${orderId}* telah *Selesai diproses*.`;
                         
                         if (finalAdminBuktiUrl) {
                             waMessage += `\n\nLihat bukti/hasil dari admin: ${finalAdminBuktiUrl}`;
@@ -1123,7 +1142,7 @@
                         waMessage += `\n\nAnda dapat cek status lengkap pesanan di sini: ${statusLink}`;
 
 
-                        await sendWhatsAppNotification(normalizePhoneNumber(order.wa_aktif), waMessage);
+                        await sendWhatsAppNotification(normalizePhoneNumber(order.nomor_wa), waMessage);
                         
                         showCustomAlert('Pesanan berhasil ditandai SELESAI dan notifikasi WA dikirim!');
                         closeOrderDetailModal();
@@ -1276,9 +1295,9 @@
             try {
                 const contentData = {
                     order: order,
-                    html: html, // Changed from htmlContent to html to match index.html
-                    css: css,   // Changed from cssContent to css
-                    js: js      // Changed from jsContent to js
+                    html: html, 
+                    css: css,   
+                    js: js      
                 };
 
                 if (contentId) {
@@ -1298,6 +1317,7 @@
             }
         });
 
+        // Modified: Now fetches dynamic content directly under 'dinamis' and orders by 'order'
         db.ref('dinamis').orderByChild('order').on('value', (snapshot) => {
             const dynamicContents = [];
             snapshot.forEach((childSnapshot) => {
@@ -1375,4 +1395,4 @@
 
     </script>
 </body>
-</html>
+                        </html>
