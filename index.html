@@ -33,12 +33,16 @@
         .chat-message { max-width: 80%; padding: 0.75rem 1rem; border-radius: 15px; word-wrap: break-word; }
         .chat-message.user { background-color: var(--color-brand); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
         .chat-message.bot { background-color: var(--border-color); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 5px; }
+        .chat-message.bot.thinking { color: var(--text-secondary); font-style: italic; }
         .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
         .custom-modal.show { opacity: 1; visibility: visible; }
         .custom-modal-content { background-color: var(--bg-card); color: var(--text-primary); padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; }
         .loading-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 2001; display: none; justify-content: center; align-items: center; }
         .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .payment-steps { list-style: none; padding-left: 0; }
+        .payment-steps li { display: flex; align-items: flex-start; margin-bottom: 1rem; }
+        .payment-steps .step-number { background-color: var(--color-brand); color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 12px; flex-shrink: 0; }
     </style>
 </head>
 <body data-theme="light">
@@ -75,7 +79,18 @@
                 <input type="text" id="nomor" placeholder="Pilih produk terlebih dahulu" required disabled />
                 <label for="buyerWa">Nomor WhatsApp Aktif</label>
                 <input type="tel" id="buyerWa" placeholder="Pilih produk terlebih dahulu" pattern="^(08|62)[0-9]{8,15}$" required disabled />
-                <h3 class="text-lg font-semibold text-center mt-6 mb-2">Metode Pembayaran</h3>
+                
+                <div class="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
+                    <h3 class="text-lg font-semibold text-center mb-3 text-color-brand">Cara Pembayaran Manual</h3>
+                    <ol class="payment-steps">
+                        <li><span class="step-number">1</span><span>Salin nomor pembayaran (DANA/ShopeePay) di bawah.</span></li>
+                        <li><span class="step-number">2</span><span>Buka aplikasi DANA/ShopeePay Anda, lakukan transfer manual sesuai total harga.</span></li>
+                        <li><span class="step-number">3</span><span>Setelah transfer berhasil, kembali ke sini dan klik tombol konfirmasi di bawah.</span></li>
+                        <li><span class="step-number">4</span><span>Anda akan diarahkan untuk mengunggah bukti transfer.</span></li>
+                    </ol>
+                </div>
+
+                <h3 class="text-lg font-semibold text-center mt-6 mb-2">Tujuan Pembayaran</h3>
                 <label for="danaId">ID DANA</label>
                 <div class="copy-input-group">
                     <input type="text" id="danaId" value="087755432880" readonly />
@@ -86,8 +101,18 @@
                     <input type="text" id="shopeepayId" value="081803004607" readonly />
                     <button type="button" class="btn btn-primary" onclick="copyToClipboard('081803004607', this)">Salin</button>
                 </div>
-                <button type="submit" class="btn btn-primary w-full mt-6" id="orderBtn" disabled>Buat Pesanan & Lanjut Bayar</button>
+                <button type="submit" class="btn btn-primary w-full mt-6" id="orderBtn" disabled>Saya Mengerti & Konfirmasi Pesanan</button>
             </form>
+        </div>
+
+        <div class="section-card">
+            <h2>✨ Asisten AI</h2>
+            <p class="text-center text-sm text-text-secondary mb-4">Tanyakan apa saja tentang produk atau cara pemesanan kepada Asisten AI kami.</p>
+            <div id="chat-box" class="chat-container"></div>
+            <div class="copy-input-group">
+                <input type="text" id="qaInput" placeholder="Ketik pertanyaan Anda..." />
+                <button type="button" class="btn btn-primary" onclick="sendQuestionToAI()">Kirim</button>
+            </div>
         </div>
     </main>
 
@@ -125,6 +150,8 @@
         const categorySelect = document.getElementById('category-select');
         const productVariantsContainer = document.getElementById('product-variants-container');
         const productVariantsList = document.getElementById('product-variants-list');
+        const qaInput = document.getElementById('qaInput');
+        const chatBox = document.getElementById('chat-box');
         
         let productsData = {}, groupedProducts = {}, selectedProductId = null;
 
@@ -171,6 +198,32 @@
                     console.error('WA API response not OK', await response.text());
                 }
             } catch (error) { console.error('WA Send Error:', error); }
+        }
+
+        // --- Gemini AI Function ---
+        async function generateTextWithGemini(prompt) {
+            const apiKey = ""; // API key is handled by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                }
+                return "Maaf, saya tidak bisa memberikan jawaban saat ini.";
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                return "Maaf, terjadi kesalahan saat menghubungi Asisten AI.";
+            }
         }
 
         // --- Product Selection ---
@@ -272,12 +325,60 @@
                 hideLoading();
             }
         });
+
+        // --- AI Assistant ---
+        function addMessageToChat(message, sender, thinking = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${sender}`;
+            if (thinking) {
+                msgDiv.classList.add('thinking');
+            }
+            msgDiv.innerHTML = message; // Use innerHTML to render potential markdown from AI
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv;
+        }
+
+        window.sendQuestionToAI = async () => {
+            const question = qaInput.value.trim();
+            if (question === "") return;
+
+            addMessageToChat(question, "user");
+            qaInput.value = "";
+            const thinkingMessage = addMessageToChat("Asisten AI sedang berpikir...", "bot", true);
+
+            const productListForPrompt = Object.values(groupedProducts)
+                .flat()
+                .map(p => `- ${p.name} (Kategori: ${p.category}, Harga: Rp${formatRupiah(p.price)})`)
+                .join('\n');
+
+            const prompt = `Anda adalah Asisten AI untuk toko bernama "Asdar Store Digital". Jawab pertanyaan pelanggan dengan ramah dan informatif dalam Bahasa Indonesia.
+            
+            Berikut adalah konteks tentang toko:
+            - Nama Toko: Asdar Store Digital
+            - Metode Pembayaran: Transfer manual ke DANA (087755432880) atau ShopeePay (081803004607).
+            - Cara Pesan: Pelanggan memilih produk, mengisi data, melakukan transfer, lalu mengunggah bukti di halaman 'upload.html'.
+            - Cek Status: Pelanggan bisa cek status pesanan di halaman 'status.html' dengan ID pesanan mereka.
+            - Daftar Produk Tersedia:
+            ${productListForPrompt}
+
+            Pertanyaan Pelanggan: "${question}"
+
+            Berikan jawaban yang jelas dan membantu berdasarkan konteks di atas.`;
+
+            const answer = await generateTextWithGemini(prompt);
+            chatBox.removeChild(thinkingMessage);
+            addMessageToChat(answer, "bot");
+        };
+
+        qaInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendQuestionToAI(); });
         
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            addMessageToChat("Halo! Ada yang bisa saya bantu? Silakan tanyakan tentang produk atau cara pemesanan.", "bot");
             loadProducts();
         });
     </script>
