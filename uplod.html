@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unggah Bukti Pembayaran</title>
+    <link rel="icon" href="favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Theme Variables */
+        :root {
+            --bg-body: #f7f9fc;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --color-brand: #007bff;
+            --color-brand-hover: #0056b3;
+            --border-color: #e0e0e0;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --focus-ring: rgba(0, 123, 255, 0.25);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --color-brand: #4fd1c5;
+            --color-brand-hover: #38b2ac;
+            --border-color: #4a5568;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4);
+            --focus-ring: rgba(79, 209, 197, 0.35);
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
+            margin: 0;
+        }
+        .theme-toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
+        }
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: auto;
+            width: 100%;
+            padding: 0;
+        }
+
+        .section-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        label {
+            font-weight: 500;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
+            display: block;
+            color: var(--text-primary);
+        }
+        input:not([type="checkbox"]), select, textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--color-brand);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        input[type="file"] {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+        }
+        input[readonly] {
+            background-color: var(--bg-body);
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background-color: var(--color-brand);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-brand-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .btn-gray:hover { background-color: #5a6268; }
+
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .custom-modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-content p {
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+        .custom-modal-content button {
+            background-color: var(--color-brand);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .custom-modal-content button:hover {
+            background-color: var(--color-brand-hover);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2001;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Specific modal styling for upload progress */
+        .custom-modal.show .progress-message {
+            margin-bottom: 0.5rem; /* Less margin for progress */
+        }
+        .custom-modal.show .progress-spinner {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <header>
+        <h1>Unggah Bukti Pembayaran</h1>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    </header>
+
+    <main>
+        <div class="section-card">
+            <button class="btn btn-gray mb-6" onclick="window.location.href='./index.html'"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Mohon unggah bukti pembayaran Anda di sini agar pesanan dapat segera diproses.
+            </p>
+            <form id="uploadForm">
+                <label for="orderId">ID Pesanan</label>
+                <input type="text" id="orderId" placeholder="Masukkan ID Pesanan Anda" required />
+
+                <label for="proofImage">Pilih Gambar Bukti Pembayaran</label>
+                <input type="file" id="proofImage" accept="image/*" required />
+
+                <button type="submit" class="btn btn-primary w-full mt-6" id="uploadBtn"><i class="fas fa-upload"></i> Unggah Bukti</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message"></p>
+            <button id="modal-close-btn" class="hidden">Oke</button> 
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', nextTheme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+
+            // Pre-fill order ID if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderIdFromUrl = urlParams.get('id');
+            if (orderIdFromUrl) {
+                document.getElementById('orderId').value = orderIdFromUrl;
+            }
+        });
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // Overridden showCustomAlert for upload.html to handle progress and final alerts
+        function showCustomAlert(message, showCloseButton = true) {
+            modalMessage.innerHTML = message;
+            if (showCloseButton) {
+                modalCloseBtn.classList.remove('hidden');
+            } else {
+                modalCloseBtn.classList.add('hidden');
+            }
+            customModal.classList.add('show');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+
+        // --- Loading Overlay ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // --- Firebase Config & Init ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4", // Updated by user, removed trailing comma
+            storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app", // Updated by user
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+            measurementId: "G-CMRW37J19G" // Updated by user
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        // Firebase Storage TIDAK diinisialisasi/digunakan di sini karena kita pakai ImgBB untuk upload gambar
+        // const storage = firebase.storage(); 
+
+        // --- NgirimWA Constants ---
+        const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+        const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+        const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA admin Anda (format 62xxxxxxxxxx)
+        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/admin.html"; // Link ke halaman admin Anda
+
+        // --- ImgBB Constants ---
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // API Key ImgBB Anda
+        const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
+
+        // --- Helper Functions ---
+        function normalizePhoneNumber(number) {
+            if (!number) return '';
+            number = number.replace(/[^0-9]/g, '');
+            if (number.startsWith('0')) {
+                number = '62' + number.slice(1);
+            }
+            return number;
+        }
+
+        async function sendWhatsAppNotification(phoneNumber, message) {
+            const formData = new FormData();
+            formData.append('appkey', NGIRIMWA_APPKEY);
+            formData.append('authkey', NGIRIMWA_AUTHKEY);
+            formData.append('to', phoneNumber);
+            formData.append('message', message);
+
+            try {
+                const response = await fetch('https://ngirimwa.com/api/send-message', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('WA notification sent successfully:', result);
+                } else {
+                    console.error('Failed to send WA notification:', result);
+                }
+            } catch (error) {
+                console.error('Error sending WA notification:', error);
+            }
+        }
+
+        // --- Upload Form Handling ---
+        const uploadForm = document.getElementById('uploadForm');
+        const orderIdInput = document.getElementById('orderId');
+        const proofImageInput = document.getElementById('proofImage');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const orderId = orderIdInput.value.trim();
+            const imageFile = proofImageInput.files[0];
+
+            if (!orderId || !imageFile) {
+                showCustomAlert('Mohon lengkapi ID Pesanan dan pilih gambar bukti pembayaran.');
+                return;
+            }
+
+            showLoading(); // Show the general loading overlay
+            uploadBtn.disabled = true;
+
+            try {
+                // Check if order exists and get its details
+                const orderSnapshot = await db.ref(`pesanan/${orderId}`).once('value');
+                const order = orderSnapshot.val();
+
+                if (!order) {
+                    showCustomAlert('ID Pesanan tidak ditemukan. Mohon periksa kembali.');
+                    return;
+                }
+
+                // Show progress in custom modal and spinner
+                modalMessage.innerHTML = `<p class="progress-message">Mengunggah bukti... 0%</p><div class="spinner progress-spinner"></div>`;
+                showCustomAlert('', false); // Show modal without close button
+
+                // --- Upload image to ImgBB ---
+                const formData = new FormData();
+                formData.append('key', IMGBB_API_KEY);
+                formData.append('image', imageFile);
+
+                const imgbbResponse = await fetch(IMGBB_UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // ImgBB API does not provide real-time progress for client-side fetch,
+                // so we can only update once response is received.
+                const imgbbResult = await imgbbResponse.json();
+
+                if (imgbbResult.success && imgbbResult.data && imgbbResult.data.url) {
+                    const downloadURL = imgbbResult.data.url;
+                    
+                    // Update order in Firebase Realtime Database
+                    await db.ref(`pesanan/${orderId}`).update({
+                        buktiBayarUrl: downloadURL,
+                        status: 'Sudah Bayar' // Update status to "Sudah Bayar"
+                    });
+
+                    // Send WhatsApp notification to admin
+                    const adminPanelLink = `${ADMIN_PANEL_BASE_URL}`;
+                    const waMessage = `🔔 Bukti Pembayaran Baru Diterima! 🔔\n\n` +
+                                      `ID Pesanan: *${orderId}*\n` +
+                                      `Produk: *${order.productName}*\n` +
+                                      `Harga: *Rp${order.harga.toLocaleString('id-ID')}*\n` +
+                                      `Nama Pembeli: *${order.buyerName}*\n` +
+                                      `WA Pembeli: ${order.buyerWa}\n` +
+                                      `Status: *Sudah Bayar*\n` +
+                                      `Link Bukti: ${downloadURL}\n\n` +
+                                      `Silakan cek dan konfirmasi di Admin Panel:\n${adminPanelLink}`;
+
+                    await sendWhatsAppNotification(ADMIN_WA_NUMBER, waMessage);
+
+                    hideLoading(); // Hide general loading overlay
+                    showCustomAlert(`Bukti pembayaran berhasil diunggah untuk pesanan ID <b>${orderId}</b>.<br>Pesanan Anda akan segera diproses.`, true); // Show final alert with OK button
+                    uploadForm.reset();
+                    uploadBtn.disabled = false;
+
+                    // Redirect to status page after successful upload
+                    setTimeout(() => {
+                        window.location.replace(`./status.html?id=${orderId}`);
+                    }, 2000);
+
+                } else {
+                    // Handle ImgBB specific errors
+                    const imgbbErrorMessage = imgbbResult.error ? imgbbResult.error.message : 'Unknown ImgBB error.';
+                    throw new Error(`ImgBB Upload Failed: ${imgbbErrorMessage}`);
+                }
+
+            } catch (error) {
+                hideLoading(); // Hide general loading overlay
+                uploadBtn.disabled = false;
+                console.error("Error processing upload:", error);
+                let errorMessage = 'Terjadi kesalahan saat mengunggah bukti pembayaran. Silakan coba lagi.';
+                if (error.message.includes("ImgBB Upload Failed")) {
+                    errorMessage = error.message; // Use specific ImgBB error
+                } else if (error.message.includes("network")) {
+                    errorMessage = "Gagal terhubung ke server. Pastikan koneksi internet Anda stabil.";
+                }
+                showCustomAlert(errorMessage, true); // Show error alert with OK button
+            }
+        });
+    </script>
+</body>
+  </html>
