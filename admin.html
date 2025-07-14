@@ -60,6 +60,9 @@
                         <tbody id="orderList"></tbody>
                     </table>
                 </div>
+                <div class="mt-6 flex justify-end">
+                    <button class="btn btn-red" onclick="deleteAllOrders()"><i class="fas fa-trash-alt"></i> Hapus Semua Pesanan</button>
+                </div>
             </div>
 
             <div id="tab-content-products" class="tab-content mt-6">
@@ -194,6 +197,7 @@
                         <td>
                             <button class="btn btn-primary btn-sm" onclick="updateOrder('${order.id}')">Update</button>
                             ${order.buktiBayarUrl ? `<a href="${order.buktiBayarUrl}" target="_blank" class="btn btn-gray btn-sm mt-1">Bukti</a>` : ''}
+                            <button class="btn btn-red btn-sm mt-1" onclick="deleteOrder('${order.id}')">Hapus</button>
                         </td>`;
                     listBody.appendChild(row);
                 });
@@ -219,6 +223,18 @@
                 await fetch('https://ngirimwa.com/api/send-message', { method: 'POST', body: formDataWa });
                 alert('Status pesanan berhasil diupdate!');
             } catch(e) { console.error(e); alert('Gagal update.'); } finally { hideLoading(); }
+        };
+        window.deleteOrder = async (id) => {
+            if (confirm(`Apakah Anda yakin ingin menghapus pesanan ID ${id}?`)) {
+                await db.ref(`pesanan/${id}`).remove();
+                alert('Pesanan berhasil dihapus.');
+            }
+        };
+        window.deleteAllOrders = async () => {
+            if (confirm('PERINGATAN: ANDA YAKIN INGIN MENGHAPUS SEMUA DATA PESANAN? Tindakan ini tidak dapat dibatalkan.')) {
+                await db.ref('pesanan').remove();
+                alert('Semua pesanan telah dihapus.');
+            }
         };
 
         // --- Products ---
