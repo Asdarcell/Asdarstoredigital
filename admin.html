@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Asdar Store</title>
+    <link rel="icon" href="favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Theme Variables */
+        :root {
+            --bg-body: #f7f9fc;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --color-brand: #007bff;
+            --color-brand-hover: #0056b3;
+            --border-color: #e0e0e0;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --focus-ring: rgba(0, 123, 255, 0.25);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --color-brand: #4fd1c5;
+            --color-brand-hover: #38b2ac;
+            --border-color: #4a5568;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4);
+            --focus-ring: rgba(79, 209, 197, 0.35);
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
+            margin: 0;
+        }
+        .theme-toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
+        }
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 900px;
+            margin: auto;
+            width: 100%;
+            padding: 0;
+        }
+
+        .section-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        /* Form Elements */
+        label {
+            font-weight: 500;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
+            display: block;
+            color: var(--text-primary);
+        }
+        input:not([type="checkbox"]), select, textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--color-brand);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        input[type="file"] {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+        }
+        input[readonly] {
+            background-color: var(--bg-body);
+            cursor: not-allowed;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .btn-primary { background-color: var(--color-brand); color: white; }
+        .btn-primary:hover { background-color: var(--color-brand-hover); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .btn-green { background-color: #28a745; color: white; }
+        .btn-green:hover { background-color: #218838; }
+        .btn-red { background-color: #dc3545; color: white; }
+        .btn-red:hover { background-color: #c82333; }
+        .btn-blue { background-color: #007bff; color: white; }
+        .btn-blue:hover { background-color: #0056b3; }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .btn-gray:hover { background-color: #5a6268; }
+        .btn-teal { background-color: #20c997; color: white; }
+        .btn-teal:hover { background-color: #17a2b8; }
+
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        .data-table th, .data-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .data-table th {
+            background-color: var(--bg-body);
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        .data-table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        [data-theme="dark"] .data-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .status-badge {
+            padding: 0.3em 0.6em;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 0.8em;
+            color: white;
+            display: inline-block;
+        }
+        .status-badge.pending { background-color: #ffc107; color: #343a40; }
+        .status-badge.completed { background-color: #28a745; }
+        .status-badge.cancelled { background-color: #dc3545; }
+        .status-badge.processing { background-color: #17a2b8; }
+        .status-badge.belum-bayar { background-color: #ffc107; color: #343a40; }
+        .status-badge.sudah-bayar { background-color: #007bff; }
+        .status-badge.selesai { background-color: #28a745; }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .action-buttons .btn {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* Custom Modal for Alerts */
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .custom-modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-content p {
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+        .custom-modal-content button {
+            background-color: var(--color-brand);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .custom-modal-content button:hover {
+            background-color: var(--color-brand-hover);
+        }
+
+        /* Loading Spinner Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2001;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Preview Iframe */
+        .preview-iframe {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            background-color: var(--bg-body);
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <header>
+        <h1>Admin Panel Asdar Store</h1>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    </header>
+
+    <main>
+        <div class="section-card">
+            <h2>Manajemen Produk</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Atur produk yang akan tampil di halaman utama toko.
+            </p>
+            <form id="productForm">
+                <input type="hidden" id="productId" />
+                <label for="productCategory">Kategori Produk</label>
+                <input type="text" id="productCategory" placeholder="Cth: Pulsa, Paket Data, Token Listrik" required />
+
+                <label for="productName">Nama Produk</label>
+                <input type="text" id="productName" placeholder="Cth: Pulsa Telkomsel 10K, Paket Data XL 5GB" required />
+
+                <label for="productDescription">Deskripsi Produk (Opsional)</label>
+                <textarea id="productDescription" rows="3" placeholder="Deskripsi singkat produk"></textarea>
+
+                <label for="productPrice">Harga (Rp)</label>
+                <input type="number" id="productPrice" placeholder="Cth: 10000" required />
+
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="btn btn-green w-full"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-edit"></i> Update Produk</button>
+                    <button type="button" class="btn btn-gray w-full" onclick="clearProductForm()"><i class="fas fa-eraser"></i> Bersihkan</button>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Urutan</th>
+                            <th>Kategori</th>
+                            <th>Nama</th>
+                            <th>Harga</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productList">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card mt-6">
+            <h2>Manajemen Testimoni</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Kelola testimoni yang tampil di halaman utama toko.
+            </p>
+            <form id="testimonialForm">
+                <input type="hidden" id="testimonialId" />
+                <label for="testimonialName">Nama</label>
+                <input type="text" id="testimonialName" placeholder="Nama pelanggan" required />
+
+                <label for="testimonialMessage">Pesan</label>
+                <textarea id="testimonialMessage" rows="3" placeholder="Pesan testimoni dari pelanggan" required></textarea>
+
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="btn btn-green w-full"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-edit"></i> Update Testimoni</button>
+                    <button type="button" class="btn btn-gray w-full" onclick="clearTestimonialForm()"><i class="fas fa-eraser"></i> Bersihkan</button>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>Pesan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testimonialList">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card mt-6">
+            <h2>Manajemen Q&A (Tanya Jawab)</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Atur pertanyaan dan jawaban untuk fitur Q&A di halaman utama toko.
+            </p>
+            <form id="faqForm">
+                <input type="hidden" id="faqId" />
+                <label for="faqQuestion">Pertanyaan</label>
+                <input type="text" id="faqQuestion" placeholder="Cth: Apa saja produk yang dijual?" required />
+
+                <label for="faqAnswer">Jawaban</label>
+                <textarea id="faqAnswer" rows="3" placeholder="Jawaban untuk pertanyaan di atas" required></textarea>
+
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="btn btn-green w-full"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-edit"></i> Update Q&A</button>
+                    <button type="button" class="btn btn-gray w-full" onclick="clearFaqForm()"><i class="fas fa-eraser"></i> Bersihkan</button>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Pertanyaan</th>
+                            <th>Jawaban</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faqList">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card mt-6">
+            <h2>Manajemen Konten Dinamis (Index Page)</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Tambahkan kode HTML, CSS, atau JavaScript kustom ke halaman utama (index.html).
+                Konten ini akan dimuat di bagian bawah `main` tag.
+            </p>
+            <form id="dynamicContentForm">
+                <input type="hidden" id="dynamicContentId" />
+                <label for="contentOrder">Urutan (Angka)</label>
+                <input type="number" id="contentOrder" placeholder="Urutan tampilan (Cth: 1, 2, 3)" required />
+
+                <label for="contentHtml">Konten HTML</label>
+                <textarea id="contentHtml" rows="5" placeholder="Masukkan kode HTML untuk bagian ini"></textarea>
+
+                <label for="contentCss">Gaya CSS (Opsional)</label>
+                <textarea id="contentCss" rows="3" placeholder="Masukkan kode CSS tambahan untuk konten ini"></textarea>
+
+                <label for="contentJs">Skrip JavaScript (Opsional)</label>
+                <textarea id="contentJs" rows="3" placeholder="Masukkan kode JavaScript tambahan untuk konten ini"></textarea>
+
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="btn btn-green w-full"><i class="fas fa-plus-circle"></i> Tambah / <i class="fas fa-edit"></i> Update Konten</button>
+                    <button type="button" class="btn btn-gray w-full" onclick="clearDynamicContentForm()"><i class="fas fa-eraser"></i> Bersihkan</button>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Urutan</th>
+                            <th>HTML Snippet</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dynamicContentList">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card mt-6">
+            <h2>Manajemen Pesanan</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID Pesanan</th>
+                            <th>Produk</th>
+                            <th>Pembeli</th>
+                            <th>WA Pembeli</th>
+                            <th>Waktu</th>
+                            <th>Status</th>
+                            <th>Bukti Bayar</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orderList">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card mt-6">
+            <h2>Pratinjau Toko (index.html)</h2>
+            <div class="flex gap-4 mt-4">
+                <button type="button" class="btn btn-blue w-full" onclick="refreshPreview()"><i class="fas fa-sync-alt"></i> Refresh Pratinjau</button>
+                <button type="button" class="btn btn-primary w-full" onclick="openStoreInNewTab()"><i class="fas fa-external-link-alt"></i> Buka di Tab Baru</button>
+            </div>
+            <iframe id="storePreview" class="preview-iframe" src="./index.html"></iframe>
+        </div>
+    </main>
+
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message"></p>
+            <button id="modal-close-btn">Oke</button>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', nextTheme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+        });
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        function showCustomAlert(message) {
+            modalMessage.innerHTML = message;
+            customModal.classList.add('show');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+
+        // --- Loading Overlay ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // --- Firebase Config & Init ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4", // Updated by user, removed trailing comma
+            storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app", // Updated by user
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+            measurementId: "G-CMRW37J19G" // Updated by user, note: analytics not directly used in SDK v8
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- NgirimWA Constants ---
+        const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+        const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+        const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA admin Anda (format 62xxxxxxxxxx)
+        const BASE_URL = "https://asdarcell.github.io/Asdarstoredigital"; // Base URL toko Anda
+
+        // --- Helper Functions ---
+        function formatRupiah(angka) {
+            return parseFloat(angka).toLocaleString('id-ID');
+        }
+
+        function normalizePhoneNumber(number) {
+            if (!number) return '';
+            number = number.replace(/[^0-9]/g, '');
+            if (number.startsWith('0')) {
+                number = '62' + number.slice(1);
+            }
+            return number;
+        }
+
+        async function sendWhatsAppNotification(phoneNumber, message) {
+            const formData = new FormData();
+            formData.append('appkey', NGIRIMWA_APPKEY);
+            formData.append('authkey', NGIRIMWA_AUTHKEY);
+            formData.append('to', phoneNumber);
+            formData.append('message', message);
+
+            try {
+                const response = await fetch('https://ngirimwa.com/api/send-message', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('WA notification sent successfully:', result);
+                } else {
+                    console.error('Failed to send WA notification:', result);
+                }
+            } catch (error) {
+                console.error('Error sending WA notification:', error);
+            }
+        }
+
+        // --- Copy to Clipboard Function (Reused from index.html) ---
+        function copyToClipboard(textToCopy, buttonElement = null) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                if (buttonElement) {
+                    const originalText = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fas fa-check"></i> Disalin!';
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalText;
+                    }, 2000);
+                }
+                showCustomAlert(`'<b>${textToCopy}</b>' berhasil disalin!`);
+            }).catch(err => {
+                console.error('Gagal menyalin teks: ', err);
+                showCustomAlert('Gagal menyalin teks. Silakan salin manual.');
+            });
+        }
+
+        // --- Product Management ---
+        const productForm = document.getElementById('productForm');
+        const productIdInput = document.getElementById('productId');
+        const productCategoryInput = document.getElementById('productCategory');
+        const productNameInput = document.getElementById('productName');
+        const productDescriptionInput = document.getElementById('productDescription');
+        const productPriceInput = document.getElementById('productPrice');
+        const productListTable = document.getElementById('productList');
+
+        function clearProductForm() {
+            productForm.reset();
+            productIdInput.value = '';
+        }
+
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            const id = productIdInput.value || db.ref('products').push().key;
+            const productData = {
+                category: productCategoryInput.value.trim(),
+                name: productNameInput.value.trim(),
+                description: productDescriptionInput.value.trim(),
+                price: parseFloat(productPriceInput.value)
+            };
+
+            try {
+                await db.ref(`products/${id}`).set(productData);
+                showCustomAlert('Produk berhasil disimpan!');
+                clearProductForm();
+                // No direct loadProducts() call here, as Firebase .on('value') listener handles it
+            } catch (error) {
+                console.error("Error saving product:", error);
+                showCustomAlert('Gagal menyimpan produk.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Listener for product list changes (realtime update)
+        db.ref('products').on('value', (snapshot) => {
+            const products = snapshot.val();
+            productListTable.innerHTML = '';
+            if (products) {
+                Object.keys(products).forEach((key, index) => {
+                    const product = products[key];
+                    const row = productListTable.insertRow();
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${product.category}</td>
+                        <td>${product.name}</td>
+                        <td>Rp${formatRupiah(product.price)}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-blue" onclick="editProduct('${key}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-red" onclick="deleteProduct('${key}')"><i class="fas fa-trash"></i> Hapus</button>
+                        </td>
+                    `;
+                });
+            } else {
+                productListTable.innerHTML = '<tr><td colspan="5" class="text-center text-text-secondary">Belum ada produk.</td></tr>';
+            }
+            refreshPreview(); // Refresh the iframe preview
+        });
+
+        function editProduct(id) {
+            db.ref(`products/${id}`).once('value', (snapshot) => {
+                const product = snapshot.val();
+                if (product) {
+                    productIdInput.value = id;
+                    productCategoryInput.value = product.category;
+                    productNameInput.value = product.name;
+                    productDescriptionInput.value = product.description;
+                    productPriceInput.value = product.price;
+                }
+            });
+        }
+
+        async function deleteProduct(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`products/${id}`).remove();
+                    showCustomAlert('Produk berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting product:", error);
+                    showCustomAlert('Gagal menghapus produk.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // --- Testimonial Management ---
+        const testimonialForm = document.getElementById('testimonialForm');
+        const testimonialIdInput = document.getElementById('testimonialId');
+        const testimonialNameInput = document.getElementById('testimonialName');
+        const testimonialMessageInput = document.getElementById('testimonialMessage');
+        const testimonialListTable = document.getElementById('testimonialList');
+
+        function clearTestimonialForm() {
+            testimonialForm.reset();
+            testimonialIdInput.value = '';
+        }
+
+        testimonialForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            const id = testimonialIdInput.value || db.ref('testimonials').push().key;
+            const testimonialData = {
+                name: testimonialNameInput.value.trim(),
+                message: testimonialMessageInput.value.trim(),
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await db.ref(`testimonials/${id}`).set(testimonialData);
+                showCustomAlert('Testimoni berhasil disimpan!');
+                clearTestimonialForm();
+            } catch (error) {
+                console.error("Error saving testimonial:", error);
+                showCustomAlert('Gagal menyimpan testimoni.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Listener for testimonial list changes (realtime update)
+        db.ref('testimonials').on('value', (snapshot) => {
+            const testimonials = snapshot.val();
+            testimonialListTable.innerHTML = '';
+            if (testimonials) {
+                Object.keys(testimonials).forEach((key) => {
+                    const testimonial = testimonials[key];
+                    const row = testimonialListTable.insertRow();
+                    row.innerHTML = `
+                        <td>${testimonial.name}</td>
+                        <td>${testimonial.message}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-blue" onclick="editTestimonial('${key}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-red" onclick="deleteTestimonial('${key}')"><i class="fas fa-trash"></i> Hapus</button>
+                        </td>
+                    `;
+                });
+            } else {
+                testimonialListTable.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary">Belum ada testimoni.</td></tr>';
+            }
+            refreshPreview(); // Refresh the iframe preview
+        });
+
+        function editTestimonial(id) {
+            db.ref(`testimonials/${id}`).once('value', (snapshot) => {
+                const testimonial = snapshot.val();
+                if (testimonial) {
+                    testimonialIdInput.value = id;
+                    testimonialNameInput.value = testimonial.name;
+                    testimonialMessageInput.value = testimonial.message;
+                }
+            });
+        }
+
+        async function deleteTestimonial(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus testimoni ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`testimonials/${id}`).remove();
+                    showCustomAlert('Testimoni berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting testimonial:", error);
+                    showCustomAlert('Gagal menghapus testimoni.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // --- FAQ Management ---
+        const faqForm = document.getElementById('faqForm');
+        const faqIdInput = document.getElementById('faqId');
+        const faqQuestionInput = document.getElementById('faqQuestion');
+        const faqAnswerInput = document.getElementById('faqAnswer');
+        const faqListTable = document.getElementById('faqList');
+
+        function clearFaqForm() {
+            faqForm.reset();
+            faqIdInput.value = '';
+        }
+
+        faqForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            const id = faqIdInput.value || db.ref('faq').push().key;
+            const faqData = {
+                question: faqQuestionInput.value.trim(),
+                answer: faqAnswerInput.value.trim()
+            };
+
+            try {
+                await db.ref(`faq/${id}`).set(faqData);
+                showCustomAlert('Q&A berhasil disimpan!');
+                clearFaqForm();
+            } catch (error) {
+                console.error("Error saving Q&A:", error);
+                showCustomAlert('Gagal menyimpan Q&A.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Listener for FAQ list changes (realtime update)
+        db.ref('faq').on('value', (snapshot) => {
+            const faqs = snapshot.val();
+            faqListTable.innerHTML = '';
+            if (faqs) {
+                Object.keys(faqs).forEach((key) => {
+                    const faq = faqs[key];
+                    const row = faqListTable.insertRow();
+                    row.innerHTML = `
+                        <td>${faq.question}</td>
+                        <td>${faq.answer}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-blue" onclick="editFaq('${key}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-red" onclick="deleteFaq('${key}')"><i class="fas fa-trash"></i> Hapus</button>
+                        </td>
+                    `;
+                });
+            } else {
+                faqListTable.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary">Belum ada Q&A.</td></tr>';
+            }
+            refreshPreview(); // Refresh the iframe preview
+        });
+
+        function editFaq(id) {
+            db.ref(`faq/${id}`).once('value', (snapshot) => {
+                const faq = snapshot.val();
+                if (faq) {
+                    faqIdInput.value = id;
+                    faqQuestionInput.value = faq.question;
+                    faqAnswerInput.value = faq.answer;
+                }
+            });
+        }
+
+        async function deleteFaq(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus Q&A ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`faq/${id}`).remove();
+                    showCustomAlert('Q&A berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting Q&A:", error);
+                    showCustomAlert('Gagal menghapus Q&A.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // --- Dynamic Content Management ---
+        const dynamicContentForm = document.getElementById('dynamicContentForm');
+        const dynamicContentIdInput = document.getElementById('dynamicContentId');
+        const contentOrderInput = document.getElementById('contentOrder');
+        const contentHtmlInput = document.getElementById('contentHtml');
+        const contentCssInput = document.getElementById('contentCss');
+        const contentJsInput = document.getElementById('contentJs');
+        const dynamicContentListTable = document.getElementById('dynamicContentList');
+
+        function clearDynamicContentForm() {
+            dynamicContentForm.reset();
+            dynamicContentIdInput.value = '';
+        }
+
+        dynamicContentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            const id = dynamicContentIdInput.value || db.ref('dynamicContent').push().key;
+            const contentData = {
+                order: parseInt(contentOrderInput.value),
+                html: contentHtmlInput.value.trim(),
+                css: contentCssInput.value.trim(),
+                js: contentJsInput.value.trim()
+            };
+
+            try {
+                await db.ref(`dynamicContent/${id}`).set(contentData);
+                showCustomAlert('Konten dinamis berhasil disimpan!');
+                clearDynamicContentForm();
+            } catch (error) {
+                console.error("Error saving dynamic content:", error);
+                showCustomAlert('Gagal menyimpan konten dinamis.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Listener for dynamic content list changes (realtime update)
+        db.ref('dynamicContent').on('value', (snapshot) => {
+            const contents = snapshot.val();
+            dynamicContentListTable.innerHTML = '';
+            if (contents) {
+                Object.keys(contents).sort((a, b) => contents[a].order - contents[b].order).forEach((key) => {
+                    const content = contents[key];
+                    const row = dynamicContentListTable.insertRow();
+                    row.innerHTML = `
+                        <td>${key}</td>
+                        <td>${content.order}</td>
+                        <td>${content.html.substring(0, 50)}...</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-blue" onclick="editDynamicContent('${key}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-red" onclick="deleteDynamicContent('${key}')"><i class="fas fa-trash"></i> Hapus</button>
+                        </td>
+                    `;
+                });
+            } else {
+                dynamicContentListTable.innerHTML = '<tr><td colspan="4" class="text-center text-text-secondary">Belum ada konten dinamis.</td></tr>';
+            }
+            refreshPreview(); // Refresh the iframe preview
+        });
+
+        function editDynamicContent(id) {
+            db.ref(`dynamicContent/${id}`).once('value', (snapshot) => {
+                const content = snapshot.val();
+                if (content) {
+                    dynamicContentIdInput.value = id;
+                    contentOrderInput.value = content.order;
+                    contentHtmlInput.value = content.html;
+                    contentCssInput.value = content.css;
+                    contentJsInput.value = content.js;
+                }
+            });
+        }
+
+        async function deleteDynamicContent(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus konten dinamis ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`dynamicContent/${id}`).remove();
+                    showCustomAlert('Konten dinamis berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting dynamic content:", error);
+                    showCustomAlert('Gagal menghapus konten dinamis.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // --- Order Management ---
+        const orderListTable = document.getElementById('orderList');
+
+        db.ref('pesanan').on('value', (snapshot) => {
+            const orders = snapshot.val();
+            orderListTable.innerHTML = '';
+            if (orders) {
+                Object.keys(orders).reverse().forEach((key) => { // Show latest orders first
+                    const order = orders[key];
+                    const row = orderListTable.insertRow();
+                    const statusClass = order.status.toLowerCase().replace(' ', '-');
+                    const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+                    row.innerHTML = `
+                        <td>
+                            ${order.id}
+                            <button class="btn btn-blue btn-sm ml-2" onclick="copyToClipboard('${order.id}', this)"><i class="fas fa-copy"></i></button>
+                        </td>
+                        <td>${order.productName} (Rp${formatRupiah(order.harga)})</td>
+                        <td>${order.buyerName} (${order.nomor})</td>
+                        <td>${order.buyerWa}</td>
+                        <td>${formattedDate}</td>
+                        <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                        <td>
+                            ${order.buktiBayarUrl ? `<a href="${order.buktiBayarUrl}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-image"></i> Lihat</a>` : 'Belum Ada'}
+                        </td>
+                        <td class="action-buttons">
+                            <button class="btn btn-green" onclick="updateOrderStatus('${key}', 'Selesai', '${order.buyerWa}', '${order.productName}', '${order.id}')"><i class="fas fa-check-circle"></i> Selesai</button>
+                            <button class="btn btn-red" onclick="deleteOrder('${key}')"><i class="fas fa-trash"></i> Hapus</button>
+                            <button class="btn btn-teal" onclick="updateOrderStatus('${key}', 'Belum Bayar', '${order.buyerWa}', '${order.productName}', '${order.id}')"><i class="fas fa-hourglass-half"></i> Belum Bayar</button>
+                            <button class="btn btn-blue" onclick="updateOrderStatus('${key}', 'Sudah Bayar', '${order.buyerWa}', '${order.productName}', '${order.id}')"><i class="fas fa-money-check-alt"></i> Sudah Bayar</button>
+                            <button class="btn btn-gray" onclick="updateOrderStatus('${key}', 'Diproses', '${order.buyerWa}', '${order.productName}', '${order.id}')"><i class="fas fa-sync"></i> Diproses</button>
+                        </td>
+                    `;
+                });
+            } else {
+                orderListTable.innerHTML = '<tr><td colspan="8" class="text-center text-text-secondary">Belum ada pesanan.</td></tr>';
+            }
+        });
+
+        async function updateOrderStatus(id, newStatus, buyerWa, productName, orderId) {
+            showLoading();
+            try {
+                await db.ref(`pesanan/${id}/status`).set(newStatus);
+                showCustomAlert(`Status pesanan ${id} berhasil diubah menjadi ${newStatus}!`);
+
+                const statusLink = `${BASE_URL}/status.html?id=${orderId}`;
+                let waMessage = `Halo! Status pesanan Anda untuk produk *${productName}* (ID: *${orderId}*) telah diperbarui menjadi: *${newStatus}*.\n\n`;
+
+                if (newStatus === 'Selesai') {
+                    waMessage += `Pesanan Anda sudah selesai diproses. Terima kasih telah berbelanja di Asdar Store Digital!`;
+                } else if (newStatus === 'Sudah Bayar') {
+                    waMessage += `Pembayaran Anda telah kami terima. Pesanan Anda akan segera diproses.`;
+                } else if (newStatus === 'Diproses') {
+                    waMessage += `Pesanan Anda sedang dalam proses. Mohon tunggu sebentar.`;
+                } else if (newStatus === 'Belum Bayar') {
+                    waMessage += `Kami menunggu pembayaran Anda. Mohon segera lakukan pembayaran dan unggah bukti bayar.`;
+                }
+
+                waMessage += `\n\nCek status terbaru Anda di sini: ${statusLink}`;
+
+                await sendWhatsAppNotification(normalizePhoneNumber(buyerWa), waMessage);
+
+            } catch (error) {
+                console.error("Error updating order status:", error);
+                showCustomAlert('Gagal mengubah status pesanan.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteOrder(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus pesanan ini?')) {
+                showLoading();
+                try {
+                    await db.ref(`pesanan/${id}`).remove();
+                    showCustomAlert('Pesanan berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting order:", error);
+                    showCustomAlert('Gagal menghapus pesanan.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // --- Store Preview ---
+        const storePreviewIframe = document.getElementById('storePreview');
+
+        function refreshPreview() {
+            storePreviewIframe.src = storePreviewIframe.src; // Reloads the iframe
+        }
+
+        function openStoreInNewTab() {
+            window.open('./index.html', '_blank');
+        }
+
+        // Initial load for all management sections
+        document.addEventListener('DOMContentLoaded', () => {
+            // All list tables (products, testimonials, faq, dynamicContent, orders)
+            // are populated by their respective Firebase .on('value') listeners
+            // which are triggered automatically when data changes or on initial load.
+        });
+    </script>
+</body>
+                              </html>
