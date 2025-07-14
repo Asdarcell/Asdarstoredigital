@@ -99,6 +99,14 @@
                 <button type="button" class="btn btn-primary w-full mt-6" id="confirmOrderBtn" disabled>Saya Mengerti & Konfirmasi Pesanan</button>
             </form>
         </div>
+        
+        <div class="section-card">
+            <h2>Cek Status Pesanan</h2>
+            <div class="copy-input-group">
+                <input type="text" id="orderIdCheck" placeholder="Masukkan ID Pesanan Anda" />
+                <button type="button" class="btn btn-primary" onclick="checkOrderStatus()">Cek Status</button>
+            </div>
+        </div>
     </main>
 
     <div id="custom-modal" class="custom-modal"><div class="custom-modal-content"><p id="modal-message"></p><div id="modal-actions" class="mt-4"></div></div></div>
@@ -266,7 +274,6 @@
                 await sendWhatsApp(ADMIN_WA_NUMBER, adminMsg);
                 
                 const successMessage = `Pesanan Anda dengan ID <b>${orderId}</b> berhasil dibuat!`;
-                // PERBAIKAN FINAL: Menggunakan ./uplod.html untuk tautan
                 const successActions = `
                     <button class="btn btn-primary" onclick="window.location.href='./uplod.html?id=${orderId}'">Lanjut Unggah Bukti</button>
                     <button class="btn btn-gray mt-2" onclick="closeModal()">Tutup</button>
@@ -290,6 +297,16 @@
                 hideLoading();
             }
         });
+
+        // --- Check Status ---
+        window.checkOrderStatus = () => {
+            const orderId = document.getElementById('orderIdCheck').value.trim();
+            if (orderId) {
+                window.location.href = `./status.html?id=${orderId}`;
+            } else {
+                showModal('Masukkan ID Pesanan untuk dicek.');
+            }
+        };
         
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
