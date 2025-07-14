@@ -132,7 +132,10 @@
                 const formData = new FormData();
                 formData.append('key', IMGBB_API_KEY);
                 formData.append('image', imageFile);
+                
                 const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Gagal unggah gambar. Status: ${response.status}`);
+                
                 const result = await response.json();
 
                 if (result.success) {
@@ -154,12 +157,12 @@
                     const successActions = `<button class="btn btn-primary" onclick="window.location.href='./status.html?id=${orderId}'">Lihat Status Pesanan</button>`;
                     showModal(`Bukti berhasil diunggah untuk pesanan <b>${orderId}</b>.`, successActions);
                 } else {
-                    throw new Error(result.error.message);
+                    throw new Error(result.error.message || 'Error tidak diketahui dari ImgBB');
                 }
             } catch (error) {
                 hideLoading();
-                console.error("Upload Error:", error);
-                showModal(`Gagal mengunggah bukti: ${error.message}`);
+                console.error("Upload Process Error:", error);
+                showModal(`Terjadi kesalahan: ${error.message}`);
             }
         });
 
