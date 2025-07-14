@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel Asdar Store</title>
-    <link rel="icon" href="https://placehold.co/32x32/007bff/ffffff?text=A" />
+    <link rel="icon" href="favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -18,7 +18,6 @@
         input, select, textarea { width: 100%; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); }
         .btn { padding: 0.5rem 1rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .btn-primary { background-color: var(--color-brand); color: white; }
-        .btn-primary:hover { background-color: var(--color-brand-hover); }
         .btn-red { background-color: #dc3545; color: white; }
         .btn-green { background-color: #28a745; color: white; }
         .btn-gray { background-color: #6c757d; color: white; }
@@ -47,7 +46,9 @@
                 <nav class="flex -mb-px" id="tab-container">
                     <button class="tab-button active" data-tab="orders">Pesanan</button>
                     <button class="tab-button" data-tab="products">Produk</button>
-                    <button class="tab-button" data-tab="content">Konten</button>
+                    <button class="tab-button" data-tab="testimonials">Testimoni</button>
+                    <button class="tab-button" data-tab="faq">Q&A</button>
+                    <button class="tab-button" data-tab="dynamicContent">Konten Dinamis</button>
                 </nav>
             </div>
 
@@ -79,9 +80,24 @@
                 </div>
             </div>
             
-            <div id="tab-content-content" class="tab-content mt-6">
-                <h2>Manajemen Konten Halaman Utama</h2>
-                <h3 class="text-xl font-semibold mt-6 border-b pb-2 mb-4">Tanya Jawab (Q&A)</h3>
+            <div id="tab-content-testimonials" class="tab-content mt-6">
+                <h2>Manajemen Testimoni</h2>
+                <form id="testimonialForm">
+                    <input type="hidden" id="testimonialId" />
+                    <label>Nama</label><input type="text" id="testimonialName" required />
+                    <label class="mt-2">Pesan</label><textarea id="testimonialMessage" rows="3" required></textarea>
+                    <div class="flex gap-4 mt-4"><button type="submit" class="btn btn-green w-full">Simpan</button><button type="button" class="btn btn-gray w-full" onclick="clearTestimonialForm()">Batal</button></div>
+                </form>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Nama</th><th>Pesan</th><th>Aksi</th></tr></thead>
+                        <tbody id="testimonialList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-content-faq" class="tab-content mt-6">
+                <h2>Manajemen Q&A</h2>
                 <form id="faqForm">
                     <input type="hidden" id="faqId" />
                     <label>Pertanyaan</label><input type="text" id="faqQuestion" required />
@@ -92,6 +108,24 @@
                     <table class="data-table">
                         <thead><tr><th>Pertanyaan</th><th>Jawaban</th><th>Aksi</th></tr></thead>
                         <tbody id="faqList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-content-dynamicContent" class="tab-content mt-6">
+                <h2>Manajemen Konten Dinamis</h2>
+                <form id="dynamicContentForm">
+                    <input type="hidden" id="dynamicContentId" />
+                    <label>Urutan</label><input type="number" id="contentOrder" required />
+                    <label class="mt-2">HTML</label><textarea id="contentHtml" rows="5"></textarea>
+                    <label class="mt-2">CSS</label><textarea id="contentCss" rows="3"></textarea>
+                    <label class="mt-2">JS</label><textarea id="contentJs" rows="3"></textarea>
+                    <div class="flex gap-4 mt-4"><button type="submit" class="btn btn-green w-full">Simpan</button><button type="button" class="btn btn-gray w-full" onclick="clearDynamicContentForm()">Batal</button></div>
+                </form>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Urutan</th><th>HTML Snippet</th><th>Aksi</th></tr></thead>
+                        <tbody id="dynamicContentList"></tbody>
                     </table>
                 </div>
             </div>
@@ -231,6 +265,43 @@
         };
         window.deleteProduct = async (id) => { if (confirm('Yakin ingin hapus?')) await db.ref(`products/${id}`).remove(); };
 
+        // --- Testimonials ---
+        const testimonialForm = document.getElementById('testimonialForm');
+        const testimonialIdInput = document.getElementById('testimonialId');
+        window.clearTestimonialForm = () => { testimonialForm.reset(); testimonialIdInput.value = ''; }
+        function loadTestimonials() {
+            db.ref('testimonials').on('value', snapshot => {
+                const listBody = document.getElementById('testimonialList');
+                listBody.innerHTML = '';
+                if (!snapshot.exists()) { listBody.innerHTML = '<tr><td colspan="3" class="text-center p-4">Belum ada testimoni.</td></tr>'; return; }
+                snapshot.forEach(child => {
+                    const t = { id: child.key, ...child.val() };
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${t.name}</td><td>${t.message}</td>
+                        <td><button class="btn btn-primary btn-sm" onclick="editTestimonial('${t.id}')">Edit</button><button class="btn btn-red btn-sm ml-2" onclick="deleteTestimonial('${t.id}')">Hapus</button></td>`;
+                    listBody.appendChild(row);
+                });
+            });
+        }
+        testimonialForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = testimonialIdInput.value;
+            const data = { name: document.getElementById('testimonialName').value, message: document.getElementById('testimonialMessage').value };
+            showLoading();
+            const ref = id ? db.ref(`testimonials/${id}`) : db.ref('testimonials').push();
+            try { await ref.set(data); clearTestimonialForm(); } catch(e) { console.error(e); alert('Gagal menyimpan.'); } finally { hideLoading(); }
+        });
+        window.editTestimonial = async (id) => {
+            const snap = await db.ref(`testimonials/${id}`).once('value');
+            if(snap.exists()){
+                const t = snap.val();
+                testimonialIdInput.value = id;
+                document.getElementById('testimonialName').value = t.name;
+                document.getElementById('testimonialMessage').value = t.message;
+            }
+        };
+        window.deleteTestimonial = async (id) => { if (confirm('Yakin ingin hapus?')) await db.ref(`testimonials/${id}`).remove(); };
+
         // --- FAQs ---
         const faqForm = document.getElementById('faqForm');
         const faqIdInput = document.getElementById('faqId');
@@ -268,11 +339,57 @@
         };
         window.deleteFaq = async (id) => { if (confirm('Yakin ingin hapus?')) await db.ref(`faq/${id}`).remove(); };
 
+        // --- Dynamic Content ---
+        const dynamicContentForm = document.getElementById('dynamicContentForm');
+        const dynamicContentIdInput = document.getElementById('dynamicContentId');
+        window.clearDynamicContentForm = () => { dynamicContentForm.reset(); dynamicContentIdInput.value = ''; }
+        function loadDynamicContent() {
+            db.ref('dynamicContent').orderByChild('order').on('value', snapshot => {
+                const listBody = document.getElementById('dynamicContentList');
+                listBody.innerHTML = '';
+                if (!snapshot.exists()) { listBody.innerHTML = '<tr><td colspan="3" class="text-center p-4">Belum ada konten.</td></tr>'; return; }
+                snapshot.forEach(child => {
+                    const c = { id: child.key, ...child.val() };
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${c.order}</td><td>${c.html.substring(0, 50)}...</td>
+                        <td><button class="btn btn-primary btn-sm" onclick="editDynamicContent('${c.id}')">Edit</button><button class="btn btn-red btn-sm ml-2" onclick="deleteDynamicContent('${c.id}')">Hapus</button></td>`;
+                    listBody.appendChild(row);
+                });
+            });
+        }
+        dynamicContentForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = dynamicContentIdInput.value;
+            const data = {
+                order: Number(document.getElementById('contentOrder').value),
+                html: document.getElementById('contentHtml').value,
+                css: document.getElementById('contentCss').value,
+                js: document.getElementById('contentJs').value,
+            };
+            showLoading();
+            const ref = id ? db.ref(`dynamicContent/${id}`) : db.ref('dynamicContent').push();
+            try { await ref.set(data); clearDynamicContentForm(); } catch(e) { console.error(e); alert('Gagal menyimpan.'); } finally { hideLoading(); }
+        });
+        window.editDynamicContent = async (id) => {
+            const snap = await db.ref(`dynamicContent/${id}`).once('value');
+            if(snap.exists()){
+                const c = snap.val();
+                dynamicContentIdInput.value = id;
+                document.getElementById('contentOrder').value = c.order;
+                document.getElementById('contentHtml').value = c.html;
+                document.getElementById('contentCss').value = c.css;
+                document.getElementById('contentJs').value = c.js;
+            }
+        };
+        window.deleteDynamicContent = async (id) => { if (confirm('Yakin ingin hapus?')) await db.ref(`dynamicContent/${id}`).remove(); };
+
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             loadOrders();
             loadProducts();
+            loadTestimonials();
             loadFaqs();
+            loadDynamicContent();
         });
     </script>
 </body>
