@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asdar Store Digital</title>
+    <link rel="icon" href="favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -260,40 +261,75 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Specific styles for product cards */
-        .product-card {
-            background-color: var(--bg-card);
-            border-radius: 12px;
-            box-shadow: var(--shadow-light);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        /* Accordion Styles for Products */
+        .accordion-item {
+            margin-bottom: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.125rem;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            transition: background-color 0.2s ease;
+        }
+        .accordion-header:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        [data-theme="dark"] .accordion-header:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .accordion-header .fas {
+            transition: transform 0.3s ease;
+        }
+        .accordion-header.active .fas {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            display: none; /* Hidden by default */
+            background: var(--bg-card);
+        }
+        .product-item {
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
             cursor: pointer;
         }
-        .product-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        .product-item:last-child {
+            border-bottom: none;
         }
-        .product-card.selected {
-            border: 2px solid var(--color-brand);
-            box-shadow: 0 0 0 4px var(--focus-ring);
+        .product-item:hover {
+            background-color: rgba(0, 0, 0, 0.01);
         }
-        .product-card h3 {
-            font-size: 1.25rem;
+        [data-theme="dark"] .product-item:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .product-item .name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .product-item .price {
             font-weight: 600;
             color: var(--color-brand);
-            margin-bottom: 0.5rem;
         }
-        .product-card p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+        .product-item.selected { /* Added for highlighting selected product */
+            background-color: rgba(var(--primary-rgb), 0.1);
+            border-left: 4px solid var(--color-brand);
         }
-        .product-card .price {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-top: 1rem;
-        }
+
 
         /* Copy input group */
         .copy-input-group {
@@ -319,7 +355,7 @@
             height: 300px;
             overflow-y: auto;
             padding: 1rem;
-            background-color: var(--bg-body);
+            background-color: var(--bg-body); /* Chat background lighter */
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -366,10 +402,12 @@
         <div class="section-card">
             <h2>Pilih Produk</h2>
             <p class="text-sm text-text-secondary mb-4 text-center">
-                Pilih produk yang ingin Anda beli.
+                Pilih kategori dan varian produk yang ingin Anda beli.
             </p>
-            <div id="product-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                </div>
+            <div id="product-accordion" class="space-y-3">
+                <p class="text-center text-text-secondary">Memuat produk...</p>
+                
+            </div>
         </div>
 
         <div class="section-card mt-6">
@@ -400,13 +438,13 @@
                 <label for="danaId">ID DANA</label>
                 <div class="copy-input-group">
                     <input type="text" id="danaId" value="087755432880" readonly />
-                    <button type="button" class="btn btn-blue" onclick="copyToClipboard('danaId', this)"><i class="fas fa-copy"></i> Salin</button>
+                    <button type="button" class="btn btn-blue" onclick="copyToClipboard('087755432880', this)"><i class="fas fa-copy"></i> Salin</button>
                 </div>
 
                 <label for="shopeepayId">ID ShopeePay</label>
                 <div class="copy-input-group">
                     <input type="text" id="shopeepayId" value="081803004607" readonly />
-                    <button type="button" class="btn btn-blue" onclick="copyToClipboard('shopeepayId', this)"><i class="fas fa-copy"></i> Salin</button>
+                    <button type="button" class="btn btn-blue" onclick="copyToClipboard('081803004607', this)"><i class="fas fa-copy"></i> Salin</button>
                 </div>
                 
                 <p class="text-sm text-red-500 mt-4 text-center">
@@ -434,11 +472,16 @@
                 Ajukan pertanyaan seputar toko kami.
             </p>
             <div id="chat-box" class="chat-container">
-                </div>
+                
+            </div>
             <div class="chat-input-group">
                 <input type="text" id="qaInput" placeholder="Ketik pertanyaan Anda di sini..." />
                 <button type="button" class="btn btn-primary" onclick="sendQuestion()"><i class="fas fa-comment-dots"></i> Kirim</button>
             </div>
+        </div>
+
+        <div id="dynamic-content-area">
+            
         </div>
     </main>
 
@@ -454,6 +497,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
         // --- Theme Toggle ---
@@ -514,6 +558,7 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); // Added auth init for consistency, though not used in index.html for direct auth
         const db = firebase.database();
 
         // --- NgirimWA Constants ---
@@ -524,7 +569,7 @@
 
         // --- DOM Elements ---
         const orderForm = document.getElementById('orderForm');
-        const productListDiv = document.getElementById('product-list');
+        const productAccordionDiv = document.getElementById('product-accordion'); // Changed from productListDiv
         const productNameInput = document.getElementById('productName');
         const hargaInput = document.getElementById('harga');
         const buyerNameInput = document.getElementById('buyerName');
@@ -533,9 +578,10 @@
         const orderBtn = document.getElementById('orderBtn');
         const chatBox = document.getElementById('chat-box');
         const qaInput = document.getElementById('qaInput');
+        const dynamicContentArea = document.getElementById('dynamic-content-area'); // For dynamic content from admin
 
         let selectedProductId = null;
-        let productsData = {}; // To store product details
+        let productsData = {}; // To store product details, by ID
         let faqData = {}; // To store FAQ data
 
         // --- Helper Functions ---
@@ -575,53 +621,96 @@
             }
         }
 
-        // --- Copy to Clipboard Function ---
-        function copyToClipboard(elementId, button) {
-            const copyText = document.getElementById(elementId);
-            copyText.select();
-            copyText.setSelectionRange(0, 99999); /* For mobile devices */
-            document.execCommand("copy");
-
-            // Optional: Provide visual feedback
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check"></i> Disalin!';
-            setTimeout(() => {
-                button.innerHTML = originalText;
-            }, 2000); // Change back after 2 seconds
-
-            showCustomAlert(`'${copyText.value}' berhasil disalin!`);
+        // --- Copy to Clipboard Function (Used for ID Salin) ---
+        function copyToClipboard(textToCopy, buttonElement = null) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                if (buttonElement) {
+                    const originalText = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fas fa-check"></i> Disalin!';
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalText;
+                    }, 2000); // Change back after 2 seconds
+                }
+                showCustomAlert(`'<b>${textToCopy}</b>' berhasil disalin!`);
+            }).catch(err => {
+                console.error('Gagal menyalin teks: ', err);
+                showCustomAlert('Gagal menyalin teks. Silakan salin manual.');
+            });
         }
 
-        // --- Load Products from Firebase ---
+        // --- Load Products from Firebase (Accordion Logic) ---
         async function loadProducts() {
             try {
                 const snapshot = await db.ref('products').once('value');
-                productsData = snapshot.val() || {};
-                productListDiv.innerHTML = ''; // Clear existing products
+                const rawProducts = snapshot.val() || {};
+                
+                // Group products by category
+                const groupedProducts = {};
+                Object.keys(rawProducts).forEach(id => {
+                    const product = { id, ...rawProducts[id] };
+                    if (!groupedProducts[product.category]) {
+                        groupedProducts[product.category] = [];
+                    }
+                    groupedProducts[product.category].push(product);
+                    productsData[id] = product; // Store all products flat for easy lookup by ID
+                });
 
-                if (Object.keys(productsData).length === 0) {
-                    productListDiv.innerHTML = '<p class="text-center text-text-secondary col-span-full">Belum ada produk yang tersedia.</p>';
+                productAccordionDiv.innerHTML = ''; // Clear existing content
+
+                if (Object.keys(groupedProducts).length === 0) {
+                    productAccordionDiv.innerHTML = '<p class="text-center text-text-secondary">Belum ada produk yang tersedia.</p>';
                     return;
                 }
 
-                Object.keys(productsData).forEach(key => {
-                    const product = productsData[key];
-                    const productCard = document.createElement('div');
-                    productCard.className = 'product-card';
-                    productCard.dataset.productId = key;
-                    productCard.innerHTML = `
-                        <h3>${product.name}</h3>
-                        <p>${product.description || 'Tidak ada deskripsi.'}</p>
-                        <div class="price">Rp${formatRupiah(product.price)}</div>
+                for (const category in groupedProducts) {
+                    const categoryProducts = groupedProducts[category];
+                    let productsHtml = '';
+                    // Sort products within category by name for consistent display
+                    categoryProducts.sort((a,b) => a.name.localeCompare(b.name)).forEach(product => {
+                        productsHtml += `
+                            <div class="product-item" onclick="selectProduct('${product.id}')">
+                                <span class="name">${product.name}</span>
+                                <span class="price">Rp${formatRupiah(product.price)}</span>
+                            </div>
+                        `;
+                    });
+
+                    productAccordionDiv.innerHTML += `
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <span>${category}</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="accordion-content">
+                                ${productsHtml}
+                            </div>
+                        </div>
                     `;
-                    productCard.addEventListener('click', () => selectProduct(key));
-                    productListDiv.appendChild(productCard);
-                });
+                }
+                initAccordions(); // Initialize accordion toggles
             } catch (error) {
                 console.error("Error loading products:", error);
-                productListDiv.innerHTML = '<p class="text-center text-red-500 col-span-full">Gagal memuat produk. Silakan coba lagi nanti.</p>';
+                productAccordionDiv.innerHTML = '<p class="text-center text-red-500">Gagal memuat produk. Silakan coba lagi nanti.</p>';
             }
         }
+
+        // --- Initialize Accordion Toggles ---
+        function initAccordions() {
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.fas');
+                    
+                    header.classList.toggle('active');
+                    if (content.style.display === 'block') {
+                        content.style.display = 'none';
+                    } else {
+                        content.style.display = 'block';
+                    }
+                });
+            });
+        }
+
 
         // --- Select Product Function ---
         function selectProduct(productId) {
@@ -632,11 +721,14 @@
             productNameInput.value = product.name;
             hargaInput.value = formatRupiah(product.price);
 
-            // Highlight selected card
-            document.querySelectorAll('.product-card').forEach(card => {
-                card.classList.remove('selected');
+            // Highlight selected product item within accordion
+            document.querySelectorAll('.product-item').forEach(item => {
+                item.classList.remove('selected');
             });
-            document.querySelector(`.product-card[data-product-id="${productId}"]`).classList.add('selected');
+            const selectedItem = document.querySelector(`.product-item[onclick="selectProduct('${productId}')"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
         }
 
         // --- Handle Order Form Submission ---
@@ -653,7 +745,7 @@
 
             const product = productsData[selectedProductId];
             const buyerName = buyerNameInput.value.trim();
-            const nomor = nomorInput.value.trim();
+            const nomor = nomorInput.value.trim(); // This is the HP/ID SN
             const buyerWa = normalizePhoneNumber(buyerWaInput.value.trim());
             const timestamp = new Date().toISOString();
 
@@ -668,14 +760,14 @@
                     productId: selectedProductId,
                     harga: product.price,
                     buyerName: buyerName,
-                    nomor: nomor,
+                    nomor: nomor, // HP/ID SN
                     buyerWa: buyerWa,
                     timestamp: timestamp,
                     status: 'Belum Bayar' // Initial status
                 });
 
                 // Send WhatsApp notification to admin
-                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}?id=${orderId}`;
+                const adminPanelLink = `${ADMIN_PANEL_BASE_URL}`;
                 const waMessage = `🎉 Pesanan Baru Diterima! 🎉\n\n` +
                                   `ID Pesanan: *${orderId}*\n` +
                                   `Produk: *${product.name}*\n` +
@@ -689,7 +781,7 @@
                 await sendWhatsAppNotification(ADMIN_WA_NUMBER, waMessage);
 
                 hideLoading();
-                showCustomAlert(`Pesanan Anda dengan ID *${orderId}* berhasil dibuat! Mohon segera lakukan pembayaran. ID Pesanan Anda: <b>${orderId}</b>`);
+                showCustomAlert(`Pesanan Anda dengan ID <b>${orderId}</b> berhasil dibuat! Mohon segera lakukan pembayaran.`);
                 orderForm.reset(); // Clear form fields
                 productNameInput.value = '';
                 hargaInput.value = '';
@@ -697,6 +789,10 @@
                 document.querySelectorAll('.product-card').forEach(card => {
                     card.classList.remove('selected');
                 });
+                document.querySelectorAll('.product-item').forEach(item => { // Clear selected item in accordion
+                    item.classList.remove('selected');
+                });
+
 
                 // Redirect to status page after successful order creation
                 setTimeout(() => {
@@ -711,7 +807,7 @@
             }
         });
 
-        // --- Check Order Status Function ---
+        // --- Check Order Status Function (from input field) ---
         function checkOrderStatus() {
             const orderId = document.getElementById('orderIdCheck').value.trim();
             if (orderId) {
@@ -725,7 +821,7 @@
         function addMessageToChat(message, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${sender}`;
-            messageDiv.textContent = message;
+            messageDiv.innerHTML = message; // Use innerHTML for potential bold/html from answer
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
         }
@@ -733,11 +829,11 @@
         async function loadFAQ() {
             try {
                 const snapshot = await db.ref('faq').once('value');
-                faqData = snapshot.val() || {};
+                faqData = snapshot.val() || {}; // Load all FAQ data
                 addMessageToChat("Halo! Ada yang bisa saya bantu seputar Asdar Store Digital?", "bot");
             } catch (error) {
                 console.error("Error loading FAQ:", error);
-                addMessageToChat("Maaf, gagal memuat informasi. Silakan coba lagi nanti.", "bot");
+                addMessageToChat("Maaf, gagal memuat informasi Q&A. Silakan coba lagi nanti.", "bot");
             }
         }
 
@@ -751,12 +847,11 @@
             let foundAnswer = false;
             const lowerQuestion = question.toLowerCase();
 
-            // Try to find a direct match or keyword match
+            // Try to find a match in the loaded FAQ data
             for (const key in faqData) {
                 const faqEntry = faqData[key];
-                const lowerFaqQuestion = faqEntry.question.toLowerCase();
-
-                if (lowerQuestion.includes(lowerFaqQuestion) || lowerFaqQuestion.includes(lowerQuestion)) {
+                // Check if the user's question contains the FAQ question, or vice versa
+                if (lowerQuestion.includes(faqEntry.question.toLowerCase()) || faqEntry.question.toLowerCase().includes(lowerQuestion)) {
                     addMessageToChat(faqEntry.answer, "bot");
                     foundAnswer = true;
                     break;
@@ -764,7 +859,7 @@
             }
 
             if (!foundAnswer) {
-                addMessageToChat("Maaf, saya tidak menemukan jawaban yang cocok untuk pertanyaan Anda. Silakan coba pertanyaan lain atau hubungi admin kami melalui WhatsApp di " + ADMIN_WA_NUMBER + ".", "bot");
+                addMessageToChat("Maaf, saya tidak menemukan jawaban yang cocok untuk pertanyaan Anda. Silakan coba pertanyaan lain atau hubungi admin kami melalui WhatsApp di <b>" + normalizePhoneNumber(ADMIN_WA_NUMBER) + "</b>.", "bot");
             }
         }
 
@@ -774,9 +869,48 @@
             }
         });
 
-        // Initial load of products and FAQ
-        loadProducts();
-        loadFAQ();
+        // --- Dynamic Content Loading (for index.html) ---
+        async function loadDynamicContent() {
+            try {
+                const snapshot = await db.ref('dynamicContent').orderByChild('order').once('value');
+                const contents = snapshot.val();
+                dynamicContentArea.innerHTML = ''; // Clear previous content
+
+                if (contents) {
+                    Object.keys(contents).sort((a, b) => contents[a].order - contents[b].order).forEach(key => {
+                        const content = contents[key];
+                        const sectionDiv = document.createElement('div');
+                        sectionDiv.className = 'section-card mt-6'; // Apply general card styling
+                        sectionDiv.innerHTML = content.html || '';
+                        dynamicContentArea.appendChild(sectionDiv);
+
+                        // Execute CSS
+                        if (content.css) {
+                            const styleTag = document.createElement('style');
+                            styleTag.textContent = content.css;
+                            document.head.appendChild(styleTag);
+                        }
+
+                        // Execute JavaScript
+                        if (content.js) {
+                            const scriptTag = document.createElement('script');
+                            scriptTag.textContent = content.js;
+                            document.body.appendChild(scriptTag);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading dynamic content:", error);
+            }
+        }
+
+
+        // Initial loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts(); // Load products for accordion
+            loadFAQ(); // Load FAQ for Q&A chat
+            loadDynamicContent(); // Load dynamic content for the page
+        });
     </script>
 </body>
 </html>
