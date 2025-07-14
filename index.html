@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Asdar Store Digital</title>
     <link rel="icon" href="favicon.png" />
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Theme Variables */
@@ -27,17 +24,17 @@
             --primary-rgb: 0, 123, 255; /* RGB for primary blue */
         }
         [data-theme="dark"] {
-            /* Dark Mode Colors (Light Grey Background, Black Text, Contrasting Accents) */
-            --bg: #f0f0f0; /* Very light gray background for dark mode */
-            --text: #333333; /* Dark gray for main text (readable on light background) */
-            --primary: #28a745; /* Green for dark mode primary (good contrast on light bg) */
-            --card: #e8e8e8; /* Slightly darker light gray card background */
-            --border: #cccccc; /* Medium gray border */
-            --secondary-text: #6b7280; /* Same as light mode, readable */
+            /* Dark Mode Colors (Consistent with admin.html dark mode) */
+            --bg: #1a202c; /* Consistent with admin.html dark body */
+            --text: #e2e8f0; /* Consistent with admin.html dark text */
+            --primary: #4fd1c5; /* Consistent with admin.html dark brand */
+            --card: #2d3748; /* Consistent with admin.html dark card */
+            --border: #4a5568; /* Consistent with admin.html dark border */
+            --secondary-text: #a0aec0; /* Consistent with admin.html dark secondary text */
             --button-text-dark: #ffffff; /* White text for buttons */
-            --button-bg-dark: #28a745; /* Primary green for buttons */
-            --button-hover-dark: #218838; /* Darker green on hover */
-            --primary-rgb: 40, 167, 69; /* RGB for primary green */
+            --button-bg-dark: #4fd1c5; /* Primary green for buttons (consistent with primary) */
+            --button-hover-dark: #38b2ac; /* Darker green on hover */
+            --primary-rgb: 79, 209, 197; /* RGB for primary green */
         }
 
         /* General Styles */
@@ -83,7 +80,7 @@
             color: var(--primary);
         }
         [data-theme="dark"] .theme-btn:hover {
-            background-color: rgba(0,0,0,0.1); /* Darker hover for light background in dark mode */
+            background-color: rgba(255,255,255,0.1); /* Darker hover for light background in dark mode */
         }
         main {
             max-width: 700px;
@@ -569,10 +566,8 @@
     <main id="main-content">
         <h2 class="text-2xl font-bold text-center mb-6">Pesan Produk Digital</h2>
 
-        <!-- Product List Section -->
         <h3 class="text-xl font-bold mt-8 mb-4 text-center">Daftar Produk Kami</h3>
         <div id="product-accordion" class="space-y-4">
-            <!-- Product categories will be loaded here dynamically -->
             <p class="text-center text-gray-500" id="loading-products">Memuat daftar produk...</p>
         </div>
         <button id="showAllProductsBtn" class="btn-base mt-6">Lihat Semua Produk dalam Tabel</button>
@@ -626,13 +621,11 @@
 
     </main>
 
-    <!-- Product List Modal Structure -->
     <div id="productListModal" class="product-modal">
         <div class="product-modal-content">
             <button class="modal-close-btn" onclick="closeProductModal()">✖</button>
             <h3 class="text-2xl font-bold">Daftar Semua Produk</h3>
-            <div class="overflow-x-auto"> <!-- Make table scrollable horizontally on small screens -->
-                <table id="allProductsTable">
+            <div class="overflow-x-auto"> <table id="allProductsTable">
                     <thead>
                         <tr>
                             <th>Kategori</th>
@@ -643,15 +636,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Product rows will be inserted here by JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
             <p class="text-sm text-gray-600 mt-4 text-center">Klik tombol 'Pesan' untuk memilih produk ini di formulir utama.</p>
         </div>
     </div>
 
-    <!-- Custom Modal for Alerts -->
     <div id="custom-modal" class="custom-modal">
         <div class="custom-modal-content">
             <p id="modal-message" class="text-lg font-medium mb-4"></p>
@@ -659,7 +650,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -706,8 +696,9 @@
         });
 
         // --- Firebase Config & Init ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+        // PASTIKAN INI SAMA DENGAN DI ADMIN.HTML DAN FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
@@ -769,54 +760,79 @@
 
         // --- Helper Functions ---
         function formatRupiah(angka) {
-            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return parseFloat(angka).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace('IDR', 'Rp');
         }
 
         function normalizePhoneNumber(number) {
             if (!number) return '';
-            number = number.replace(/[^0-9]/g, '');
+            number = String(number).replace(/[^0-9]/g, '');
             if (number.startsWith('0')) {
                 number = '62' + number.slice(1);
+            }
+            // Tambahkan "62" jika diawali dengan 8 dan panjangnya kurang dari 11 (asumsi nomor Indo)
+            if (number.startsWith('8') && number.length > 7 && number.length < 13) {
+                 number = '62' + number;
             }
             return number;
         }
 
+        // --- Global array to store products with IDs and 'order' ---
+        let flatProducts = []; 
+
         // --- Load & Display Products (Accordion) ---
         async function loadProductsForAccordion() {
             try {
-                const snapshot = await produkRef.once('value');
-                const data = snapshot.val() || {};
+                // Fetch products ordered by 'order' property
+                const snapshot = await produkRef.orderByChild('order').once('value');
+                const productsData = snapshot.val() || {};
+                
+                // Convert object of objects to array of objects with 'id' property
+                flatProducts = Object.keys(productsData).map(key => ({
+                    id: key,
+                    ...productsData[key]
+                }));
+
+                // Group products by category for accordion display
+                const groupedProducts = flatProducts.reduce((acc, product) => {
+                    const category = product.kategori || 'Lain-lain'; // Use 'kategori' property
+                    if (!acc[category]) {
+                        acc[category] = [];
+                    }
+                    acc[category].push(product);
+                    return acc;
+                }, {});
+
                 let accordionHtml = '';
                 loadingProducts.classList.add('hidden'); // Hide loading text
 
-                if (Object.keys(data).length === 0) {
+                if (flatProducts.length === 0) {
                     productAccordion.innerHTML = '<p class="text-center text-gray-500">Belum ada produk yang tersedia.</p>';
                     return;
                 }
 
-                for (let kategori in data) {
+                for (let categoryName in groupedProducts) {
                     accordionHtml += `
                         <div class="accordion-item">
-                            <div class="accordion-header" data-target="#collapse-${kategori.replace(/\s/g, '-')}" aria-expanded="false">
-                                <span>${kategori}</span>
+                            <div class="accordion-header" data-target="#collapse-${categoryName.replace(/\s/g, '-')}" aria-expanded="false">
+                                <span>${categoryName}</span>
                                 <i class="fas fa-chevron-down"></i>
                             </div>
-                            <div id="collapse-${kategori.replace(/\s/g, '-')}" class="accordion-content">
+                            <div id="collapse-${categoryName.replace(/\s/g, '-')}" class="accordion-content">
                                 <ul class="list-none p-0 m-0">
                     `;
-                    for (let namaProduk in data[kategori]) {
-                        const produk = data[kategori][namaProduk];
+                    // Sort products within each category by their 'order' property for consistent display
+                    groupedProducts[categoryName].sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(product => {
                         accordionHtml += `
                             <li class="product-item">
                                 <div class="flex-grow">
-                                    <span class="font-semibold">${namaProduk}</span><br>
-                                    <span class="price">Rp${formatRupiah(produk.harga)}</span><br>
-                                    <span class="description">${produk.deskripsi || produk.cara || 'Tidak ada deskripsi.'}</span>
+                                    <span class="font-semibold">${product.nama}</span><br>
+                                    <span class="price">Rp${formatRupiah(product.harga)}</span><br>
+                                    <span class="description">${product.deskripsi || product.cara || 'Tidak ada deskripsi.'}</span>
                                 </div>
-                                <button class="btn-primary" onclick="selectProductFromList('${kategori}', '${namaProduk}')">Pesan</button>
+                                <button class="btn-primary" onclick="selectProductFromList('${product.kategori}', '${product.nama}', '${product.id}')">Pesan</button>
                             </li>
                         `;
-                    }
+                    });
                     accordionHtml += `
                                 </ul>
                             </div>
@@ -843,24 +859,35 @@
                     header.classList.toggle('active');
                     if (content.style.display === 'none' || content.style.display === '') {
                         content.style.display = 'block';
-                        content.style.maxHeight = content.scrollHeight + 'px'; // For smooth transition if needed
+                        // For a smooth reveal, consider adding max-height transition in CSS
+                        // content.style.maxHeight = content.scrollHeight + 'px'; 
                     } else {
-                        content.style.maxHeight = null;
+                        // content.style.maxHeight = null;
                         content.style.display = 'none';
                     }
                 });
             });
         }
 
-        function selectProductFromList(kategori, namaProduk) {
+        // Modified: Added productId param to identify the product uniquely
+        function selectProductFromList(kategori, namaProduk, productId) {
             kategoriSelect.value = kategori;
             kategoriSelect.dispatchEvent(new Event('change')); // Trigger change to load products
-            setTimeout(() => { // Give a small delay for products to load
-                produkSelect.value = namaProduk;
-                produkSelect.dispatchEvent(new Event('change')); // Trigger change to show info
-                showCustomAlert(`Produk "${namaProduk}" dari kategori "${kategori}" telah dipilih di formulir pesanan.`);
-                document.getElementById('formPesanan').scrollIntoView({ behavior: 'smooth' }); // Scroll to form
-            }, 100);
+            
+            // Wait for products to populate in the 'produkSelect' dropdown
+            const interval = setInterval(() => {
+                // Find the option by its value (which is now productId)
+                const option = Array.from(produkSelect.options).find(opt => opt.value === productId);
+                if (option) {
+                    clearInterval(interval); // Stop checking once found
+                    produkSelect.value = productId; // Select the product by its ID
+                    
+                    const selectedProduct = flatProducts.find(p => p.id === productId);
+                    updateProductInfoDisplay(selectedProduct); 
+                    showCustomAlert(`Produk "${namaProduk}" dari kategori "${kategori}" telah dipilih di formulir pesanan.`);
+                    document.getElementById('formPesanan').scrollIntoView({ behavior: 'smooth' }); // Scroll to form
+                }
+            }, 50); // Check every 50ms
         }
 
         // --- Product List Modal Functions ---
@@ -871,36 +898,29 @@
             productListModal.classList.add('show'); // Use .show class
 
             try {
-                const snapshot = await produkRef.once('value');
-                const data = snapshot.val() || {};
-                let tableRowsHtml = '';
-                let productCount = 0;
-
-                for (let kategori in data) {
-                    for (let namaProduk in data[kategori]) {
-                        const produk = data[kategori][namaProduk];
-                        tableRowsHtml += `
-                            <tr>
-                                <td>${kategori}</td>
-                                <td>${namaProduk}</td>
-                                <td>Rp${formatRupiah(produk.harga)}</td>
-                                <td>${produk.deskripsi || produk.cara || '-'}</td>
-                                <td><button class="modal-select-btn" onclick="selectProductFromModal('${kategori}', '${namaProduk}')">Pesan</button></td>
-                            </tr>
-                        `;
-                        productCount++;
-                    }
-                }
-
-                if (productCount === 0) {
+                // Use flatProducts array which is already loaded and sorted by 'order'
+                if (flatProducts.length === 0) {
                     allProductsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">Belum ada produk yang tersedia.</td></tr>';
-                } else {
-                    allProductsTableBody.innerHTML = tableRowsHtml;
+                    return;
                 }
+
+                let tableRowsHtml = '';
+                flatProducts.forEach(product => { // Iterate through the flat (ordered) product list
+                    tableRowsHtml += `
+                        <tr>
+                            <td>${product.kategori || 'N/A'}</td>
+                            <td>${product.nama || 'N/A'}</td>
+                            <td>Rp${formatRupiah(product.harga || 0)}</td>
+                            <td>${product.deskripsi || product.cara || '-'}</td>
+                            <td><button class="modal-select-btn" onclick="selectProductFromModal('${product.kategori}', '${product.nama}', '${product.id}')">Pesan</button></td>
+                        </tr>
+                    `;
+                });
+                allProductsTableBody.innerHTML = tableRowsHtml;
             } catch (error) {
-                console.error("Error loading all products:", error);
+                console.error("Error loading all products for modal:", error);
                 allProductsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500">Gagal memuat produk.</td></tr>';
-                showCustomAlert("Gagal memuat daftar produk. Silakan coba lagi nanti.");
+                showCustomAlert("Gagal memuat daftar produk untuk modal. Silakan coba lagi nanti.");
             }
         }
 
@@ -908,91 +928,105 @@
             productListModal.classList.remove('show'); // Remove .show class
         }
 
-        function selectProductFromModal(kategori, namaProduk) {
-            selectProductFromList(kategori, namaProduk); // Use existing function to fill form
+        // Modified: Added productId param
+        function selectProductFromModal(kategori, namaProduk, productId) {
+            selectProductFromList(kategori, namaProduk, productId); // Use existing function to fill form
             closeProductModal(); // Close modal after selection
         }
 
 
         // --- Load Data Produk for Form Selects ---
-        produkRef.once('value').then(snapshot => {
-            const data = snapshot.val() || {};
+        // Modified: Now populates categories from the flatProducts data
+        produkRef.orderByChild('order').once('value').then(snapshot => {
+            const productsData = snapshot.val() || {};
+            // Re-initialize flatProducts if this is the first load or data changed
+            flatProducts = Object.keys(productsData).map(key => ({ id: key, ...productsData[key] }));
+            
+            const categories = new Set();
+            flatProducts.forEach(p => {
+                if (p.kategori) categories.add(p.kategori);
+            });
+
             kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-            for (let kategori in data) {
-                kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-            }
+            Array.from(categories).sort().forEach(category => {
+                kategoriSelect.innerHTML += `<option value="${category}">${category}</option>`;
+            });
         }).catch(error => {
             console.error("Error loading categories:", error);
             showCustomAlert("Gagal memuat kategori produk untuk formulir. Silakan coba lagi nanti.");
         });
 
+        // Modified: Now populates products based on the flatProducts data (using product.id as value)
         kategoriSelect.addEventListener('change', () => {
             produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
             infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini setelah Anda memilih produk.';
-            const kategori = kategoriSelect.value;
-            if (!kategori) return;
+            const selectedCategory = kategoriSelect.value;
+            if (!selectedCategory) return;
 
-            produkRef.child(kategori).once('value').then(snapshot => {
-                const data = snapshot.val() || {};
-                for (let nama in data) {
-                    produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
-                }
-            }).catch(error => {
-                console.error("Error loading products for category:", error);
-                showCustomAlert("Gagal memuat produk untuk kategori ini.");
+            const productsInSelectedCategory = flatProducts.filter(p => p.kategori === selectedCategory);
+            // Sort by order property within the category
+            productsInSelectedCategory.sort((a,b) => (a.order || 0) - (b.order || 0)).forEach(product => {
+                produkSelect.innerHTML += `<option value="${product.id}">${product.nama}</option>`; // Use product ID as the value for the option
             });
         });
 
+        // Modified: Now gets product details from flatProducts using the selected product ID
         produkSelect.addEventListener('change', () => {
-            const kategori = kategoriSelect.value;
-            const produk = produkSelect.value;
-            if (!produk || !kategori) {
+            const selectedProductId = produkSelect.value; // This is now the product ID, not the product name
+            if (!selectedProductId) {
                 infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini setelah Anda memilih produk.';
                 return;
             }
 
-            produkRef.child(`${kategori}/${produk}`).once('value').then(snapshot => {
-                const data = snapshot.val();
-                if (data) {
-                    infoProduk.innerHTML = `<b>Harga:</b> Rp${formatRupiah(data.harga)}<br><b>Deskripsi:</b> ${data.deskripsi || data.cara || '-'}`;
-                } else {
-                    infoProduk.innerHTML = 'Informasi produk tidak ditemukan.';
-                }
-            }).catch(error => {
-                console.error("Error loading product details:", error);
-                infoProduk.innerHTML = 'Gagal memuat detail produk.';
-            });
+            const selectedProduct = flatProducts.find(p => p.id === selectedProductId); // Find the product object
+            updateProductInfoDisplay(selectedProduct);
         });
+
+        // Helper function to update product info display
+        function updateProductInfoDisplay(product) {
+            if (product) {
+                infoProduk.innerHTML = `<b>Harga:</b> Rp${formatRupiah(product.harga)}<br><b>Deskripsi:</b> ${product.deskripsi || product.cara || '-'}`;
+            } else {
+                infoProduk.innerHTML = 'Informasi produk tidak ditemukan.';
+            }
+        }
+
 
         // --- Submit Pesanan ---
         document.getElementById('formPesanan').addEventListener('submit', async e => {
             e.preventDefault();
 
             const nama = document.getElementById('nama').value.trim();
-            const nomor = document.getElementById('nomor').value.trim();
+            const nomor = document.getElementById('nomor').value.trim(); // ID SN / HP
             const waAktif = normalizePhoneNumber(document.getElementById('waAktif').value.trim());
-            const kategori = kategoriSelect.value;
-            const produk = produkSelect.value;
+            const selectedProductId = produkSelect.value; // This is now the product ID
             const waktu = new Date().toISOString();
             const id = "P" + Date.now();
 
-            if (!nama || !nomor || !waAktif || !kategori || !produk) {
+            if (!nama || !nomor || !waAktif || !selectedProductId) {
                 return showCustomAlert("Harap lengkapi semua field yang diperlukan!");
             }
 
             try {
-                const snapProduk = await produkRef.child(`${kategori}/${produk}`).once('value');
-                const dataProduk = snapProduk.val();
+                // Find product details from flatProducts array using selectedProductId
+                const dataProduk = flatProducts.find(p => p.id === selectedProductId);
 
                 if (!dataProduk || typeof dataProduk.harga === 'undefined') {
                     return showCustomAlert("Produk yang dipilih tidak valid atau harga tidak ditemukan.");
                 }
                 const harga = dataProduk.harga || 0;
 
+                // Save order with consistent property names for admin panel
                 await db.ref('pesanan/' + id).set({
-                    nama, nomor, kategori, produk, harga, waktu,
-                    wa_aktif: waAktif,
-                    status: 'Belum Bayar'
+                    nama_pembeli: nama, // Consistent with admin.html (nama_pembeli)
+                    id_sn_atau_nomor: nomor, // Consistent with admin.html (id_sn_atau_nomor)
+                    nomor_wa: waAktif, // Consistent with admin.html (nomor_wa)
+                    kategori_produk: dataProduk.kategori, // Use data from the found product object
+                    nama_produk: dataProduk.nama,     // Use data from the found product object
+                    harga: harga,
+                    waktu: waktu,
+                    status: 'Belum Bayar',
+                    // productId: selectedProductId // Optionally save product ID as well
                 });
 
                 hasilDiv.classList.remove('hidden');
@@ -1021,7 +1055,7 @@
                 kategoriSelect.value = '';
                 produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
 
-                await kirimNotifWA(id, nama, produk, waAktif, harga);
+                await kirimNotifWA(id, nama, dataProduk.nama, waAktif, harga); // Pass dataProduk.nama
                 showCustomAlert("Pesanan berhasil dibuat! Silakan lakukan pembayaran. ID Pesanan Anda telah ditampilkan.");
                 hasilDiv.scrollIntoView({ behavior: 'smooth' }); // Scroll to result
 
@@ -1061,6 +1095,7 @@
         }
 
         // --- Kirim Notifikasi WA ke Admin (NgirimWA API) ---
+        // PASTIKAN API KEY DAN NOMOR WA INI BENAR
         const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
         const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
         const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA Admin
@@ -1122,7 +1157,8 @@
 
         testimoniRef.on('value', snap => {
             const data = snap.val() || {};
-            dataTesti = Object.values(data).reverse();
+            // Assuming testimoni nodes are direct children with 'nama' and 'pesan' properties
+            dataTesti = Object.values(data).reverse(); // Reverse to show newest first
             tampilkanSatuTesti();
         }, error => {
             console.error("Error loading testimonials:", error);
@@ -1133,7 +1169,9 @@
         // --- Render Konten Dinamis dari Admin ---
         async function renderDynamicContent() {
             try {
-                const snapshot = await dinamisRef.child('index').once('value');
+                // Modified: dynamic content is now directly under 'dinamis' node (not 'dinamis/index')
+                // and ordered by 'order' property
+                const snapshot = await dinamisRef.orderByChild('order').once('value'); 
                 const dynamicContentArea = document.getElementById('dynamic-content-area');
                 dynamicContentArea.innerHTML = ''; // Clear previous content
 
@@ -1145,7 +1183,7 @@
                 let combinedJs = '';
 
                 sortedBlocks.forEach(block => {
-                    if (block.html) {
+                    if (block.html) { // Check for 'html' property
                         const section = document.createElement('div');
                         section.className = 'dynamic-content-section'; // Apply basic styling
                         section.innerHTML = block.html;
@@ -1159,10 +1197,10 @@
                             oldScript.parentNode.replaceChild(newScript, oldScript);
                         });
                     }
-                    if (block.css) {
+                    if (block.css) { // Check for 'css' property
                         combinedCss += block.css + '\n';
                     }
-                    if (block.js) {
+                    if (block.js) { // Check for 'js' property
                         combinedJs += block.js + '\n';
                     }
                 });
