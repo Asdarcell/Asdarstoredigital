@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel Asdar Store</title>
+    <link rel="icon" href="favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -330,6 +331,9 @@
     <main>
         <div class="section-card">
             <h2>Manajemen Produk</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Seret dan lepas pada baris produk di tabel untuk mengubah urutan tampilan di halaman utama.
+            </p>
             <form id="productForm">
                 <input type="hidden" id="productId" />
                 <label for="productCategory">Kategori Produk</label>
@@ -362,7 +366,8 @@
                         </tr>
                     </thead>
                     <tbody id="productList">
-                        </tbody>
+                        
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -393,7 +398,8 @@
                         </tr>
                     </thead>
                     <tbody id="testimonialList">
-                        </tbody>
+                        
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -424,7 +430,8 @@
                         </tr>
                     </thead>
                     <tbody id="faqList">
-                        </tbody>
+                        
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -466,7 +473,8 @@
                         </tr>
                     </thead>
                     <tbody id="dynamicContentList">
-                        </tbody>
+                        
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -488,7 +496,8 @@
                         </tr>
                     </thead>
                     <tbody id="orderList">
-                        </tbody>
+                        
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -516,6 +525,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <script>
         // --- Theme Toggle ---
         function toggleTheme() {
@@ -629,10 +639,10 @@
                         buttonElement.innerHTML = originalText;
                     }, 2000);
                 }
-                showCustomAlert(`'${textToCopy}' berhasil disalin!`);
+                showCustomAlert(`'<b>${textToCopy}</b>' berhasil disalin!`);
             }).catch(err => {
                 console.error('Gagal menyalin teks: ', err);
-                showCustomAlert('Gagal menyalin teks.');
+                showCustomAlert('Gagal menyalin teks. Silakan salin manual.');
             });
         }
 
@@ -665,7 +675,7 @@
                 await db.ref(`products/${id}`).set(productData);
                 showCustomAlert('Produk berhasil disimpan!');
                 clearProductForm();
-                loadProducts();
+                // No direct loadProducts() call here, as Firebase .on('value') listener handles it
             } catch (error) {
                 console.error("Error saving product:", error);
                 showCustomAlert('Gagal menyimpan produk.');
@@ -674,6 +684,7 @@
             }
         });
 
+        // Listener for product list changes (realtime update)
         db.ref('products').on('value', (snapshot) => {
             const products = snapshot.val();
             productListTable.innerHTML = '';
@@ -695,7 +706,7 @@
             } else {
                 productListTable.innerHTML = '<tr><td colspan="5" class="text-center text-text-secondary">Belum ada produk.</td></tr>';
             }
-            refreshPreview();
+            refreshPreview(); // Refresh the iframe preview
         });
 
         function editProduct(id) {
@@ -760,6 +771,7 @@
             }
         });
 
+        // Listener for testimonial list changes (realtime update)
         db.ref('testimonials').on('value', (snapshot) => {
             const testimonials = snapshot.val();
             testimonialListTable.innerHTML = '';
@@ -779,7 +791,7 @@
             } else {
                 testimonialListTable.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary">Belum ada testimoni.</td></tr>';
             }
-            refreshPreview();
+            refreshPreview(); // Refresh the iframe preview
         });
 
         function editTestimonial(id) {
@@ -841,6 +853,7 @@
             }
         });
 
+        // Listener for FAQ list changes (realtime update)
         db.ref('faq').on('value', (snapshot) => {
             const faqs = snapshot.val();
             faqListTable.innerHTML = '';
@@ -860,7 +873,7 @@
             } else {
                 faqListTable.innerHTML = '<tr><td colspan="3" class="text-center text-text-secondary">Belum ada Q&A.</td></tr>';
             }
-            refreshPreview();
+            refreshPreview(); // Refresh the iframe preview
         });
 
         function editFaq(id) {
@@ -926,6 +939,7 @@
             }
         });
 
+        // Listener for dynamic content list changes (realtime update)
         db.ref('dynamicContent').on('value', (snapshot) => {
             const contents = snapshot.val();
             dynamicContentListTable.innerHTML = '';
@@ -946,7 +960,7 @@
             } else {
                 dynamicContentListTable.innerHTML = '<tr><td colspan="4" class="text-center text-text-secondary">Belum ada konten dinamis.</td></tr>';
             }
-            refreshPreview();
+            refreshPreview(); // Refresh the iframe preview
         });
 
         function editDynamicContent(id) {
@@ -1076,11 +1090,10 @@
 
         // Initial load for all management sections
         document.addEventListener('DOMContentLoaded', () => {
-            loadProducts();
-            // Testimonials and Dynamic Content are loaded by their Firebase listeners
-            // Orders are loaded by their Firebase listener
-            // FAQ is loaded by its Firebase listener
+            // All list tables (products, testimonials, faq, dynamicContent, orders)
+            // are populated by their respective Firebase .on('value') listeners
+            // which are triggered automatically when data changes or on initial load.
         });
     </script>
 </body>
-    </html>
+</html>
