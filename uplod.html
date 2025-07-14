@@ -9,57 +9,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root {
-            --bg-body: #f7f9fc; --bg-card: #ffffff; --text-primary: #212529; --text-secondary: #6c757d;
-            --color-brand: #007bff; --color-brand-hover: #0056b3; --border-color: #e0e0e0;
-            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); --focus-ring: rgba(0, 123, 255, 0.25);
-        }
-        [data-theme="dark"] {
-            --bg-body: #1a202c; --bg-card: #2d3748; --text-primary: #e2e8f0; --text-secondary: #a0aec0;
-            --color-brand: #4fd1c5; --color-brand-hover: #38b2ac; --border-color: #4a5568;
-            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); --focus-ring: rgba(79, 209, 197, 0.35);
-        }
+        :root { --bg-body: #f7f9fc; --bg-card: #ffffff; --text-primary: #212529; --text-secondary: #6c757d; --color-brand: #007bff; --color-brand-hover: #0056b3; --border-color: #e0e0e0; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); }
+        [data-theme="dark"] { --bg-body: #1a202c; --bg-card: #2d3748; --text-primary: #e2e8f0; --text-secondary: #a0aec0; --color-brand: #4fd1c5; --color-brand-hover: #38b2ac; --border-color: #4a5568; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-body); color: var(--text-primary); }
-        header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow-light); }
-        header h1 { color: var(--color-brand); }
-       .theme-toggle-btn:hover { color: var(--color-brand); }
-        main { max-width: 600px; margin: auto; width: 100%; }
-       .section-card { background-color: var(--bg-card); box-shadow: var(--shadow-light); }
-       .section-card h2 { color: var(--color-brand); }
-        input, select, textarea { border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); }
-        input:focus, select:focus, textarea:focus { border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--focus-ring); }
-       .btn-primary { background-color: var(--color-brand); }
-       .btn-primary:not(:disabled):hover { background-color: var(--color-brand-hover); }
-       .btn-gray { background-color: #6c757d; }
-       .btn-gray:hover { background-color: #5a6268; }
-       .image-preview-container { border: 2px dashed var(--border-color); display: none; }
+        main { max-width: 600px; margin: auto; width: 100%; padding: 1.5rem; }
+        .section-card { background-color: var(--bg-card); border-radius: 12px; box-shadow: var(--shadow-light); padding: 1.5rem; }
+        .section-card h2 { font-size: 1.6rem; font-weight: 600; color: var(--color-brand); margin-bottom: 1.5rem; text-align: center; }
+        label { font-weight: 500; margin-top: 1rem; margin-bottom: 0.3rem; display: block; }
+        input { width: 100%; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); }
+        .btn { padding: 0.75rem 1.25rem; border-radius: 8px; border: none; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary { background-color: var(--color-brand); color: white; }
+        .btn-primary:hover { background-color: var(--color-brand-hover); }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .image-preview-container { margin-top: 1rem; border: 2px dashed var(--border-color); border-radius: 8px; padding: 1rem; text-align: center; display: none; }
+        #image-preview { max-height: 200px; max-width: 100%; border-radius: 8px; margin: 0 auto 0.5rem auto; }
+        .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
+        .custom-modal.show { opacity: 1; visibility: visible; }
+        .custom-modal-content { background-color: var(--bg-card); color: var(--text-primary); padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; }
+        .loading-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 2001; display: none; justify-content: center; align-items: center; }
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="p-6">
-    <header class="p-4 flex justify-between items-center sticky top-0 z-10 rounded-xl mb-6">
-        <h1 class="text-2xl font-bold">Unggah Bukti</h1>
-        <button class="theme-toggle-btn text-2xl" onclick="toggleTheme()" id="themeToggle">🌙</button>
-    </header>
-
+<body data-theme="light">
     <main>
-        <div class="section-card p-6 rounded-xl">
+        <div class="section-card">
             <button class="btn btn-gray mb-6" onclick="window.location.href='./'"><i class="fas fa-arrow-left"></i> Kembali</button>
-            <h2 class="text-2xl font-bold text-center mb-2">Konfirmasi Pembayaran</h2>
-            <p class="text-sm text-text-secondary mb-6 text-center">Unggah bukti pembayaran Anda agar pesanan segera diproses.</p>
+            <h2>Konfirmasi Pembayaran</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">Unggah bukti pembayaran Anda agar pesanan segera diproses.</p>
             <form id="uploadForm">
-                <label for="orderId" class="font-semibold">ID Pesanan</label>
-                <input type="text" id="orderId" placeholder="Masukkan ID Pesanan Anda" class="w-full p-3 rounded-lg mt-1" required />
-                <label for="proofImage" class="font-semibold mt-4">Pilih Gambar Bukti</label>
-                <input type="file" id="proofImage" accept="image/png, image/jpeg, image/gif" class="w-full p-2 mt-1 border rounded-lg" required />
-                <div id="image-preview-container" class="image-preview-container mt-4 p-4 rounded-lg text-center">
-                    <img id="image-preview" src="#" alt="Pratinjau" class="max-h-48 rounded-lg mx-auto mb-2" />
+                <label for="orderId">ID Pesanan</label>
+                <input type="text" id="orderId" placeholder="Masukkan ID Pesanan Anda" required />
+                <label for="proofImage">Pilih Gambar Bukti Pembayaran</label>
+                <input type="file" id="proofImage" accept="image/*" required />
+                <div id="image-preview-container" class="image-preview-container">
+                    <img id="image-preview" src="#" alt="Pratinjau" />
                     <p id="file-details" class="text-sm text-text-secondary"></p>
                 </div>
-                <button type="submit" class="btn btn-primary w-full mt-6" id="uploadBtn"><i class="fas fa-upload"></i> Unggah Bukti</button>
+                <button type="submit" class="btn btn-primary w-full mt-6">Unggah Bukti</button>
             </form>
         </div>
     </main>
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center hidden"><div class="border-4 border-t-transparent border-white rounded-full w-10 h-10 animate-spin"></div></div>
+    <div id="custom-modal" class="custom-modal"><div class="custom-modal-content"><p id="modal-message"></p><button id="modal-close-btn" class="btn btn-primary mt-4">Oke</button></div></div>
+    <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -86,8 +78,9 @@
 
         // --- DOM Elements ---
         const loadingOverlay = document.getElementById('loading-overlay');
-        const uploadForm = document.getElementById('uploadForm');
-        const orderIdInput = document.getElementById('orderId');
+        const modal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
         const proofImageInput = document.getElementById('proofImage');
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const imagePreview = document.getElementById('image-preview');
@@ -96,22 +89,18 @@
         // --- Helpers ---
         const showLoading = () => loadingOverlay.style.display = 'flex';
         const hideLoading = () => loadingOverlay.style.display = 'none';
-
-        // --- File Preview ---
+        const showModal = (message) => { modalMessage.innerHTML = message; modal.classList.add('show'); };
+        
+        // --- Form & Preview Logic ---
         proofImageInput.addEventListener('change', () => {
-            const file = proofImageInput.files;
+            const file = proofImageInput.files[0];
             if (!file) { imagePreviewContainer.style.display = 'none'; return; }
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!allowedTypes.includes(file.type)) {
-                alert('Tipe file tidak valid. Harap pilih file gambar (JPG, PNG, GIF).');
-                proofImageInput.value = ''; return;
-            }
-            if (file.size > 5 * 1024 * 1024) { // 5 MB
-                alert('Ukuran file terlalu besar. Maksimal 5 MB.');
+            if (file.size > 5 * 1024 * 1024) {
+                showModal('Ukuran file terlalu besar. Maksimal 5 MB.');
                 proofImageInput.value = ''; return;
             }
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
                 imagePreview.src = e.target.result;
                 fileDetails.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
                 imagePreviewContainer.style.display = 'block';
@@ -119,73 +108,63 @@
             reader.readAsDataURL(file);
         });
 
-        // --- Form Submission ---
-        uploadForm.addEventListener('submit', async (e) => {
+        document.getElementById('uploadForm').addEventListener('submit', async e => {
             e.preventDefault();
-            const orderId = orderIdInput.value.trim();
-            const imageFile = proofImageInput.files;
-            if (!orderId ||!imageFile) { alert('Mohon lengkapi semua data.'); return; }
+            const orderId = document.getElementById('orderId').value.trim();
+            const imageFile = proofImageInput.files[0];
+            if (!orderId || !imageFile) { showModal('Mohon lengkapi ID Pesanan dan pilih gambar bukti.'); return; }
             showLoading();
+
             try {
                 const orderSnapshot = await db.ref(`pesanan/${orderId}`).once('value');
                 if (!orderSnapshot.exists()) {
-                    alert(`ID Pesanan ${orderId} tidak ditemukan.`);
                     hideLoading();
+                    showModal('ID Pesanan tidak ditemukan. Mohon periksa kembali.');
                     return;
                 }
                 const orderData = orderSnapshot.val();
+
                 const formData = new FormData();
                 formData.append('key', IMGBB_API_KEY);
                 formData.append('image', imageFile);
-                const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", { method: 'POST', body: formData });
-                const imgbbResult = await imgbbResponse.json();
-                if (!imgbbResult.success) throw new Error('Gagal mengunggah gambar ke ImgBB.');
-                const downloadURL = imgbbResult.data.url;
-                await db.ref(`pesanan/${orderId}`).update({
-                    buktiBayarUrl: downloadURL,
-                    status: 'Sudah Bayar'
-                });
-                const waMessage = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${orderId}*\nProduk: *${orderData.productName}*\nStatus: *Sudah Bayar*\nLink Bukti: ${downloadURL}`;
-                await sendWhatsAppNotification(ADMIN_WA_NUMBER, waMessage);
-                alert(`Bukti pembayaran untuk pesanan ID ${orderId} berhasil diunggah!`);
-                window.location.href = `./status.html?id=${orderId}`;
+                const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (result.success) {
+                    const imageUrl = result.data.url;
+                    await db.ref(`pesanan/${orderId}`).update({
+                        buktiBayarUrl: imageUrl,
+                        status: 'Sudah Bayar'
+                    });
+                    
+                    const adminMsg = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${orderId}*\nProduk: *${orderData.productName}*\nStatus: *Sudah Bayar*\nLink Bukti: ${imageUrl}\n\nSegera proses di Admin Panel.`;
+                    const formDataWa = new FormData();
+                    formDataWa.append('appkey', NGIRIMWA_APPKEY);
+                    formDataWa.append('authkey', NGIRIMWA_AUTHKEY);
+                    formDataWa.append('to', ADMIN_WA_NUMBER);
+                    formDataWa.append('message', adminMsg);
+                    await fetch('https://ngirimwa.com/api/send-message', { method: 'POST', body: formDataWa });
+
+                    hideLoading();
+                    showModal(`Bukti berhasil diunggah untuk pesanan <b>${orderId}</b>. Pesanan Anda akan segera diproses.`);
+                    modalCloseBtn.onclick = () => window.location.href = `./status.html?id=${orderId}`;
+                } else {
+                    throw new Error(result.error.message);
+                }
             } catch (error) {
-                console.error("Error:", error);
-                alert('Terjadi kesalahan saat mengunggah bukti.');
-            } finally {
                 hideLoading();
+                console.error("Upload Error:", error);
+                showModal(`Gagal mengunggah bukti: ${error.message}`);
             }
         });
-        
-        async function sendWhatsAppNotification(to, message) {
-            const formData = new FormData();
-            formData.append('appkey', NGIRIMWA_APPKEY);
-            formData.append('authkey', NGIRIMWA_AUTHKEY);
-            formData.append('to', to);
-            formData.append('message', message);
-            try {
-                await fetch('https://ngirimwa.com/api/send-message', { method: 'POST', body: formData });
-            } catch (error) { console.error('WA Error:', error); }
-        }
 
-        function toggleTheme() {
-            const body = document.body;
-            const current = body.getAttribute('data-theme') |
-
-| 'light';
-            const next = current === 'light'? 'dark' : 'light';
-            body.setAttribute('data-theme', next);
-            document.getElementById('themeToggle').textContent = next === 'light'? '🌙' : '☀️';
-            localStorage.setItem('theme', next);
-        }
+        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') |
-
-| 'light';
+            const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
-            document.getElementById('themeToggle').textContent = savedTheme === 'light'? '🌙' : '☀️';
+            modalCloseBtn.addEventListener('click', () => modal.classList.remove('show'));
             const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
-            if (orderIdFromUrl) orderIdInput.value = orderIdFromUrl;
+            if (orderIdFromUrl) document.getElementById('orderId').value = orderIdFromUrl;
         });
     </script>
 </body>
