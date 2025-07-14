@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unggah Bukti Pembayaran</title>
-    <link rel="icon" href="https://placehold.co/32x32/007bff/ffffff?text=AS" />
+    <link rel="icon" href="favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -50,7 +50,7 @@
             </form>
         </div>
     </main>
-    <div id="custom-modal" class="custom-modal"><div class="custom-modal-content"><p id="modal-message"></p><button id="modal-close-btn" class="btn btn-primary mt-4">Oke</button></div></div>
+    <div id="custom-modal" class="custom-modal"><div class="custom-modal-content"><p id="modal-message"></p><div id="modal-actions" class="mt-4"></div></div></div>
     <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -80,7 +80,7 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         const modal = document.getElementById('custom-modal');
         const modalMessage = document.getElementById('modal-message');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalActions = document.getElementById('modal-actions');
         const proofImageInput = document.getElementById('proofImage');
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const imagePreview = document.getElementById('image-preview');
@@ -89,7 +89,12 @@
         // --- Helpers ---
         const showLoading = () => loadingOverlay.style.display = 'flex';
         const hideLoading = () => loadingOverlay.style.display = 'none';
-        const showModal = (message) => { modalMessage.innerHTML = message; modal.classList.add('show'); };
+        const showModal = (message, actionsHtml = '<button class="btn btn-primary" onclick="closeModal()">Oke</button>') => {
+            modalMessage.innerHTML = message;
+            modalActions.innerHTML = actionsHtml;
+            modal.classList.add('show');
+        };
+        window.closeModal = () => modal.classList.remove('show');
         
         // --- Form & Preview Logic ---
         proofImageInput.addEventListener('change', () => {
@@ -146,8 +151,8 @@
                     await fetch('https://ngirimwa.com/api/send-message', { method: 'POST', body: formDataWa });
 
                     hideLoading();
-                    showModal(`Bukti berhasil diunggah untuk pesanan <b>${orderId}</b>. Pesanan Anda akan segera diproses.`);
-                    modalCloseBtn.onclick = () => window.location.href = `./status.html?id=${orderId}`;
+                    const successActions = `<button class="btn btn-primary" onclick="window.location.href='./status.html?id=${orderId}'">Lihat Status Pesanan</button>`;
+                    showModal(`Bukti berhasil diunggah untuk pesanan <b>${orderId}</b>.`, successActions);
                 } else {
                     throw new Error(result.error.message);
                 }
@@ -160,9 +165,6 @@
 
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            modalCloseBtn.addEventListener('click', () => modal.classList.remove('show'));
             const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
             if (orderIdFromUrl) document.getElementById('orderId').value = orderIdFromUrl;
         });
