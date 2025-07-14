@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Status Pesanan</title>
+    <link rel="icon" href="favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Theme Variables */
+        :root {
+            --bg-body: #f7f9fc;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --color-brand: #007bff;
+            --color-brand-hover: #0056b3;
+            --border-color: #e0e0e0;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --focus-ring: rgba(0, 123, 255, 0.25);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --color-brand: #4fd1c5;
+            --color-brand-hover: #38b2ac;
+            --border-color: #4a5568;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4);
+            --focus-ring: rgba(79, 209, 197, 0.35);
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
+            margin: 0;
+        }
+        .theme-toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
+        }
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: auto;
+            width: 100%;
+            padding: 0;
+        }
+
+        .section-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .order-detail p {
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .order-detail p strong {
+            color: var(--color-brand);
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 0.4em 0.8em;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1em;
+            color: white;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+        .status-badge.belum-bayar { background-color: #ffc107; color: #343a40; }
+        .status-badge.sudah-bayar { background-color: #007bff; }
+        .status-badge.diproses { background-color: #17a2b8; }
+        .status-badge.selesai { background-color: #28a745; }
+        .status-badge.dibatalkan { background-color: #dc3545; }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background-color: var(--color-brand);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-brand-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .btn-gray:hover { background-color: #5a6268; }
+
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .custom-modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-content p {
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+        .custom-modal-content button {
+            background-color: var(--color-brand);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .custom-modal-content button:hover {
+            background-color: var(--color-brand-hover);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2001;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <header>
+        <h1>Cek Status Pesanan</h1>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    </header>
+
+    <main>
+        <div class="section-card">
+            <button class="btn btn-gray mb-6" onclick="window.location.href='./index.html'"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button>
+            <div id="order-details">
+                <p class="text-center text-text-secondary">Memuat status pesanan...</p>
+            </div>
+
+            <div class="mt-6 border-t border-border-color pt-6">
+                <h2 class="text-center mb-4">Cari Pesanan Berdasarkan WA / ID</h2>
+                <p class="text-sm text-text-secondary mb-4 text-center">
+                    Jika Anda lupa ID Pesanan, masukkan nomor WhatsApp Anda atau sebagian ID.
+                </p>
+                <input type="text" id="searchKeyword" placeholder="Nomor WA atau sebagian ID Pesanan" class="w-full p-2 border rounded mb-3" />
+                <button class="btn btn-primary w-full" onclick="searchOrders()"><i class="fas fa-search"></i> Cari Pesanan</button>
+                <div id="searchResults" class="mt-4"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message"></p>
+            <button id="modal-close-btn">Oke</button>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        // --- Theme Toggle ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', nextTheme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+        });
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        function showCustomAlert(message) {
+            modalMessage.innerHTML = message;
+            customModal.classList.add('show');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+
+        // --- Loading Overlay ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // --- Firebase Config & Init ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4", // Updated by user, removed trailing comma
+            storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app", // Updated by user
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+            measurementId: "G-CMRW37J19G" // Updated by user, note: analytics not directly used in SDK v8
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- Helper Functions ---
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function formatRupiah(angka) {
+            return parseFloat(angka).toLocaleString('id-ID');
+        }
+
+        function normalizePhoneNumber(number) {
+            if (!number) return '';
+            number = String(number).replace(/[^0-9]/g, '');
+            if (number.startsWith('0')) {
+                number = '62' + number.slice(1);
+            }
+            return number;
+        }
+
+        // --- Load Order Details (from URL ID) ---
+        async function loadOrderDetails() {
+            const orderId = getQueryParam('id');
+            const orderDetailsDiv = document.getElementById('order-details');
+
+            if (!orderId) {
+                orderDetailsDiv.innerHTML = '<p class="text-center text-text-secondary">Tidak ada ID Pesanan di URL. Gunakan formulir di bawah untuk mencari.</p>';
+                return;
+            }
+
+            showLoading();
+            try {
+                const snapshot = await db.ref(`pesanan/${orderId}`).once('value');
+                const order = snapshot.val();
+
+                if (order) {
+                    const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                    const statusClass = order.status.toLowerCase().replace(' ', '-');
+
+                    orderDetailsDiv.innerHTML = `
+                        <h2 class="text-center text-color-brand mb-4">Detail Pesanan Anda</h2>
+                        <div class="order-detail">
+                            <p><strong>ID Pesanan:</strong> ${order.id}</p>
+                            <p><strong>Produk:</strong> ${order.productName}</p>
+                            <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
+                            <p><strong>Waktu Pesan:</strong> ${formattedDate}</p>
+                            <p><strong>Nama Pembeli:</strong> ${order.buyerName}</p>
+                            <p><strong>Nomor HP/ID SN:</strong> ${order.nomor}</p>
+                            <p><strong>WA Aktif:</strong> ${order.buyerWa}</p>
+                            <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${order.status}</span></p>
+                            <p><strong>Bukti Pembayaran (Buyer):</strong>
+                                ${order.buktiBayarUrl ? `<a href="${order.buktiBayarUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar Bukti Transfer</a>` : 'Belum Ada'}
+                            </p>
+                            ${order.hasilFulfillment ? `<p><strong>Hasil Fulfillment:</strong> ${order.hasilFulfillment}</p>` : ''}
+                        </div>
+                        <p class="text-sm text-text-secondary mt-6 text-center">
+                            Jika ada pertanyaan, silakan hubungi admin.
+                        </p>
+                        <div class="flex justify-center mt-4">
+                            <button class="btn btn-primary" onclick="window.location.href='./upload.html?id=${order.id}'">
+                                <i class="fas fa-upload"></i> Unggah Bukti Bayar
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    orderDetailsDiv.innerHTML = '<p class="text-center text-red-500">Pesanan dengan ID tersebut tidak ditemukan.</p>';
+                }
+            } catch (error) {
+                console.error("Error loading order details:", error);
+                orderDetailsDiv.innerHTML = '<p class="text-center text-red-500">Terjadi kesalahan saat memuat detail pesanan. Silakan coba lagi nanti.</p>';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // --- Search Orders by WA / Partial ID ---
+        async function searchOrders() {
+            const searchKeyword = document.getElementById('searchKeyword').value.trim();
+            const searchResultsDiv = document.getElementById('searchResults');
+            searchResultsDiv.innerHTML = '';
+
+            if (!searchKeyword) {
+                showCustomAlert('Mohon masukkan Nomor WA atau sebagian ID Pesanan untuk mencari.');
+                return;
+            }
+
+            showLoading();
+            try {
+                const snapshot = await db.ref('pesanan').once('value');
+                const allOrders = snapshot.val();
+                let foundOrders = [];
+
+                if (allOrders) {
+                    const normalizedSearchKeyword = normalizePhoneNumber(searchKeyword);
+                    Object.keys(allOrders).forEach(id => {
+                        const order = allOrders[id];
+                        const normalizedBuyerWa = normalizePhoneNumber(order.buyerWa || '');
+
+                        // Search by normalized WA number or partial order ID
+                        if (normalizedBuyerWa.includes(normalizedSearchKeyword) || 
+                            order.id.toLowerCase().includes(searchKeyword.toLowerCase())) {
+                            foundOrders.push(order);
+                        }
+                    });
+                }
+
+                if (foundOrders.length > 0) {
+                    let resultsHtml = '<h3 class="text-lg font-semibold mb-3">Hasil Pencarian:</h3>';
+                    foundOrders.reverse().forEach(order => { // Show newest first
+                        const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+                        resultsHtml += `
+                            <div class="bg-gray-100 p-3 rounded-lg mb-2">
+                                <p><strong>ID:</strong> ${order.id}</p>
+                                <p><strong>Produk:</strong> ${order.productName}</p>
+                                <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
+                                <p><strong>Status:</strong> <span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></p>
+                                <p><strong>Waktu:</strong> ${formattedDate}</p>
+                                <button class="btn btn-primary mt-2" onclick="window.location.href='./status.html?id=${order.id}'"><i class="fas fa-eye"></i> Lihat Detail</button>
+                            </div>
+                        `;
+                    });
+                    searchResultsDiv.innerHTML = resultsHtml;
+                } else {
+                    searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Tidak ada pesanan yang ditemukan untuk pencarian ini.</p>';
+                }
+            } catch (error) {
+                console.error("Error searching orders:", error);
+                searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Terjadi kesalahan saat mencari pesanan. Silakan coba lagi nanti.</p>';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Initial load (either from URL ID or prepare for search)
+        document.addEventListener('DOMContentLoaded', loadOrderDetails);
+    </script>
+</body>
+</html>
