@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cek Status Pesanan</title>
-    <link rel="icon" href="favicon.png" />
+    <link rel="icon" href="https://placehold.co/32x32/007bff/ffffff?text=AS" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -111,25 +111,14 @@
             margin-bottom: 0.75rem;
             font-size: 1rem;
             line-height: 1.5;
+            word-break: break-word;
         }
         .order-detail p strong {
             color: var(--color-brand);
             font-weight: 600;
-        }
-        .status-badge {
-            padding: 0.4em 0.8em;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 1em;
-            color: white;
+            min-width: 120px;
             display: inline-block;
-            margin-top: 0.5rem;
         }
-        .status-badge.belum-bayar { background-color: #ffc107; color: #343a40; }
-        .status-badge.sudah-bayar { background-color: #007bff; }
-        .status-badge.diproses { background-color: #17a2b8; }
-        .status-badge.selesai { background-color: #28a745; }
-        .status-badge.dibatalkan { background-color: #dc3545; }
 
         .btn {
             padding: 0.75rem 1.25rem;
@@ -138,7 +127,7 @@
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -149,90 +138,88 @@
             background-color: var(--color-brand);
             color: white;
         }
-        .btn-primary:hover {
+        .btn-primary:not(:disabled):hover {
             background-color: var(--color-brand-hover);
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .btn-gray { background-color: #6c757d; color: white; }
         .btn-gray:hover { background-color: #5a6268; }
-
-        .custom-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
+        
+        /* Status Timeline */
+        .timeline {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
         }
-        .custom-modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        .custom-modal-content {
-            background-color: var(--bg-card);
-            color: var(--text-primary);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow-light);
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
-            transform: translateY(-20px);
-            transition: transform 0.3s ease;
-        }
-        .custom-modal.show .custom-modal-content {
-            transform: translateY(0);
-        }
-        .custom-modal-content p {
-            font-size: 1.15rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-        }
-        .custom-modal-content button {
-            background-color: var(--color-brand);
-            color: white;
-            padding: 0.7rem 1.5rem;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .custom-modal-content button:hover {
-            background-color: var(--color-brand-hover);
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2001;
+            right: 0;
+            height: 4px;
+            background-color: var(--border-color);
+            transform: translateY(-50%);
+            z-index: 1;
         }
+        .timeline-progress {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            background-color: var(--color-brand);
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.5s ease;
+        }
+        .timeline-item {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+            width: 80px;
+        }
+        .timeline-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            border: 4px solid var(--bg-card);
+            margin: 0 auto 0.5rem auto;
+            transition: background-color 0.5s ease;
+        }
+        .timeline-item.active .timeline-dot {
+            background-color: var(--color-brand);
+        }
+        .timeline-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left-color: var(--color-brand);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
+            margin: 2rem auto;
         }
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .placeholder {
+            text-align: center;
+            padding: 2rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+        }
+        .placeholder i {
+            font-size: 3rem;
+            color: var(--border-color);
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -244,39 +231,33 @@
 
     <main>
         <div class="section-card">
-            <button class="btn btn-gray mb-6" onclick="window.location.href='./index.html'"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button>
-            <div id="order-details">
-                <p class="text-center text-text-secondary">Memuat status pesanan...</p>
+            <button class="btn btn-gray mb-6" onclick="window.location.href='./'"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button>
+            <div id="order-status-container">
+                <div class="placeholder">
+                    <i class="fas fa-receipt"></i>
+                    <p class="text-text-secondary">Status pesanan Anda akan muncul di sini.</p>
+                </div>
             </div>
+        </div>
 
-            <div class="mt-6 border-t border-border-color pt-6">
-                <h2 class="text-center mb-4">Cari Pesanan Berdasarkan WA / ID</h2>
-                <p class="text-sm text-text-secondary mb-4 text-center">
-                    Jika Anda lupa ID Pesanan, masukkan nomor WhatsApp Anda atau sebagian ID.
-                </p>
-                <input type="text" id="searchKeyword" placeholder="Nomor WA atau sebagian ID Pesanan" class="w-full p-2 border rounded mb-3" />
-                <button class="btn btn-primary w-full" onclick="searchOrders()"><i class="fas fa-search"></i> Cari Pesanan</button>
-                <div id="searchResults" class="mt-4"></div>
+        <div class="section-card">
+            <h2 class="text-center mb-4">Cari Pesanan Anda</h2>
+            <div class="flex gap-2">
+                <input type="text" id="searchKeyword" placeholder="Masukkan ID Pesanan atau No. WA" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <button class="btn btn-primary" onclick="handleSearch()"><i class="fas fa-search"></i></button>
             </div>
+            <div id="searchResults" class="mt-4"></div>
         </div>
     </main>
 
-    <div id="custom-modal" class="custom-modal">
-        <div class="custom-modal-content">
-            <p id="modal-message"></p>
-            <button id="modal-close-btn">Oke</button>
-        </div>
-    </div>
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script>
         // --- Theme Toggle ---
-        function toggleTheme() {
+        window.toggleTheme = function() {
             const body = document.body;
             const btn = document.getElementById('themeToggle');
             const currentTheme = body.getAttribute('data-theme');
@@ -286,189 +267,216 @@
             localStorage.setItem('theme', nextTheme);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.body.setAttribute('data-theme', savedTheme);
-                document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
-            } else {
-                document.body.setAttribute('data-theme', 'light');
-                document.getElementById('themeToggle').textContent = '🌙';
-            }
-        });
+        // --- Firebase Initialization ---
+        let db, auth;
+        let unsubscribe; // To store the onSnapshot listener
 
-        // --- Custom Alert Modal ---
-        const customModal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
-
-        function showCustomAlert(message) {
-            modalMessage.innerHTML = message;
-            customModal.classList.add('show');
-        }
-
-        modalCloseBtn.addEventListener('click', () => {
-            customModal.classList.remove('show');
-        });
-
-        // --- Loading Overlay ---
-        const loadingOverlay = document.getElementById('loading-overlay');
-        function showLoading() {
-            loadingOverlay.style.display = 'flex';
-        }
-        function hideLoading() {
-            loadingOverlay.style.display = 'none';
-        }
-
-        // --- Firebase Config & Init ---
-        const firebaseConfig = {
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-            projectId: "asdarstoredigitalll-d89c4", // Updated by user, removed trailing comma
-            storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app", // Updated by user
+            projectId: "asdarstoredigitalll-d89c4", 
+            storageBucket: "asdarstoredigitalll-d89c4.appspot.com", 
             messagingSenderId: "220670500351",
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
-            measurementId: "G-CMRW37J19G" // Updated by user, note: analytics not directly used in SDK v8
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
         };
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log("Firebase initialized successfully.");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            document.getElementById('order-status-container').innerHTML = `<p class="text-center text-red-500">Gagal terhubung ke server.</p>`;
+        }
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        // --- DOM Elements ---
+        const orderStatusContainer = document.getElementById('order-status-container');
+        const searchInput = document.getElementById('searchKeyword');
+        const searchResultsDiv = document.getElementById('searchResults');
 
         // --- Helper Functions ---
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
-
-        function formatRupiah(angka) {
-            return parseFloat(angka).toLocaleString('id-ID');
-        }
-
-        function normalizePhoneNumber(number) {
+        const formatRupiah = (angka) => parseFloat(angka).toLocaleString('id-ID');
+        const normalizePhoneNumber = (number) => {
             if (!number) return '';
-            number = String(number).replace(/[^0-9]/g, '');
-            if (number.startsWith('0')) {
-                number = '62' + number.slice(1);
-            }
-            return number;
+            const numStr = String(number).replace(/[^0-9]/g, '');
+            return numStr.startsWith('0') ? '62' + numStr.slice(1) : numStr;
+        };
+
+        const statusLevels = {
+            'Belum Bayar': 0,
+            'Sudah Bayar': 1,
+            'Diproses': 2,
+            'Selesai': 3,
+            'Dibatalkan': -1
+        };
+
+        // --- Display Logic ---
+        function renderOrderStatus(order) {
+            const currentLevel = statusLevels[order.status] ?? -1;
+            const timelineWidth = currentLevel >= 0 ? (currentLevel / 3) * 100 : 0;
+            const isCancelled = currentLevel === -1;
+
+            const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+            
+            orderStatusContainer.innerHTML = `
+                <h2 class="text-center text-color-brand mb-4">Detail Pesanan #${order.id}</h2>
+                
+                ${isCancelled ? `
+                    <div class="text-center p-4 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300">
+                        <p class="font-bold text-lg">Pesanan Dibatalkan</p>
+                    </div>
+                ` : `
+                    <div class="timeline">
+                        <div class="timeline-progress" style="width: ${timelineWidth}%;"></div>
+                        <div class="timeline-item ${currentLevel >= 0 ? 'active' : ''}">
+                            <div class="timeline-dot"></div><div class="timeline-label">Dipesan</div>
+                        </div>
+                        <div class="timeline-item ${currentLevel >= 1 ? 'active' : ''}">
+                            <div class="timeline-dot"></div><div class="timeline-label">Dibayar</div>
+                        </div>
+                        <div class="timeline-item ${currentLevel >= 2 ? 'active' : ''}">
+                            <div class="timeline-dot"></div><div class="timeline-label">Diproses</div>
+                        </div>
+                        <div class="timeline-item ${currentLevel >= 3 ? 'active' : ''}">
+                            <div class="timeline-dot"></div><div class="timeline-label">Selesai</div>
+                        </div>
+                    </div>
+                `}
+
+                <div class="order-detail mt-8">
+                    <p><strong>Status:</strong> <span class="font-bold">${order.status}</span></p>
+                    <p><strong>Produk:</strong> ${order.productName}</p>
+                    <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
+                    <p><strong>Waktu Pesan:</strong> ${formattedDate}</p>
+                    <p><strong>Nama Pembeli:</strong> ${order.buyerName}</p>
+                    <p><strong>Nomor/ID:</strong> ${order.nomor}</p>
+                    <p><strong>Bukti Bayar:</strong>
+                        ${order.proofImageUrl ? `<a href="${order.proofImageUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a>` : 'Belum diunggah'}
+                    </p>
+                    ${order.hasilFulfillment ? `<p><strong>Catatan Admin:</strong> ${order.hasilFulfillment}</p>` : ''}
+                </div>
+                
+                ${order.status === 'Belum Bayar' ? `
+                    <div class="flex justify-center mt-6">
+                        <button class="btn btn-primary" onclick="window.location.href='./upload.html?id=${order.id}'">
+                            <i class="fas fa-upload"></i> Unggah Bukti Bayar
+                        </button>
+                    </div>
+                ` : ''}
+            `;
         }
 
-        // --- Load Order Details (from URL ID) ---
-        async function loadOrderDetails() {
-            const orderId = getQueryParam('id');
-            const orderDetailsDiv = document.getElementById('order-details');
+        function renderPlaceholder(message, isError = false) {
+            const colorClass = isError ? 'text-red-500' : 'text-text-secondary';
+            orderStatusContainer.innerHTML = `
+                <div class="placeholder">
+                    <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-receipt'}"></i>
+                    <p class="${colorClass}">${message}</p>
+                </div>
+            `;
+        }
+        
+        // --- Data Fetching and Business Logic ---
+        window.viewOrderDetail = function(orderId) {
+            const url = new URL(window.location);
+            url.searchParams.set('id', orderId);
+            window.history.pushState({}, '', url);
+            
+            listenToOrderStatus(orderId);
+            searchResultsDiv.innerHTML = ''; // Clear search results after selection
+        }
 
-            if (!orderId) {
-                orderDetailsDiv.innerHTML = '<p class="text-center text-text-secondary">Tidak ada ID Pesanan di URL. Gunakan formulir di bawah untuk mencari.</p>';
-                return;
+        function listenToOrderStatus(orderId) {
+            if (unsubscribe) unsubscribe();
+            
+            orderStatusContainer.innerHTML = `<div class="spinner"></div>`;
+            const orderRef = doc(db, "orders", orderId);
+
+            unsubscribe = onSnapshot(orderRef, (doc) => {
+                if (doc.exists()) {
+                    renderOrderStatus(doc.data());
+                } else {
+                    renderPlaceholder('Pesanan tidak ditemukan. Pastikan ID Pesanan benar.', true);
+                }
+            }, (error) => {
+                console.error("Error listening to order status:", error);
+                renderPlaceholder('Gagal memuat status pesanan.', true);
+            });
+        }
+
+        window.handleSearch = async function() {
+            const keyword = searchInput.value.trim();
+            if (!keyword) return;
+
+            searchResultsDiv.innerHTML = `<div class="spinner !w-6 !h-6"></div>`;
+            
+            const foundOrders = new Map();
+
+            // Search by exact ID
+            try {
+                const docRef = doc(db, "orders", keyword);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    foundOrders.set(docSnap.id, docSnap.data());
+                }
+            } catch (error) { console.error("Error searching by ID:", error); }
+
+            // Search by WA number
+            const normalizedKeyword = normalizePhoneNumber(keyword);
+            if (normalizedKeyword) {
+                try {
+                    const ordersRef = collection(db, "orders");
+                    const q = query(ordersRef, where("buyerWa", "==", normalizedKeyword));
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach((doc) => {
+                        foundOrders.set(doc.id, doc.data());
+                    });
+                } catch (error) { console.error("Error searching by WA:", error); }
             }
 
-            showLoading();
-            try {
-                const snapshot = await db.ref(`pesanan/${orderId}`).once('value');
-                const order = snapshot.val();
-
-                if (order) {
-                    const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-                    const statusClass = order.status.toLowerCase().replace(' ', '-');
-
-                    orderDetailsDiv.innerHTML = `
-                        <h2 class="text-center text-color-brand mb-4">Detail Pesanan Anda</h2>
-                        <div class="order-detail">
-                            <p><strong>ID Pesanan:</strong> ${order.id}</p>
-                            <p><strong>Produk:</strong> ${order.productName}</p>
-                            <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
-                            <p><strong>Waktu Pesan:</strong> ${formattedDate}</p>
-                            <p><strong>Nama Pembeli:</strong> ${order.buyerName}</p>
-                            <p><strong>Nomor HP/ID SN:</strong> ${order.nomor}</p>
-                            <p><strong>WA Aktif:</strong> ${order.buyerWa}</p>
-                            <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${order.status}</span></p>
-                            <p><strong>Bukti Pembayaran (Buyer):</strong>
-                                ${order.buktiBayarUrl ? `<a href="${order.buktiBayarUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar Bukti Transfer</a>` : 'Belum Ada'}
-                            </p>
-                            ${order.hasilFulfillment ? `<p><strong>Hasil Fulfillment:</strong> ${order.hasilFulfillment}</p>` : ''}
-                        </div>
-                        <p class="text-sm text-text-secondary mt-6 text-center">
-                            Jika ada pertanyaan, silakan hubungi admin.
-                        </p>
-                        <div class="flex justify-center mt-4">
-                            <button class="btn btn-primary" onclick="window.location.href='./upload.html?id=${order.id}'">
-                                <i class="fas fa-upload"></i> Unggah Bukti Bayar
-                            </button>
+            // Render results
+            if (foundOrders.size > 0) {
+                let resultsHtml = `<p class="font-semibold mb-2">${foundOrders.size} pesanan ditemukan:</p>`;
+                foundOrders.forEach((order) => {
+                    resultsHtml += `
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2 flex justify-between items-center transition hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <div>
+                                <p class="font-semibold">${order.productName}</p>
+                                <p class="text-sm text-text-secondary">ID: ${order.id}</p>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="viewOrderDetail('${order.id}')">Lihat Detail</button>
                         </div>
                     `;
-                } else {
-                    orderDetailsDiv.innerHTML = '<p class="text-center text-red-500">Pesanan dengan ID tersebut tidak ditemukan.</p>';
-                }
-            } catch (error) {
-                console.error("Error loading order details:", error);
-                orderDetailsDiv.innerHTML = '<p class="text-center text-red-500">Terjadi kesalahan saat memuat detail pesanan. Silakan coba lagi nanti.</p>';
-            } finally {
-                hideLoading();
+                });
+                searchResultsDiv.innerHTML = resultsHtml;
+            } else {
+                searchResultsDiv.innerHTML = '<p class="text-center text-sm text-text-secondary mt-2">Tidak ada pesanan yang cocok dengan pencarian Anda.</p>';
             }
         }
 
-        // --- Search Orders by WA / Partial ID ---
-        async function searchOrders() {
-            const searchKeyword = document.getElementById('searchKeyword').value.trim();
-            const searchResultsDiv = document.getElementById('searchResults');
-            searchResultsDiv.innerHTML = '';
+        // --- Initial Load and Auth ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
 
-            if (!searchKeyword) {
-                showCustomAlert('Mohon masukkan Nomor WA atau sebagian ID Pesanan untuk mencari.');
-                return;
-            }
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
 
-            showLoading();
-            try {
-                const snapshot = await db.ref('pesanan').once('value');
-                const allOrders = snapshot.val();
-                let foundOrders = [];
-
-                if (allOrders) {
-                    const normalizedSearchKeyword = normalizePhoneNumber(searchKeyword);
-                    Object.keys(allOrders).forEach(id => {
-                        const order = allOrders[id];
-                        const normalizedBuyerWa = normalizePhoneNumber(order.buyerWa || '');
-
-                        // Search by normalized WA number or partial order ID
-                        if (normalizedBuyerWa.includes(normalizedSearchKeyword) || 
-                            order.id.toLowerCase().includes(searchKeyword.toLowerCase())) {
-                            foundOrders.push(order);
-                        }
-                    });
-                }
-
-                if (foundOrders.length > 0) {
-                    let resultsHtml = '<h3 class="text-lg font-semibold mb-3">Hasil Pencarian:</h3>';
-                    foundOrders.reverse().forEach(order => { // Show newest first
-                        const formattedDate = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
-                        resultsHtml += `
-                            <div class="bg-gray-100 p-3 rounded-lg mb-2">
-                                <p><strong>ID:</strong> ${order.id}</p>
-                                <p><strong>Produk:</strong> ${order.productName}</p>
-                                <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
-                                <p><strong>Status:</strong> <span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></p>
-                                <p><strong>Waktu:</strong> ${formattedDate}</p>
-                                <button class="btn btn-primary mt-2" onclick="window.location.href='./status.html?id=${order.id}'"><i class="fas fa-eye"></i> Lihat Detail</button>
-                            </div>
-                        `;
-                    });
-                    searchResultsDiv.innerHTML = resultsHtml;
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
+                    if (orderIdFromUrl) {
+                        searchInput.value = orderIdFromUrl;
+                        listenToOrderStatus(orderIdFromUrl);
+                    }
                 } else {
-                    searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Tidak ada pesanan yang ditemukan untuk pencarian ini.</p>';
+                    signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
                 }
-            } catch (error) {
-                console.error("Error searching orders:", error);
-                searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Terjadi kesalahan saat mencari pesanan. Silakan coba lagi nanti.</p>';
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Initial load (either from URL ID or prepare for search)
-        document.addEventListener('DOMContentLoaded', loadOrderDetails);
+            });
+        });
     </script>
 </body>
 </html>
