@@ -59,7 +59,6 @@
             await sendWaMessage({ to, message });
         } catch (error) {
             console.error("Gagal memanggil Cloud Function:", error);
-            // Non-blocking error, so the user flow continues
         }
     }
 
@@ -87,17 +86,14 @@
         
         const imageUrl = jsonImg.data.url;
         
-        // PERBAIKAN: Menambahkan 'waktu' saat update
         await db.ref("pesanan/" + id).update({ 
             buktiBayar: imageUrl, 
             status: "Sudah Bayar",
-            waktu: new Date().toISOString() 
+            waktu: new Date().toISOString()
         });
 
-        // PERBAIKAN: Memperbaiki template string untuk menyertakan link dengan benar
         const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
         
-        // PERBAIKAN: Menggunakan konstanta ADMIN_WA_NUMBER
         await sendWhatsApp(ADMIN_WA_NUMBER, pesanWA);
         
         statusDiv.innerHTML = `✅ Bukti berhasil dikirim! Status pesanan Anda telah diupdate. <br><a href="status.html?id=${id}">Cek Status Sekarang</a>`;
@@ -119,7 +115,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdFromUrl = urlParams.get('id');
-        if (orderIdFromUrl) idPesananInput.value = orderIdFromUrl;
+        if (orderIdFromUrl) {
+            idPesananInput.value = orderIdFromUrl;
+        }
     });
   </script>
 </body>
