@@ -30,8 +30,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script>
+    // --- Config ---
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -45,26 +45,42 @@
     const ADMIN_WA_NUMBER = "6281803004607";
     const ADMIN_PANEL_LINK = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
 
+    // --- Init Firebase ---
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const functions = firebase.functions();
 
+    // --- DOM Elements ---
     const idPesananInput = document.getElementById("idPesanan");
     const fileInput = document.getElementById("fileInput");
     const statusDiv = document.getElementById("status");
 
-    // PERBAIKAN: Menggunakan Firebase Functions untuk mengirim WhatsApp
+    // --- Helper Functions ---
     async function sendWhatsApp(to, message) {
-        try {
-            const sendWaMessage = functions.httpsCallable('sendWaMessage');
-            await sendWaMessage({ to: to, message: message });
-            console.log("✅ Permintaan notifikasi WA berhasil dikirim ke Cloud Function.");
-        } catch (error) {
-            console.error("❌ Gagal memanggil Cloud Function:", error);
-            // Meskipun gagal kirim WA, proses lain tetap berjalan
-            // Anda bisa menambahkan alert di sini jika ingin memberitahu pengguna
-            // alert("Gagal mengirim notifikasi, tapi pesanan Anda tetap diupdate.");
+      const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+      const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+      const apiUrl = "https://ngirimwa.com/api/send-message";
+
+      const formData = new FormData();
+      formData.append("appkey", appkey);
+      formData.append("authkey", authkey);
+      formData.append("to", to);
+      formData.append("message", message);
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: formData
+        });
+        const result = await response.json();
+        if (result.status !== 'success') {
+          throw new Error(result.message || 'Gagal kirim WA dari NgirimWA');
         }
+        console.log("✅ Notifikasi WhatsApp berhasil dikirim:", result);
+      } catch (err) {
+        console.error("❌ Gagal mengirim notifikasi WA:", err);
+        // Melempar error agar bisa ditangani oleh fungsi yang memanggil
+        throw err;
+      }
     }
 
     async function upload() {
@@ -73,7 +89,10 @@
       if (!id || !file) return alert("Lengkapi ID dan pilih gambar!");
       statusDiv.innerText = "⏳ Mengupload gambar...";
       
-      const base64 = await toBase64(file).catch(() => statusDiv.innerText = "❌ Gagal membaca file.");
+      const base64 = await toBase64(file).catch(() => {
+        statusDiv.innerText = "❌ Gagal membaca file gambar.";
+        return null;
+      });
       if (!base64) return;
 
       const formDataImg = new FormData();
@@ -104,7 +123,7 @@
         statusDiv.innerHTML = `✅ Bukti berhasil dikirim! Status pesanan Anda telah diupdate. <br><a href="status.html?id=${id}">Cek Status Sekarang</a>`;
       } catch (error) {
         console.error(error);
-        statusDiv.innerText = "❌ Gagal: " + error.message;
+        statusDiv.innerText = `❌ Gagal: ${error.message}. Coba periksa koneksi internet Anda.`;
       }
     }
 
