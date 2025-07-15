@@ -13,11 +13,11 @@
     .card { margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; }
     .card-body { padding: 1.25rem; }
     img { max-width: 100px; margin-top: 10px; border-radius: 5px; }
-    #galeri img { max-width: 120px; margin: 5px; border-radius: 6px; cursor: pointer; transition: transform 0.2s; }
-    #galeri img:hover { transform: scale(1.05); }
     textarea { font-family: 'Consolas', 'Monaco', monospace; resize: vertical; }
     .nav-tabs .nav-link { border-top-left-radius: .5rem; border-top-right-radius: .5rem; }
     .nav-tabs .nav-link.active { color: #007bff; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; }
+    .order-card p { margin: 0.25rem 0; font-size: 0.9rem; }
+    .order-card p strong { min-width: 100px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -31,50 +31,44 @@
   </ul>
 
   <div class="tab-content" id="adminTabContent">
-    <!-- Tab Pesanan -->
     <div class="tab-pane fade show active" id="orders-pane" role="tabpanel">
-      <div class="card mt-3"><div class="card-body">
-        <h3>Manajemen Pesanan</h3>
-        <div class="row mb-3 g-2">
-          <div class="col-md-3"><select id="filterStatus" class="form-select"><option value="">Filter Semua Status</option><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Diproses">Diproses</option><option value="Selesai">Selesai</option></select></div>
-          <div class="col-md-3"><input type="text" id="searchId" class="form-control" placeholder="Cari ID/Nama..." /></div>
-          <div class="col-md-3"><button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button></div>
-          <div class="col-md-3"><button class="btn btn-warning w-100" onclick="tampilkanPesanan()">🔄 Refresh</button></div>
-        </div>
-        <div id="pesananList" class="mb-4"></div>
-        <hr>
-        <h3>Kirim Bukti Admin</h3>
-        <div class="input-group mb-2">
-          <input type="file" id="buktiAdmin" class="form-control" accept="image/*" />
-          <button id="uploadBuktiBtn" class="btn btn-primary">📤 Kirim Bukti & Selesaikan</button>
-        </div>
-        <small id="selectedOrderIdDisplay" class="text-info mb-3 d-block"></small>
-        <div class="mt-4 d-flex justify-content-end">
-          <button class="btn btn-danger" onclick="hapusSemuaPesanan()"><i class="fas fa-trash-alt"></i> Hapus Semua Pesanan</button>
-        </div>
-      </div></div>
+        <div class="card mt-3"><div class="card-body">
+            <h3>Manajemen Pesanan</h3>
+            <div class="row mb-3 g-2 align-items-center">
+                <div class="col-md-3"><select id="filterStatus" class="form-select"><option value="">Filter Semua Status</option><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Diproses">Diproses</option><option value="Selesai">Selesai</option></select></div>
+                <div class="col-md-4"><input type="text" id="searchId" class="form-control" placeholder="Cari ID/Nama/Nomor..." /></div>
+                <div class="col-md-2"><button class="btn btn-success w-100" id="exportCSVBtn">Export CSV</button></div>
+                <div class="col-md-3"><button class="btn btn-warning w-100" onclick="tampilkanPesanan()">🔄 Refresh</button></div>
+            </div>
+            <div id="pesananList" class="mb-4"></div>
+            <hr>
+            <h3>Kirim Bukti Admin</h3>
+            <div class="input-group mb-2">
+                <input type="file" id="buktiAdmin" class="form-control" accept="image/*" />
+                <button id="uploadBuktiBtn" class="btn btn-primary">📤 Kirim Bukti & Selesaikan</button>
+            </div>
+            <small id="selectedOrderIdDisplay" class="text-info mb-3 d-block"></small>
+            <div class="mt-4 d-flex justify-content-end">
+                <button class="btn btn-danger" onclick="hapusSemuaPesanan()"><i class="fas fa-trash-alt"></i> Hapus Semua Pesanan</button>
+            </div>
+        </div></div>
     </div>
 
-    <!-- Tab Produk -->
     <div class="tab-pane fade" id="products-pane" role="tabpanel">
       <div class="card mt-3"><div class="card-body">
         <h3>Tambah / Edit Produk</h3>
-        <form id="formProduk" class="row g-3 mb-4">
-          <div class="col-md-3"><input type="text" id="kategori" class="form-control" placeholder="Kategori" required /></div>
-          <div class="col-md-3"><input type="text" id="varian" class="form-control" placeholder="Varian" required /></div>
-          <div class="col-md-2"><input type="text" id="harga" class="form-control" placeholder="Harga" required pattern="[0-9]*" /></div>
-          <div class="col-md-4"><input type="text" id="cara" class="form-control" placeholder="Keterangan" required /></div>
-          <div class="col-12"><button type="submit" class="btn btn-success">✅ Simpan Produk</button></div>
+        <form id="formProduk" class="row g-3 mb-4 p-3 border rounded-3">
+            <div class="col-md-3"><label>Kategori</label><input type="text" id="kategori" class="form-control" required /></div>
+            <div class="col-md-3"><label>Varian</label><input type="text" id="varian" class="form-control" required /></div>
+            <div class="col-md-2"><label>Harga</label><input type="text" id="harga" class="form-control" required pattern="[0-9]*" /></div>
+            <div class="col-md-4"><label>Keterangan</label><input type="text" id="cara" class="form-control" required /></div>
+            <div class="col-12"><button type="submit" class="btn btn-success w-100">✅ Simpan Produk</button></div>
         </form>
         <h4>Daftar Produk</h4>
-        <ul id="daftarProduk" class="list-group mb-5"></ul>
-        <div class="mt-4 d-flex justify-content-end">
-            <button class="btn btn-danger" onclick="hapusSemuaProduk()">🧹 Hapus Semua Produk</button>
-        </div>
+        <ul id="daftarProduk" class="list-group"></ul>
       </div></div>
     </div>
 
-    <!-- Tab Konten -->
     <div class="tab-pane fade" id="content-pane" role="tabpanel">
         <div class="card mt-3"><div class="card-body">
             <h4>Manajemen Konten Dinamis</h4>
@@ -104,8 +98,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-    const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
     const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
 
@@ -128,21 +120,6 @@
     function showAlert(message) { alert(message); }
     function formatRupiah(angka) { return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
-    async function sendWhatsApp(to, message) {
-        const formData = new FormData();
-        formData.append('appkey', NGIRIMWA_APPKEY);
-        formData.append('authkey', NGIRIMWA_AUTHKEY);
-        formData.append('to', to);
-        formData.append('message', message);
-        try {
-            const response = await fetch('https://ngirimwa.com/api/send-message', { method: 'POST', body: formData });
-            if (!response.ok) console.error('WA API Error:', await response.text());
-        } catch (error) {
-            console.error('WA Send Error:', error);
-            alert("Gagal mengirim notifikasi WA. Cek koneksi internet dan console.");
-        }
-    }
-
     function loadDinamis() {
       const halaman = halamanSelect.value;
       db.ref(`dynamicContent/${halaman}`).once('value').then(s => {
@@ -164,21 +141,60 @@
         const sortedIds = Object.keys(allDataPesanan).sort((a, b) => new Date(allDataPesanan[b].waktu) - new Date(allDataPesanan[a].waktu));
         for (const id of sortedIds) {
             const p = allDataPesanan[id];
-            if ((filter && p.status !== filter) || (search && !id.toLowerCase().includes(search) && !(p.nama || '').toLowerCase().includes(search))) continue;
-            html += `<div class="card"><div class="card-body"><b>ID:</b> ${id}<br/><b>Nama:</b> ${p.nama}<br/><b>WA:</b> ${p.wa_aktif}<br/><b>Produk:</b> ${p.produk}<br/><b>Status:</b> <span class="status-badge status-${p.status.toLowerCase().replace(/\s+/g, '-')}">${p.status}</span><br/><b>Waktu:</b> ${new Date(p.waktu).toLocaleString('id-ID')}<br/>${p.buktiBayar ? `<a href="${p.buktiBayar}" target="_blank">Lihat Bukti</a>` : ''}${p.buktiAdmin ? `<br/><a href="${p.buktiAdmin}" target="_blank">Lihat Bukti Admin</a>` : ''}<div class="mt-2"><button class="btn btn-sm btn-info me-1" onclick="setSelected('${id}')">Pilih</button><button class="btn btn-sm btn-success me-1" onclick="verifikasi('${id}')">Proses</button><button class="btn btn-sm btn-danger" onclick="hapusPesanan('${id}')">Hapus</button></div></div></div>`;
+            const searchMatch = search === '' || id.toLowerCase().includes(search) || (p.nama || '').toLowerCase().includes(search) || (p.nomor || '').includes(search);
+            if ((filter && p.status !== filter) || !searchMatch) continue;
+            html += `
+            <div class="order-card">
+                <p><strong>ID:</strong> ${id}</p>
+                <p><strong>Nama:</strong> ${p.nama || '-'}</p>
+                <p><strong>WA:</strong> ${p.wa_aktif || '-'}</p>
+                <p><strong>ID Game/HP:</strong> ${p.nomor || '-'}</p>
+                <p><strong>Produk:</strong> ${p.produk || '-'}</p>
+                <p><strong>Status:</strong> ${p.status || '-'}</p>
+                <p><strong>Waktu:</strong> ${new Date(p.waktu).toLocaleString('id-ID')}</p>
+                ${p.buktiBayar ? `<p><strong>Bukti Bayar:</strong> <a href="${p.buktiBayar}" target="_blank" class="text-primary">Lihat</a></p>` : ''}
+                ${p.buktiAdmin ? `<p><strong>Bukti Admin:</strong> <a href="${p.buktiAdmin}" target="_blank" class="text-primary">Lihat</a></p>` : ''}
+                <div class="mt-2 d-flex gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-info" onclick="setSelected('${id}')">Pilih</button>
+                    <button class="btn btn-sm btn-success" onclick="verifikasi('${id}')">Proses</button>
+                    <button class="btn btn-sm btn-danger" onclick="hapusPesanan('${id}')">Hapus</button>
+                </div>
+            </div>`;
         }
-        pesananList.innerHTML = html;
+        pesananList.innerHTML = html || '<p class="text-center text-secondary">Tidak ada pesanan yang cocok.</p>';
     }
-    window.setSelected = (id) => { selectedId = id; selectedOrderIdDisplay.textContent = `Pesanan Dipilih: ${id}`; showAlert(`Pesanan ${id} dipilih.`); };
+
+    window.setSelected = (id) => {
+        selectedId = id;
+        selectedOrderIdDisplay.textContent = `Pesanan Dipilih: ${id}`;
+        showAlert(`Pesanan ${id} dipilih.`);
+    };
+
     window.verifikasi = async (id) => {
         if (!confirm(`Yakin ubah status pesanan ${id} menjadi "Diproses"?`)) return;
         await db.ref(`pesanan/${id}`).update({ status: "Diproses" });
         const pesanan = allDataPesanan[id];
-        if (pesanan.wa_aktif) sendWhatsApp(pesanan.wa_aktif, `Hai ${pesanan.nama}, pesanan Anda (ID: *${id}*) sedang kami *PROSES*.`);
+        if (pesanan.wa_aktif) {
+            const pesanUser = `Hai ${pesanan.nama}, pesanan Anda (ID: *${id}*) sedang kami *PROSES*. Mohon tunggu sebentar ya.`;
+            const waLink = `https://wa.me/${pesanan.wa_aktif}?text=${encodeURIComponent(pesanUser)}`;
+            window.open(waLink, '_blank');
+        }
         showAlert(`Pesanan ${id} diproses.`);
     };
-    window.hapusPesanan = async (id) => { if (confirm(`Yakin hapus pesanan ID ${id}?`)) await db.ref(`pesanan/${id}`).remove(); };
-    window.deleteAllOrders = async () => { if (confirm('ANDA YAKIN INGIN MENGHAPUS SEMUA PESANAN?')) await db.ref('pesanan').remove(); };
+
+    window.hapusPesanan = async (id) => {
+        if (confirm(`Yakin hapus pesanan ID ${id}?`)) {
+            await db.ref(`pesanan/${id}`).remove();
+            showAlert("Pesanan dihapus.");
+        }
+    };
+
+    window.deleteAllOrders = async () => {
+        if (confirm('PERINGATAN: ANDA YAKIN INGIN MENGHAPUS SEMUA PESANAN?')) {
+            await db.ref('pesanan').remove();
+            showAlert("Semua pesanan dihapus.");
+        }
+    };
 
     uploadBuktiBtn.addEventListener('click', async () => {
         const file = document.getElementById('buktiAdmin').files[0];
@@ -196,7 +212,10 @@
             const pesanan = allDataPesanan[selectedId];
             const linkStatus = `${BASE_URL}status.html?id=${selectedId}`;
             const pesanUser = `Hai ${pesanan.nama}, pesanan Anda (ID: *${selectedId}*) telah *SELESAI*. Cek bukti di:\n${linkStatus}`;
-            if (pesanan.wa_aktif) sendWhatsApp(pesanan.wa_aktif, pesanUser);
+            if (pesanan.wa_aktif) {
+                const waLink = `https://wa.me/${pesanan.wa_aktif}?text=${encodeURIComponent(pesanUser)}`;
+                window.open(waLink, '_blank');
+            }
             showAlert("Bukti berhasil dikirim!");
         } catch (err) { showAlert(`Gagal: ${err.message}`); }
     });
