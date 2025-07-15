@@ -52,28 +52,33 @@
     const statusDiv = document.getElementById("status");
 
     async function sendWhatsApp(to, message) {
-  const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-  const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+      const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+      const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
 
-  const formData = new FormData();
-  formData.append("appkey", appkey);
-  formData.append("authkey", authkey);
-  formData.append("to", to); // contoh: 6281803004607
-  formData.append("message", message);
-  formData.append("sandbox", "false"); // atau "true" kalau mau testing
+      const formData = new FormData();
+      formData.append("appkey", appkey);
+      formData.append("authkey", authkey);
+      formData.append("to", to);
+      formData.append("message", message);
+      
+      // PERBAIKAN: Menggunakan URL API yang benar
+      const apiUrl = "https://ngirimwa.com/api/send-message";
 
-  try {
-    const response = await fetch("https://api.ngirimwa.id/send-message", {
-      method: "POST",
-      body: formData
-    });
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          body: formData
+        });
 
-    const result = await response.json();
-    console.log("✅ WhatsApp sent:", result);
-    if (!result.success) throw new Error(result.message || "Gagal kirim WA");
-  } catch (err) {
-    console.error("❌ Gagal kirim WA via NgirimWA:", err);
-  }
+        const result = await response.json();
+        if (result.status !== 'success') {
+          throw new Error(result.message || 'Gagal kirim WA dari NgirimWA');
+        }
+        console.log("✅ WhatsApp sent:", result);
+      } catch (err) {
+        console.error("❌ Gagal kirim WA via NgirimWA:", err);
+        // Jangan hentikan alur, cukup log error agar user tetap bisa lanjut
+      }
     }
 
     async function upload() {
@@ -100,6 +105,7 @@
         
         const imageUrl = jsonImg.data.url;
         
+        // PERBAIKAN: Memastikan 'waktu' juga diupdate
         await db.ref("pesanan/" + id).update({ 
             buktiBayar: imageUrl, 
             status: "Sudah Bayar",
