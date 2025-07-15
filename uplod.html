@@ -55,32 +55,34 @@
     const statusDiv = document.getElementById("status");
 
     // --- Helper Functions ---
-    async function sendWhatsApp(to, message) {
+    function sendWhatsApp(to, message) {
       const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
       const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-      const apiUrl = "https://ngirimwa.com/api/sendText";
+      const apiUrl = "https://api.ngirimwa.com/sendText";
 
-      const formData = new FormData();
-      formData.append("appkey", appkey);
-      formData.append("authkey", authkey);
-      formData.append("to", to);
-      formData.append("message", message);
-      
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          body: formData
-        });
-        const result = await response.json();
-        if (result.status !== 'success') {
-          throw new Error(result.message || 'Gagal kirim WA dari NgirimWA');
+      const body = new URLSearchParams();
+      body.append("appkey", appkey);
+      body.append("authkey", authkey);
+      body.append("to", to);
+      body.append("message", message);
+
+      // Menggunakan fetch tanpa await (fire and forget)
+      fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.status === 'success') {
+          console.log("✅ Notifikasi WA berhasil dikirim:", result);
+        } else {
+          console.warn("Gagal mengirim notifikasi WA:", result);
         }
-        console.log("✅ Notifikasi WhatsApp berhasil dikirim:", result);
-      } catch (err) {
-        console.error("❌ Gagal mengirim notifikasi WA:", err);
-        // Melempar error agar bisa ditangani oleh fungsi yang memanggil
-        throw err;
-      }
+      })
+      .catch(err => {
+        console.error("❌ Gagal kirim WA via NgirimWA:", err);
+      });
     }
 
     async function upload() {
@@ -112,18 +114,17 @@
         
         await db.ref("pesanan/" + id).update({ 
             buktiBayar: imageUrl, 
-            status: "Sudah Bayar",
-            waktu: new Date().toISOString()
+            status: "Sudah Bayar"
         });
 
         const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
         
-        await sendWhatsApp(ADMIN_WA_NUMBER, pesanWA);
+        sendWhatsApp(ADMIN_WA_NUMBER, pesanWA); // Kirim notif tanpa menunggu selesai
         
         statusDiv.innerHTML = `✅ Bukti berhasil dikirim! Status pesanan Anda telah diupdate. <br><a href="status.html?id=${id}">Cek Status Sekarang</a>`;
       } catch (error) {
         console.error(error);
-        statusDiv.innerText = `❌ Gagal: ${error.message}. Coba periksa koneksi internet Anda.`;
+        statusDiv.innerText = "❌ Gagal: " + error.message;
       }
     }
 
