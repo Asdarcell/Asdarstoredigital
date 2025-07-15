@@ -17,10 +17,10 @@
       --border: #ddd;
     }
     [data-theme="dark"] {
-      --bg: #1a1a2e;
-      --text: #e0e0e0;
-      --primary: #1abc9c;
-      --card: #2c2c40;
+      --bg: #1a1a2e; /* Darker background */
+      --text: #e0e0e0; /* Lighter text */
+      --primary: #1abc9c; /* Teal primary */
+      --card: #2c2c40; /* Darker card background */
       --border: #444;
     }
 
@@ -54,7 +54,7 @@
       border: none;
       font-size: 22px;
       cursor: pointer;
-      color: var(--text);
+      color: var(--text); /* Changed to text color for better contrast */
       transition: color 0.3s ease;
     }
     .theme-btn:hover {
@@ -217,6 +217,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -229,9 +230,8 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const functions = firebase.functions();
 
-    const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-    const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
     const ADMIN_WA_NUMBER = "6281803004607";
     const ADMIN_PANEL_LINK = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
 
@@ -240,13 +240,13 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
 
-    function formatRupiah(angka) { return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
-    function normalizePhone(num) {
+    const formatRupiah = (angka) => angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const normalizePhone = (num) => {
         if (!num) return '';
         let n = String(num).replace(/[^0-9]/g, '');
         if (n.startsWith('0')) n = '62' + n.slice(1);
         return n;
-    }
+    };
     window.toggleTheme = () => {
         const theme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
         document.body.setAttribute('data-theme', theme);
@@ -256,6 +256,15 @@
     if (localStorage.getItem('theme')) {
         document.body.setAttribute('data-theme', localStorage.getItem('theme'));
         document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
+    }
+
+    async function sendWhatsApp(to, message) {
+        try {
+            const sendWaMessage = functions.httpsCallable('sendWaMessage');
+            await sendWaMessage({ to, message });
+        } catch (error) {
+            console.error("Gagal memanggil Cloud Function:", error);
+        }
     }
 
     db.ref('produk').once('value').then(snapshot => {
@@ -318,8 +327,11 @@
                 <p class="text-success fw-bold">✅ Pesanan Anda berhasil dibuat!</p>
                 <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
                 <div class="info">
-                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(harga)}</strong> ke salah satu rekening berikut:</p>
-                    <ul><li><strong>ShopeePay:</strong> 081803004607</li><li><strong>Dana:</strong> 087755432880</li></ul>
+                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(harga)}</strong> ke salah satu tujuan berikut:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>ShopeePay:</strong> 081803004607</li>
+                        <li><strong>Dana:</strong> 087755432880</li>
+                    </ul>
                 </div>
                 <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti Bayar Sekarang</a>
                 <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status Pesanan Anda</a>
@@ -327,12 +339,7 @@
             document.getElementById('formPesanan').reset();
             
             const pesanAdmin = `📦 Pesanan Baru!\n\nID: *${id}*\nNama: ${nama}\nWA: ${waAktif}\nProduk: ${produk}\nHarga: Rp${formatRupiah(harga)}\n\nCek di Admin Panel:\n${ADMIN_PANEL_LINK}`;
-            const formData = new FormData();
-            formData.append("appkey", NGIRIMWA_APPKEY);
-            formData.append("authkey", NGIRIMWA_AUTHKEY);
-            formData.append("to", ADMIN_WA_NUMBER);
-            formData.append("message", pesanAdmin);
-            await fetch("https://ngirimwa.com/api/send-message", { method: "POST", body: formData });
+            await sendWhatsApp(ADMIN_WA_NUMBER, pesanAdmin);
             alert("Pesanan berhasil dibuat!");
         } catch (error) {
             console.error("Error:", error);
