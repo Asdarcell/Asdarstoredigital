@@ -77,7 +77,6 @@
         console.log("✅ WhatsApp sent:", result);
       } catch (err) {
         console.error("❌ Gagal kirim WA via NgirimWA:", err);
-        // Jangan hentikan alur, cukup log error agar user tetap bisa lanjut
       }
     }
 
@@ -105,13 +104,13 @@
         
         const imageUrl = jsonImg.data.url;
         
-        // PERBAIKAN: Memastikan 'waktu' juga diupdate
         await db.ref("pesanan/" + id).update({ 
             buktiBayar: imageUrl, 
             status: "Sudah Bayar",
             waktu: new Date().toISOString()
         });
 
+        // PERBAIKAN: Memperbaiki template string untuk menyertakan link dengan benar
         const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
         
         await sendWhatsApp(ADMIN_WA_NUMBER, pesanWA);
