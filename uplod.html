@@ -1,116 +1,493 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Upload Bukti Pembayaran</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f7f9fc; }
-    .container { max-width: 500px; }
-    #status { margin-top: 10px; background: #e3f2fd; padding: 10px; border-left: 4px solid #2196f3; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Upload Bukti Pembayaran</h2>
-    <p class="text-muted">Pastikan ID Pesanan Anda benar sebelum mengunggah.</p>
-    <div class="mb-3">
-        <label for="idPesanan" class="form-label">ID Pesanan</label>
-        <input type="text" class="form-control" id="idPesanan" placeholder="Masukkan ID Pesanan" />
-    </div>
-    <div class="mb-3">
-        <label for="fileInput" class="form-label">Pilih Gambar Bukti</label>
-        <input type="file" class="form-control" id="fileInput" accept="image/*" />
-    </div>
-    <button class="btn btn-primary w-100" onclick="upload()">📤 Upload & Kirim Notifikasi</button>
-    <div id="status" class="mt-3">Silakan upload bukti pembayaran Anda.</div>
-    <a href="./" class="btn btn-secondary w-100 mt-2">Kembali ke Halaman Utama</a>
-  </div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-    };
-    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const ADMIN_WA_NUMBER = "6281803004607";
-    const ADMIN_PANEL_LINK = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const functions = firebase.functions();
-
-    const idPesananInput = document.getElementById("idPesanan");
-    const fileInput = document.getElementById("fileInput");
-    const statusDiv = document.getElementById("status");
-
-    async function sendWhatsApp(to, message) {
-        try {
-            const sendWaMessage = functions.httpsCallable('sendWaMessage');
-            await sendWaMessage({ to, message });
-        } catch (error) {
-            console.error("Gagal memanggil Cloud Function:", error);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unggah Bukti Pembayaran</title>
+    <link rel="icon" href="https://placehold.co/32x32/007bff/ffffff?text=AS" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Theme Variables */
+        :root {
+            --bg-body: #f7f9fc;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --color-brand: #007bff;
+            --color-brand-hover: #0056b3;
+            --border-color: #e0e0e0;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --focus-ring: rgba(0, 123, 255, 0.25);
         }
-    }
 
-    async function upload() {
-      const id = idPesananInput.value.trim();
-      const file = fileInput.files[0];
-      if (!id || !file) return alert("Lengkapi ID dan pilih gambar!");
-      statusDiv.innerText = "⏳ Mengupload gambar...";
-      
-      const base64 = await toBase64(file).catch(() => statusDiv.innerText = "❌ Gagal membaca file.");
-      if (!base64) return;
+        [data-theme="dark"] {
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --color-brand: #4fd1c5;
+            --color-brand-hover: #38b2ac;
+            --border-color: #4a5568;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4);
+            --focus-ring: rgba(79, 209, 197, 0.35);
+        }
 
-      const formDataImg = new FormData();
-      formDataImg.append("key", IMGBB_API_KEY);
-      formDataImg.append("image", base64.split(",")[1]);
+        /* Base Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.3s ease-in-out;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-brand);
+            margin: 0;
+        }
+        .theme-toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--color-brand);
+        }
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
 
-      try {
-        const orderSnapshot = await db.ref(`pesanan/${id}`).once('value');
-        if (!orderSnapshot.exists()) throw new Error('ID Pesanan tidak ditemukan.');
-        const orderData = orderSnapshot.val();
+        main {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: auto;
+            width: 100%;
+            padding: 0;
+        }
 
-        const resImg = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formDataImg });
-        const jsonImg = await resImg.json();
-        if (!jsonImg.success) throw new Error(`Gagal upload ke ImgBB: ${jsonImg.error.message}`);
+        .section-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            padding: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-brand);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        label {
+            font-weight: 500;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
+            display: block;
+            color: var(--text-primary);
+        }
+        input:not([type="checkbox"]), select, textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--color-brand);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        input[type="file"] { padding: 0.5rem 0.8rem; cursor: pointer; }
+        input[readonly] { background-color: var(--bg-body); cursor: not-allowed; }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .btn-primary { background-color: var(--color-brand); color: white; }
+        .btn-primary:not(:disabled):hover {
+            background-color: var(--color-brand-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .btn-gray:hover { background-color: #5a6268; }
+        .btn:disabled {
+            background-color: #a0aec0 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+
+        /* Image Preview */
+        .image-preview-container {
+            margin-top: 1rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        #image-preview {
+            max-height: 200px;
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 0 auto 0.5rem auto;
+        }
+
+        /* Custom Modal & Loading */
+        .custom-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal.show { opacity: 1; visibility: visible; }
+        .custom-modal-content {
+            background-color: var(--bg-card); color: var(--text-primary);
+            padding: 2rem; border-radius: 12px; box-shadow: var(--shadow-light);
+            width: 90%; max-width: 450px; text-align: center;
+            transform: translateY(-20px); transition: transform 0.3s ease;
+        }
+        .custom-modal.show .custom-modal-content { transform: translateY(0); }
+        .custom-modal-content p { font-size: 1.15rem; font-weight: 500; margin-bottom: 1.5rem; }
+        .custom-modal-content button {
+            background-color: var(--color-brand); color: white;
+            padding: 0.7rem 1.5rem; border-radius: 8px; border: none;
+            font-weight: 600; cursor: pointer; transition: background-color 0.2s;
+        }
+        .custom-modal-content button:hover { background-color: var(--color-brand-hover); }
         
-        const imageUrl = jsonImg.data.url;
-        await db.ref("pesanan/" + id).update({ buktiBayar: imageUrl, status: "Sudah Bayar" });
+        .progress-bar-container {
+            width: 100%;
+            background-color: var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .progress-bar {
+            height: 10px;
+            width: 0%;
+            background-color: var(--color-brand);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <header>
+        <h1>Unggah Bukti Pembayaran</h1>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+    </header>
 
-        const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
-        await sendWhatsApp(ADMIN_WA_NUMBER, pesanWA);
-        
-        statusDiv.innerHTML = `✅ Bukti berhasil dikirim! Status pesanan Anda telah diupdate. <br><a href="status.html?id=${id}">Cek Status Sekarang</a>`;
-      } catch (error) {
-        console.error(error);
-        statusDiv.innerText = "❌ Gagal: " + error.message;
-      }
-    }
+    <main>
+        <div class="section-card">
+            <button class="btn btn-gray mb-6" onclick="window.location.href='./'"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button>
+            <h2>Konfirmasi Pembayaran</h2>
+            <p class="text-sm text-text-secondary mb-4 text-center">
+                Mohon unggah bukti pembayaran Anda di sini agar pesanan dapat segera diproses.
+            </p>
+            <form id="uploadForm">
+                <label for="orderId">ID Pesanan</label>
+                <input type="text" id="orderId" placeholder="Masukkan ID Pesanan Anda" required />
 
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
+                <label for="proofImage">Pilih Gambar Bukti Pembayaran</label>
+                <input type="file" id="proofImage" accept="image/png, image/jpeg, image/gif" required />
+                
+                <div id="image-preview-container" class="image-preview-container">
+                    <img id="image-preview" src="#" alt="Pratinjau Gambar" />
+                    <p id="file-details" class="text-sm text-text-secondary"></p>
+                </div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderIdFromUrl = urlParams.get('id');
-        if (orderIdFromUrl) idPesananInput.value = orderIdFromUrl;
-    });
-  </script>
+                <button type="submit" class="btn btn-primary w-full mt-6" id="uploadBtn" disabled><i class="fas fa-upload"></i> Unggah Bukti</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="custom-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <p id="modal-message"></p>
+            <div id="progress-container" class="hidden">
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+            </div>
+            <button id="modal-close-btn" class="hidden mt-4">Oke</button> 
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- Theme Toggle ---
+        window.toggleTheme = function() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', nextTheme);
+            btn.textContent = nextTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', nextTheme);
+        }
+
+        // --- Custom Alert Modal ---
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+
+        function showCustomAlert(message, showCloseButton = true, showProgress = false) {
+            modalMessage.innerHTML = message;
+            modalCloseBtn.classList.toggle('hidden', !showCloseButton);
+            progressContainer.classList.toggle('hidden', !showProgress);
+            if(showProgress) progressBar.style.width = '0%';
+            customModal.classList.add('show');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.remove('show');
+        });
+
+        // --- Firebase Initialization ---
+        let db, auth, storage;
+        // IMPORTANT: Replace with your actual Firebase configuration
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", 
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            projectId: "asdarstoredigitalll-d89c4", 
+            storageBucket: "asdarstoredigitalll-d89c4.appspot.com", 
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+        };
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+            console.log("Firebase initialized successfully.");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            showCustomAlert("Gagal terhubung ke server. Silakan muat ulang halaman.");
+        }
+
+        // --- NgirimWA Constants ---
+        // SECURITY WARNING: This logic should be on a server (e.g., Cloud Function)
+        const NGIRIMWA_APPKEY = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
+        const NGIRIMWA_AUTHKEY = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
+        const ADMIN_WA_NUMBER = "6281803004607";
+        const ADMIN_PANEL_BASE_URL = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
+
+        // --- DOM Elements ---
+        const uploadForm = document.getElementById('uploadForm');
+        const orderIdInput = document.getElementById('orderId');
+        const proofImageInput = document.getElementById('proofImage');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const fileDetails = document.getElementById('file-details');
+
+        // --- File Input Handling & Preview ---
+        proofImageInput.addEventListener('change', () => {
+            const file = proofImageInput.files[0];
+            if (!file) {
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Validate file type and size
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            const maxSize = 5 * 1024 * 1024; // 5 MB
+
+            if (!allowedTypes.includes(file.type)) {
+                showCustomAlert('Tipe file tidak valid. Harap pilih file gambar (JPG, PNG, GIF).');
+                proofImageInput.value = ''; // Reset file input
+                return;
+            }
+
+            if (file.size > maxSize) {
+                showCustomAlert('Ukuran file terlalu besar. Maksimal 5 MB.');
+                proofImageInput.value = ''; // Reset file input
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                fileDetails.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                imagePreviewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- Form Submission ---
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const orderId = orderIdInput.value.trim();
+            const imageFile = proofImageInput.files[0];
+
+            if (!orderId || !imageFile) {
+                showCustomAlert('Mohon lengkapi ID Pesanan dan pilih gambar bukti pembayaran.');
+                return;
+            }
+
+            uploadBtn.disabled = true;
+
+            try {
+                // 1. Check if order exists in Firestore
+                const orderRef = doc(db, 'orders', orderId);
+                const orderDoc = await getDoc(orderRef);
+
+                if (!orderDoc.exists()) {
+                    showCustomAlert(`ID Pesanan <b>${orderId}</b> tidak ditemukan. Mohon periksa kembali.`);
+                    uploadBtn.disabled = false;
+                    return;
+                }
+                
+                const orderData = orderDoc.data();
+
+                // 2. Upload image to Firebase Storage
+                // The path ensures each order's proof is stored in its own folder.
+                const filePath = `proofs/${orderId}/${Date.now()}-${imageFile.name}`;
+                const storageRef = ref(storage, filePath);
+                const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+                showCustomAlert('Mengunggah bukti...', false, true);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = progress + '%';
+                        modalMessage.textContent = `Mengunggah... ${Math.round(progress)}%`;
+                    }, 
+                    (error) => {
+                        console.error("Upload failed:", error);
+                        showCustomAlert(`Gagal mengunggah gambar. Kesalahan: ${error.code}`, true);
+                        uploadBtn.disabled = false;
+                    }, 
+                    async () => {
+                        modalMessage.textContent = 'Memproses pesanan...';
+                        progressBar.style.width = '100%';
+
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            
+                            // 3. Update Firestore document
+                            // It's important to have security rules that only allow status updates
+                            // and prevent other fields from being changed by the user.
+                            await updateDoc(orderRef, {
+                                proofImageUrl: downloadURL,
+                                status: 'Sudah Bayar',
+                                paymentTimestamp: new Date().toISOString()
+                            });
+
+                            // 4. Send WhatsApp notification to admin
+                            await sendWhatsAppNotification(ADMIN_WA_NUMBER, `🔔 Bukti Pembayaran Baru Diterima! 🔔\n\nID Pesanan: *${orderId}*\nProduk: *${orderData.productName}*\nStatus: *Sudah Bayar*\n\nCek di Admin Panel:\n${ADMIN_PANEL_BASE_URL}`);
+
+                            // 5. Show success and provide action button
+                            showCustomAlert(`Bukti pembayaran berhasil diunggah untuk pesanan ID <b>${orderId}</b>.<br>Pesanan Anda akan segera diproses.`, true);
+                            modalCloseBtn.textContent = "Lihat Status Pesanan";
+                            modalCloseBtn.onclick = () => {
+                                window.location.href = `./status.html?id=${orderId}`;
+                            };
+                            
+                            uploadForm.reset();
+                            imagePreviewContainer.style.display = 'none';
+
+                        } catch (finalError) {
+                            console.error("Error updating order:", finalError);
+                            showCustomAlert('Gagal memproses pesanan setelah gambar diunggah. Hubungi admin.', true);
+                        } finally {
+                            uploadBtn.disabled = false;
+                        }
+                    }
+                );
+
+            } catch (error) {
+                console.error("Error processing upload:", error);
+                showCustomAlert('Terjadi kesalahan. Pastikan ID Pesanan benar dan coba lagi.', true);
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // --- Initial Load and Auth ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+
+            // Pre-fill order ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderIdFromUrl = urlParams.get('id');
+            if (orderIdFromUrl) {
+                orderIdInput.value = orderIdFromUrl;
+            }
+            
+            // Firebase Auth: Enable upload button only after user session is confirmed.
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("User is signed in anonymously:", user.uid);
+                    uploadBtn.disabled = false;
+                } else {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Anonymous sign-in failed:", error);
+                        showCustomAlert("Gagal menginisialisasi sesi. Silakan muat ulang halaman.", true);
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
