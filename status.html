@@ -74,7 +74,7 @@
         const searchResultsDiv = document.getElementById('searchResults');
 
         // --- Helpers ---
-        const formatRupiah = (angka) => parseFloat(angka).toLocaleString('id-ID');
+        const formatRupiah = (angka) => angka ? parseFloat(angka).toLocaleString('id-ID') : '0';
         const normalizePhone = (num) => {
             if (!num) return '';
             let n = String(num).replace(/[^0-9]/g, '');
@@ -88,10 +88,10 @@
             const level = statusLevels[order.status] ?? -1;
             const timelineWidth = level >= 0 ? (level / 3) * 100 : 0;
             const isCancelled = level === -1;
-            const date = new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+            const date = order.timestamp ? new Date(order.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Invalid Date';
             
             orderStatusContainer.innerHTML = `
-                <h2 class="text-center mb-4">Detail Pesanan #${order.id}</h2>
+                <h2 class="text-center mb-4">Detail Pesanan #${order.id || 'N/A'}</h2>
                 ${isCancelled ? `<div class="text-center p-4 rounded-lg bg-red-100 text-red-700"><p class="font-bold">Pesanan Dibatalkan</p></div>` : `
                     <div class="timeline">
                         ${Object.keys(statusLevels).filter(s => statusLevels[s] >= 0).map((status, i) => `
@@ -101,14 +101,14 @@
                         <div class="timeline-progress" style="width: ${timelineWidth}%;"></div>
                     </div>`}
                 <div class="order-detail mt-8">
-                    <p><strong>Status:</strong> <span class="font-bold">${order.status}</span></p>
-                    <p><strong>Produk:</strong> ${order.productName}</p>
+                    <p><strong>Status:</strong> <span class="font-bold">${order.status || 'N/A'}</span></p>
+                    <p><strong>Produk:</strong> ${order.productName || order.produk || 'N/A'}</p>
                     <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
                     <p><strong>Waktu Pesan:</strong> ${date}</p>
-                    <p><strong>Bukti Bayar:</strong> ${order.buktiBayarUrl ? `<a href="${order.buktiBayarUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a>` : 'Belum diunggah'}</p>
+                    <p><strong>Bukti Bayar:</strong> ${order.buktiBayarUrl || order.buktiBayar ? `<a href="${order.buktiBayarUrl || order.buktiBayar}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a>` : 'Belum diunggah'}</p>
                     ${order.hasilFulfillment ? `<p><strong>Catatan Admin:</strong> ${order.hasilFulfillment}</p>` : ''}
+                    ${order.buktiAdmin ? `<p><strong>Bukti dari Admin:</strong><br><img src="${order.buktiAdmin}" class="max-w-full rounded-lg mt-2" /></p>` : ''}
                 </div>
-                <!-- PERBAIKAN FINAL: Menggunakan ./uplod.html untuk tautan -->
                 ${order.status === 'Belum Bayar' ? `<div class="flex justify-center mt-6"><button class="btn btn-primary" onclick="window.location.href='./uplod.html?id=${order.id}'"><i class="fas fa-upload"></i> Unggah Bukti Bayar</button></div>` : ''}
             `;
         }
@@ -118,8 +118,11 @@
         function listenToOrderStatus(orderId) {
             orderStatusContainer.innerHTML = `<div class="spinner"></div>`;
             db.ref(`pesanan/${orderId}`).on('value', snapshot => {
-                if (snapshot.exists()) renderOrderStatus(snapshot.val());
-                else renderNotFound();
+                if (snapshot.exists()) {
+                    renderOrderStatus(snapshot.val());
+                } else {
+                    renderNotFound();
+                }
             }, error => {
                 console.error("Listen Error:", error);
                 renderNotFound();
@@ -139,7 +142,7 @@
 
                 for (const id in allOrders) {
                     const order = allOrders[id];
-                    if (id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedKeyword && normalizePhone(order.buyerWa) === normalizedKeyword)) {
+                    if (id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedKeyword && normalizePhone(order.wa_aktif) === normalizedKeyword)) {
                         foundOrders.push(order);
                     }
                 }
@@ -149,7 +152,7 @@
                     foundOrders.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(order => `
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2 flex justify-between items-center">
                             <div>
-                                <p class="font-semibold">${order.productName}</p>
+                                <p class="font-semibold">${order.productName || order.produk}</p>
                                 <p class="text-sm text-text-secondary">ID: ${order.id}</p>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="viewOrderDetail('${order.id}')">Lihat</button>
