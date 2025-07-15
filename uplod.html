@@ -30,6 +30,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -46,38 +47,24 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const functions = firebase.functions();
 
     const idPesananInput = document.getElementById("idPesanan");
     const fileInput = document.getElementById("fileInput");
     const statusDiv = document.getElementById("status");
 
+    // PERBAIKAN: Menggunakan Firebase Functions untuk mengirim WhatsApp
     async function sendWhatsApp(to, message) {
-      const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-      const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-
-      const formData = new FormData();
-      formData.append("appkey", appkey);
-      formData.append("authkey", authkey);
-      formData.append("to", to);
-      formData.append("message", message);
-      
-      // PERBAIKAN: Menggunakan URL API yang benar
-      const apiUrl = "https://ngirimwa.com/api/send-message";
-
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          body: formData
-        });
-
-        const result = await response.json();
-        if (result.status !== 'success') {
-          throw new Error(result.message || 'Gagal kirim WA dari NgirimWA');
+        try {
+            const sendWaMessage = functions.httpsCallable('sendWaMessage');
+            await sendWaMessage({ to: to, message: message });
+            console.log("✅ Permintaan notifikasi WA berhasil dikirim ke Cloud Function.");
+        } catch (error) {
+            console.error("❌ Gagal memanggil Cloud Function:", error);
+            // Meskipun gagal kirim WA, proses lain tetap berjalan
+            // Anda bisa menambahkan alert di sini jika ingin memberitahu pengguna
+            // alert("Gagal mengirim notifikasi, tapi pesanan Anda tetap diupdate.");
         }
-        console.log("✅ WhatsApp sent:", result);
-      } catch (err) {
-        console.error("❌ Gagal kirim WA via NgirimWA:", err);
-      }
     }
 
     async function upload() {
@@ -110,7 +97,6 @@
             waktu: new Date().toISOString()
         });
 
-        // PERBAIKAN: Memperbaiki template string untuk menyertakan link dengan benar
         const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
         
         await sendWhatsApp(ADMIN_WA_NUMBER, pesanWA);
