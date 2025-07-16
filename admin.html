@@ -40,9 +40,46 @@
     .toast.show { display: block; }
     
     .modal-backdrop.show { opacity: 0.5; }
+
+    #global-refresh-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        font-size: 20px;
+        z-index: 1050;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    /* ▼▼▼ STYLE UNTUK MEMBUAT LIST BISA DI-SCROLL ▼▼▼ */
+    #pesananList, #product-container {
+        max-height: 65vh; /* Batas tinggi maksimal, 65% dari tinggi layar */
+        overflow-y: auto; /* Tampilkan scrollbar vertikal jika perlu */
+        padding: 15px;    /* Sedikit ruang di dalam box */
+        border: 1px solid var(--border-color); /* Garis batas agar terlihat rapi */
+        border-radius: 8px; /* Sudut melengkung */
+        background-color: #fff; /* Warna latar belakang agar kontras */
+    }
+    /* Mengubah margin pada order-card di dalam list scroll */
+    #pesananList .order-card {
+        margin-left: -5px;
+        margin-right: -5px;
+    }
+    #pesananList .order-card:last-child {
+        margin-bottom: 0;
+    }
+
   </style>
 </head>
 <body>
+
+<button id="global-refresh-btn" class="btn btn-primary shadow-lg" title="Refresh Halaman">
+    <i class="fas fa-sync-alt"></i>
+</button>
 
 <div class="toast-container"></div>
 <div class="modal fade" id="confirmModal" tabindex="-1">
@@ -183,6 +220,7 @@
     let confirmModal;
 
     // === UI Elements ===
+    const globalRefreshBtn = document.getElementById('global-refresh-btn');
     const filterStatus = document.getElementById('filterStatus');
     const searchId = document.getElementById('searchId');
     const pesananList = document.getElementById('pesananList');
@@ -434,11 +472,11 @@
         container.innerHTML = '<p class="text-center text-muted p-4">Memuat data moderasi...</p>';
         db.ref('dynamicContent/admin').once('value').then(snapshot => {
             const content = snapshot.val();
-            if (!content) {
+            if (!content || !content.html) {
                 container.innerHTML = '<p class="text-center text-muted">Belum ada konten moderasi yang ditambahkan. Silakan tambahkan melalui tab "Konten Dinamis".</p>';
                 return;
             }
-            if (content.html) container.innerHTML = content.html;
+            container.innerHTML = content.html;
             if (content.css) {
                 const style = document.createElement('style');
                 style.id = 'dynamic-admin-styles';
@@ -462,6 +500,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         
+        globalRefreshBtn.addEventListener('click', () => location.reload());
         filterStatus.addEventListener('change', renderPesanan);
         searchId.addEventListener('input', renderPesanan);
         deleteAllOrdersBtn.addEventListener('click', deleteAllOrders);
