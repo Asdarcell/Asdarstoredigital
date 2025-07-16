@@ -133,13 +133,12 @@
       border-radius: 12px;
       padding: 20px;
       height: 400px; /* Tinggi box testimoni */
-      overflow-y: auto; /* Ubah ke auto agar bisa di-scroll */
+      overflow-y: auto; /* Ubah agar bisa di-scroll */
       position: relative;
       box-shadow: 0 4px 12px var(--shadow);
       border: 1px solid var(--border);
-      display: flex; /* Tambahkan flexbox */
-      flex-direction: column; /* Arahkan item ke bawah */
-      justify-content: flex-start; /* Mulai dari atas */
+      display: flex;
+      flex-direction: column;
     }
     .testimonial-bubble {
       background-color: var(--primary);
@@ -150,7 +149,7 @@
       max-width: 80%;
       align-self: flex-start;
       opacity: 0;
-      animation: slideInUp 0.5s ease-out forwards, fadeOut 0.5s ease-in 10s forwards; /* Muncul, lalu hilang setelah 10 detik */
+      animation: slideInUp 0.5s ease-out forwards, fadeOut 0.5s ease-in 10s forwards;
     }
     .testimonial-bubble b {
       display: block;
@@ -166,7 +165,6 @@
       to { opacity: 0; height: 0; padding: 0; margin: 0; border: 0; }
     }
 
-
     /* Result Section */
     #hasil {
         margin-top: 30px;
@@ -181,8 +179,8 @@
       text-align: center;
       border-radius: 8px;
       text-decoration: none;
-      display: inline-block; /* Ubah ke inline-block */
-      width: calc(50% - 10px); /* Buat jadi 2 tombol per baris */
+      display: inline-block;
+      width: calc(50% - 10px);
       font-weight: bold;
       transition: background-color 0.3s ease, transform 0.2s ease;
       color: white !important;
@@ -238,12 +236,11 @@
     }
     .faq-item.active .faq-answer {
         padding-top: 15px;
-        max-height: 200px; /* Sesuaikan jika jawaban lebih panjang */
+        max-height: 200px;
     }
     .faq-item.active .faq-question::after {
         transform: rotate(180deg);
     }
-
   </style>
 </head>
 <body data-theme="light">
@@ -276,7 +273,7 @@
     <div data-aos="fade-up">
         <h2>Testimoni Pelanggan Kami</h2>
         <div id="testimoniContainer">
-            </div>
+        </div>
     </div>
     
     <div data-aos="fade-up" class="section-container">
@@ -296,7 +293,7 @@
     <div data-aos="fade-up">
         <h2>Ada Pertanyaan?</h2>
         <div class="section-container" id="faq-container">
-            </div>
+        </div>
     </div>
     
     <hr>
@@ -453,7 +450,7 @@
                 <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
             `;
             document.getElementById('formPesanan').reset();
-            window.scrollTo(0, document.getElementById('hasil').offsetTop); // Scroll ke hasil
+            window.scrollTo(0, document.getElementById('hasil').offsetTop);
             
             const pesanAdmin = `📦 Pesanan Baru!\n\nID: *${id}*\nNama: ${nama}\nWA: ${waAktif}\nProduk: ${produk}\nHarga: Rp${formatRupiah(harga)}\n\nCek di Admin Panel:\n${ADMIN_PANEL_LINK}`;
             await sendWhatsApp(ADMIN_WA_NUMBER, pesanAdmin);
@@ -464,56 +461,54 @@
         }
     });
 
-_     window.cekStatus = () => {
+    window.cekStatus = () => {
         const id = document.getElementById('idCek').value.trim();
         if (id) window.location.href = `status.html?id=${id}`;
         else alert("Masukkan ID Pesanan.");
     };
 
     // --- Logika Testimoni Baru (Diperbaiki) ---
-    const testimoniContainer = document.getElementById('testimoniContainer');
+    const testimoniContainer = document.getElementById('testimoniContainer');
+    
+    // Tampilkan pesan awal
+    testimoniContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">Menunggu testimoni terbaru...</p>`;
 
-    // Tampilkan pesan awal jika belum ada testimoni
-    testimoniContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">Menunggu testimoni terbaru...</p>`;
+    // Fungsi untuk menampilkan satu bubble testimoni
+    function tampilkanSatuTesti(testimoni) {
+        // Hapus pesan awal jika ada
+        const initialMsg = testimoniContainer.querySelector('p');
+        if (initialMsg) {
+            initialMsg.remove();
+        }
 
-    // Fungsi untuk membuat dan menampilkan satu bubble testimoni
-    function tampilkanSatuTesti(testimoni) {
-        // Jika ada pesan "Menunggu...", hapus dulu
-        const initialMsg = testimoniContainer.querySelector('p');
-        if (initialMsg) {
-            initialMsg.remove();
-        }
+        const bubble = document.createElement('div');
+        bubble.className = 'testimonial-bubble';
+        bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.pesan || ''}`;
+        
+        testimoniContainer.appendChild(bubble);
 
-        const bubble = document.createElement('div');
-        bubble.className = 'testimonial-bubble';
-        bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.pesan || ''}`;
-        
-        // Tambahkan bubble ke container
-        testimoniContainer.appendChild(bubble);
-
-        // Otomatis scroll ke bawah
-        testimoniContainer.scrollTop = testimoniContainer.scrollHeight;
-
-        // Hapus bubble setelah animasinya selesai (10.5 detik) agar DOM tetap bersih
-        setTimeout(() => {
-            if (bubble.parentElement) {
-                bubble.parentElement.removeChild(bubble);
-            }
-            // Jika container kosong lagi, tampilkan pesan awal kembali
+        // Hapus bubble setelah animasi selesai agar DOM tidak menumpuk
+        setTimeout(() => {
+            if (bubble.parentElement) {
+                testimoniContainer.removeChild(bubble);
+            }
+            // Jika container kosong lagi setelah bubble dihapus, tampilkan pesan awal kembali
             if (testimoniContainer.children.length === 0) {
                 testimoniContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">Menunggu testimoni terbaru...</p>`;
             }
-        }, 10500); // Harus sedikit lebih lama dari durasi animasi fadeOut
-    }
+        }, 10500); // Waktu harus > durasi animasi fadeOut
 
-    // Listener ini akan berjalan SETIAP KALI ada testimoni BARU yang disetujui (ditambahkan ke node 'testimoni')
-    db.ref('testimoni').limitToLast(10).on('child_added', snap => {
-        const testimoniBaru = snap.val();
-        if (testimoniBaru) {
-            // Tampilkan testimoni yang baru masuk
-            tampilkanSatuTesti(testimoniBaru);
-        }
-    });
+        // Otomatis scroll ke bawah
+        testimoniContainer.scrollTop = testimoniContainer.scrollHeight;
+    }
+
+    // Listener ini akan aktif SETIAP KALI ada testimoni BARU yang ditambahkan
+    db.ref('testimoni').limitToLast(10).on('child_added', snap => {
+        const testimoniBaru = snap.val();
+        if (testimoniBaru) {
+            tampilkanSatuTesti(testimoniBaru);
+        }
+    });
 
     document.getElementById('formTestimoni').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -545,7 +540,6 @@ _     window.cekStatus = () => {
         }
     });
 
-
     // --- Logika FAQ ---
     const faqData = [
       { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk yang Anda inginkan, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
@@ -567,13 +561,11 @@ _     window.cekStatus = () => {
 
     document.querySelectorAll('.faq-question').forEach(item => {
         item.addEventListener('click', () => {
-            // Tutup semua item lain sebelum membuka yang ini
             document.querySelectorAll('.faq-item').forEach(el => {
                 if(el !== item.parentElement && el.classList.contains('active')) {
                     el.classList.remove('active');
                 }
             });
-            // Buka/tutup item yang di-klik
             item.parentElement.classList.toggle('active');
         });
     });
