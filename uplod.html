@@ -23,7 +23,7 @@
         <label for="fileInput" class="form-label">Pilih Gambar Bukti</label>
         <input type="file" class="form-control" id="fileInput" accept="image/*" />
     </div>
-    <button class="btn btn-primary w-100" onclick="upload()">📤 Upload & Kirim Notifikasi</button>
+    <button class="btn btn-primary w-100" onclick="upload()">📤 Upload & Konfirmasi via WhatsApp</button>
     <div id="status" class="mt-3">Silakan upload bukti pembayaran Anda.</div>
     <a href="./" class="btn btn-secondary w-100 mt-2">Kembali ke Halaman Utama</a>
   </div>
@@ -31,7 +31,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
-    // --- Config ---
+    // --- Konfigurasi ---
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -41,54 +41,28 @@
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
-    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const ADMIN_WA_NUMBER = "6281803004607";
-    const ADMIN_PANEL_LINK = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
 
-    // --- Init Firebase ---
+    // Kunci ImgBB ini masih bisa dilihat publik.
+    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+
+    // ✅ Ganti dengan nomor WA admin Anda (tanpa '0' di depan)
+    const ADMIN_WA_NUMBER = "6281803004607"; 
+
+    // --- Inisialisasi Firebase ---
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- DOM Elements ---
+    // --- Elemen DOM ---
     const idPesananInput = document.getElementById("idPesanan");
     const fileInput = document.getElementById("fileInput");
     const statusDiv = document.getElementById("status");
-
-    // --- Helper Functions ---
-    function sendWhatsApp(to, message) {
-      const appkey = "ab3727c5-e0be-40f9-bb3f-25d93b029f7a";
-      const authkey = "tbAWbiCwmK1H0IgWpkJFzwiv8yXMuenAyenek6rJBG8QEqyiqq";
-      const apiUrl = "https://api.ngirimwa.com/sendText";
-
-      const body = new URLSearchParams();
-      body.append("appkey", appkey);
-      body.append("authkey", authkey);
-      body.append("to", to);
-      body.append("message", message);
-
-      // Menggunakan fetch tanpa await (fire and forget)
-      fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result.status === 'success') {
-          console.log("✅ Notifikasi WA berhasil dikirim:", result);
-        } else {
-          console.warn("Gagal mengirim notifikasi WA:", result);
-        }
-      })
-      .catch(err => {
-        console.error("❌ Gagal kirim WA via NgirimWA:", err);
-      });
-    }
-
+    
+    // --- Fungsi Utama Upload ---
     async function upload() {
       const id = idPesananInput.value.trim();
       const file = fileInput.files[0];
-      if (!id || !file) return alert("Lengkapi ID dan pilih gambar!");
+      if (!id || !file) return alert("Lengkapi ID Pesanan dan pilih gambar!");
+
       statusDiv.innerText = "⏳ Mengupload gambar...";
       
       const base64 = await toBase64(file).catch(() => {
@@ -104,7 +78,6 @@
       try {
         const orderSnapshot = await db.ref(`pesanan/${id}`).once('value');
         if (!orderSnapshot.exists()) throw new Error('ID Pesanan tidak ditemukan.');
-        const orderData = orderSnapshot.val();
 
         const resImg = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formDataImg });
         const jsonImg = await resImg.json();
@@ -116,18 +89,27 @@
             buktiBayar: imageUrl, 
             status: "Sudah Bayar"
         });
+        
+        statusDiv.innerHTML = `✅ Upload Berhasil! Silakan kirim konfirmasi ke WhatsApp.`;
 
-        const pesanWA = `🔔 Bukti Bayar Diterima! 🔔\n\nID Pesanan: *${id}*\nNama Pembeli: ${orderData.nama}\nLink Bukti: ${imageUrl}\n\nSegera verifikasi di Admin Panel:\n${ADMIN_PANEL_LINK}`;
+        // --- INI BAGIAN BARU UNTUK WA.ME ---
+        // 1. Buat pesan yang akan diisi otomatis
+        const pesanWA = `Halo Admin, saya sudah upload bukti pembayaran.\n\nID Pesanan: ${id}\nLink Bukti: ${imageUrl}`;
+        const pesanEncoded = encodeURIComponent(pesanWA);
+
+        // 2. Buat link wa.me
+        const linkWhatsApp = `https://wa.me/${ADMIN_WA_NUMBER}?text=${pesanEncoded}`;
         
-        sendWhatsApp(ADMIN_WA_NUMBER, pesanWA); // Kirim notif tanpa menunggu selesai
-        
-        statusDiv.innerHTML = `✅ Bukti berhasil dikirim! Status pesanan Anda telah diupdate. <br><a href="status.html?id=${id}">Cek Status Sekarang</a>`;
+        // 3. Buka link di tab baru, yang akan membuka aplikasi WhatsApp
+        window.open(linkWhatsApp, '_blank');
+
       } catch (error) {
         console.error(error);
         statusDiv.innerText = "❌ Gagal: " + error.message;
       }
     }
 
+    // --- Fungsi Helper (tidak perlu diubah) ---
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -137,6 +119,7 @@
       });
     }
 
+    // Mengambil ID dari URL saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdFromUrl = urlParams.get('id');
