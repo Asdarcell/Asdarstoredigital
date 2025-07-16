@@ -42,11 +42,11 @@
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
 
-    // Kunci ImgBB ini masih bisa dilihat publik.
+    // ⚠️ Kunci ImgBB ini bisa dilihat publik. Gunakan dengan kesadaran akan risikonya.
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-
-    // ✅ Ganti dengan nomor WA admin Anda (tanpa '0' di depan)
-    const ADMIN_WA_NUMBER = "6281803004607"; 
+    
+    // ✅ Pastikan nomor WA admin ini benar (format 62, tanpa '0' atau '+')
+    const ADMIN_WA_NUMBER = "6281803004607";
 
     // --- Inisialisasi Firebase ---
     firebase.initializeApp(firebaseConfig);
@@ -65,19 +65,15 @@
 
       statusDiv.innerText = "⏳ Mengupload gambar...";
       
-      const base64 = await toBase64(file).catch(() => {
-        statusDiv.innerText = "❌ Gagal membaca file gambar.";
-        return null;
-      });
-      if (!base64) return;
-
-      const formDataImg = new FormData();
-      formDataImg.append("key", IMGBB_API_KEY);
-      formDataImg.append("image", base64.split(",")[1]);
-
       try {
         const orderSnapshot = await db.ref(`pesanan/${id}`).once('value');
         if (!orderSnapshot.exists()) throw new Error('ID Pesanan tidak ditemukan.');
+        const orderData = orderSnapshot.val();
+        
+        const base64 = await toBase64(file);
+        const formDataImg = new FormData();
+        formDataImg.append("key", IMGBB_API_KEY);
+        formDataImg.append("image", base64.split(",")[1]);
 
         const resImg = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formDataImg });
         const jsonImg = await resImg.json();
@@ -90,17 +86,26 @@
             status: "Sudah Bayar"
         });
         
-        statusDiv.innerHTML = `✅ Upload Berhasil! Silakan kirim konfirmasi ke WhatsApp.`;
+        statusDiv.innerHTML = `✅ Upload Berhasil! Anda akan dialihkan ke WhatsApp untuk mengirim konfirmasi.`;
 
-        // --- INI BAGIAN BARU UNTUK WA.ME ---
-        // 1. Buat pesan yang akan diisi otomatis
-        const pesanWA = `Halo Admin, saya sudah upload bukti pembayaran.\n\nID Pesanan: ${id}\nLink Bukti: ${imageUrl}`;
-        const pesanEncoded = encodeURIComponent(pesanWA);
+        // --- Membuat Pesan Lengkap untuk Admin ---
+        const pesanWA = `🔔 *Notifikasi Pembayaran* 🔔
 
-        // 2. Buat link wa.me
-        const linkWhatsApp = `https://wa.me/${ADMIN_WA_NUMBER}?text=${pesanEncoded}`;
-        
-        // 3. Buka link di tab baru, yang akan membuka aplikasi WhatsApp
+Pelanggan telah mengupload bukti pembayaran.
+
+📝 *Detail Pesanan:*
+- *ID Pesanan:* ${id}
+- *Nama Pembeli:* ${orderData.nama}
+- *Produk:* ${orderData.produk}
+
+🔗 *Link Bukti Bayar:*
+${imageUrl}
+
+👇 *Segera lakukan verifikasi di dashboard admin:*
+https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+    
+        // --- Membuka WhatsApp Pelanggan ---
+        const linkWhatsApp = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(pesanWA)}`;
         window.open(linkWhatsApp, '_blank');
 
       } catch (error) {
