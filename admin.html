@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
-    /* ... (CSS tidak ada perubahan sama sekali) ... */
     :root {
       --primary-color: #0d6efd;
       --success-color: #198754;
@@ -64,6 +63,7 @@
   <ul class="nav nav-tabs" id="adminTab" role="tablist">
     <li class="nav-item" role="presentation"><button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-pane" type="button"><i class="fas fa-receipt me-2"></i>Pesanan</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button"><i class="fas fa-box-open me-2"></i>Produk</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="moderasi-tab" data-bs-toggle="tab" data-bs-target="#moderasi-pane" type="button"><i class="fas fa-comment-check me-2"></i>Moderasi Testimoni</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button"><i class="fas fa-file-code me-2"></i>Konten Dinamis</button></li>
   </ul>
 
@@ -111,6 +111,14 @@
             <div id="product-container"></div>
         </div></div>
     </div>
+
+    <div class="tab-pane fade" id="moderasi-pane" role="tabpanel">
+        <div class="card mt-3">
+          <div class="card-body">
+            <div id="dynamic-content-area"></div>
+          </div>
+        </div>
+    </div>
     
     <div class="tab-pane fade" id="content-pane" role="tabpanel">
         <div class="card mt-3"><div class="card-body">
@@ -132,6 +140,7 @@
                 <textarea id="editorJS" rows="8" class="form-control font-monospace" placeholder="// Kode JavaScript Anda di sini"></textarea>
             </div>
             <button id="simpanDinamisBtn" class="btn btn-primary"><i class="fas fa-save me-2"></i>Simpan Konten Dinamis</button>
+            <button id="hapusDinamisBtn" class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>Hapus Konten Ini</button>
         </div></div>
     </div>
   </div>
@@ -142,9 +151,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
-    // Seluruh kode JavaScript tidak ada yang berubah, jadi saya tidak akan menampilkannya lagi
-    // untuk menghemat tempat. Anda bisa gunakan kode JavaScript dari jawaban saya sebelumnya.
-    // ... (Salin semua kode <script> dari jawaban sebelumnya ke sini) ...
     // === Firebase & Config ===
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -222,6 +228,7 @@
 
     // === Order Management ===
     function renderPesanan() {
+        // Fungsi ini tidak diubah, tetap sama seperti sebelumnya
         const filter = filterStatus.value;
         const search = searchId.value.toLowerCase();
         const sortedIds = Object.keys(allDataPesanan).sort((a, b) => new Date(allDataPesanan[b].waktu) - new Date(allDataPesanan[a].waktu));
@@ -339,8 +346,9 @@
         }
     }
     
-    // === Product Management (IMPROVED) ===
+    // === Product Management ===
     function loadProduk() {
+        // Fungsi ini tidak diubah, tetap sama seperti sebelumnya
         db.ref('produk').on('value', snap => {
             const produkPerKategori = snap.val() || {};
             const productContainer = document.getElementById('product-container');
@@ -406,10 +414,9 @@
 
         if (!kategori || !varian || !data.harga || !data.cara) return showToast("Lengkapi semua field produk!", 'error');
         
-        // Cek apakah produk sudah ada untuk menentukan 'urutan'
         const existingProd = await db.ref(`produk/${kategori}/${varian}`).once('value');
         if (!existingProd.exists()) {
-            data.urutan = Date.now(); // Beri urutan baru jika produk baru
+            data.urutan = Date.now();
         }
 
         await db.ref(`produk/${kategori}/${varian}`).update(data);
@@ -432,12 +439,13 @@
         }
     };
 
-    // === Dynamic Content Management (RESTORED) ===
+    // === Dynamic Content Management ===
     const halamanSelect = document.getElementById('halamanDinamis');
     const editorHTML = document.getElementById('editorHTML');
     const editorCSS = document.getElementById('editorCSS');
     const editorJS = document.getElementById('editorJS');
     const simpanDinamisBtn = document.getElementById('simpanDinamisBtn');
+    const hapusDinamisBtn = document.getElementById('hapusDinamisBtn'); // Tombol Hapus Baru
 
     function loadDinamis() {
       const halaman = halamanSelect.value;
@@ -460,6 +468,28 @@
       }).then(() => showToast('Konten dinamis berhasil disimpan!', 'success'));
     }
 
+    async function handleHapusDinamis() {
+        const halaman = halamanSelect.value;
+        if (!halaman) return showToast('Pilih halaman yang akan dihapus!', 'error');
+
+        const confirmed = await showConfirm(
+            'Konfirmasi Hapus Konten',
+            `Anda yakin ingin menghapus semua konten dinamis untuk halaman ${halaman}.html? Tindakan ini tidak dapat dibatalkan.`
+        );
+
+        if (confirmed) {
+            db.ref(`dynamicContent/${halaman}`).remove()
+              .then(() => {
+                  showToast(`Konten dinamis untuk ${halaman}.html telah dihapus.`, 'success');
+                  // Kosongkan editor setelah hapus
+                  editorHTML.value = '';
+                  editorCSS.value = '';
+                  editorJS.value = '';
+              })
+              .catch((err) => showToast(`Gagal menghapus: ${err.message}`, 'error'));
+        }
+    }
+
     // === App Initialization ===
     function initEventListeners() {
         filterStatus.addEventListener('change', renderPesanan);
@@ -467,16 +497,38 @@
         deleteAllOrdersBtn.addEventListener('click', deleteAllOrders);
         uploadBuktiBtn.addEventListener('click', handleUploadBukti);
         formProduk.addEventListener('submit', handleSimpanProduk);
+        // Event Listener untuk Konten Dinamis
         simpanDinamisBtn.addEventListener('click', handleSimpanDinamis);
+        hapusDinamisBtn.addEventListener('click', handleHapusDinamis); // Listener baru
         halamanSelect.addEventListener('change', loadDinamis);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        // Muat data pesanan
         db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
+        // Muat data produk
         loadProduk();
-        initEventListeners();
+        // Muat konten dinamis saat pertama kali buka
         loadDinamis();
+        // Daftarkan semua event listener
+        initEventListeners();
+
+        // Tambahkan kode untuk memuat konten dinamis di admin page
+        db.ref('dynamicContent/admin').once('value').then(s => {
+            const k = s.val();
+            if(k && k.html) document.getElementById('dynamic-content-area').innerHTML = k.html;
+            if(k && k.css) {
+                const style = document.createElement('style');
+                style.textContent = k.css;
+                document.head.appendChild(style);
+            }
+            if(k && k.js) {
+                const script = document.createElement('script');
+                script.textContent = k.js;
+                document.body.appendChild(script);
+            }
+        });
     });
 </script>
 </body>
