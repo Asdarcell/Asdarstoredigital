@@ -127,19 +127,16 @@
       box-shadow: 0 2px 8px var(--shadow);
     }
 
-    /* Testimonial Chat Style */
+    /* --- Testimonial Chat Style --- */
     #testimoniContainer {
       background: var(--card);
       border-radius: 12px;
       padding: 20px;
-      height: 400px;
-      overflow: hidden;
+      height: 400px; /* Tinggi box testimoni */
+      overflow: hidden; /* Sembunyikan bubble yang keluar box */
       position: relative;
       box-shadow: 0 4px 12px var(--shadow);
       border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
     }
     .testimonial-bubble {
       background-color: var(--primary);
@@ -150,7 +147,7 @@
       max-width: 80%;
       align-self: flex-start;
       opacity: 0;
-      animation: slideInUp 0.5s ease-out forwards;
+      animation: slideInUp 0.5s ease-out forwards, fadeOut 0.5s ease-in 10s forwards; /* Muncul, lalu hilang setelah 10 detik */
     }
     .testimonial-bubble b {
       display: block;
@@ -161,6 +158,11 @@
       from { transform: translateY(50px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; height: 0; padding: 0; margin: 0; border: 0; }
+    }
+
 
     /* Result Section */
     #hasil {
@@ -176,8 +178,8 @@
       text-align: center;
       border-radius: 8px;
       text-decoration: none;
-      display: inline-block;
-      width: calc(50% - 10px);
+      display: inline-block; /* Ubah ke inline-block */
+      width: calc(50% - 10px); /* Buat jadi 2 tombol per baris */
       font-weight: bold;
       transition: background-color 0.3s ease, transform 0.2s ease;
       color: white !important;
@@ -205,7 +207,7 @@
         margin-top: 20px;
     }
     
-    /* FAQ Section Style */
+    /* --- FAQ Section Style --- */
     .faq-item {
         border-bottom: 1px solid var(--border);
         padding: 15px 0;
@@ -233,11 +235,12 @@
     }
     .faq-item.active .faq-answer {
         padding-top: 15px;
-        max-height: 200px;
+        max-height: 200px; /* Sesuaikan jika jawaban lebih panjang */
     }
     .faq-item.active .faq-question::after {
         transform: rotate(180deg);
     }
+
   </style>
 </head>
 <body data-theme="light">
@@ -314,9 +317,9 @@
   <script>
     // Inisialisasi AOS (Animasi)
     AOS.init({
-        duration: 800,
-        once: true,
-        offset: 50,
+        duration: 800, // Durasi animasi
+        once: true, // Animasi hanya terjadi sekali
+        offset: 50, // Memicu animasi sedikit lebih awal
     });
 
     const firebaseConfig = {
@@ -358,6 +361,7 @@
         document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
     
+    // Efek shadow pada header saat scroll
     window.addEventListener('scroll', () => {
         const header = document.getElementById('header');
         if (window.scrollY > 10) {
@@ -446,7 +450,7 @@
                 <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
             `;
             document.getElementById('formPesanan').reset();
-            window.scrollTo(0, document.getElementById('hasil').offsetTop);
+            window.scrollTo(0, document.getElementById('hasil').offsetTop); // Scroll ke hasil
             
             const pesanAdmin = `📦 Pesanan Baru!\n\nID: *${id}*\nNama: ${nama}\nWA: ${waAktif}\nProduk: ${produk}\nHarga: Rp${formatRupiah(harga)}\n\nCek di Admin Panel:\n${ADMIN_PANEL_LINK}`;
             await sendWhatsApp(ADMIN_WA_NUMBER, pesanAdmin);
@@ -462,41 +466,47 @@
         if (id) window.location.href = `status.html?id=${id}`;
         else alert("Masukkan ID Pesanan.");
     };
-    
-    // --- Logika Testimoni ---
-    const testimoniContainer = document.getElementById('testimoniContainer');
-    let testimoniInterval;
-    db.ref('testimoni').on('value', snap => {
-        const dataTesti = Object.values(snap.val() || {}).reverse();
-        
-        clearInterval(testimoniInterval);
-        testimoniContainer.innerHTML = '';
 
-        if (dataTesti.length > 0) {
+    // --- Logika Testimoni Baru ---
+    const testimoniContainer = document.getElementById('testimoniContainer');
+    let testimoniDijalankan = false;
+
+    function tampilkanSatuTesti(testimoni) {
+        const bubble = document.createElement('div');
+        bubble.className = 'testimonial-bubble';
+        bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.pesan || ''}`;
+        
+        // Tambahkan bubble ke container
+        testimoniContainer.appendChild(bubble);
+
+        // Hapus bubble setelah animasinya selesai agar tidak menumpuk
+        setTimeout(() => {
+            if (bubble.parentElement) {
+                testimoniContainer.removeChild(bubble);
+            }
+        }, 10500); // Waktu animasi fadeOut + sedikit buffer
+
+        // Jaga agar container scroll ke bawah saat ada bubble baru
+        testimoniContainer.scrollTop = testimoniContainer.scrollHeight;
+    }
+
+    db.ref('testimoni').on('value', snap => {
+        const dataTesti = Object.values(snap.val() || {});
+        if (dataTesti.length > 0 && !testimoniDijalankan) {
+            testimoniDijalankan = true;
             let i = 0;
-            const runTesti = () => {
-                if (!dataTesti[i]) return;
-                const bubble = document.createElement('div');
-                bubble.className = 'testimonial-bubble';
-                bubble.innerHTML = `<b>${dataTesti[i].nama || 'Anonim'}</b> ${dataTesti[i].pesan || ''}`;
-                testimoniContainer.appendChild(bubble);
-                testimoniContainer.scrollTop = testimoniContainer.scrollHeight;
-                setTimeout(() => bubble.remove(), 10500);
-                i = (i + 1) % dataTesti.length;
-            };
-            runTesti();
-            testimoniInterval = setInterval(runTesti, 3000);
-        } else {
-            testimoniContainer.innerHTML = `<p style="text-align:center;">Belum ada testimoni.</p>`;
+            // Tampilkan testimoni secara berkala
+            setInterval(() => {
+                tampilkanSatuTesti(dataTesti[i]);
+                i = (i + 1) % dataTesti.length; // Ulang dari awal jika sudah habis
+            }, 3000); // Tampilkan testimoni baru setiap 3 detik
+        } else if (dataTesti.length === 0) {
+            testimoniContainer.innerHTML = `<p style="text-align:center;">Belum ada testimoni. Jadilah yang pertama!</p>`;
         }
     });
 
-    // --- Logika Form Testimoni dengan Filter ---
     document.getElementById('formTestimoni').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const kataKunciNegatif = ['jelek', 'buruk', 'tipu', 'penipu', 'lambat', 'lama', 'mahal', 'kecewa', 'scam', 'bohong', 'anjing', 'babi', 'bangsat', 'tolol', 'goblok'];
-
         const nama = document.getElementById('testiNama').value.trim();
         const pesan = document.getElementById('testiPesan').value.trim();
         const statusEl = document.getElementById('testiStatus');
@@ -507,23 +517,15 @@
             return;
         }
 
-        const pesanLower = pesan.toLowerCase();
-        const mengandungNegatif = kataKunciNegatif.some(kata => pesanLower.includes(kata));
-
-        if (mengandungNegatif) {
-            statusEl.textContent = 'Mohon gunakan bahasa yang sopan dan relevan.';
-            statusEl.style.color = 'red';
-            return;
-        }
-
         try {
-            await db.ref('testimoni').push({
+            // Simpan ke 'testimoni_pending' untuk dimoderasi Admin
+            await db.ref('testimoni_pending').push({
                 nama: nama,
                 pesan: pesan,
                 waktu: new Date().toISOString()
             });
             
-            statusEl.textContent = 'Terima kasih! Testimoni Anda telah ditampilkan.';
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
             statusEl.style.color = 'green';
             document.getElementById('formTestimoni').reset();
         } catch (error) {
@@ -533,6 +535,7 @@
         }
     });
 
+
     // --- Logika FAQ ---
     const faqData = [
       { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk yang Anda inginkan, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
@@ -540,28 +543,47 @@
       { q: "Berapa lama prosesnya?", a: "Setelah Anda mengunggah bukti bayar dan kami verifikasi, pesanan akan diproses secepatnya, biasanya dalam 5-15 menit pada jam kerja." },
       { q: "Apakah transaksi di sini aman?", a: "Sangat aman. Kami menjamin kerahasiaan data Anda dan keamanan transaksi. Anda juga bisa mengecek status pesanan kapan saja." }
     ];
+
     const faqContainer = document.getElementById('faq-container');
     faqData.forEach(item => {
         const faqItem = document.createElement('div');
         faqItem.className = 'faq-item';
-        faqItem.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
+        faqItem.innerHTML = `
+            <div class="faq-question">${item.q}</div>
+            <div class="faq-answer">${item.a}</div>
+        `;
         faqContainer.appendChild(faqItem);
     });
+
     document.querySelectorAll('.faq-question').forEach(item => {
         item.addEventListener('click', () => {
-            const parent = item.parentElement;
-            const isActive = parent.classList.contains('active');
-            document.querySelectorAll('.faq-item.active').forEach(el => el.classList.remove('active'));
-            if (!isActive) parent.classList.add('active');
+            // Tutup semua item lain sebelum membuka yang ini
+            document.querySelectorAll('.faq-item').forEach(el => {
+                if(el !== item.parentElement && el.classList.contains('active')) {
+                    el.classList.remove('active');
+                }
+            });
+            // Buka/tutup item yang di-klik
+            item.parentElement.classList.toggle('active');
         });
     });
 
-    // --- Konten Dinamis dari Admin ---
+    // --- Konten Dinamis dari Admin (jika ada) ---
     db.ref('dynamicContent/index').once('value').then(snapshot => {
         const konten = snapshot.val() || {};
-        if (konten.css) { document.head.insertAdjacentHTML('beforeend', `<style>${konten.css}</style>`); }
-        if (konten.html) { document.getElementById('dynamic-content-area').innerHTML = konten.html; }
-        if (konten.js) { document.body.insertAdjacentHTML('beforeend', `<script>${konten.js}</script>`); }
+        if (konten.css) {
+            const styleTag = document.createElement('style');
+            styleTag.textContent = konten.css;
+            document.head.appendChild(styleTag);
+        }
+        if (konten.html) {
+            document.getElementById('dynamic-content-area').innerHTML = konten.html;
+        }
+        if (konten.js) {
+            const scriptTag = document.createElement('script');
+            scriptTag.textContent = konten.js;
+            document.body.appendChild(scriptTag);
+        }
     });
   </script>
 </body>
