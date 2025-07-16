@@ -44,8 +44,6 @@
     .discount-offer .btn-share { background-color: var(--success); }
     select option:disabled { color: #aaa; background: #eee; }
     [data-theme="dark"] select option:disabled { background: #2c2c40; color: #666; }
-
-    /* Style lain yang sudah ada tidak diubah */
   </style>
 </head>
 <body data-theme="light">
@@ -108,7 +106,6 @@
   <script>
     AOS.init({ duration: 800, once: true });
     
-    // === Firebase Config & Inisialisasi ===
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", projectId: "asdarstoredigitalll-d89c4",
@@ -118,7 +115,6 @@
     const db = firebase.database();
     const ADMIN_WA_NUMBER = "6281803004607";
 
-    // === UI Elements & Global State ===
     const searchProdukInput = document.getElementById('searchProduk');
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
@@ -134,17 +130,16 @@
     let finalPrice = 0;
     let appliedVoucher = null;
 
-    // === Helper Functions (Tidak Diubah) ===
     const formatRupiah = (angka) => (angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     const normalizePhone = (num) => { if (!num) return ''; let n = String(num).replace(/[^0-9]/g, ''); if (n.startsWith('0')) n = '62' + n.slice(1); return n; };
     window.toggleTheme = () => { const theme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); document.getElementById('themeToggle').textContent = theme === 'light' ? '🌙' : '☀️'; localStorage.setItem('theme', theme); };
     if (localStorage.getItem('theme')) { document.body.setAttribute('data-theme', localStorage.getItem('theme')); document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️'; }
     
-    // === Logika Baru untuk Produk, Stok, dan Pencarian ===
     function renderKategori(filter = '') {
+        const currentKategori = kategoriSelect.value;
         kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-        for (const kategori in allProductsData) {
-            let hasMatchingProduct = false;
+        Object.keys(allProductsData).forEach(kategori => {
+            let hasMatchingProduct = !filter;
             if (filter) {
                 for (const produk in allProductsData[kategori]) {
                     if (produk.toLowerCase().includes(filter)) {
@@ -152,20 +147,18 @@
                         break;
                     }
                 }
-            } else {
-                hasMatchingProduct = true;
             }
             if (hasMatchingProduct) {
-                kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+                kategoriSelect.innerHTML += `<option value="${kategori}" ${kategori === currentKategori ? 'selected' : ''}>${kategori}</option>`;
             }
-        }
+        });
     }
 
     function renderProduk() {
         const kategori = kategoriSelect.value;
         const filter = searchProdukInput.value.toLowerCase();
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-        if (!kategori) return;
+        if (!kategori || !allProductsData[kategori]) return;
 
         const produkData = allProductsData[kategori];
         const sortedProduk = Object.keys(produkData).sort((a,b) => (produkData[a].urutan || 0) - (produkData[b].urutan || 0));
@@ -173,7 +166,7 @@
         sortedProduk.forEach(namaProduk => {
             if (filter && !namaProduk.toLowerCase().includes(filter)) return;
             const produk = produkData[namaProduk];
-            const stok = produk.stok !== undefined ? produk.stok : Infinity; // Anggap stok tak terbatas jika tidak di-set
+            const stok = produk.stok !== undefined ? produk.stok : Infinity;
             const stokText = stok === Infinity ? '' : `(Stok: ${stok})`;
             const isDisabled = stok <= 0;
             produkSelect.innerHTML += `<option value="${namaProduk}" ${isDisabled ? 'disabled' : ''}>${namaProduk} ${stokText}</option>`;
@@ -187,7 +180,6 @@
         resetVoucherAndPrice();
     }
 
-    // === Logika untuk Voucher & Harga (BARU) ===
     function updatePriceDisplay() {
         if (currentProductPrice === 0) {
             infoProduk.innerHTML = 'Pilih produk untuk melihat harga.';
@@ -201,17 +193,15 @@
         if (appliedVoucher) {
             if (appliedVoucher.tipe === 'persen') {
                 discountAmount = Math.floor(currentProductPrice * (appliedVoucher.nilai / 100));
-                discountText = `(Diskon ${appliedVoucher.nilai}%)`;
             } else if (appliedVoucher.tipe === 'nominal') {
                 discountAmount = appliedVoucher.nilai;
-                discountText = `(Diskon Rp${formatRupiah(appliedVoucher.nilai)})`;
             }
             finalPrice = currentProductPrice - discountAmount;
         }
         infoProduk.innerHTML = `
             <b>Deskripsi:</b> ${infoProduk.dataset.deskripsi || '-'}<br>
-            <b>Harga:</b> <span class="${appliedVoucher ? 'original-price-striked' : ''}">Rp${formatRupiah(currentProductPrice)}</span>
-            ${appliedVoucher ? `<br><b>Harga Akhir:</b> <span class="text-success">Rp${formatRupiah(finalPrice)}</span> ${discountText}` : ''}
+            <b>Harga Awal:</b> <span class="${appliedVoucher ? 'original-price-striked' : ''}">Rp${formatRupiah(currentProductPrice)}</span>
+            ${appliedVoucher ? `<br><b>Harga Akhir:</b> <span class="text-success fw-bold">Rp${formatRupiah(finalPrice)}</span>` : ''}
         `;
         submitBtn.innerHTML = `Pesan Sekarang (Rp${formatRupiah(finalPrice)})`;
     }
@@ -252,7 +242,6 @@
         updatePriceDisplay();
     }
 
-    // === Logika Submit Form (DIPERBARUI) ===
     document.getElementById('formPesanan').addEventListener('submit', async e => {
         e.preventDefault();
         submitBtn.disabled = true;
@@ -264,7 +253,8 @@
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
         const id = "P" + Date.now();
-        if (finalPrice <= 0) {
+        if (finalPrice < 0 || (currentProductPrice > 0 && finalPrice === 0 && !appliedVoucher)) finalPrice = currentProductPrice;
+        if (finalPrice <= 0 && currentProductPrice <= 0) {
             alert("Silakan pilih produk terlebih dahulu.");
             submitBtn.disabled = false; updatePriceDisplay();
             return;
@@ -282,7 +272,6 @@
 
         await db.ref('pesanan/' + id).set(dataPesanan);
         
-        // Mengurangi stok jika ada
         const stokSaatIni = allProductsData[kategori][produk].stok;
         if (stokSaatIni !== undefined && stokSaatIni !== Infinity) {
             await db.ref(`produk/${kategori}/${produk}/stok`).set(stokSaatIni - 1);
@@ -312,7 +301,6 @@
         window.scrollTo({ top: hasilDiv.offsetTop, behavior: 'smooth' });
     });
 
-    // === Event Listeners & Inisialisasi Aplikasi ===
     searchProdukInput.addEventListener('input', handleSearch);
     kategoriSelect.addEventListener('change', () => { renderProduk(); resetVoucherAndPrice(); });
     produkSelect.addEventListener('change', () => {
@@ -327,14 +315,13 @@
     });
     applyVoucherBtn.addEventListener('click', applyVoucher);
     
-    // Inisialisasi awal
     db.ref('produk').on('value', snapshot => {
         allProductsData = snapshot.val() || {};
-        renderKategori();
-        renderProduk();
+        handleSearch();
     });
-
-    // Kode untuk Testimoni, FAQ, dll tetap sama dan berfungsi
+    
+    // Kode untuk Testimoni, FAQ, dll. tetap sama dan berfungsi
+    // ...
   </script>
 </body>
 </html>
