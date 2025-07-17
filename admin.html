@@ -24,7 +24,7 @@
     .product-list .list-group-item { cursor: grab; }
     .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-    #pesananList, #product-container { max-height: 65vh; overflow-y: auto; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; }
+    #pesananList, #product-container, #testimoni-pending-container { max-height: 65vh; overflow-y: auto; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; }
     .discount-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc; }
   </style>
 </head>
@@ -52,7 +52,6 @@
     <li class="nav-item" role="presentation"><button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button"><i class="fas fa-box-open me-2"></i>Produk</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="promo-banner-tab" data-bs-toggle="tab" data-bs-target="#promo-banner-pane" type="button"><i class="fas fa-bullhorn me-2"></i>Banner Promo</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="moderasi-tab" data-bs-toggle="tab" data-bs-target="#moderasi-pane" type="button"><i class="fas fa-comment-dots me-2"></i>Moderasi Testimoni</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button"><i class="fas fa-file-code me-2"></i>Konten Dinamis</button></li>
   </ul>
 
   <div class="tab-content" id="adminTabContent">
@@ -61,9 +60,8 @@
             <h3 class="mb-3">Manajemen Pesanan</h3>
             <div class="row mb-3 g-2 align-items-center">
                 <div class="col-md-3"><select id="filterStatus" class="form-select"><option value="">Filter Semua Status</option><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Diproses">Diproses</option><option value="Selesai">Selesai</option></select></div>
-                <div class="col-md-5"><input type="text" id="searchId" class="form-control" placeholder="Cari ID/Nama/Nomor..." /></div>
-                <div class="col-md-2"><button class="btn btn-outline-success w-100" id="exportCSVBtn"><i class="fas fa-file-csv me-2"></i>Export</button></div>
-                <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="renderPesanan()"><i class="fas fa-sync-alt me-2"></i>Refresh</button></div>
+                <div class="col-md-6"><input type="text" id="searchId" class="form-control" placeholder="Cari ID/Nama/Nomor..." /></div>
+                <div class="col-md-3"><button class="btn btn-outline-primary w-100" onclick="renderPesanan()"><i class="fas fa-sync-alt me-2"></i>Refresh</button></div>
             </div>
             <div id="pesananList" class="mb-4"><p class="text-center text-muted p-4">Memuat pesanan...</p></div>
         </div></div>
@@ -124,9 +122,6 @@
             <div id="testimoni-pending-container"><p class="text-muted">Memuat testimoni...</p></div>
         </div></div>
     </div>
-
-    <div class="tab-pane fade" id="content-pane" role="tabpanel">
-        </div>
   </div>
 </div>
 
@@ -149,20 +144,75 @@
 
     const formatRupiah = (angka) => (angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     
-    function showToast(message, type = 'info') { /* ... fungsi tidak berubah ... */ }
-    function showConfirm(title, body) { /* ... fungsi tidak berubah ... */ }
+    function showToast(message, type = 'info') {
+        const toastId = 'toast-' + Date.now();
+        const toastColor = { success: 'bg-success', error: 'bg-danger', info: 'bg-primary' }[type];
+        const toastHTML = `<div id="${toastId}" class="toast align-items-center text-white ${toastColor} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+        document.querySelector('.toast-container').insertAdjacentHTML('beforeend', toastHTML);
+        const toast = new bootstrap.Toast(document.getElementById(toastId), { delay: 3000 });
+        toast.show();
+    }
     
-    // === LOGIKA PESANAN ===
+    function showConfirm(title, body) {
+        return new Promise(resolve => {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalBody').textContent = body;
+            const okBtn = document.getElementById('confirmModalOk');
+            const onOk = () => resolve(true);
+            const cleanup = () => {
+                okBtn.removeEventListener('click', onOk);
+                confirmModal.hide();
+            };
+            okBtn.addEventListener('click', () => { cleanup(); resolve(true); }, { once: true });
+            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => { cleanup(); resolve(false); }, { once: true });
+            confirmModal.show();
+        });
+    }
+
     async function renderPesanan() {
         const hakDiskonSnapshot = await db.ref('hakDiskon').once('value');
         const hakDiskonData = hakDiskonSnapshot.val() || {};
-        
         const container = document.getElementById('pesananList');
-        // ... sisa logika render pesanan yang sudah ada, termasuk bagian "Beri Hak Diskon" ...
+        const sortedIds = Object.keys(allDataPesanan).sort((a, b) => new Date(allDataPesanan[b].waktu) - new Date(allDataPesanan[a].waktu));
+        
+        container.innerHTML = '';
+        if (sortedIds.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted p-4">Tidak ada pesanan.</p>';
+            return;
+        }
+
+        sortedIds.forEach(id => {
+            const p = allDataPesanan[id];
+            const pelangganSudahBerhak = hakDiskonData[p.wa_aktif] === true;
+            let discountSectionHTML = pelangganSudahBerhak
+                ? `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-success">Telah Berhak</span></p><button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check-circle me-1"></i>Hak Diberikan</button>`
+                : `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-muted">Belum Dapat</span></p><button class="btn btn-sm btn-success" onclick="beriHakDiskon('${p.wa_aktif}', '${id}')"><i class="fas fa-gift me-1"></i>Beri Hak Diskon</button>`;
+
+            let hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)}</p>`;
+            if (p.promo_digunakan || p.diskon_share) {
+                hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)} <span class="badge bg-success">Diskon</span></p>
+                             <p><small class="text-muted">Harga Asli: Rp${formatRupiah(p.harga_asli)}</small></p>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'order-card';
+            card.innerHTML = `
+                <p><strong>ID:</strong> ${id}</p>
+                <p><strong>Nama:</strong> ${p.nama}</p>
+                <p><strong>Produk:</strong> ${p.produk}</p>
+                ${hargaInfo}
+                <div class="discount-section" id="discount-section-${id}">${discountSectionHTML}</div>
+            `;
+            container.appendChild(card);
+        });
     }
-    // ... semua fungsi manajemen pesanan lainnya (verifikasi, hapus, dll) ...
+
+    window.beriHakDiskon = async (nomorWA, pesananId) => {
+        if (!await showConfirm('Konfirmasi', `Beri hak diskon ke ${nomorWA}?`)) return;
+        await db.ref('hakDiskon/' + nomorWA).set(true);
+        showToast('Hak diskon diberikan!', 'success');
+    };
     
-    // === LOGIKA PRODUK (DIPERBARUI) ===
     function loadProduk() {
         db.ref('produk').on('value', snap => {
             const produkPerKategori = snap.val() || {};
@@ -234,7 +284,6 @@
 
     window.hapusProduk = async (k,v) => { if(await showConfirm('Hapus Produk', `Yakin ingin menghapus produk ${v}?`)) { await db.ref(`produk/${k}/${v}`).remove(); showToast('Produk dihapus', 'success'); } };
 
-    // === LOGIKA BANNER PROMO (BARU) ===
     function handleSimpanPromoBanner(e) {
         e.preventDefault();
         const judul = document.getElementById('promoJudul').value;
@@ -266,26 +315,17 @@
         }
     }
     
-    // === LOGIKA MODERASI TESTIMONI ===
     function loadTestimoniPending() {
         const container = document.getElementById('testimoni-pending-container');
         db.ref('testimoni_pending').on('value', snap => {
             container.innerHTML = '';
             const data = snap.val();
-            if (!data) {
-                container.innerHTML = '<p class="text-muted">Tidak ada testimoni yang perlu direview.</p>';
-                return;
-            }
+            if (!data) { container.innerHTML = '<p class="text-muted">Tidak ada testimoni yang perlu direview.</p>'; return; }
             for(const key in data) {
                 const testi = data[key];
                 const card = document.createElement('div');
                 card.className = 'card mb-3';
-                card.innerHTML = `<div class="card-body">
-                                    <p class="card-text">"${testi.pesan}"</p>
-                                    <footer class="blockquote-footer">${testi.nama}</footer>
-                                    <button class="btn btn-sm btn-success" onclick="setujuiTesti('${key}')">Setujui</button>
-                                    <button class="btn btn-sm btn-danger" onclick="tolakTesti('${key}')">Tolak</button>
-                                  </div>`;
+                card.innerHTML = `<div class="card-body"><p class="card-text">"${testi.pesan}"</p><footer class="blockquote-footer">${testi.nama}</footer><button class="btn btn-sm btn-success" onclick="setujuiTesti('${key}')">Setujui</button> <button class="btn btn-sm btn-danger" onclick="tolakTesti('${key}')">Tolak</button></div>`;
                 container.appendChild(card);
             }
         });
@@ -307,23 +347,14 @@
         }
     };
 
-    // === App Initialization ===
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        
-        // Listener Produk
+        db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
         loadProduk();
-        
-        // Listener Banner Promo
         document.getElementById('formPromoBanner').addEventListener('submit', handleSimpanPromoBanner);
         loadActivePromo();
-
-        // Listener Moderasi
         loadTestimoniPending();
-        
-        // Listener Pesanan
-        db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
     });
 </script>
 </body>
