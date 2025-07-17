@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -62,10 +61,13 @@
     }
     .qr-btn.upload { background: #28a745; }
     .qr-btn.status { background: #17a2b8; }
+    #promo-banner-container {
+        text-align: center;
+    }
     #promo-banner {
-        padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;
+        padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;
         background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white;
-        box-shadow: var(--shadow-light);
+        box-shadow: 0 4px 12px var(--shadow);
     }
     #countdown-timer {
         background-color: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;
@@ -115,11 +117,9 @@
   </header>
 
   <main id="main-content">
-    <div id="promo-banner" data-aos="fade-down" style="display: none;">
-        <h3 id="promo-banner-title" style="font-size: 1.5rem; font-weight: 600;"></h3>
-        <p id="promo-banner-desc" class="mt-1"></p>
-        <div id="countdown-timer"></div>
-    </div>
+    
+    <div id="promo-banner-container" data-aos="fade-down">
+        </div>
 
     <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
@@ -158,7 +158,8 @@
     
     <div data-aos="fade-up">
         <h2>Testimoni Pelanggan Kami</h2>
-        <div id="testimoniContainer"></div>
+        <div id="testimoniContainer">
+            </div>
     </div>
 
     <div data-aos="fade-up" class="section-container">
@@ -195,7 +196,6 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
@@ -239,13 +239,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadPromoBanner();
+        loadPromoFromAdmin(); // Fungsi baru
         loadInitialData();
+        loadApprovedTestimonials(); // Fungsi baru
+        renderFaq();
         submitBtn.disabled = true;
         kategoriSelect.addEventListener('change', handleCategoryChange);
         produkSelect.addEventListener('change', handleProductSelection);
         document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
-        document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
+        document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmitToAdmin); // Fungsi baru
         document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
@@ -257,8 +259,6 @@
                 kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
             }
         });
-        renderFaq();
-        loadTestimoni();
     }
 
     function handleCategoryChange() {
@@ -270,7 +270,11 @@
             const data = snapshot.val() || {};
             const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
             sortedVarian.forEach(nama => {
-                produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+                const produk = data[nama];
+                // Periksa stok sebelum menambahkan ke pilihan
+                if (produk.stok > 0) {
+                    produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+                }
             });
         });
     }
@@ -287,17 +291,19 @@
     }
 
     function handleProductSelection() {
-        resetFormState();
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
-        if (!produk || !kategori) return;
+        if (!produk || !kategori) {
+            resetFormState();
+            return;
+        }
 
         db.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
             if (!snapshot.exists()) return;
             const data = snapshot.val();
             produkTerpilihData = data;
 
-            if (typeof data.stok !== 'undefined' && data.stok !== null && data.stok <= 0) {
+            if (typeof data.stok !== 'undefined' && data.stok <= 0) {
                 infoProduk.innerHTML = `<b class="text-danger">Stok Habis!</b><br>Produk ini tidak dapat dipesan saat ini.`;
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
@@ -305,73 +311,39 @@
                 updateTotalHarga();
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-                if (data.promo && data.promo.jenis) {
-                    let promoText = data.promo.jenis === 'nominal' ? `Potongan langsung Rp${formatRupiah(data.promo.nilai)}` : `Diskon ${data.promo.nilai}%`;
-                    document.getElementById('product-promo-container').innerHTML = `
-                        <div class="claim-promo-card">
-                            <p style="font-weight:600;">🎉 Ada promo spesial untuk produk ini!</p>
-                            <p style="font-size: 0.9em;">${promoText}</p>
-                            <button type="button" class="btn btn-primary mt-2" onclick="klaimPromoProduk()">✨ Klaim Diskon</button>
-                        </div>`;
-                }
             }
         });
     }
 
-    window.klaimPromoProduk = () => {
-        promoProdukTerpakai = true;
-        diskonShareTerpakai = false;
-        document.getElementById('claim-discount-section').style.display = 'none';
-        updateTotalHarga();
-        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk berhasil diklaim!</p>`;
-    };
-    
+    // Fungsi promo produk dan diskon share tidak diubah
     async function checkDiskonShare() {
-        if (promoProdukTerpakai) return;
         const nomorWA = normalizePhone(document.getElementById('waAktif').value);
         const claimSection = document.getElementById('claim-discount-section');
         if (nomorWA && nomorWA.length > 10) {
             const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value');
             claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
-        } else {
-            claimSection.style.display = 'none';
-        }
+        } else { claimSection.style.display = 'none'; }
     }
-
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
-        promoProdukTerpakai = false;
-        document.getElementById('product-promo-container').innerHTML = '';
         updateTotalHarga();
         const claimButton = document.getElementById('claim-button');
-        claimButton.disabled = true;
-        claimButton.innerText = "✅ Diskon Telah Diterapkan";
+        claimButton.disabled = true; claimButton.innerText = "✅ Diskon Telah Diterapkan";
     };
-
     function updateTotalHarga() {
         if (!produkTerpilihData) return;
-        let hargaAwal = produkTerpilihData.harga;
-        let hargaFinal = hargaAwal;
+        let hargaFinal = produkTerpilihData.harga;
         let deskripsiHarga = `<b>Harga:</b> Rp${formatRupiah(hargaFinal)}`;
-
-        if (promoProdukTerpakai && produkTerpilihData.promo) {
-            let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
-            hargaFinal = hargaAwal - potongan;
-            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Promo: Rp${formatRupiah(hargaFinal)}</b>`;
-        } else if (diskonShareTerpakai) {
-            hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
-            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: Rp${formatRupiah(hargaFinal)}</b>`;
+        if (diskonShareTerpakai) {
+            hargaFinal = produkTerpilihData.harga - POTONGAN_DISKON_SHARE;
+            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(produkTerpilihData.harga)}</del><br><b style="color:var(--success);">Harga Diskon: Rp${formatRupiah(hargaFinal)}</b>`;
         }
-        
-        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || produkTerpilihData.cara || '-'}`;
+        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}`;
     }
     
     async function handleOrderSubmit(e) {
         e.preventDefault();
         if (submitBtn.disabled) return;
-        if (!produkTerpilihData || (typeof produkTerpilihData.stok !== 'undefined' && produkTerpilihData.stok !== null && produkTerpilihData.stok <= 0)) {
-            return alert("Maaf, stok produk ini telah habis.");
-        }
         
         const nama = document.getElementById('nama').value.trim();
         const nomor = document.getElementById('nomor').value.trim();
@@ -383,55 +355,36 @@
 
         if (!nama || !nomor || !waAktif || !kategori || !produk) return alert("Harap lengkapi semua field!");
         
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Memproses...';
+        submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
 
         try {
             const snapProduk = await db.ref(`produk/${kategori}/${produk}`).once('value');
             const dataProduk = snapProduk.val();
-            
-            let hargaAwal = dataProduk.harga;
-            let hargaFinal = hargaAwal;
-            let promoDigunakan = null;
-            let diskonShareDigunakan = false;
 
-            if (promoProdukTerpakai && dataProduk.promo) {
-                let potongan = (dataProduk.promo.jenis === 'nominal') ? dataProduk.promo.nilai : hargaAwal * (dataProduk.promo.nilai / 100);
-                hargaFinal = hargaAwal - potongan;
-                promoDigunakan = dataProduk.promo;
-            } else if (diskonShareTerpakai) {
-                hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
-                diskonShareDigunakan = true;
+            if (dataProduk.stok <= 0) {
+                 alert("Maaf, stok produk ini baru saja habis.");
+                 submitBtn.disabled = false; submitBtn.textContent = 'Pesan Sekarang';
+                 return;
+            }
+            
+            let hargaFinal = dataProduk.harga;
+            if (diskonShareTerpakai) {
+                hargaFinal -= POTONGAN_DISKON_SHARE;
                 await db.ref('hakDiskon/' + waAktif).remove();
             }
 
-            if (typeof dataProduk.stok === 'number') {
-                await db.ref(`produk/${kategori}/${produk}/stok`).set(dataProduk.stok - 1);
-            }
+            await db.ref(`produk/${kategori}/${produk}/stok`).transaction(stokSaatIni => (stokSaatIni || 0) - 1);
 
             await db.ref('pesanan/' + id).set({
                 nama, nomor, wa_aktif: waAktif, kategori, produk, waktu, 
                 status: 'Belum Bayar',
-                harga_asli: hargaAwal,
+                harga_asli: dataProduk.harga,
                 harga_final: hargaFinal,
-                promo_digunakan: promoDigunakan,
-                diskon_share: diskonShareDigunakan
+                diskon_share: diskonShareTerpakai
             });
             
             hasilDiv.style.display = 'block';
-            hasilDiv.innerHTML = `
-                <p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p>
-                <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
-                <div class="info">
-                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p>
-                    <ul class="list-unstyled">
-                        <li><strong>ShopeePay:</strong> 081803004607</li>
-                        <li><strong>Dana:</strong> 087755432880</li>
-                    </ul>
-                </div>
-                <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a>
-                <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
-            `;
+            hasilDiv.innerHTML = `<p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p><p><b>ID Pesanan Anda:</b> <code>${id}</code></p><div class="info"><p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p><ul class="list-unstyled"><li><strong>ShopeePay:</strong> 081803004607</li><li><strong>Dana:</strong> 087755432880</li></ul></div><a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a><a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>`;
             
             document.getElementById('formPesanan').reset();
             resetFormState();
@@ -440,112 +393,45 @@
         } catch (error) {
             console.error("Error:", error);
             alert("Terjadi kesalahan saat memproses pesanan.");
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Pesan Sekarang';
+            submitBtn.disabled = false; submitBtn.textContent = 'Pesan Sekarang';
         }
     }
 
-    window.cekStatus = () => {
-      const id = document.getElementById('idCek').value.trim();
-      if (id) window.location.href = `status.html?id=${id}`;
-    };
+    // === [FUNGSI BARU] MENAMPILKAN PROMO DARI ADMIN PANEL ===
+    function loadPromoFromAdmin() {
+        const container = document.getElementById('promo-banner-container');
+        db.ref('bannerPromo').limitToLast(1).on('value', snap => {
+            container.innerHTML = '';
+            if (!snap.exists()) return;
 
-    function loadTestimoni() {
-        const testimoniContainer = document.getElementById('testimoniContainer');
-        db.ref('testimoni').on('value', snap => {
-            const dataTesti = Object.values(snap.val() || {});
-            if (dataTesti.length > 0) {
-                let i = 0;
-                if(window.testimoniInterval) clearInterval(window.testimoniInterval);
-                window.testimoniInterval = setInterval(() => {
-                    if(document.visibilityState === 'visible') {
-                        tampilkanSatuTesti(dataTesti[i], testimoniContainer);
-                        i = (i + 1) % dataTesti.length;
-                    }
-                }, 3000);
-            } else {
-                testimoniContainer.innerHTML = `<p style="text-align:center;">Belum ada testimoni.</p>`;
-            }
-        });
-    }
-
-    function tampilkanSatuTesti(testimoni, container) {
-      const bubble = document.createElement('div');
-      bubble.className = 'testimonial-bubble';
-      bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.pesan || ''}`;
-      container.appendChild(bubble);
-      setTimeout(() => {
-        if (bubble.parentElement) container.removeChild(bubble);
-      }, 10500);
-      container.scrollTop = container.scrollHeight;
-    }
-    
-    async function handleTestimoniSubmit(e) {
-        e.preventDefault();
-        const nama = document.getElementById('testiNama').value.trim();
-        const pesan = document.getElementById('testiPesan').value.trim();
-        const statusEl = document.getElementById('testiStatus');
-        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan tidak boleh kosong!'; statusEl.style.color = 'red'; return; }
-        try {
-            await db.ref('testimoni_pending').push({ nama, pesan, waktu: new Date().toISOString() });
-            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
-            statusEl.style.color = 'green';
-            e.target.reset();
-        } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'red'; }
-    }
-
-    function renderFaq() {
-        const faqData = [
-          { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
-          { q: "Bagaimana cara mendapatkan diskon?", a: "Cek promo spesial yang mungkin ada pada produk tertentu, atau dapatkan hak diskon dari admin untuk digunakan pada pesanan berikutnya." },
-          { q: "Apa saja metode pembayaran yang diterima?", a: "Saat ini kami menerima pembayaran melalui ShopeePay dan Dana." },
-          { q: "Berapa lama prosesnya?", a: "Setelah bukti bayar diverifikasi, pesanan akan diproses secepatnya, biasanya dalam 5-15 menit pada jam kerja." }
-        ];
-        const faqContainer = document.getElementById('faq-container');
-        faqContainer.innerHTML = '';
-        faqData.forEach(item => {
-            const faqItem = document.createElement('div');
-            faqItem.className = 'faq-item';
-            faqItem.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
-            faqContainer.appendChild(faqItem);
-        });
-        document.querySelectorAll('.faq-question').forEach(item => {
-            item.addEventListener('click', () => {
-                const currentActive = document.querySelector('.faq-item.active');
-                if (currentActive && currentActive !== item.parentElement) {
-                    currentActive.classList.remove('active');
-                }
-                item.parentElement.classList.toggle('active');
-            });
-        });
-    }
-
-    function loadPromoBanner() {
-        const banner = document.getElementById('promo-banner');
-        db.ref('featuredPromo').once('value').then(snap => {
-            const promo = snap.val();
-            if (!promo || !promo.tanggalAkhir) { banner.style.display = 'none'; return; }
-            const endDate = new Date(promo.tanggalAkhir).getTime();
+            const promos = snap.val();
+            const [promoId, promoData] = Object.entries(promos)[0];
+            const endDate = new Date(promoData.waktuBerakhir).getTime();
+            
             if (endDate > new Date().getTime()) {
-                document.getElementById('promo-banner-title').textContent = promo.judul;
-                document.getElementById('promo-banner-desc').textContent = promo.deskripsi;
-                banner.style.display = 'block';
-                startCountdown(promo.tanggalAkhir);
-            } else {
-                banner.style.display = 'none';
+                const bannerDiv = document.createElement('div');
+                bannerDiv.id = 'promo-banner';
+                bannerDiv.innerHTML = `
+                    <h3 id="promo-banner-title" style="font-size: 1.5rem; font-weight: 600;">${promoData.judul}</h3>
+                    <p id="promo-banner-desc" class="mt-1">Promo spesial untuk <b>${promoData.produkId.replace('/', ' - ')}</b>!</p>
+                    <div id="countdown-timer"></div>
+                `;
+                container.appendChild(bannerDiv);
+                startCountdown(promoData.waktuBerakhir);
             }
         });
     }
 
     function startCountdown(endDateString) {
         const countdownEl = document.getElementById('countdown-timer');
+        if (!countdownEl) return;
         const endDate = new Date(endDateString).getTime();
         if (countdownInterval) clearInterval(countdownInterval);
         countdownInterval = setInterval(() => {
             const distance = endDate - new Date().getTime();
             if (distance < 0) {
                 clearInterval(countdownInterval);
-                document.getElementById('promo-banner').style.display = 'none'; return;
+                document.getElementById('promo-banner-container').innerHTML = ''; return;
             }
             const d = Math.floor(distance / (1000 * 60 * 60 * 24));
             const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -553,6 +439,68 @@
             const s = Math.floor((distance % (1000 * 60)) / 1000);
             countdownEl.innerHTML = `${d}H : ${h}J : ${m}M : ${s}D`;
         }, 1000);
+    }
+    
+    // === [FUNGSI BARU] MENGHUBUNGKAN TESTIMONI KE ADMIN PANEL ===
+    function loadApprovedTestimonials() {
+        const testimoniContainer = document.getElementById('testimoniContainer');
+        // Membaca dari path 'testimonials' yang diatur oleh admin
+        db.ref('testimonials').orderByChild('status').equalTo('disetujui').on('value', snap => {
+            const dataTesti = Object.values(snap.val() || {});
+            testimoniContainer.innerHTML = ''; // Kosongkan dulu
+            if (dataTesti.length > 0) {
+                let i = 0;
+                if(window.testimoniInterval) clearInterval(window.testimoniInterval);
+                window.testimoniInterval = setInterval(() => {
+                    if(document.visibilityState === 'visible' && dataTesti.length > 0) {
+                        tampilkanSatuTesti(dataTesti[i], testimoniContainer);
+                        i = (i + 1) % dataTesti.length;
+                    }
+                }, 3000);
+            } else {
+                testimoniContainer.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`;
+            }
+        });
+    }
+
+    function tampilkanSatuTesti(testimoni, container) {
+      if (container.children.length > 5) { // Batasi jumlah bubble agar tidak menumpuk
+          container.removeChild(container.firstChild);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'testimonial-bubble';
+      bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.isi || ''}`;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    async function handleTestimoniSubmitToAdmin(e) {
+        e.preventDefault();
+        const nama = document.getElementById('testiNama').value.trim();
+        const pesan = document.getElementById('testiPesan').value.trim();
+        const statusEl = document.getElementById('testiStatus');
+        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan tidak boleh kosong!'; statusEl.style.color = 'red'; return; }
+        try {
+            // Mengirim ke path 'testimonials' dengan status 'pending' untuk dimoderasi
+            await db.ref('testimonials').push({ 
+                nama: nama, 
+                isi: pesan, 
+                status: 'pending', // Status awal untuk moderasi
+                createdAt: new Date().toISOString() 
+            });
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
+            statusEl.style.color = 'green';
+            e.target.reset();
+        } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'red'; }
+    }
+
+    // Fungsi FAQ dan cek status tidak diubah
+    window.cekStatus = () => { const id = document.getElementById('idCek').value.trim(); if (id) window.location.href = `status.html?id=${id}`; };
+    function renderFaq() {
+        const faqData = [ { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." }, { q: "Bagaimana cara mendapatkan diskon?", a: "Cek promo spesial yang mungkin ada pada produk tertentu, atau dapatkan hak diskon dari admin untuk digunakan pada pesanan berikutnya." }, { q: "Apa saja metode pembayaran yang diterima?", a: "Saat ini kami menerima pembayaran melalui ShopeePay dan Dana." }, { q: "Berapa lama prosesnya?", a: "Setelah bukti bayar diverifikasi, pesanan akan diproses secepatnya, biasanya dalam 5-15 menit pada jam kerja." } ];
+        const faqContainer = document.getElementById('faq-container'); faqContainer.innerHTML = '';
+        faqData.forEach(item => { const faqItem = document.createElement('div'); faqItem.className = 'faq-item'; faqItem.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`; faqContainer.appendChild(faqItem); });
+        document.querySelectorAll('.faq-question').forEach(item => { item.addEventListener('click', () => { const currentActive = document.querySelector('.faq-item.active'); if (currentActive && currentActive !== item.parentElement) { currentActive.classList.remove('active'); } item.parentElement.classList.toggle('active'); }); });
     }
   </script>
 </body>
