@@ -124,15 +124,18 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
+    // KONFIGURASI SESUAI PERMINTAAN ANDA
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI DENGAN KUNCI ANDA
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI DENGAN DOMAIN ANDA
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI DENGAN URL ANDA
-      projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN ID PROYEK ANDA
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // GANTI DENGAN KUNCI ImgBB ANDA
+    
+    // KUNCI API IMGBB ANDA
+    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
     const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
 
     let allProducts = {}, allDataPesanan = {}, allHakDiskon = {}, confirmModal;
@@ -348,13 +351,37 @@
         const faqContainer = document.getElementById('faq-editor-container');
         
         db.ref('infoPembayaran').once('value', s => { paymentContainer.innerHTML = Object.entries(s.val()||{}).map(([k,v]) => createPaymentRow(k,v)).join('') || createPaymentRow(); });
-        db.ref('faq').once('value', s => { faqContainer.innerHTML = Object.values(s.val()||{}).sort((a,b)=>(a.urutan||0)-(b.urutan||0)).map(v => createFaqRow(v)).join('') || createFaqRow(); });
+        db.ref('faq').once('value', s => {
+            if (s.exists() && Array.isArray(s.val())) {
+                faqContainer.innerHTML = s.val().map(v => createFaqRow(v)).join('') || createFaqRow();
+            } else {
+                faqContainer.innerHTML = createFaqRow();
+            }
+        });
 
         document.getElementById('add-payment-method').onclick = () => paymentContainer.insertAdjacentHTML('beforeend', createPaymentRow());
         document.getElementById('add-faq-item').onclick = () => faqContainer.insertAdjacentHTML('beforeend', createFaqRow());
 
         document.getElementById('infoPembayaranForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.payment-method-row').forEach(r=>{const i=r.querySelectorAll('input'),k=i[0].value.trim();if(k)data[k]={nomor:i[1].value.trim(),nama:i[2].value.trim()}}); if(await showConfirm('Simpan Info Pembayaran', 'Yakin simpan?')){db.ref('infoPembayaran').set(data).then(()=>showToast('Info pembayaran disimpan!', 'success'))} };
-        document.getElementById('faqForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.faq-item-row').forEach((r,idx)=>{const q=r.querySelector('input').value.trim(),a=r.querySelector('textarea').value.trim();if(q&&a)data['item'+Date.now()+idx]={q,a,urutan:idx}}); if(await showConfirm('Simpan FAQ', 'Yakin simpan?')){db.ref('faq').set(data).then(()=>showToast('FAQ berhasil disimpan!', 'success'))} };
+        
+        // --- PERBAIKAN LOGIKA SIMPAN FAQ ---
+        document.getElementById('faqForm').onsubmit = async e => {
+            e.preventDefault();
+            const newData = [];
+            document.querySelectorAll('.faq-item-row').forEach((r, idx) => {
+                const q = r.querySelector('input').value.trim();
+                const a = r.querySelector('textarea').value.trim();
+                if (q && a) {
+                    newData.push({ q, a, urutan: idx });
+                }
+            });
+
+            if (await showConfirm('Simpan FAQ', 'Yakin ingin menimpa semua data FAQ dengan yang baru? Ini akan menghapus item yang kosong.')) {
+                db.ref('faq').set(newData)
+                    .then(() => showToast('FAQ berhasil disimpan!', 'success'))
+                    .catch(err => showToast(`Gagal menyimpan: ${err.message}`, 'error'));
+            }
+        };
     };
 
     document.addEventListener('DOMContentLoaded', () => {
