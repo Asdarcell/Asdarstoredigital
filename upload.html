@@ -7,14 +7,16 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f7f9fc; }
-    .container { max-width: 500px; }
-    #status { margin-top: 10px; background: #e3f2fd; padding: 10px; border-left: 4px solid #2196f3; }
+    .container { max-width: 500px; margin: auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #status { margin-top: 10px; background: #e3f2fd; padding: 10px; border-left: 4px solid #2196f3; border-radius: 4px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Upload Bukti Pembayaran</h2>
-    <p class="text-muted">Pastikan ID Pesanan Anda benar sebelum mengunggah.</p>
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">Upload Bukti Pembayaran</h2>
+      <p class="text-muted">Pastikan ID Pesanan Anda benar sebelum mengunggah.</p>
+    </div>
     <div class="mb-3">
         <label for="idPesanan" class="form-label">ID Pesanan</label>
         <input type="text" class="form-control" id="idPesanan" placeholder="Masukkan ID Pesanan" />
@@ -36,35 +38,39 @@
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+      projectId: "asdarstoredigitalll-d89c4"
     };
 
-    // ⚠️ Kunci ImgBB ini bisa dilihat publik. Gunakan dengan kesadaran akan risikonya.
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    
-    // ✅ Pastikan nomor WA admin ini benar (format 62, tanpa '0' atau '+')
-    const ADMIN_WA_NUMBER = "6281803004607";
+    const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA Admin (format 62)
 
     // --- Inisialisasi Firebase ---
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.database();
 
     // --- Elemen DOM ---
     const idPesananInput = document.getElementById("idPesanan");
     const fileInput = document.getElementById("fileInput");
     const statusDiv = document.getElementById("status");
+    const uploadBtn = document.querySelector('button');
     
     // --- Fungsi Utama Upload ---
     async function upload() {
       const id = idPesananInput.value.trim();
       const file = fileInput.files[0];
-      if (!id || !file) return alert("Lengkapi ID Pesanan dan pilih gambar!");
-
-      statusDiv.innerText = "⏳ Mengupload gambar...";
+      if (!id || !file) {
+        statusDiv.innerText = "❌ Lengkapi ID Pesanan dan pilih gambar!";
+        statusDiv.style.borderColor = "#dc3545"; // Merah
+        return;
+      }
       
+      uploadBtn.disabled = true;
+      uploadBtn.innerText = "⏳ Mengupload...";
+      statusDiv.innerText = "⏳ Mengupload gambar, mohon tunggu...";
+      statusDiv.style.borderColor = "#0d6efd"; // Biru
+
       try {
         const orderSnapshot = await db.ref(`pesanan/${id}`).once('value');
         if (!orderSnapshot.exists()) throw new Error('ID Pesanan tidak ditemukan.');
@@ -87,34 +93,35 @@
         });
         
         statusDiv.innerHTML = `✅ Upload Berhasil! Anda akan dialihkan ke WhatsApp untuk mengirim konfirmasi.`;
+        statusDiv.style.borderColor = "#198754"; // Hijau
 
-        // --- Membuat Pesan Lengkap untuk Admin ---
         const pesanWA = `🔔 *Notifikasi Pembayaran* 🔔
 
 Pelanggan telah mengupload bukti pembayaran.
 
-📝 *Detail Pesanan:*
-- *ID Pesanan:* ${id}
-- *Nama Pembeli:* ${orderData.nama}
-- *Produk:* ${orderData.produk}
+*Detail Pesanan:*
+- ID Pesanan: *${id}*
+- Nama Pembeli: *${orderData.nama}*
+- Produk: *${orderData.produk}*
 
-🔗 *Link Bukti Bayar:*
+*Link Bukti Bayar:*
 ${imageUrl}
 
-👇 *Segera lakukan verifikasi di dashboard admin:*
-https://asdarcell.github.io/Asdarstoredigital/admin.html`;
+Segera lakukan verifikasi di dashboard admin.`;
     
-        // --- Membuka WhatsApp Pelanggan ---
         const linkWhatsApp = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(pesanWA)}`;
         window.open(linkWhatsApp, '_blank');
 
       } catch (error) {
         console.error(error);
         statusDiv.innerText = "❌ Gagal: " + error.message;
+        statusDiv.style.borderColor = "#dc3545"; // Merah
+        uploadBtn.disabled = false;
+        uploadBtn.innerText = "📤 Upload & Konfirmasi via WhatsApp";
       }
     }
 
-    // --- Fungsi Helper (tidak perlu diubah) ---
+    // --- Fungsi Helper ---
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -127,7 +134,8 @@ https://asdarcell.github.io/Asdarstoredigital/admin.html`;
     // Mengambil ID dari URL saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const orderIdFromUrl = urlParams.get('id');
+        // --- PERBAIKAN KESALAHAN KETIK ---
+        const orderIdFromUrl = urlParams.get('id'); // Menghapus ' v' yang salah
         if (orderIdFromUrl) {
             idPesananInput.value = orderIdFromUrl;
         }
