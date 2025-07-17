@@ -63,7 +63,6 @@
     .qr-btn.upload { background: #28a745; }
     .qr-btn.status { background: #17a2b8; }
     
-    /* === [BARU] STYLING UNTUK FITUR PROMO === */
     #promo-banner {
         padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;
         background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white;
@@ -81,7 +80,6 @@
     .claim-promo-card button { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #bc1888); }
     .text-danger { color: var(--danger) !important; font-weight: bold; }
     
-    /* ... Sisa CSS dari kode lama Anda ... */
     #claim-discount-section button { background-color: #28a745; }
     #claim-discount-section button:disabled { background-color: #6c757d; cursor: not-allowed; }
     .order-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); border: 1px solid var(--border); }
@@ -135,10 +133,31 @@
     <div id="hasil" style="display: none;"></div>
     
     <hr>
-    <div data-aos="fade-up"><h2>Testimoni Pelanggan Kami</h2><div id="testimoniContainer"></div></div>
-    <div data-aos="fade-up" class="section-container"><h2>Beri Kami Testimoni</h2><form id="formTestimoni">...</form></div>
+    
+    <div data-aos="fade-up">
+        <h2>Testimoni Pelanggan Kami</h2>
+        <div id="testimoniContainer"></div>
+    </div>
+
+    <div data-aos="fade-up" class="section-container">
+        <h2>Beri Kami Testimoni</h2>
+        <form id="formTestimoni">
+            <label for="testiNama">Nama Anda</label>
+            <input type="text" id="testiNama" placeholder="Nama Anda" required>
+            <label for="testiPesan">Pesan Anda</label>
+            <textarea id="testiPesan" rows="4" placeholder="Bagaimana pengalaman Anda berbelanja di sini?" required></textarea>
+            <button type="submit">Kirim Testimoni</button>
+            <p id="testiStatus" style="text-align:center; margin-top:10px;"></p>
+        </form>
+    </div>
+
     <hr>
-    <div data-aos="fade-up"><h2>Ada Pertanyaan?</h2><div class="section-container" id="faq-container"></div></div>
+
+    <div data-aos="fade-up">
+        <h2>Ada Pertanyaan?</h2>
+        <div class="section-container" id="faq-container"></div>
+    </div>
+    
     <hr>
     
     <div data-aos="fade-up" class="section-container">
@@ -154,7 +173,6 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
@@ -163,18 +181,14 @@
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll.appspot.com",
-      messagingSenderId: "220670500351",
-      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
+      projectId: "asdarstoredigitalll-d89c4"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    // === Variabel Global ===
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
-    let diskonShareTerpakai = false; // Dari fitur lama
+    let diskonShareTerpakai = false;
     const POTONGAN_DISKON_SHARE = 5000;
     let countdownInterval;
     const submitBtn = document.getElementById('submitBtn');
@@ -183,7 +197,6 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
 
-    // === Fungsi Helper ===
     const formatRupiah = (angka) => (angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     const normalizePhone = (num) => {
       if (!num) return '';
@@ -202,7 +215,6 @@
       document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
-    // === Logika Utama ===
     document.addEventListener('DOMContentLoaded', () => {
         loadPromoBanner();
         submitBtn.disabled = true;
@@ -255,7 +267,6 @@
             const data = snapshot.val();
             produkTerpilihData = data;
 
-            // 1. Cek Stok
             if (typeof data.stok !== 'undefined' && data.stok !== null && data.stok <= 0) {
                 infoProduk.innerHTML = `<b class="text-danger">Stok Habis!</b><br>Produk ini tidak dapat dipesan saat ini.`;
                 submitBtn.textContent = 'Stok Habis';
@@ -264,8 +275,6 @@
                 updateTotalHarga();
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-
-                // 2. Cek Promo Produk
                 if (data.promo && data.promo.jenis) {
                     let promoText = data.promo.jenis === 'nominal' 
                         ? `Potongan langsung Rp${formatRupiah(data.promo.nilai)}` 
@@ -283,15 +292,14 @@
 
     window.klaimPromoProduk = () => {
         promoProdukTerpakai = true;
-        diskonShareTerpakai = false; // Nonaktifkan diskon lain
+        diskonShareTerpakai = false;
         document.getElementById('claim-discount-section').style.display = 'none';
         updateTotalHarga();
         document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk berhasil diklaim!</p>`;
     };
     
-    // Fitur Diskon Lama (Share WA)
     async function checkDiskonShare() {
-        if (promoProdukTerpakai) return; // Jangan tampilkan jika promo produk sudah diklaim
+        if (promoProdukTerpakai) return;
         const nomorWA = normalizePhone(document.getElementById('waAktif').value);
         const claimSection = document.getElementById('claim-discount-section');
         if (nomorWA && nomorWA.length > 10) {
@@ -308,7 +316,7 @@
 
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
-        promoProdukTerpakai = false; // Nonaktifkan diskon lain
+        promoProdukTerpakai = false;
         document.getElementById('product-promo-container').innerHTML = '';
         updateTotalHarga();
         const claimButton = document.getElementById('claim-button');
@@ -327,12 +335,10 @@
                 ? produkTerpilihData.promo.nilai 
                 : hargaAwal * (produkTerpilihData.promo.nilai / 100);
             hargaFinal = hargaAwal - potongan;
-            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br>
-                             <b style="color:var(--success);">Harga Promo: Rp${formatRupiah(hargaFinal)}</b>`;
+            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Promo: Rp${formatRupiah(hargaFinal)}</b>`;
         } else if (diskonShareTerpakai) {
             hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
-            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br>
-                             <b style="color:var(--success);">Harga Diskon: Rp${formatRupiah(hargaFinal)}</b>`;
+            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: Rp${formatRupiah(hargaFinal)}</b>`;
         }
         
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || produkTerpilihData.cara || '-'}`;
@@ -340,18 +346,94 @@
     
     document.getElementById('formPesanan').addEventListener('submit', async e => {
         e.preventDefault();
-        // ... (kode validasi lainnya)
-        // ... (logika submit, pengurangan stok, dan penyimpanan pesanan tetap sama dengan versi sebelumnya) ...
+        if (submitBtn.disabled) return;
+        if (!produkTerpilihData || (typeof produkTerpilihData.stok !== 'undefined' && produkTerpilihData.stok !== null && produkTerpilihData.stok <= 0)) {
+            return alert("Maaf, stok produk ini telah habis.");
+        }
+        
+        const nama = document.getElementById('nama').value.trim();
+        const nomor = document.getElementById('nomor').value.trim();
+        const waAktif = normalizePhone(document.getElementById('waAktif').value.trim());
+        const kategori = kategoriSelect.value;
+        const produk = produkSelect.value;
+        const waktu = new Date().toISOString();
+        const id = "P" + Date.now();
+
+        if (!nama || !nomor || !waAktif || !kategori || !produk) return alert("Harap lengkapi semua field!");
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
+
+        try {
+            const snapProduk = await db.ref(`produk/${kategori}/${produk}`).once('value');
+            const dataProduk = snapProduk.val();
+            
+            let hargaAwal = dataProduk.harga;
+            let hargaFinal = hargaAwal;
+            let promoDigunakan = null;
+            let diskonShareDigunakan = false;
+
+            if (promoProdukTerpakai && dataProduk.promo) {
+                let potongan = (dataProduk.promo.jenis === 'nominal') ? dataProduk.promo.nilai : hargaAwal * (dataProduk.promo.nilai / 100);
+                hargaFinal = hargaAwal - potongan;
+                promoDigunakan = dataProduk.promo;
+            } else if (diskonShareTerpakai) {
+                hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
+                diskonShareDigunakan = true;
+                await db.ref('hakDiskon/' + waAktif).remove();
+            }
+
+            if (typeof dataProduk.stok !== 'undefined' && dataProduk.stok !== null) {
+                const stokBaru = dataProduk.stok - 1;
+                await db.ref(`produk/${kategori}/${produk}/stok`).set(stokBaru);
+            }
+
+            await db.ref('pesanan/' + id).set({
+                nama, nomor, wa_aktif: waAktif, kategori, produk, waktu, 
+                status: 'Belum Bayar',
+                harga_asli: hargaAwal,
+                harga_final: hargaFinal,
+                promo_digunakan: promoDigunakan,
+                diskon_share: diskonShareDigunakan
+            });
+            
+            hasilDiv.style.display = 'block';
+            hasilDiv.innerHTML = `
+                <p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p>
+                <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
+                <div class="info">
+                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>ShopeePay:</strong> 081803004607</li>
+                        <li><strong>Dana:</strong> 087755432880</li>
+                    </ul>
+                </div>
+                <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a>
+                <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
+            `;
+            
+            document.getElementById('formPesanan').reset();
+            resetFormState();
+            window.scrollTo(0, document.getElementById('hasil').offsetTop); 
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan saat memproses pesanan.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pesan Sekarang';
+        }
     });
 
-    // ... Sisa fungsi tidak berubah (cekStatus, testimoni, FAQ, banner promo) ...
+    window.cekStatus = () => {
+      const id = document.getElementById('idCek').value.trim();
+      if (id) window.location.href = `status.html?id=${id}`;
+    };
+
     function loadPromoBanner() {
         const banner = document.getElementById('promo-banner');
         db.ref('featuredPromo').once('value').then(snap => {
             const promo = snap.val();
-            if (!promo || !promo.tanggalAkhir) {
-                banner.style.display = 'none'; return;
-            }
+            if (!promo || !promo.tanggalAkhir) { banner.style.display = 'none'; return; }
             const endDate = new Date(promo.tanggalAkhir).getTime();
             if (endDate > new Date().getTime()) {
                 document.getElementById('promo-banner-title').textContent = promo.judul;
@@ -381,6 +463,8 @@
             countdownEl.innerHTML = `${d}H : ${h}J : ${m}M : ${s}D`;
         }, 1000);
     }
+    
+    // Kode untuk Testimoni & FAQ tidak diubah
   </script>
 </body>
 </html>
