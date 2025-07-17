@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Reseller - Asdar Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --dark-bg: #1a1a2e; --card-bg: #2c2c40; --primary: #1abc9c;
+            --light-primary: #25e0b9; --text: #e0e0e0; --text-muted: #8a93a2;
+            --border: #444; --success: #28a745;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: var(--text);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
+        }
+        /* Kontainer untuk Auth dan Dashboard */
+        #auth-container, #dashboard-container { width: 100%; max-width: 800px; }
+        .hidden { display: none !important; }
+
+        /* === Gaya untuk Form Auth (Login/Register) === */
+        .box-pembungkus { position: relative; width: 100%; height: 550px; }
+        .card-auth {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card-bg); border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: flex; transition: 0.7s ease-in-out; overflow: hidden;
+        }
+        .card-login { opacity: 1; transform: translateX(0); z-index: 2; }
+        .card-regis { opacity: 0; transform: translateX(-100%); z-index: 1; }
+        .box-pembungkus.active .card-login { transform: translateX(100%); opacity: 0; z-index: 1; }
+        .box-pembungkus.active .card-regis { transform: translateX(0); opacity: 1; z-index: 2; }
+        .quotes, .form { width: 50%; height: 100%; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+        .quotes { color: white; background: linear-gradient(135deg, var(--light-primary), var(--primary)); }
+        .card-regis .quotes { order: 2; }
+        .form h2 { color: var(--primary); }
+        .input-box { position: relative; width: 100%; margin-bottom: 30px; }
+        .input-box input, .input-box select {
+            width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--text-muted);
+            color: var(--text); padding: 10px 0; font-size: 1em; outline: none; appearance: none;
+        }
+        .input-box select { cursor: pointer; }
+        .input-box label { position: absolute; top: 10px; left: 0; font-size: 1em; transition: 0.3s; pointer-events: none; color: var(--text-muted); }
+        .input-box input:focus + label, .input-box input:valid + label,
+        .input-box select:focus + label, .input-box select:valid + label { top: -15px; font-size: 0.8em; color: var(--primary); }
+        .input-box input:focus, .input-box select:focus { border-bottom-color: var(--primary); }
+        .tombol button { width: 100%; padding: 12px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; font-size: 1em; border-radius: 8px; }
+        .tombol button:hover { background: var(--light-primary); }
+        .link-switch { text-align: center; margin-top: 20px; font-size: 0.9em; }
+        .link-switch a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 600; }
+
+        /* === Gaya untuk Dashboard === */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .saldo-display { text-align: center; }
+        .saldo-display .label { font-size: 1em; color: var(--text-muted); }
+        .saldo-display .amount { font-size: 2.5em; font-weight: 700; color: var(--primary); line-height: 1.2; }
+        #logout-btn { background: none; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        .dashboard-content { background: var(--card-bg); padding: 30px; border-radius: 15px; }
+
+        /* === Gaya untuk Produk === */
+        .product-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .product-card h5 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .order-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .order-button:hover {
+            background-color: var(--light-primary);
+        }
+
+        /* === Gaya untuk Modal Detail Produk === */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10; /* Pastikan modal berada di atas konten lain */
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 1.5em;
+        }
+
+        .order-form label {
+            color: var(--text);
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-container">
+        <div class="box-pembungkus">
+            <div class="card-auth card-login">
+                <div class="form">
+                    <h2>LOGIN RESELLER</h2>
+                    <form id="form-login">
+                        <div class="input-box"><input type="email" id="login-email" required><label>Email Reseller</label></div>
+                        <div class="input-box"><input type="password" id="login-pass" required><label>Password</label></div>
+                        <div class="tombol"><button type="submit">LOGIN</button></div>
+                        <div class="link-switch"><p>Belum punya akun? <a id="linkDaftar">Daftar di sini</a></p></div>
+                    </form>
+                </div>
+                <div class="quotes"><h1>Selamat Datang, Partner!</h1><p>Login untuk mengelola toko dan produk Anda.</p></div>
+            </div>
+            <div class="card-auth card-regis">
+                <div class="quotes"><h1>Mulai Berjualan!</h1><p>Daftar dan jangkau lebih banyak pelanggan.</p></div>
+                <div class="form">
+                    <h2>DAFTAR RESELLER</h2>
+                    <form id="form-register">
+                        <div class="input-box"><input type="text" id="regis-toko" required><label>Nama Toko</label></div>
+                        <div class="input-box"><input type="email" id="regis-email" required><label>Email Address</label></div>
+                        <div class="input-box"><input type="password" id="regis-pass" required><label>Password</label></div>
+                        <div class="input-box">
+                            <select id="regis-tier" required>
+                                <option value="" disabled selected></option>
+                                <option value="B">Tier B (Top Up 50k - Diskon 10%)</option>
+                                <option value="A">Tier A (Top Up 100k - Diskon 15%)</option>
+                            </select>
+                            <label>Pilih Paket Reseller</label>
+                        </div>
+                        <div class="tombol"><button type="submit">DAFTAR SEKARANG</button></div>
+                        <div class="link-switch"><p>Sudah punya akun? <a id="linkLogin">Login di sini</a></p></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-container" class="hidden">
+        <div class="dashboard-header">
+            <div>
+                <h2 style="text-align: left; margin: 0; color: var(--text);" id="dashboard-nama-toko"></h2>
+                <p style="margin: 0; color: var(--text-muted);" id="dashboard-email-tier"></p>
+            </div>
+            <div class="saldo-display">
+                <div class="label">Saldo Anda</div>
+                <div class="amount" id="dashboard-saldo">Rp 0</div>
+            </div>
+            <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <div class="dashboard-content">
+            <h3>Selamat Datang di Dashboard</h3>
+            <p>Di sini Anda akan bisa melakukan top up dan memesan produk dengan harga reseller.</p>
+
+            <h4>Daftar Produk</h4>
+            <div id="product-list">
+                </div>
+        </div>
+
+        <div id="product-modal" class="modal hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
+            <div class="modal-content" style="background-color: var(--card-bg); padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; position: relative;">
+                <span class="close-button" style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: var(--text-muted); font-size: 1.5em;">&times;</span>
+                <h4 id="modal-product-name" style="color: var(--primary);"></h4>
+                <p id="modal-product-description"></p>
+                <p>Harga Dasar: <span id="modal-product-base-price"></span></p>
+                <p>Harga Reseller: <span id="modal-product-reseller-price" style="font-weight: bold; color: var(--light-primary);"></span></p>
+                <p>Stok Tersedia: <span id="modal-product-stock"></span></p>
+                <div class="order-form" style="margin-top: 20px;">
+                    <label for="quantity">Jumlah:</label>
+                    <input type="number" id="quantity" value="1" min="1" style="width: 80px; padding: 8px; border: 1px solid var(--border); background-color: transparent; color: var(--text); border-radius: 5px;">
+                    <button id="add-to-cart-button" style="background-color: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-left: 10px;">Tambah ke Keranjang</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+            messagingSenderId: "220670500351",
+            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
+            measurementId: "G-CMRW37J19G"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Elemen Halaman
+        const authContainer = document.getElementById('auth-container');
+        const dashboardContainer = document.getElementById('dashboard-container');
+        const boxPembungkus = document.querySelector('.box-pembungkus');
+
+        // Elemen modal
+        const productModal = document.getElementById('product-modal');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalProductDescription = document.getElementById('modal-product-description');
+        const modalProductBasePrice = document.getElementById('modal-product-base-price');
+        const modalProductResellerPrice = document.getElementById('modal-product-reseller-price');
+        const modalProductStock = document.getElementById('modal-product-stock');
+        const quantityInput = document.getElementById('quantity');
+        const addToCartButton = document.getElementById('add-to-cart-button');
+        const closeModalButton = productModal.querySelector('.close-button');
+
+        let currentResellerTier = null; // Simpan informasi tier reseller saat ini
+        let currentProductId = null; // Simpan ID produk yang sedang dilihat
+
+        // Fungsi untuk menampilkan dashboard
+        function showDashboard(resellerData) {
+            authContainer.classList.add('hidden');
+            dashboardContainer.classList.remove('hidden');
+
+            document.getElementById('dashboard-nama-toko').textContent = resellerData.namaToko;
+            document.getElementById('dashboard-saldo').textContent = `Rp ${resellerData.saldo.toLocaleString('id-ID')}`;
+            document.getElementById('dashboard-email-tier').textContent = `${resellerData.email} (Tier ${resellerData.tier})`;
+        }
+
+        // Fungsi untuk menampilkan halaman login
+        function showLogin() {
+            authContainer.classList.remove('hidden');
+            dashboardContainer.classList.add('hidden');
+        }
+
+        function calculateResellerPrice(basePrice, tier) {
+            let discountPercentage = 0;
+            if (tier === 'A') {
+                discountPercentage = 0.15; // 15% untuk Tier A
+            } else if (tier === 'B') {
+                discountPercentage = 0.10; // 10% untuk Tier B
+            }
+            return basePrice * (1 - discountPercentage);
+        }
+
+        function loadProducts() {
+            const productListDiv = document.getElementById('product-list');
+            productListDiv.innerHTML = 'Memuat produk...';
+
+            db.collection('products').get().then((querySnapshot) => {
+                productListDiv.innerHTML = '';
+
+                if (querySnapshot.empty) {
+                    productListDiv.innerHTML = '<p>Tidak ada produk yang tersedia.</p>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const productData = doc.data();
+                    const productId = doc.id;
+
+                    const productCard = document.createElement('div');
+                    productCard.classList.add('product-card');
+                    productCard.innerHTML = `
+                        <h5>${productData.nama}</h5>
+                        <p>${productData.deskripsi.substring(0, 100)}...</p>
+                        <p>Harga Dasar: Rp ${productData.hargaDasar.toLocaleString('id-ID')}</p>
+                        <button class="order-button" data-product-id="${productId}">Pesan</button>
+                    `;
+
+                    productListDiv.appendChild(productCard);
+                });
+
+                addOrderButtonListeners();
+
+            }).catch((error) => {
+                console.error("Error getting products: ", error);
+                productListDiv.innerHTML = '<p>Gagal memuat produk.</p>';
+            });
+        }
+
+        function addOrderButtonListeners() {
+            const orderButtons = document.querySelectorAll('.order-button');
+            orderButtons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    currentProductId = event.target.dataset.productId; // Simpan ID produk yang dipilih
+                    loadProductDetails(currentProductId);
+                    productModal.classList.remove('hidden'); // Tampilkan modal
+                });
+            });
+        }
+
+        function loadProductDetails(productId) {
+            db.collection('products').doc(productId).get().then((doc) => {
+                if (doc.exists) {
+                    const productData = doc.data();
+                    modalProductName.textContent = productData.nama;
+                    modalProductDescription.textContent = productData.deskripsi;
+                    modalProductBasePrice.textContent = `Rp ${productData.hargaDasar.toLocaleString('id-ID')}`;
+                    modalProductStock.textContent = productData.stok;
+
+                    if (currentResellerTier) {
+                        const resellerPrice = calculateResellerPrice(productData.hargaDasar, currentResellerTier);
+                        modalProductResellerPrice.textContent = `Rp ${resellerPrice.toLocaleString('id-ID')}`;
+                    } else {
+                        modalProductResellerPrice.textContent = 'Login untuk melihat harga';
+                    }
+                } else {
+                    console.log("No such document!");
+                }
+            }).catch((error) => {
+                console.error("Error getting document:", error);
+            });
+        }
+
+        // PENGELOLA STATUS LOGIN (SANGAT PENTING)
+        // Mengecek apakah pengguna sudah login atau belum saat halaman dimuat
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Pengguna sudah login, ambil datanya dari Firestore
+                db.collection('resellers').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const resellerData = doc.data();
+                        showDashboard(resellerData);
+                        loadProducts(); // Muat daftar produk setelah dashboard ditampilkan
+                        currentResellerTier = resellerData.tier; // Simpan tier reseller
+                    } else {
+                        // Data tidak ditemukan, mungkin akun user biasa? Logout saja.
+                        auth.signOut();
+                    }
+                });
+            } else {
+                // Pengguna belum login, tampilkan form
+                showLogin();
+            }
+        });
+
+        // Event Listener untuk UI Auth
+        document.getElementById('linkDaftar').addEventListener('click', (e) => { e.preventDefault(); boxPembungkus.classList.add('active'); });
+        document.getElementById('linkLogin').addEventListener('click', (e) => { e.preventDefault(); boxPembungkus.classList.remove('active'); });
+
+        // Logika Form Registrasi
+        document.getElementById('form-register').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const namaToko = document.getElementById('regis-toko').value;
+            const email = document.getElementById('regis-email').value;
+            const password = document.getElementById('regis-pass').value;
+            const tier = document.getElementById('regis-tier').value;
+            const diskon = (tier === 'A') ? 15 : 10;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    // 1. Akun dibuat di Authentication
+                    const user = userCredential.user;
+                    // 2. Simpan data tambahan ke database Firestore
+                    return db.collection('resellers').doc(user.uid).set({
+                        namaToko: namaToko,
+                        email: email,
+                        tier: tier,
+                        diskon: diskon,
+                        saldo: 0, // Saldo awal adalah 0
+                        uid: user.uid,
+                        bergabungPada: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    alert(`Pendaftaran toko "${namaToko}" berhasil! Silakan login.`);
+                    boxPembungkus.classList.remove('active'); // Kembali ke form login
+                })
+                .catch(error => {
+                    alert('Pendaftaran Gagal: ' + error.message);
+                });
+        });
+
+        // Logika Form Login
+        document.getElementById('form-login').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-pass').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => {
+                    alert('Login Gagal: ' + error.message);
+                });
+        });
+
+        // Logika Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // Event listener untuk menutup modal
+        closeModalButton.addEventListener('click', () => {
+            productModal.classList.add('hidden');
+        });
+
+        // Optional: Tutup modal jika area di luar modal diklik
+        window.addEventListener('click', (event) => {
+            if (event.target === productModal) {
+                productModal.classList.add('hidden');
+            }
+        });
+
+        // Event listener untuk tombol "Tambah ke Keranjang" (akan diimplementasikan selanjutnya)
+        addToCartButton.addEventListener('click', () => {
+            const quantity = parseInt(quantityInput.value);
+            if (currentProductId) {
+                console.log(`Menambahkan produk ${currentProductId} sebanyak ${quantity} ke keranjang.`);
+                // Di sini akan ada logika untuk menambahkan ke keranjang
+            } else {
+                alert('Produk tidak valid.');
+            }
+        });
+    </script>
+</body>
+</html>
