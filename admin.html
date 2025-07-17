@@ -168,13 +168,13 @@
     
     function showConfirm(title, body) {
         return new Promise(resolve => {
-            const okBtn = document.getElementById('confirmModalOk');
-            const onOk = () => { resolve(true); confirmModal.hide(); };
-            const onCancel = () => { resolve(false); confirmModal.hide(); };
             document.getElementById('confirmModalTitle').textContent = title;
             document.getElementById('confirmModalBody').textContent = body;
-            okBtn.addEventListener('click', onOk, { once: true });
-            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', onCancel, { once: true });
+            const okBtn = document.getElementById('confirmModalOk');
+            const onOk = () => resolve(true);
+            const cleanup = () => { okBtn.removeEventListener('click', onOk); confirmModal.hide(); };
+            okBtn.addEventListener('click', () => { cleanup(); resolve(true); }, { once: true });
+            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => { cleanup(); resolve(false); }, { once: true });
             confirmModal.show();
         });
     }
@@ -332,7 +332,7 @@
                 const testi = data[key];
                 const card = document.createElement('div');
                 card.className = 'card mb-3';
-                card.innerHTML = `<div class="card-body"><p class="card-text">"${testi.pesan}"</p><footer class="blockquote-footer">${testi.nama}</footer><button class="btn btn-sm btn-success" onclick="setujuiTesti('${key}')">Setujui</button> <button class="btn btn-sm btn-danger" onclick="tolakTesti('${key}')">Tolak</button></div>`;
+                card.innerHTML = `<div class="card-body"><p class="card-text">"${testi.pesan}"</p><footer class="blockquote-footer">${testi.nama}</footer><button class="btn btn-sm btn-success" onclick="setujuiTesti('${key}')">Setujui</button> <button class="btn btn-sm btn-danger ms-2" onclick="tolakTesti('${key}')">Tolak</button></div>`;
                 container.appendChild(card);
             }
         });
