@@ -11,38 +11,23 @@
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <style>
     :root {
-      --bg: #f9f9f9;
-      --text: #2c3e50;
-      --primary: #3498db;
-      --card: #ffffff;
-      --border: #ddd;
-      --shadow: rgba(0, 0, 0, 0.05);
-      --success: #28a745; 
-      --danger: #e74c3c;
+      --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
+      --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
+      --success: #28a745; --danger: #e74c3c;
     }
     [data-theme="dark"] {
-      --bg: #1a1a2e;
-      --text: #e0e0e0;
-      --primary: #1abc9c;
-      --card: #2c2c40;
-      --border: #444;
-      --shadow: rgba(0, 0, 0, 0.15);
-      --success: #27ae60;
-      --danger: #c0392b;
+      --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
+      --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+      --success: #27ae60; --danger: #c0392b;
     }
     body {
-      font-family: 'Poppins', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      transition: all 0.3s ease;
-      margin: 0;
-      line-height: 1.6;
+      font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
+      transition: all 0.3s ease; margin: 0; line-height: 1.6;
     }
     header {
-      position: sticky; top: 0; background: var(--card);
-      padding: 15px 20px; display: flex; justify-content: space-between;
-      align-items: center; border-bottom: 1px solid var(--border);
-      z-index: 999; transition: box-shadow 0.3s ease;
+      position: sticky; top: 0; background: var(--card); padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); z-index: 999; transition: box-shadow 0.3s ease;
     }
     header.scrolled { box-shadow: 0 4px 12px var(--shadow); }
     header h1 { margin: 0; font-size: 24px; color: var(--primary); }
@@ -78,7 +63,7 @@
     .qr-btn.upload { background: #28a745; }
     .qr-btn.status { background: #17a2b8; }
     
-    /* === STYLING UNTUK FITUR PROMO === */
+    /* === [BARU] STYLING UNTUK FITUR PROMO === */
     #promo-banner {
         padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;
         background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white;
@@ -96,7 +81,7 @@
     .claim-promo-card button { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #bc1888); }
     .text-danger { color: var(--danger) !important; font-weight: bold; }
     
-    /* ... Sisa CSS Anda yang lain ... */
+    /* ... Sisa CSS dari kode lama Anda ... */
   </style>
 </head>
 
@@ -141,6 +126,11 @@
     <div id="hasil" style="display: none;"></div>
     
     <hr>
+    <div data-aos="fade-up"><h2>Testimoni Pelanggan Kami</h2><div id="testimoniContainer"></div></div>
+    <div data-aos="fade-up" class="section-container"><h2>Beri Kami Testimoni</h2><form id="formTestimoni">...</form></div>
+    <hr>
+    <div data-aos="fade-up"><h2>Ada Pertanyaan?</h2><div class="section-container" id="faq-container"></div></div>
+    <hr>
     
     <div data-aos="fade-up" class="section-container">
       <h2>Cek Status Pesanan Anda</h2>
@@ -150,11 +140,12 @@
         <button type="submit">Cek Status</button>
       </form>
     </div>
-    
+    <div id="dynamic-content-area" style="margin-top: 20px;"></div>
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
@@ -192,10 +183,12 @@
     window.toggleTheme = () => {
       const theme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       document.body.setAttribute('data-theme', theme);
+      document.getElementById('themeToggle').textContent = theme === 'light' ? '🌙' : '☀️';
       localStorage.setItem('theme', theme);
     };
     if (localStorage.getItem('theme')) {
       document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
     // === Logika Utama ===
@@ -213,6 +206,7 @@
 
         kategoriSelect.addEventListener('change', () => {
             produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+            infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
             const kategori = kategoriSelect.value;
             if (!kategori) return;
             db.ref(`produk/${kategori}`).once('value').then(snapshot => {
@@ -342,6 +336,7 @@
             await db.ref('pesanan/' + id).set({
                 nama, nomor, wa_aktif: waAktif, kategori, produk, waktu, 
                 status: 'Belum Bayar',
+                harga_asli: dataProduk.harga,
                 harga_final: hargaFinal,
                 promo_digunakan: promoInfo
             });
@@ -362,7 +357,7 @@
             `;
             
             document.getElementById('formPesanan').reset();
-            handleProductSelection(); // Reset form dan pilihan
+            handleProductSelection();
             window.scrollTo(0, document.getElementById('hasil').offsetTop); 
 
         } catch (error) {
@@ -419,6 +414,8 @@
             countdownEl.innerHTML = `${d}H : ${h}J : ${m}M : ${s}D`;
         }, 1000);
     }
+    
+    // ... Sisa kode JavaScript untuk Testimoni & FAQ tidak diubah ...
   </script>
 </body>
 </html>
