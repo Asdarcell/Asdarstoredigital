@@ -1,207 +1,205 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard Admin - Asdar Store</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asdar Store Digital</title>
+  <link rel="icon" href="favicon.png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #0d6efd;
-      --success-color: #198754;
-      --danger-color: #dc3545;
-      --warning-color: #ffc107;
-      --light-gray: #f8f9fa;
-      --dark-gray: #343a40;
-      --border-color: #dee2e6;
-      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+      --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
+      --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
+      --success: #28a745; --danger: #e74c3c;
     }
-    body { background-color: var(--light-gray); font-family: 'Poppins', sans-serif; }
-    .container { max-width: 1200px; }
-    .card { border-radius: 12px; box-shadow: var(--shadow); border: none; }
-    .card-header { background-color: #fff; border-bottom: 1px solid var(--border-color); }
-    .nav-tabs .nav-link { font-weight: 500; }
-    .nav-tabs .nav-link.active { color: var(--primary-color); background-color: #fff; border-color: var(--border-color) var(--border-color) #fff; }
-    
-    .order-card { background: #fff; border: 1px solid var(--border-color); border-left: 5px solid var(--primary-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; transition: box-shadow 0.3s ease; }
-    .order-card:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
-    .order-card p { margin: 0.25rem 0; font-size: 0.9rem; }
-    .order-card p strong { min-width: 110px; display: inline-block; color: #555; }
-    .order-card .badge { font-size: 0.8rem; padding: 0.4em 0.7em; }
-    
-    /* --- [BARU] Style untuk bagian diskon --- */
-    .discount-section {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px dashed #ccc;
+    [data-theme="dark"] {
+      --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
+      --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+      --success: #27ae60; --danger: #c0392b;
     }
-
-    .product-category h4 { padding: 10px; background-color: var(--light-gray); border-radius: 8px; margin-top: 20px; }
-    .product-list .list-group-item { cursor: grab; background-color: #fff; }
-    .product-list .list-group-item:active { cursor: grabbing; }
-    .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
-
-    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-    .toast.show { display: block; }
-    
-    .modal-backdrop.show { opacity: 0.5; }
-
-    #global-refresh-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        font-size: 20px;
-        z-index: 1050;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    body {
+      font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
+      transition: all 0.3s ease; margin: 0; line-height: 1.6;
     }
-    
-    #pesananList, #product-container {
-        max-height: 65vh; 
-        overflow-y: auto; 
-        padding: 15px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        background-color: #fff;
+    header {
+      position: sticky; top: 0; background: var(--card); padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); z-index: 999; transition: box-shadow 0.3s ease;
     }
-    #pesananList .order-card {
-        margin-left: -5px;
-        margin-right: -5px;
+    header.scrolled { box-shadow: 0 4px 12px var(--shadow); }
+    header h1 { margin: 0; font-size: 24px; color: var(--primary); }
+    .theme-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text); }
+    main { max-width: 700px; margin: 20px auto; padding: 0 20px; }
+    label { font-weight: 600; margin-top: 15px; display: block; }
+    input, select, textarea {
+      width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px;
+      border-radius: 8px; border: 1px solid var(--border); background-color: var(--card); color: var(--text);
     }
-    #pesananList .order-card:last-child {
-        margin-bottom: 0;
+    button {
+      width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px;
+      border: none; background: var(--primary); color: white; cursor: pointer;
+      font-weight: bold; font-size: 16px; transition: all 0.2s ease;
     }
+    button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+    .info {
+      background: var(--card); padding: 15px; margin-top: 1rem;
+      border-left: 5px solid var(--primary); border-radius: 8px; box-shadow: 0 2px 8px var(--shadow);
+    }
+    .section-container {
+      background: var(--card); padding: 25px; border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow); margin-top: 20px;
+    }
+    hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
+    h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
+    .qr-btn {
+      margin-top: 15px; padding: 12px 20px; text-align: center; border-radius: 8px;
+      text-decoration: none; display: inline-block; width: calc(50% - 10px);
+      font-weight: bold; transition: background-color 0.3s ease, transform 0.2s ease;
+      color: white !important;
+    }
+    .qr-btn.upload { background: #28a745; }
+    .qr-btn.status { background: #17a2b8; }
+    #promo-banner {
+        padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;
+        background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white;
+        box-shadow: var(--shadow-light);
+    }
+    #countdown-timer {
+        background-color: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;
+        margin-top: 0.75rem; font-size: 1.1rem; font-weight: 600; letter-spacing: 2px;
+    }
+    .claim-promo-card {
+        background-color: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px;
+        padding: 1rem; margin-top: 1rem; text-align: center;
+    }
+    [data-theme="dark"] .claim-promo-card { background-color: #1e3a5a; border-color: #4a6d91; }
+    .claim-promo-card button { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #bc1888); }
+    .text-danger { color: var(--danger) !important; font-weight: bold; }
+    #claim-discount-section button { background-color: #28a745; }
+    #claim-discount-section button:disabled { background-color: #6c757d; cursor: not-allowed; }
+    .order-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); border: 1px solid var(--border); }
+    #testimoniContainer {
+      background: var(--card); border-radius: 12px; padding: 20px; height: 400px;
+      overflow: hidden; position: relative; box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .testimonial-bubble {
+      background-color: var(--primary); color: white; padding: 10px 15px;
+      border-radius: 20px 20px 20px 5px; margin-bottom: 15px; max-width: 80%;
+      align-self: flex-start; opacity: 0;
+      animation: slideInUp 0.5s ease-out forwards, fadeOut 0.5s ease-in 10s forwards;
+    }
+    .testimonial-bubble b { display: block; font-size: 0.9em; opacity: 0.8; }
+    @keyframes slideInUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; height: 0; padding: 0; margin: 0; border: 0; } }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 15px 0; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-question {
+      cursor: pointer; font-weight: 600; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .faq-question::after { content: '▼'; font-size: 12px; transition: transform 0.3s ease; }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
+    .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
+    .faq-item.active .faq-question::after { transform: rotate(180deg); }
   </style>
 </head>
-<body>
 
-<button id="global-refresh-btn" class="btn btn-primary shadow-lg" title="Refresh Halaman">
-    <i class="fas fa-sync-alt"></i>
-</button>
+<body data-theme="light">
+  <header id="header">
+    <h1>Asdar Store Digital</h1>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+  </header>
 
-<div class="toast-container"></div>
-<div class="modal fade" id="confirmModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="confirmModalTitle">Konfirmasi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body"><p id="confirmModalBody"></p></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" id="confirmModalCancel">Batal</button><button type="button" class="btn btn-primary" id="confirmModalOk">Ya, Lanjutkan</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="container py-4">
-  <div class="text-center mb-4">
-    <h1 class="display-5 fw-bold">Dashboard Admin</h1>
-    <p class="text-muted">Asdar Store Digital</p>
-  </div>
-
-  <ul class="nav nav-tabs" id="adminTab" role="tablist">
-    <li class="nav-item" role="presentation"><button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-pane" type="button"><i class="fas fa-receipt me-2"></i>Pesanan</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button"><i class="fas fa-box-open me-2"></i>Produk</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="moderasi-tab" data-bs-toggle="tab" data-bs-target="#moderasi-pane" type="button"><i class="fas fa-comment-check me-2"></i>Moderasi Testimoni</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button"><i class="fas fa-file-code me-2"></i>Konten Dinamis</button></li>
-  </ul>
-
-  <div class="tab-content" id="adminTabContent">
-    <div class="tab-pane fade show active" id="orders-pane" role="tabpanel">
-        <div class="card mt-3"><div class="card-body">
-            <h3 class="mb-3">Manajemen Pesanan</h3>
-            <div class="row mb-3 g-2 align-items-center">
-                <div class="col-md-3"><select id="filterStatus" class="form-select"><option value="">Filter Semua Status</option><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Diproses">Diproses</option><option value="Selesai">Selesai</option></select></div>
-                <div class="col-md-5"><input type="text" id="searchId" class="form-control" placeholder="Cari ID/Nama/Nomor..." /></div>
-                <div class="col-md-2"><button class="btn btn-outline-success w-100" id="exportCSVBtn"><i class="fas fa-file-csv me-2"></i>Export</button></div>
-                <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="renderPesanan()"><i class="fas fa-sync-alt me-2"></i>Refresh</button></div>
-            </div>
-            <div id="pesananList" class="mb-4"><p class="text-center text-muted p-4">Memuat pesanan...</p></div>
-            <hr>
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>Kirim Bukti Admin</h4>
-                    <div class="input-group mb-2">
-                        <input type="file" id="buktiAdmin" class="form-control" accept="image/*" />
-                        <button id="uploadBuktiBtn" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>Kirim & Selesaikan</button>
-                    </div>
-                    <small id="selectedOrderIdDisplay" class="text-info mb-3 d-block">Pilih pesanan dari daftar untuk mengirim bukti.</small>
-                </div>
-                <div class="col-md-6 text-end align-self-end">
-                    <button class="btn btn-danger" id="deleteAllOrdersBtn"><i class="fas fa-trash-alt me-2"></i>Hapus Semua Pesanan</button>
-                </div>
-            </div>
-        </div></div>
+  <main id="main-content">
+    <div id="promo-banner" data-aos="fade-down" style="display: none;">
+        <h3 id="promo-banner-title" style="font-size: 1.5rem; font-weight: 600;"></h3>
+        <p id="promo-banner-desc" class="mt-1"></p>
+        <div id="countdown-timer"></div>
     </div>
 
-    <div class="tab-pane fade" id="products-pane" role="tabpanel">
-        <div class="card mt-3"><div class="card-body">
-            <h3>Tambah / Edit Produk</h3>
-            <form id="formProduk" class="row g-3 mb-4 p-3 border rounded-3 bg-light">
-                <div class="col-md-3"><label class="form-label">Kategori</label><input type="text" id="kategori" class="form-control" required /></div>
-                <div class="col-md-3"><label class="form-label">Varian</label><input type="text" id="varian" class="form-control" required /></div>
-                <div class="col-md-2"><label class="form-label">Harga</label><input type="number" id="harga" class="form-control" required /></div>
-                <div class="col-md-4"><label class="form-label">Keterangan</label><textarea id="cara" class="form-control" rows="3" required></textarea></div>
-                <div class="col-12"><button type="submit" id="simpanProdukBtn" class="btn btn-success w-100"><i class="fas fa-save me-2"></i>Simpan Produk</button></div>
-            </form>
-            <h4>Daftar Produk (<small class="text-muted">Drag & drop varian untuk mengurutkan</small>)</h4>
-            <div id="product-container"></div>
-        </div></div>
-    </div>
-
-    <div class="tab-pane fade" id="moderasi-pane" role="tabpanel">
-        <div class="card mt-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="mb-0 fs-5">Peninjauan Testimoni</h3>
-            <button class="btn btn-sm btn-outline-primary" onclick="loadDynamicContentForAdminPage()">
-              <i class="fas fa-sync-alt me-1"></i> Refresh
-            </button>
-          </div>
-          <div class="card-body">
-            <div id="dynamic-content-area-admin"></div>
-          </div>
+    <div data-aos="fade-up" class="section-container">
+      <form id="formPesanan">
+        <label for="nama">Nama Lengkap</label>
+        <input type="text" id="nama" placeholder="Cth: Budi Santoso" required />
+        <label for="nomor">Nomor HP / ID Game</label>
+        <input type="text" id="nomor" placeholder="Cth: 081234567890 atau ID Game Anda" required />
+        <label for="waAktif">Nomor WhatsApp Aktif</label>
+        <input type="tel" id="waAktif" placeholder="Cth: 081234567890" pattern="^(08|62)[0-9]{8,15}$" required />
+        
+        <div id="claim-discount-section" class="order-card" style="display: none; margin-top: 20px; background-color: #e8f5e9;">
+            <h3>🎉 Selamat! Anda Punya Hak Diskon!</h3>
+            <p>Anda berhak mendapatkan potongan <strong>Rp 5.000</strong> untuk pesanan kali ini.</p>
+            <button id="claim-button" type="button" onclick="gunakanDiskonShare()">✅ Ya, Gunakan Diskon</button>
         </div>
+        
+        <label for="kategori">Kategori Produk</label>
+        <select id="kategori" required>
+          <option value="">Pilih Kategori</option>
+        </select>
+        <label for="produk">Produk</label>
+        <select id="produk" required>
+          <option value="">Pilih Produk</option>
+        </select>
+
+        <div id="product-promo-container"></div>
+        
+        <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
+        <button type="submit" id="submitBtn">Pilih Produk</button>
+      </form>
+    </div>
+
+    <div id="hasil" style="display: none;"></div>
+    
+    <hr>
+    
+    <div data-aos="fade-up">
+        <h2>Testimoni Pelanggan Kami</h2>
+        <div id="testimoniContainer"></div>
+    </div>
+
+    <div data-aos="fade-up" class="section-container">
+        <h2>Beri Kami Testimoni</h2>
+        <form id="formTestimoni">
+            <label for="testiNama">Nama Anda</label>
+            <input type="text" id="testiNama" placeholder="Nama Anda" required>
+            <label for="testiPesan">Pesan Anda</label>
+            <textarea id="testiPesan" rows="4" placeholder="Bagaimana pengalaman Anda berbelanja di sini?" required></textarea>
+            <button type="submit">Kirim Testimoni</button>
+            <p id="testiStatus" style="text-align:center; margin-top:10px;"></p>
+        </form>
+    </div>
+
+    <hr>
+
+    <div data-aos="fade-up">
+        <h2>Ada Pertanyaan?</h2>
+        <div class="section-container" id="faq-container"></div>
     </div>
     
-    <div class="tab-pane fade" id="content-pane" role="tabpanel">
-        <div class="card mt-3"><div class="card-body">
-            <h3 class="mb-3">Editor Konten Dinamis</h3>
-            <div class="mb-3">
-                <label for="halamanDinamis" class="form-label">Pilih Halaman untuk Diedit:</label>
-                <select id="halamanDinamis" class="form-select w-auto"><option value="index">index.html</option><option value="admin">admin.html</option><option value="status">status.html</option><option value="uplod">uplod.html</option></select>
-            </div>
-            <div class="mb-3">
-                <label for="editorHTML" class="form-label">HTML</label>
-                <textarea id="editorHTML" rows="8" class="form-control font-monospace" placeholder=""></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="editorCSS" class="form-label">CSS</label>
-                <textarea id="editorCSS" rows="6" class="form-control font-monospace" placeholder="/* Kode CSS Anda di sini */"></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="editorJS" class="form-label">JavaScript</label>
-                <textarea id="editorJS" rows="8" class="form-control font-monospace" placeholder="// Kode JavaScript Anda di sini"></textarea>
-            </div>
-            <button id="simpanDinamisBtn" class="btn btn-primary"><i class="fas fa-save me-2"></i>Simpan Konten Dinamis</button>
-            <hr class="my-4">
-            <h3 class="mb-3">Konten yang Tersimpan</h3>
-            <div id="saved-dynamic-content-list">
-                <p class="text-muted">Memuat daftar...</p>
-            </div>
-        </div></div>
+    <hr>
+    
+    <div data-aos="fade-up" class="section-container">
+      <h2>Cek Status Pesanan Anda</h2>
+      <form onsubmit="event.preventDefault(); cekStatus();">
+        <label for="idCek">Masukkan ID Pesanan</label>
+        <input type="text" id="idCek" placeholder="Cth: P16789..." required />
+        <button type="submit">Cek Status</button>
+      </form>
     </div>
-  </div>
-</div>
+    <div id="dynamic-content-area" style="margin-top: 20px;"></div>
+  </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-<script>
-    // === Firebase & Config ===
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init({ duration: 800, once: true, offset: 50 });
+
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -211,368 +209,354 @@
       messagingSenderId: "220670500351",
       appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
-
-    // === Global State ===
-    let selectedId = null;
-    let allDataPesanan = {};
-    let confirmModal;
-
-    // === UI Elements ===
-    const globalRefreshBtn = document.getElementById('global-refresh-btn');
-    const filterStatus = document.getElementById('filterStatus');
-    const searchId = document.getElementById('searchId');
-    const pesananList = document.getElementById('pesananList');
-    const uploadBuktiBtn = document.getElementById('uploadBuktiBtn');
-    const selectedOrderIdDisplay = document.getElementById('selectedOrderIdDisplay');
-    const formProduk = document.getElementById('formProduk');
-    const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
-
-    // === Modern UI Functions ===
-    function showToast(message, type = 'info') {
-      const toastId = 'toast-' + Date.now();
-      const toastColor = { success: 'bg-success', error: 'bg-danger', info: 'bg-primary' }[type];
-      const toastHTML = `
-        <div id="${toastId}" class="toast align-items-center text-white ${toastColor} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-          <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-          </div>
-        </div>`;
-      document.querySelector('.toast-container').insertAdjacentHTML('beforeend', toastHTML);
-      const toastEl = document.getElementById(toastId);
-      const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
-      toast.show();
-      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
-    }
     
-    function showConfirm(title, body) {
-      document.getElementById('confirmModalTitle').textContent = title;
-      document.getElementById('confirmModalBody').textContent = body;
-      confirmModal.show();
-      return new Promise(resolve => {
-        const okBtn = document.getElementById('confirmModalOk');
-        const cancelBtn = document.getElementById('confirmModalCancel');
-        const onOk = () => { resolve(true); confirmModal.hide(); cleanup(); };
-        const onCancel = () => { resolve(false); confirmModal.hide(); cleanup(); };
-        function cleanup() {
-            okBtn.removeEventListener('click', onOk);
-            cancelBtn.removeEventListener('click', onCancel);
-        }
-        okBtn.addEventListener('click', onOk, { once: true });
-        cancelBtn.addEventListener('click', onCancel, { once: true });
-        document.querySelector('#confirmModal .btn-close').addEventListener('click', onCancel, { once: true });
-      });
-    }
+    let produkTerpilihData = null;
+    let promoProdukTerpakai = false;
+    let diskonShareTerpakai = false;
+    const POTONGAN_DISKON_SHARE = 5000;
+    let countdownInterval;
+    const submitBtn = document.getElementById('submitBtn');
+    const kategoriSelect = document.getElementById('kategori');
+    const produkSelect = document.getElementById('produk');
+    const infoProduk = document.getElementById('infoProduk');
+    const hasilDiv = document.getElementById('hasil');
 
-    // === Helper Functions ===
     const formatRupiah = (angka) => (angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-    
-    // --- [BARU] Fungsi untuk memberi hak diskon ---
-    window.beriHakDiskon = async (nomorWA, pesananId) => {
-        if (!nomorWA) return showToast('Error: Nomor WhatsApp tidak ditemukan!', 'error');
-
-        const confirmed = await showConfirm('Konfirmasi Diskon', `Anda yakin ingin memberi hak diskon ke nomor ${nomorWA}?`);
-        if (!confirmed) return;
-
-        try {
-            await db.ref('hakDiskon/' + nomorWA).set(true);
-            showToast(`Sukses! Pelanggan ${nomorWA} kini berhak mendapat diskon.`, 'success');
-            // Update UI langsung tanpa refresh
-            const discountSection = document.getElementById(`discount-section-${pesananId}`);
-            if (discountSection) {
-                discountSection.innerHTML = `
-                    <p class="mb-1"><strong>Status Diskon:</strong> <span class="text-success">Telah Berhak</span></p>
-                    <button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check-circle me-1"></i>Hak Diberikan</button>
-                `;
-            }
-        } catch (error) {
-            showToast(`Gagal memberi hak diskon: ${error.message}`, 'error');
-        }
+    const normalizePhone = (num) => {
+      if (!num) return '';
+      let n = String(num).replace(/[^0-9]/g, '');
+      if (n.startsWith('0')) n = '62' + n.slice(1);
+      return n;
     };
-
-
-    // === Order Management (FUNGSI DIPERBARUI) ===
-    async function renderPesanan() {
-        const filter = filterStatus.value;
-        const search = searchId.value.toLowerCase();
-
-        // --- [BARU] Ambil data hak diskon sebelum render ---
-        const hakDiskonSnapshot = await db.ref('hakDiskon').once('value');
-        const hakDiskonData = hakDiskonSnapshot.val() || {};
-
-        if (!allDataPesanan || Object.keys(allDataPesanan).length === 0) {
-            pesananList.innerHTML = '<div class="text-center p-5"><p class="text-muted">Tidak ada pesanan.</p></div>';
-            return;
-        }
-
-        const sortedIds = Object.keys(allDataPesanan).sort((a, b) => new Date(allDataPesanan[b].waktu) - new Date(allDataPesanan[a].waktu));
-        let html = '';
-        
-        sortedIds.forEach(id => {
-            const p = allDataPesanan[id];
-            const searchMatch = search === '' || id.toLowerCase().includes(search) || (p.nama || '').toLowerCase().includes(search) || (p.wa_aktif || '').includes(search);
-            const statusMatch = filter === '' || p.status === filter;
-            
-            if (statusMatch && searchMatch) {
-                let statusClass = 'secondary';
-                if (p.status === 'Selesai') statusClass = 'success';
-                if (p.status === 'Sudah Bayar') statusClass = 'warning';
-                if (p.status === 'Diproses') statusClass = 'info';
-
-                // --- [BARU] Logika untuk menampilkan bagian diskon ---
-                const pelangganSudahBerhak = hakDiskonData[p.wa_aktif] === true;
-                let discountSectionHTML = '';
-                if (pelangganSudahBerhak) {
-                    discountSectionHTML = `
-                        <p class="mb-1"><strong>Status Diskon:</strong> <span class="text-success">Telah Berhak</span></p>
-                        <button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check-circle me-1"></i>Hak Diberikan</button>
-                    `;
-                } else {
-                    discountSectionHTML = `
-                        <p class="mb-1"><strong>Status Diskon:</strong> <span class="text-muted">Belum Dapat</span></p>
-                        <button class="btn btn-sm btn-success" onclick="beriHakDiskon('${p.wa_aktif}', '${id}')"><i class="fas fa-gift me-1"></i>Beri Hak Diskon</button>
-                    `;
-                }
-
-                html += `
-                <div class="order-card" id="order-${id}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div><p><strong>ID Pesanan:</strong> ${id}</p><p><strong>Waktu:</strong> ${new Date(p.waktu).toLocaleString('id-ID')}</p></div>
-                        <span class="badge bg-${statusClass}">${p.status || '-'}</span>
-                    </div><hr class="my-2">
-                    <p><strong>Nama:</strong> ${p.nama || '-'}</p><p><strong>WA Aktif:</strong> ${p.wa_aktif || '-'}</p><p><strong>ID Game/HP:</strong> ${p.nomor || '-'}</p>
-                    <p><strong>Produk:</strong> ${p.produk || '-'}</p><p><strong>Harga:</strong> Rp${formatRupiah(p.harga)} ${p.diskon_digunakan ? '<span class="badge bg-info">Diskon Terpakai</span>' : ''}</p>
-                    ${p.buktiBayar ? `<p><strong>Bukti Bayar:</strong> <a href="${p.buktiBayar}" target="_blank" class="text-primary">Lihat Bukti</a></p>` : ''}
-                    ${p.buktiAdmin ? `<p><strong>Bukti Admin:</strong> <a href="${p.buktiAdmin}" target="_blank" class="text-success">Lihat Bukti</a></p>` : ''}
-                    
-                    <div class="discount-section" id="discount-section-${id}">
-                        ${discountSectionHTML}
-                    </div>
-
-                    <div class="mt-3 d-flex gap-2 flex-wrap border-top pt-3">
-                        <button class="btn btn-sm btn-outline-primary" onclick="setSelected('${id}')"><i class="fas fa-check me-1"></i>Pilih untuk Kirim Bukti</button>
-                        <button class="btn btn-sm btn-info" onclick="verifikasi('${id}')"><i class="fas fa-cogs me-1"></i>Proses</button>
-                        <button class="btn btn-sm btn-danger" onclick="hapusPesanan('${id}')"><i class="fas fa-trash me-1"></i>Hapus</button>
-                    </div>
-                </div>`;
-            }
-        });
-        pesananList.innerHTML = html || '<div class="text-center p-5"><p class="text-muted">Tidak ada pesanan yang cocok dengan filter Anda.</p></div>';
-    }
-    
-    window.setSelected = (id) => {
-        selectedId = id;
-        selectedOrderIdDisplay.textContent = `Pesanan Dipilih: ${id}`;
-        showToast(`Pesanan ${id} dipilih.`, 'info');
-        document.getElementById(`order-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.toggleTheme = () => {
+      const theme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', theme);
+      document.getElementById('themeToggle').textContent = theme === 'light' ? '🌙' : '☀️';
+      localStorage.setItem('theme', theme);
     };
-    window.verifikasi = async (id) => {
-        if (!await showConfirm('Konfirmasi Proses', `Yakin ubah status pesanan ${id} menjadi "Diproses"?`)) return;
-        await db.ref(`pesanan/${id}`).update({ status: "Diproses" });
-        const pesanan = allDataPesanan[id];
-        if (pesanan.wa_aktif) window.open(`https://wa.me/${pesanan.wa_aktif}?text=${encodeURIComponent(`Hai ${pesanan.nama}, pesanan Anda (ID: *${id}*) sedang kami *PROSES*. Mohon tunggu sebentar ya.`)}`, '_blank');
-        showToast(`Pesanan ${id} diproses.`, 'success');
-    };
-    window.hapusPesanan = async (id) => {
-        if (await showConfirm('Konfirmasi Hapus', `Yakin ingin menghapus permanen pesanan ID ${id}?`)) {
-            await db.ref(`pesanan/${id}`).remove();
-            showToast("Pesanan berhasil dihapus.", 'success');
-        }
-    };
-    async function deleteAllOrders() {
-        if (await showConfirm('PERINGATAN KERAS!', 'Anda yakin ingin MENGHAPUS SEMUA data pesanan? Tindakan ini tidak dapat dibatalkan.')) {
-            await db.ref('pesanan').remove();
-            showToast("Semua pesanan telah dihapus.", 'danger');
-        }
-    };
-    async function handleUploadBukti() {
-        const file = document.getElementById('buktiAdmin').files[0];
-        if (!file || !selectedId) return showToast("Pilih pesanan dan file bukti terlebih dahulu!", 'error');
-        uploadBuktiBtn.disabled = true; uploadBuktiBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengirim...';
-        try {
-            const base64Image = await toBase64(file).then(r => r.split(',')[1]);
-            const formData = new FormData();
-            formData.append("key", IMGBB_API_KEY); formData.append("image", base64Image);
-            const res = await fetch(`https://api.imgbb.com/1/upload`, { method: "POST", body: formData });
-            const json = await res.json();
-            if (!json.success) throw new Error(json.error.message);
-            const imageUrl = json.data.url;
-            await db.ref(`pesanan/${selectedId}`).update({ buktiAdmin: imageUrl, status: "Selesai" });
-            const pesanan = allDataPesanan[selectedId];
-            const linkStatus = `${BASE_URL}status.html?id=${selectedId}`;
-            const pesanUser = `Hai ${pesanan.nama}, pesanan Anda (ID: *${selectedId}*) telah *SELESAI*. Terima kasih telah berbelanja! Cek detailnya di:\n${linkStatus}`;
-            if (pesanan.wa_aktif) window.open(`https://wa.me/${pesanan.wa_aktif}?text=${encodeURIComponent(pesanUser)}`, '_blank');
-            showToast("Bukti berhasil dikirim dan pesanan diselesaikan!", 'success');
-            selectedId = null; selectedOrderIdDisplay.textContent = 'Pilih pesanan dari daftar untuk mengirim bukti.'; document.getElementById('buktiAdmin').value = '';
-        } catch (err) { showToast(`Gagal: ${err.message}`, 'error');
-        } finally { uploadBuktiBtn.disabled = false; uploadBuktiBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Kirim & Selesaikan'; }
-    }
-    
-    // === Product Management (Fungsi tidak berubah) ===
-    function loadProduk() {
-        db.ref('produk').on('value', snap => {
-            const produkPerKategori = snap.val() || {};
-            const productContainer = document.getElementById('product-container');
-            productContainer.innerHTML = "";
-            for (const kategori in produkPerKategori) {
-                const categoryDiv = document.createElement('div');
-                categoryDiv.className = 'product-category mb-4';
-                categoryDiv.innerHTML = `<h4>${kategori}</h4>`;
-                const productListUl = document.createElement('ul');
-                productListUl.id = `list-group-${kategori.replace(/\s+/g, '-')}`;
-                productListUl.className = 'list-group product-list';
-                const varianArr = Object.entries(produkPerKategori[kategori]).map(([varian, data]) => ({ varian, ...data }));
-                varianArr.sort((a,b) => (a.urutan || 0) - (b.urutan || 0));
-                varianArr.forEach(p => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    li.dataset.id = `${kategori}/${p.varian}`;
-                    li.innerHTML = `<div><i class="fas fa-grip-vertical me-3 text-muted"></i><strong>${p.varian}</strong><span class="text-muted ms-2">(Rp${formatRupiah(p.harga)})</span></div><div><button class="btn btn-sm btn-outline-info" onclick="editProduk('${kategori}','${p.varian}',${p.harga},'${p.cara.replace(/'/g, "\\'")}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-outline-danger ms-2" onclick="hapusProduk('${kategori}','${p.varian}')"><i class="fas fa-trash"></i></button></div>`;
-                    productListUl.appendChild(li);
-                });
-                categoryDiv.appendChild(productListUl);
-                productContainer.appendChild(categoryDiv);
-                new Sortable(productListUl, { animation: 150, ghostClass: 'sortable-ghost', onEnd: function (evt) { const items = evt.to.children; let updates = {}; for(let i = 0; i < items.length; i++) { const id = items[i].dataset.id; updates[`${id}/urutan`] = i; } db.ref('produk').update(updates); } });
-            }
-        });
-    }
-    async function handleSimpanProduk(e) {
-        e.preventDefault();
-        const kategori = document.getElementById('kategori').value.trim();
-        const varian = document.getElementById('varian').value.trim();
-        const data = { harga: Number(document.getElementById('harga').value), cara: document.getElementById('cara').value, };
-        if (!kategori || !varian || !data.harga || !data.cara) return showToast("Lengkapi semua field produk!", 'error');
-        const existingProd = await db.ref(`produk/${kategori}/${varian}`).once('value');
-        if (!existingProd.exists()) data.urutan = Date.now();
-        await db.ref(`produk/${kategori}/${varian}`).update(data);
-        showToast("Produk berhasil disimpan!", 'success');
-        formProduk.reset();
-    }
-    window.editProduk = (k,v,h,c) => { document.getElementById('kategori').value=k; document.getElementById('varian').value=v; document.getElementById('harga').value=h; document.getElementById('cara').value=c; document.getElementById('kategori').focus(); };
-    window.hapusProduk = async (k,v) => { if(await showConfirm('Hapus Produk', `Yakin ingin menghapus produk ${v}?`)) { await db.ref(`produk/${k}/${v}`).remove(); showToast('Produk dihapus', 'success'); } };
-
-    // === Dynamic Content Management (Fungsi tidak berubah) ===
-    const halamanSelect = document.getElementById('halamanDinamis');
-    const editorHTML = document.getElementById('editorHTML');
-    const editorCSS = document.getElementById('editorCSS');
-    const editorJS = document.getElementById('editorJS');
-    const simpanDinamisBtn = document.getElementById('simpanDinamisBtn');
-    const savedContentList = document.getElementById('saved-dynamic-content-list');
-
-    function loadDinamisEditor() {
-      const halaman = halamanSelect.value;
-      if (!halaman) return;
-      db.ref(`dynamicContent/${halaman}`).once('value').then(s => {
-        const k = s.val() || {html:"",css:"",js:""};
-        editorHTML.value = k.html; editorCSS.value = k.css; editorJS.value = k.js;
-      });
+    if (localStorage.getItem('theme')) {
+      document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+      document.getElementById('themeToggle').textContent = localStorage.getItem('theme') === 'light' ? '🌙' : '☀️';
     }
 
-    function handleSimpanDinamis() {
-      const halaman = halamanSelect.value;
-      if (!halaman) return showToast('Pilih halaman terlebih dahulu!', 'error');
-      db.ref(`dynamicContent/${halaman}`).set({
-        html: editorHTML.value, css: editorCSS.value, js: editorJS.value
-      }).then(() => showToast('Konten dinamis berhasil disimpan!', 'success'));
-    }
-
-    function renderSavedDynamicContent() {
-        db.ref('dynamicContent').on('value', snapshot => {
-            const data = snapshot.val();
-            if (!data) {
-                savedContentList.innerHTML = '<p class="text-muted">Belum ada konten dinamis yang tersimpan.</p>';
-                return;
-            }
-            let html = '<ul class="list-group">';
-            for (const pageName in data) {
-                html += `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <code>${pageName}.html</code>
-                        <button class="btn btn-sm btn-outline-danger" onclick="hapusKontenDinamis('${pageName}')">
-                            <i class="fas fa-trash-alt me-2"></i>Hapus
-                        </button>
-                    </li>
-                `;
-            }
-            html += '</ul>';
-            savedContentList.innerHTML = html;
-        });
-    }
-
-    window.hapusKontenDinamis = async (pageName) => {
-        const confirmed = await showConfirm(
-            'Konfirmasi Hapus',
-            `Yakin ingin menghapus konten dinamis untuk halaman ${pageName}.html?`
-        );
-        if (confirmed) {
-            db.ref(`dynamicContent/${pageName}`).remove()
-                .then(() => showToast(`Konten untuk ${pageName}.html berhasil dihapus.`, 'success'))
-                .catch(err => showToast(`Error: ${err.message}`, 'error'));
-        }
-    };
-
-    function loadDynamicContentForAdminPage() {
-        const container = document.getElementById('dynamic-content-area-admin');
-        if (!container) return;
-        
-        container.innerHTML = '<p class="text-center text-muted p-4">Memuat data moderasi...</p>';
-        db.ref('dynamicContent/admin').once('value').then(snapshot => {
-            const content = snapshot.val();
-            if (!content || !content.html) {
-                container.innerHTML = '<p class="text-center text-muted">Belum ada konten moderasi yang ditambahkan. Silakan tambahkan melalui tab "Konten Dinamis".</p>';
-                return;
-            }
-            container.innerHTML = content.html;
-            if (content.css) {
-                const style = document.createElement('style');
-                style.id = 'dynamic-admin-styles';
-                if(document.getElementById(style.id)) document.getElementById(style.id).remove();
-                style.textContent = content.css;
-                document.head.appendChild(style);
-            }
-            if (content.js) {
-                try {
-                    const dynamicFunction = new Function('db', 'showToast', 'showConfirm', content.js);
-                    dynamicFunction(db, showToast, showConfirm);
-                } catch (e) {
-                    console.error("Error saat menjalankan JS dinamis:", e);
-                    container.innerHTML += `<div class="alert alert-danger mt-3">Error pada skrip moderasi: ${e.message}</div>`;
-                }
-            }
-        });
-    }
-
-    // === App Initialization ===
     document.addEventListener('DOMContentLoaded', () => {
-        confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        
-        globalRefreshBtn.addEventListener('click', () => location.reload());
-        filterStatus.addEventListener('change', renderPesanan);
-        searchId.addEventListener('input', renderPesanan);
-        deleteAllOrdersBtn.addEventListener('click', deleteAllOrders);
-        uploadBuktiBtn.addEventListener('click', handleUploadBukti);
-        formProduk.addEventListener('submit', handleSimpanProduk);
-        simpanDinamisBtn.addEventListener('click', handleSimpanDinamis);
-        halamanSelect.addEventListener('change', loadDinamisEditor);
-
-        db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
-        loadProduk();
-        loadDinamisEditor();
-        renderSavedDynamicContent();
-        loadDynamicContentForAdminPage();
+        loadPromoBanner();
+        loadInitialData();
+        submitBtn.disabled = true;
+        kategoriSelect.addEventListener('change', handleCategoryChange);
+        produkSelect.addEventListener('change', handleProductSelection);
+        document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
+        document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
+        document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
-</script>
+    
+    function loadInitialData() {
+        db.ref('produk').once('value').then(snapshot => {
+            const data = snapshot.val() || {};
+            kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
+            for (let kategori in data) {
+                kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+            }
+        });
+        renderFaq();
+        loadTestimoni();
+    }
+
+    function handleCategoryChange() {
+        produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+        resetFormState();
+        const kategori = kategoriSelect.value;
+        if (!kategori) return;
+        db.ref(`produk/${kategori}`).once('value').then(snapshot => {
+            const data = snapshot.val() || {};
+            const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
+            sortedVarian.forEach(nama => {
+                produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+            });
+        });
+    }
+
+    function resetFormState() {
+        produkTerpilihData = null;
+        promoProdukTerpakai = false;
+        diskonShareTerpakai = false;
+        document.getElementById('product-promo-container').innerHTML = '';
+        document.getElementById('claim-discount-section').style.display = 'none';
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Pilih Produk';
+    }
+
+    function handleProductSelection() {
+        resetFormState();
+        const kategori = kategoriSelect.value;
+        const produk = produkSelect.value;
+        if (!produk || !kategori) return;
+
+        db.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
+            if (!snapshot.exists()) return;
+            const data = snapshot.val();
+            produkTerpilihData = data;
+
+            if (typeof data.stok !== 'undefined' && data.stok !== null && data.stok <= 0) {
+                infoProduk.innerHTML = `<b class="text-danger">Stok Habis!</b><br>Produk ini tidak dapat dipesan saat ini.`;
+                submitBtn.textContent = 'Stok Habis';
+                submitBtn.disabled = true;
+            } else {
+                updateTotalHarga();
+                submitBtn.textContent = 'Pesan Sekarang';
+                submitBtn.disabled = false;
+                if (data.promo && data.promo.jenis) {
+                    let promoText = data.promo.jenis === 'nominal' ? `Potongan langsung Rp${formatRupiah(data.promo.nilai)}` : `Diskon ${data.promo.nilai}%`;
+                    document.getElementById('product-promo-container').innerHTML = `
+                        <div class="claim-promo-card">
+                            <p style="font-weight:600;">🎉 Ada promo spesial untuk produk ini!</p>
+                            <p style="font-size: 0.9em;">${promoText}</p>
+                            <button type="button" class="btn btn-primary mt-2" onclick="klaimPromoProduk()">✨ Klaim Diskon</button>
+                        </div>`;
+                }
+            }
+        });
+    }
+
+    window.klaimPromoProduk = () => {
+        promoProdukTerpakai = true;
+        diskonShareTerpakai = false;
+        document.getElementById('claim-discount-section').style.display = 'none';
+        updateTotalHarga();
+        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk berhasil diklaim!</p>`;
+    };
+    
+    async function checkDiskonShare() {
+        if (promoProdukTerpakai) return;
+        const nomorWA = normalizePhone(document.getElementById('waAktif').value);
+        const claimSection = document.getElementById('claim-discount-section');
+        if (nomorWA && nomorWA.length > 10) {
+            const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value');
+            claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
+        } else {
+            claimSection.style.display = 'none';
+        }
+    }
+
+    window.gunakanDiskonShare = () => {
+        diskonShareTerpakai = true;
+        promoProdukTerpakai = false;
+        document.getElementById('product-promo-container').innerHTML = '';
+        updateTotalHarga();
+        const claimButton = document.getElementById('claim-button');
+        claimButton.disabled = true;
+        claimButton.innerText = "✅ Diskon Telah Diterapkan";
+    };
+
+    function updateTotalHarga() {
+        if (!produkTerpilihData) return;
+        let hargaAwal = produkTerpilihData.harga;
+        let hargaFinal = hargaAwal;
+        let deskripsiHarga = `<b>Harga:</b> Rp${formatRupiah(hargaFinal)}`;
+
+        if (promoProdukTerpakai && produkTerpilihData.promo) {
+            let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
+            hargaFinal = hargaAwal - potongan;
+            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Promo: Rp${formatRupiah(hargaFinal)}</b>`;
+        } else if (diskonShareTerpakai) {
+            hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
+            deskripsiHarga = `<b>Harga Normal:</b> <del>Rp${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: Rp${formatRupiah(hargaFinal)}</b>`;
+        }
+        
+        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || produkTerpilihData.cara || '-'}`;
+    }
+    
+    async function handleOrderSubmit(e) {
+        e.preventDefault();
+        if (submitBtn.disabled) return;
+        if (!produkTerpilihData || (typeof produkTerpilihData.stok !== 'undefined' && produkTerpilihData.stok !== null && produkTerpilihData.stok <= 0)) {
+            return alert("Maaf, stok produk ini telah habis.");
+        }
+        
+        const nama = document.getElementById('nama').value.trim();
+        const nomor = document.getElementById('nomor').value.trim();
+        const waAktif = normalizePhone(document.getElementById('waAktif').value.trim());
+        const kategori = kategoriSelect.value;
+        const produk = produkSelect.value;
+        const waktu = new Date().toISOString();
+        const id = "P" + Date.now();
+
+        if (!nama || !nomor || !waAktif || !kategori || !produk) return alert("Harap lengkapi semua field!");
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
+
+        try {
+            const snapProduk = await db.ref(`produk/${kategori}/${produk}`).once('value');
+            const dataProduk = snapProduk.val();
+            
+            let hargaAwal = dataProduk.harga;
+            let hargaFinal = hargaAwal;
+            let promoDigunakan = null;
+            let diskonShareDigunakan = false;
+
+            if (promoProdukTerpakai && dataProduk.promo) {
+                let potongan = (dataProduk.promo.jenis === 'nominal') ? dataProduk.promo.nilai : hargaAwal * (dataProduk.promo.nilai / 100);
+                hargaFinal = hargaAwal - potongan;
+                promoDigunakan = dataProduk.promo;
+            } else if (diskonShareTerpakai) {
+                hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
+                diskonShareDigunakan = true;
+                await db.ref('hakDiskon/' + waAktif).remove();
+            }
+
+            if (typeof dataProduk.stok === 'number') {
+                await db.ref(`produk/${kategori}/${produk}/stok`).set(dataProduk.stok - 1);
+            }
+
+            await db.ref('pesanan/' + id).set({
+                nama, nomor, wa_aktif: waAktif, kategori, produk, waktu, 
+                status: 'Belum Bayar',
+                harga_asli: hargaAwal,
+                harga_final: hargaFinal,
+                promo_digunakan: promoDigunakan,
+                diskon_share: diskonShareDigunakan
+            });
+            
+            hasilDiv.style.display = 'block';
+            hasilDiv.innerHTML = `
+                <p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p>
+                <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
+                <div class="info">
+                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>ShopeePay:</strong> 081803004607</li>
+                        <li><strong>Dana:</strong> 087755432880</li>
+                    </ul>
+                </div>
+                <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a>
+                <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
+            `;
+            
+            document.getElementById('formPesanan').reset();
+            resetFormState();
+            window.scrollTo(0, document.getElementById('hasil').offsetTop); 
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan saat memproses pesanan.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pesan Sekarang';
+        }
+    }
+
+    window.cekStatus = () => {
+      const id = document.getElementById('idCek').value.trim();
+      if (id) window.location.href = `status.html?id=${id}`;
+    };
+
+    function loadTestimoni() {
+        const testimoniContainer = document.getElementById('testimoniContainer');
+        db.ref('testimoni').on('value', snap => {
+            const dataTesti = Object.values(snap.val() || {});
+            if (dataTesti.length > 0) {
+                let i = 0;
+                if(window.testimoniInterval) clearInterval(window.testimoniInterval);
+                window.testimoniInterval = setInterval(() => {
+                    if(document.visibilityState === 'visible') {
+                        tampilkanSatuTesti(dataTesti[i], testimoniContainer);
+                        i = (i + 1) % dataTesti.length;
+                    }
+                }, 3000);
+            } else {
+                testimoniContainer.innerHTML = `<p style="text-align:center;">Belum ada testimoni.</p>`;
+            }
+        });
+    }
+
+    function tampilkanSatuTesti(testimoni, container) {
+      const bubble = document.createElement('div');
+      bubble.className = 'testimonial-bubble';
+      bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.pesan || ''}`;
+      container.appendChild(bubble);
+      setTimeout(() => {
+        if (bubble.parentElement) container.removeChild(bubble);
+      }, 10500);
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    async function handleTestimoniSubmit(e) {
+        e.preventDefault();
+        const nama = document.getElementById('testiNama').value.trim();
+        const pesan = document.getElementById('testiPesan').value.trim();
+        const statusEl = document.getElementById('testiStatus');
+        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan tidak boleh kosong!'; statusEl.style.color = 'red'; return; }
+        try {
+            await db.ref('testimoni_pending').push({ nama, pesan, waktu: new Date().toISOString() });
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
+            statusEl.style.color = 'green';
+            e.target.reset();
+        } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'red'; }
+    }
+
+    function renderFaq() {
+        const faqData = [
+          { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
+          { q: "Bagaimana cara mendapatkan diskon?", a: "Cek promo spesial yang mungkin ada pada produk tertentu, atau dapatkan hak diskon dari admin untuk digunakan pada pesanan berikutnya." },
+          { q: "Apa saja metode pembayaran yang diterima?", a: "Saat ini kami menerima pembayaran melalui ShopeePay dan Dana." },
+          { q: "Berapa lama prosesnya?", a: "Setelah bukti bayar diverifikasi, pesanan akan diproses secepatnya, biasanya dalam 5-15 menit pada jam kerja." }
+        ];
+        const faqContainer = document.getElementById('faq-container');
+        faqContainer.innerHTML = '';
+        faqData.forEach(item => {
+            const faqItem = document.createElement('div');
+            faqItem.className = 'faq-item';
+            faqItem.innerHTML = `<div class="faq-question">${item.q}</div><div class="faq-answer">${item.a}</div>`;
+            faqContainer.appendChild(faqItem);
+        });
+        document.querySelectorAll('.faq-question').forEach(item => {
+            item.addEventListener('click', () => {
+                const currentActive = document.querySelector('.faq-item.active');
+                if (currentActive && currentActive !== item.parentElement) {
+                    currentActive.classList.remove('active');
+                }
+                item.parentElement.classList.toggle('active');
+            });
+        });
+    }
+
+    function loadPromoBanner() {
+        const banner = document.getElementById('promo-banner');
+        db.ref('featuredPromo').once('value').then(snap => {
+            const promo = snap.val();
+            if (!promo || !promo.tanggalAkhir) { banner.style.display = 'none'; return; }
+            const endDate = new Date(promo.tanggalAkhir).getTime();
+            if (endDate > new Date().getTime()) {
+                document.getElementById('promo-banner-title').textContent = promo.judul;
+                document.getElementById('promo-banner-desc').textContent = promo.deskripsi;
+                banner.style.display = 'block';
+                startCountdown(promo.tanggalAkhir);
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+    }
+
+    function startCountdown(endDateString) {
+        const countdownEl = document.getElementById('countdown-timer');
+        const endDate = new Date(endDateString).getTime();
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            const distance = endDate - new Date().getTime();
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('promo-banner').style.display = 'none'; return;
+            }
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+            countdownEl.innerHTML = `${d}H : ${h}J : ${m}M : ${s}D`;
+        }, 1000);
+    }
+  </script>
 </body>
 </html>
