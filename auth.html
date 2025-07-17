@@ -2,11 +2,20 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Login / Daftar - Asdar Store Digital</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Pelanggan - Asdar Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Basic Reset & Body Styling */
+        /* Menggunakan variabel warna dari toko Anda */
+        :root {
+            --primary-color: #1abc9c;
+            --secondary-color: #2c2c40;
+            --background-color: #1a1a2e;
+            --text-color: #e0e0e0;
+            --light-text-color: #8a93a2;
+            --border-color: #444;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -15,676 +24,163 @@
 
         body {
             font-family: 'Poppins', sans-serif;
+            background: var(--background-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(90deg, #e0f2f7, #e8eaf6); /* Soft blue-purple gradient */
-            background-size: 200% 200%; /* For subtle animation */
-            animation: backgroundPan 10s ease infinite; /* Subtle background movement */
-            overflow-x: hidden; /* Prevent horizontal scrollbar */
-            padding: 1rem; /* Padding for small screens to prevent content touching edges */
+            height: 100vh;
+            padding: 20px;
         }
 
-        /* Keyframe for subtle background animation */
-        @keyframes backgroundPan {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Main Container */
-        .container {
-            background-color: #fff;
-            border-radius: 20px; /* Softer rounded corners */
-            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-            position: relative;
-            overflow: hidden;
-            width: 100%; /* Default to 100% width on small screens */
-            max-width: 900px; /* Limit maximum width on larger screens */
-            min-height: 480px; /* Standard height */
-            transition: all 0.6s ease-in-out; /* Smooth transition for active state */
-            display: flex; /* Use flexbox for desktop layout */
-        }
-
-        /* Apply min-width for desktop layout only */
-        @media (min-width: 769px) { /* Apply desktop layout when screen is 769px or wider */
-            .container {
-                min-width: 768px; /* Your desired minimum width for desktop view */
-            }
-        }
-
-
-        /* Form Containers (Login & Register) */
-        .form-container {
-            position: absolute; /* Keep absolute for sliding effect */
-            top: 0;
-            height: 100%;
-            transition: all 0.6s ease-in-out;
-            background-color: #fff; /* Ensure forms have white background */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 0 50px;
-            width: 50%; /* Default desktop width for form containers */
-            left: 0; /* Default desktop position */
-        }
-
-        .sign-in-container {
-            z-index: 2; /* Ensure login form is on top initially */
-            opacity: 1; /* Ensure visible by default */
-            pointer-events: auto; /* Ensure clickable by default */
-        }
-
-        .sign-up-container {
-            z-index: 1; /* Below login form initially */
-            opacity: 0; /* Hidden initially */
-            pointer-events: none; /* Disable interaction when hidden */
-        }
-
-        /* When container has 'active' class (for registration view) */
-        .container.active .sign-in-container {
-            transform: translateX(100%); /* Slide login form right */
-            opacity: 0; /* Fade out login form */
-            pointer-events: none; /* Disable interaction */
-        }
-
-        .container.active .sign-up-container {
-            transform: translateX(100%); /* Slide register form right */
-            opacity: 1; /* Make register form visible */
-            z-index: 5; /* Bring register form to front */
-            pointer-events: auto; /* Enable interaction */
-            animation: show 0.6s; /* Fade in animation for register form */
-        }
-
-        @keyframes show {
-            0%, 49% {
-                opacity: 0;
-                z-index: 1;
-            }
-            50%, 100% {
-                opacity: 1;
-                z-index: 5;
-            }
-        }
-
-        /* Form Elements */
-        form {
-            background-color: #fff;
-            display: flex;
-            flex-direction: column;
-            padding: 0 50px;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
+        .login-container {
+            background-color: var(--secondary-color);
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
             text-align: center;
-            width: 100%; /* Ensure form takes full width of its container */
         }
 
         h1 {
-            font-weight: bold;
-            margin: 0;
-            color: #333; /* Dark text for headings */
-            font-size: 2.2em; /* Larger heading */
-            margin-bottom: 20px; /* Spacing below heading */
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-color);
         }
 
-        .social-container {
-            margin: 20px 0;
+        p.subtitle {
+            font-size: 14px;
+            color: var(--light-text-color);
+            margin-bottom: 30px;
         }
 
-        .social-container a {
-            border: 1px solid #ddd;
-            border-radius: 50%;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 5px;
-            height: 40px;
-            width: 40px;
-            color: #555; /* Icon color */
-            text-decoration: none;
-            transition: all 0.3s ease;
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 25px;
         }
-        .social-container a:hover {
-            background-color: #f0f0f0;
-            transform: translateY(-2px); /* Lift on hover */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            color: var(--light-text-color);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .form-content form {
+            display: none;
+        }
+
+        .form-content form.active {
+            display: block;
         }
 
         input {
-            background-color: #eee;
-            border: none;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
             padding: 12px 15px;
-            margin: 8px 0;
+            margin: 10px 0;
             width: 100%;
-            border-radius: 10px; /* Rounded input fields */
-            font-size: 0.9em;
-            color: #333;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 14px;
         }
         input:focus {
             outline: none;
-            box-shadow: 0 0 0 2px #d3d3d3; /* Subtle focus ring */
+            border-color: var(--primary-color);
         }
 
-        .forgot-password {
-            color: #333;
-            font-size: 0.9em;
-            text-decoration: none;
-            margin: 15px 0;
-            transition: color 0.3s ease;
-        }
-        .forgot-password:hover {
-            color: #3498db; /* Primary blue on hover */
-        }
-
-        /* Buttons */
-        button {
-            border-radius: 20px;
-            border: 1px solid #3498db;
-            background-color: #3498db;
+        button[type="submit"] {
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-color);
             color: #FFFFFF;
-            font-size: 1em;
+            font-size: 16px;
             font-weight: bold;
             padding: 12px 45px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            transition: transform 0.2s ease-in, background-color 0.3s ease;
+            transition: transform 80ms ease-in;
             cursor: pointer;
-            margin-top: 20px; /* Spacing below inputs */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            transform: translateY(-2px); /* Lift button on hover */
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-            background-color: #2980b9; /* Darker blue on hover */
-        }
-        button:active {
-            transform: translateY(0); /* Press effect */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        button.ghost { /* Button for the overlay panels */
-            background-color: transparent;
-            border-color: #FFFFFF;
-            color: #FFFFFF;
-        }
-        button.ghost:hover {
-            background-color: rgba(255,255,255,0.15); /* Slight white tint on hover */
-        }
-        button.ghost:active {
-            background-color: rgba(255,255,255,0.1);
-        }
-
-        /* Overlay Container & Panels */
-        .overlay-container {
-            position: absolute;
-            top: 0;
-            left: 50%; /* Starts on the right half */
-            width: 50%;
-            height: 100%;
-            overflow: hidden;
-            transition: transform 0.6s ease-in-out;
-            z-index: 100; /* Ensure overlay is on top */
-        }
-
-        .container.active .overlay-container {
-            transform: translateX(-100%); /* Slide overlay left */
-        }
-
-        .overlay {
-            background: linear-gradient(to right, #3498db, #2980b9); /* Primary blue gradient */
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: 0 0;
-            color: #FFFFFF;
-            position: relative;
-            left: -100%; /* Initially hidden to the left of its container */
-            height: 100%;
-            width: 200%; /* To allow sliding effect */
-            transform: translateX(0);
-            transition: transform 0.6s ease-in-out;
-        }
-
-        .container.active .overlay {
-            transform: translateX(50%); /* Slide overlay content to the right */
-        }
-
-        .overlay-panel {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 0 40px;
-            text-align: center;
-            top: 0;
-            height: 100%;
-            width: 50%; /* Each panel takes half of the 200% width overlay */
-            transform: translateX(0);
-            transition: transform 0.6s ease-in-out;
-        }
-
-        .overlay-left {
-            transform: translateX(-20%); /* Initially shifted left */
-        }
-
-        .overlay-right {
-            right: 0;
-            transform: translateX(0); /* Initially in normal position */
-        }
-
-        /* When container is active, switch overlay panel positions */
-        .container.active .overlay-left {
-            transform: translateX(0); /* Slide left panel to center */
-        }
-
-        .container.active .overlay-right {
-            transform: translateX(20%); /* Slide right panel further right */
-        }
-
-        .overlay h1 {
-            font-size: 2.5em; /* Larger heading in overlay */
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .overlay p {
-            font-size: 0.9em;
-            font-weight: 300;
-            line-height: 20px;
-            letter-spacing: 0.5px;
-            margin: 25px 0 35px;
-            color: #eee;
-        }
-
-        /* Toggle Button for Mobile Layout */
-        #toggleMobileViewBtn {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 25px;
-            font-size: 0.9em;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 1001; /* Above everything else */
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            display: none; /* Hidden by default, shown only on mobile */
-        }
-        #toggleMobileViewBtn:hover {
-            background-color: #2980b9;
-            transform: translateX(-50%) translateY(-2px);
-        }
-        #toggleMobileViewBtn:active {
-            transform: translateX(-50%) translateY(0);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        /* Mobile Responsiveness - DEFAULT IS DESKTOP-LIKE */
-        @media (max-width: 768px) {
-            body {
-                padding: 0.5rem;
-            }
-            .container {
-                /* On small screens, stack forms vertically and remove min-width */
-                flex-direction: column;
-                min-height: 550px; /* Adjust height for stacked layout */
-                max-width: 95%; /* Allow it to be smaller than 768px */
-            }
-
-            /* Adjust font sizes and padding for stacked mobile view */
-            form {
-                padding: 0 25px; /* Adjust padding for forms */
-            }
-            h1 {
-                font-size: 1.8em; /* Smaller heading */
-                margin-bottom: 15px;
-            }
-            .social-container {
-                margin: 15px 0;
-            }
-            .social-container a {
-                height: 35px;
-                width: 35px;
-                font-size: 0.9em;
-            }
-            input {
-                padding: 10px 12px; /* Smaller input padding */
-                margin: 6px 0;
-                font-size: 0.85em;
-            }
-            .forgot-password {
-                font-size: 0.85em;
-                margin: 12px 0;
-            }
-            button {
-                padding: 10px 30px; /* Smaller button padding */
-                font-size: 0.9em;
-                margin-top: 15px;
-            }
-
-            /* For mobile, forms take full width/height */
-            .form-container {
-                position: relative; /* Change to relative positioning for stacking */
-                width: 100%;
-                height: auto; /* Allow height to adjust */
-                padding: 20px; /* Revert padding for stacked view */
-                order: 2; /* Put forms below overlay initially */
-            }
-            .sign-in-container, .sign-up-container {
-                transform: none; /* Reset transforms for stacking */
-                opacity: 1; /* Both forms visible for a moment if not using JS to hide */
-                pointer-events: auto;
-            }
-             /* Manage visibility for stacked forms - only show one at a time */
-            .sign-up-container {
-                display: none; /* Hide sign-up by default on mobile */
-            }
-            .container.active .sign-up-container {
-                display: flex; /* Show sign-up when active */
-                order: 1; /* Place sign-up first when active */
-            }
-            .container.active .sign-in-container {
-                display: none; /* Hide sign-in when sign-up is active */
-            }
-
-
-            /* Overlay for mobile */
-            .overlay-container {
-                position: relative; /* Change to relative for stacking */
-                width: 100%;
-                height: 200px; /* Fixed height for overlay on mobile */
-                left: 0; /* Reset left */
-                order: 1; /* Put overlay first initially */
-            }
-
-            .container.active .overlay-container {
-                order: 2; /* Move overlay to bottom when active */
-            }
-
-
-            .overlay {
-                flex-direction: column; /* Stack overlay panels vertically */
-                width: 100%;
-                height: 100%; /* Overlay takes full height of its container */
-                left: 0;
-                transform: translateY(0); /* Reset transform */
-            }
-
-            .container.active .overlay {
-                 transform: translateY(0); /* No transform needed for active state on mobile */
-            }
-
-            .overlay-panel {
-                width: 100%;
-                height: 100%; /* Each panel takes full height of overlay */
-                padding: 20px;
-                transform: translateX(0); /* Reset transform */
-                position: relative; /* Change to relative for stacking */
-            }
-            .overlay-left, .overlay-right {
-                transform: none; /* Reset transforms */
-            }
-            .overlay-left {
-                display: none; /* Hide left panel on mobile by default */
-            }
-            .overlay-right {
-                display: flex; /* Show right panel (sign up button) by default */
-            }
-
-            .container.active .overlay-left {
-                display: flex; /* Show left panel (sign in button) when active */
-            }
-            .container.active .overlay-right {
-                display: none; /* Hide right panel when active */
-            }
-
-            .overlay h1 {
-                font-size: 2em; /* Smaller overlay heading */
-                margin-bottom: 10px;
-            }
-            .overlay p {
-                font-size: 0.85em;
-                margin: 15px 0 20px;
-            }
-
-            /* Hide the toggle button on mobile since it's already adapting */
-            #toggleMobileViewBtn {
-                display: none;
-            }
-        }
-
-
-        /* Custom Modal for Alerts */
-        .custom-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: none; /* Controlled by JS .show class */
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .custom-modal.show {
-            display: flex;
-        }
-        .custom-modal-content {
-            background: #fff; /* White background for modal content */
-            color: #333; /* Dark text for modal content */
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .custom-modal-content button {
-            padding: 10px 20px;
-            border-radius: 8px;
             margin-top: 20px;
-            color: #fff;
-            background: #007bff;
-            transition: background-color 0.3s ease;
         }
-        .custom-modal-content button:hover {
-            background-color: #0056b3;
+
+        button[type="submit"]:hover {
+            opacity: 0.9;
         }
+        
+        a.forgot-password {
+            color: var(--light-text-color);
+            font-size: 12px;
+            text-decoration: none;
+            display: block;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
     </style>
 </head>
 <body>
 
-    <div class="container" id="container">
-        <div class="form-container sign-up-container">
-            <form id="signUpForm">
-                <h1>Buat Akun</h1>
-                <div class="social-container">
-                    <a href="#" class="social"><i class="fab fa-google"></i></a>
-                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-                </div>
-                <span>atau gunakan email Anda untuk registrasi</span>
-                <input type="email" id="signUpEmail" placeholder="Email" required />
-                <input type="password" id="signUpPassword" placeholder="Password" required />
-                <button type="submit">Daftar</button>
-            </form>
-        </div>
-
-        <div class="form-container sign-in-container">
-            <form id="signInForm">
-                <h1>Login</h1>
-                <div class="social-container">
-                    <a href="#" class="social"><i class="fab fa-google"></i></a>
-                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-                </div>
-                <span>atau gunakan akun Anda</span>
-                <input type="email" id="signInEmail" placeholder="Email" required />
-                <input type="password" id="signInPassword" placeholder="Password" required />
-                <a href="#" class="forgot-password">Lupa password?</a>
-                <button type="submit">Login</button>
-            </form>
-        </div>
-
-        <div class="overlay-container">
-            <div class="overlay">
-                <div class="overlay-panel overlay-left">
-                    <h1>Selamat Datang!</h1>
-                    <p>Masukkan detail pribadi Anda dan mulai perjalanan bersama kami</p>
-                    <button class="ghost" id="signIn">Login</button>
-                </div>
-                <div class="overlay-panel overlay-right">
-                    <h1>Halo, Teman!</h1>
-                    <p>Masukkan detail Anda dan mulai perjalanan dengan kami</p>
-                    <button class="ghost" id="signUp">Daftar</button>
-                </div>
-            </div>
-        </div>
+<div class="login-container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="showForm('login')">Login</button>
+        <button class="tab-button" onclick="showForm('register')">Daftar</button>
     </div>
 
-    <button id="toggleMobileViewBtn" onclick="toggleMobileLayout()">Tampilkan versi mobile</button>
+    <div class="form-content">
+        <form id="login-form" class="active" action="#">
+            <h1>Selamat Datang</h1>
+            <p class="subtitle">Login untuk melanjutkan</p>
+            <input type="email" placeholder="Email" required />
+            <input type="password" placeholder="Password" required />
+            <a href="#" class="forgot-password">Lupa Password?</a>
+            <button type="submit">Login</button>
+        </form>
 
-    <div id="custom-modal" class="custom-modal">
-        <div class="custom-modal-content">
-            <p id="modal-message" class="text-lg font-medium mb-4"></p>
-            <button id="modal-close-btn">OK</button>
-        </div>
+        <form id="register-form" action="#">
+            <h1>Buat Akun Baru</h1>
+            <p class="subtitle">Daftar untuk mulai berbelanja</p>
+            <input type="text" placeholder="Nama Lengkap" required />
+            <input type="email" placeholder="Email" required />
+            <input type="password" placeholder="Password" required />
+            <button type="submit">Daftar</button>
+        </form>
     </div>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script>
-        // --- DOM Elements ---
-        const signUpButton = document.getElementById('signUp');
-        const signInButton = document.getElementById('signIn');
-        const container = document.getElementById('container');
+<script>
+    const loginTab = document.querySelector('.tab-button[onclick*="login"]');
+    const registerTab = document.querySelector('.tab-button[onclick*="register"]');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
 
-        const signUpForm = document.getElementById('signUpForm');
-        const signUpEmailInput = document.getElementById('signUpEmail');
-        const signUpPasswordInput = document.getElementById('signUpPassword');
-
-        const signInForm = document.getElementById('signInForm');
-        const signInEmailInput = document.getElementById('signInEmail');
-        const signInPasswordInput = document.getElementById('signInPassword');
-
-        // --- Custom Alert Modal ---
-        const customModal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
-
-        function showCustomAlert(message) {
-            modalMessage.textContent = message;
-            customModal.classList.add('show');
+    function showForm(formName) {
+        if (formName === 'login') {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            loginForm.classList.add('active');
+            registerForm.classList.remove('active');
+        } else {
+            loginTab.classList.remove('active');
+            registerTab.classList.add('active');
+            loginForm.classList.remove('active');
+            registerForm.classList.add('active');
         }
-
-        modalCloseBtn.addEventListener('click', () => {
-            customModal.classList.remove('show');
-        });
-
-        // --- Firebase Config & Init ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-            projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll.appspot.com",
-            messagingSenderId: "220670500351",
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        // --- Auth State Listener (Redirect if already logged in) ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // User is signed in, redirect to index.html
-                window.location.replace('./index.html');
-            }
-        });
-
-        // --- Form Event Listeners for Animation ---
-        signUpButton.addEventListener('click', () => {
-            container.classList.add("active");
-        });
-
-        signInButton.addEventListener('click', () => {
-            container.classList.remove("active");
-        });
-
-        // --- Firebase Authentication Logic ---
-
-        // Sign Up (Daftar)
-        signUpForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = signUpEmailInput.value;
-            const password = signUpPasswordInput.value;
-
-            try {
-                await auth.createUserWithEmailAndPassword(email, password);
-                showCustomAlert('Pendaftaran berhasil! Anda akan diarahkan ke halaman toko.');
-                // Redirection handled by onAuthStateChanged listener
-            } catch (error) {
-                console.error("Sign Up Error:", error);
-                let errorMessage = 'Gagal mendaftar. Silakan coba lagi.';
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'Email ini sudah terdaftar. Silakan login atau gunakan email lain.';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password terlalu lemah (minimal 6 karakter).';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Format email tidak valid.';
-                }
-                showCustomAlert(errorMessage);
-            }
-        });
-
-        // Sign In (Login)
-        signInForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = signInEmailInput.value;
-            const password = signInPasswordInput.value;
-
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                showCustomAlert('Login berhasil! Anda akan diarahkan ke halaman toko.');
-                // Redirection handled by onAuthStateChanged listener
-            } catch (error) {
-                console.error("Sign In Error:", error);
-                let errorMessage = 'Gagal login. Silakan periksa email dan password Anda.';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMessage = 'Email atau password salah.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Format email tidak valid.';
-                }
-                showCustomAlert(errorMessage);
-            }
-        });
-
-        // --- Toggle Mobile Layout Function ---
-        // This function and button are now largely redundant as the CSS handles responsiveness
-        // based on screen width. If you still want a *manual* toggle, you can keep it,
-        // but its styling will need adjustment for consistency.
-        function toggleMobileLayout() {
-            const body = document.body;
-            const button = document.getElementById('toggleMobileViewBtn');
-            if (body.classList.contains('mobile-layout-active')) {
-                body.classList.remove('mobile-layout-active');
-                button.textContent = 'Tampilkan versi mobile';
-            } else {
-                body.classList.add('mobile-layout-active');
-                button.textContent = 'Tampilkan versi desktop';
-            }
-        }
-    </script>
+    }
+</script>
 
 </body>
 </html>
