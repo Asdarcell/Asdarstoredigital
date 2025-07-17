@@ -100,6 +100,12 @@
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
     .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
     .faq-item.active .faq-question::after { transform: rotate(180deg); }
+    /* --- PERUBAHAN --- Notifikasi baru */
+    .notification {
+        padding: 12px; margin-bottom: 15px; border-radius: 8px; text-align: center;
+        font-weight: 500; display: none;
+    }
+    .notification.error { background-color: #f8d7da; color: #721c24; }
   </style>
 </head>
 
@@ -115,6 +121,8 @@
 
     <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
+        <div id="formNotification" class="notification"></div>
+
         <label for="nama">Nama Lengkap</label>
         <input type="text" id="nama" placeholder="Cth: Budi Santoso" required />
         <label for="nomor">Nomor HP / ID Game</label>
@@ -167,7 +175,8 @@
 
     <div data-aos="fade-up">
         <h2>Ada Pertanyaan?</h2>
-        <div class="section-container" id="faq-container"></div>
+        <div class="section-container" id="faq-container">
+            </div>
     </div>
     
     <hr>
@@ -191,13 +200,16 @@
 
     // =================================================================
     // KONFIGURASI FIREBASE
-    // PENTING: Ganti dengan konfigurasi Firebase Anda sendiri!
+    // --- PERUBAHAN --- PENTING: Ganti dengan konfigurasi Firebase Anda!
     // =================================================================
     const firebaseConfig = {
-      apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-      authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
-      databaseURL: "GANTI_DENGAN_DATABASE_URL_ANDA",
-      projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+      apiKey: "AIzaSy...GANTI_DENGAN_API_KEY_ANDA",
+      authDomain: "proyek-anda.firebaseapp.com",
+      databaseURL: "https://proyek-anda-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "proyek-anda",
+      storageBucket: "proyek-anda.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:abcdef123456"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -214,6 +226,9 @@
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
+    // --- PERUBAHAN --- Menambahkan elemen notifikasi
+    const formNotification = document.getElementById('formNotification');
+
 
     // Fungsi bantuan
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -222,6 +237,15 @@
       if (n.startsWith('0')) return '62' + n.slice(1);
       if (n.startsWith('62')) return n;
       return num; // Kembalikan nomor asli jika format tidak dikenali
+    };
+    // --- PERUBAHAN --- Fungsi untuk menampilkan notifikasi
+    const showNotification = (message, type = 'error') => {
+        formNotification.textContent = message;
+        formNotification.className = `notification ${type}`;
+        formNotification.style.display = 'block';
+    };
+    const hideNotification = () => {
+        formNotification.style.display = 'none';
     };
 
     // Fungsi tema gelap/terang
@@ -244,7 +268,7 @@
       loadPromoFromAdmin();
       loadInitialData();
       loadApprovedTestimonials();
-      renderFaq();
+      loadAndRenderFaq(); // --- PERUBAHAN --- Memanggil fungsi FAQ baru
       
       // Tambahkan event listener ke elemen form
       kategoriSelect.addEventListener('change', handleCategoryChange);
@@ -276,7 +300,6 @@
             const data = snapshot.val() || {};
             const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
             sortedVarian.forEach(nama => {
-                // Hanya tampilkan produk yang stoknya lebih dari 0
                 if (data[nama].stok > 0) {
                     produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
                 }
@@ -294,10 +317,12 @@
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         submitBtn.disabled = true;
         submitBtn.textContent = 'Pilih Produk Dahulu';
+        hideNotification(); // --- PERUBAHAN --- Sembunyikan notifikasi saat reset
     }
 
     // Menangani perubahan pada pilihan produk
     function handleProductSelection() {
+        hideNotification(); // --- PERUBAHAN --- Sembunyikan notifikasi saat produk dipilih
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
         if (!produk || !kategori) {
@@ -309,13 +334,12 @@
             if (!snapshot.exists()) return;
             produkTerpilihData = snapshot.val();
             
-            // Cek stok lagi untuk keamanan
             if (produkTerpilihData.stok <= 0) {
                 infoProduk.innerHTML = `<b class="text-danger">Stok Habis!</b><br>Produk ini tidak dapat dipesan saat ini.`;
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
             } else {
-                updateTotalHarga(); // Perbarui tampilan harga
+                updateTotalHarga();
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
             }
@@ -343,7 +367,7 @@
     // Menggunakan diskon share
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
-        updateTotalHarga(); // Perbarui harga setelah diskon
+        updateTotalHarga();
         const claimButton = document.getElementById('claim-button');
         claimButton.disabled = true; 
         claimButton.innerText = "✅ Diskon Telah Diterapkan";
@@ -362,9 +386,10 @@
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}`;
     }
     
-    // Menangani proses submit pesanan
+    // --- PERUBAHAN --- Logika submit pesanan diperbarui
     async function handleOrderSubmit(e) {
         e.preventDefault();
+        hideNotification();
         if (submitBtn.disabled) return;
         
         const nama = document.getElementById('nama').value.trim();
@@ -374,7 +399,7 @@
         const produk = produkSelect.value;
         
         if (!nama || !nomor || !waAktif || !kategori || !produk) {
-            alert("Harap lengkapi semua field!");
+            showNotification("Harap lengkapi semua data pesanan!");
             return;
         }
         
@@ -382,36 +407,29 @@
         submitBtn.textContent = 'Memproses...';
 
         try {
-            // Gunakan transaksi untuk memastikan stok akurat
             const produkRef = db.ref(`produk/${kategori}/${produk}`);
             let hargaFinal;
             
             const transactionResult = await produkRef.transaction(dataProduk => {
-                if (dataProduk) {
-                    if (dataProduk.stok > 0) {
-                        dataProduk.stok--; // Kurangi stok
-                        hargaFinal = dataProduk.harga;
-                        return dataProduk;
-                    } else {
-                        return; // Batalkan transaksi jika stok habis
-                    }
+                if (dataProduk && dataProduk.stok > 0) {
+                    dataProduk.stok--;
+                    hargaFinal = dataProduk.harga;
+                    return dataProduk;
                 }
-                return dataProduk;
+                return; // Batalkan jika stok habis atau data tidak ada
             });
             
             if (!transactionResult.committed) {
-                 alert("Maaf, stok produk ini baru saja habis.");
-                 location.reload(); // Muat ulang halaman untuk info stok terbaru
+                 showNotification("Maaf, stok produk ini baru saja habis. Silakan muat ulang halaman.");
+                 submitBtn.textContent = 'Stok Habis'; // Tombol tetap non-aktif
                  return;
             }
 
-            // Jika diskon dipakai, hapus hak diskon dan sesuaikan harga
             if (diskonShareTerpakai) {
                 hargaFinal -= POTONGAN_DISKON_SHARE;
                 await db.ref('hakDiskon/' + waAktif).remove();
             }
             
-            // Simpan data pesanan
             const id = "P" + Date.now();
             await db.ref('pesanan/' + id).set({
                 nama, nomor, wa_aktif: waAktif, kategori, produk, 
@@ -422,16 +440,21 @@
                 diskon_share: diskonShareTerpakai
             });
             
-            // Tampilkan hasil pesanan
+            // --- PERUBAHAN --- Mengambil info pembayaran dari Firebase
+            const paymentSnapshot = await db.ref('infoPembayaran').once('value');
+            const paymentData = paymentSnapshot.val() || {};
+            let paymentHtml = '<ul class="list-unstyled">';
+            for (const [metode, detail] of Object.entries(paymentData)) {
+                paymentHtml += `<li><strong>${metode}:</strong> ${detail.nomor} (a.n ${detail.nama})</li>`;
+            }
+            paymentHtml += '</ul>';
+
             hasilDiv.style.display = 'block';
             hasilDiv.innerHTML = `<p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p>
                                   <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
                                   <div class="info">
                                     <p><strong>Silakan lakukan pembayaran sejumlah ${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p>
-                                    <ul class="list-unstyled">
-                                      <li><strong>ShopeePay:</strong> 081803004607</li>
-                                      <li><strong>Dana:</strong> 087755432880</li>
-                                    </ul>
+                                    ${paymentHtml}
                                   </div>
                                   <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a>
                                   <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>`;
@@ -441,7 +464,7 @@
             window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' }); 
         } catch (error) {
             console.error("Error saat memesan:", error);
-            alert("Terjadi kesalahan. Silakan coba lagi.");
+            showNotification("Terjadi kesalahan. Silakan coba lagi.");
             submitBtn.disabled = false; 
             submitBtn.textContent = 'Pesan Sekarang';
         }
@@ -453,17 +476,14 @@
         db.ref('bannerPromo').limitToLast(1).on('value', snap => {
             container.innerHTML = '';
             if (!snap.exists()) return;
-
             const [promoId, promoData] = Object.entries(snap.val())[0];
             const endDate = new Date(promoData.waktuBerakhir).getTime();
             
             if (endDate > new Date().getTime()) {
-                container.innerHTML = `
-                    <div id="promo-banner">
+                container.innerHTML = `<div id="promo-banner">
                         <h3 style="font-size: 1.5rem; font-weight: 600;">${promoData.judul}</h3>
                         <p class="mt-1">${promoData.deskripsi || ''}</p>
-                        <div id="countdown-timer"></div>
-                    </div>`;
+                        <div id="countdown-timer"></div></div>`;
                 startCountdown(promoData.waktuBerakhir);
             }
         });
@@ -495,12 +515,10 @@
     function loadApprovedTestimonials() {
         const testimoniContainer = document.getElementById('testimoniContainer');
         db.ref('testimonials').orderByChild('status').equalTo('disetujui').on('value', snap => {
-            testimoniContainer.innerHTML = ''; // Kosongkan kontainer
+            testimoniContainer.innerHTML = '';
             if (snap.exists()) {
                 const dataTesti = [];
                 snap.forEach(childSnap => { dataTesti.push(childSnap.val()); });
-                
-                // Urutkan dari yang terbaru
                 dataTesti.reverse().forEach(testimoni => {
                     const bubble = document.createElement('div');
                     bubble.className = 'testimonial-bubble';
@@ -513,25 +531,20 @@
         });
     }
     
-    // Menangani pengiriman testimoni baru (untuk dimoderasi admin)
+    // Menangani pengiriman testimoni baru
     async function handleTestimoniSubmitToAdmin(e) {
         e.preventDefault();
         const nama = document.getElementById('testiNama').value.trim();
         const pesan = document.getElementById('testiPesan').value.trim();
         const statusEl = document.getElementById('testiStatus');
-        
         if (!nama || !pesan) {
             statusEl.textContent = 'Nama dan pesan tidak boleh kosong!';
             statusEl.style.color = 'var(--danger)';
             return;
         }
-
         try {
             await db.ref('testimonials').push({ 
-                nama: nama, 
-                isi: pesan, 
-                status: 'pending', // Status awal untuk dimoderasi oleh admin
-                createdAt: new Date().toISOString() 
+                nama: nama, isi: pesan, status: 'pending', createdAt: new Date().toISOString() 
             });
             statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
             statusEl.style.color = 'var(--success)';
@@ -546,32 +559,39 @@
     // Mengarahkan ke halaman cek status
     window.cekStatus = () => {
         const id = document.getElementById('idCek').value.trim();
-        if (id) {
-            window.location.href = `status.html?id=${id}`;
-        }
+        if (id) window.location.href = `status.html?id=${id}`;
     };
     
-    // Membuat daftar FAQ secara dinamis
-    function renderFaq() {
-        const faqData = [
-            { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
-            { q: "Bagaimana cara mendapatkan diskon?", a: "Jika Anda memiliki kode atau hak diskon, masukkan nomor WA yang terdaftar. Tombol klaim diskon akan muncul secara otomatis jika Anda berhak." },
-            { q: "Apa saja metode pembayaran yang diterima?", a: "Saat ini kami menerima pembayaran melalui ShopeePay dan Dana. Nomor tujuan akan muncul setelah Anda membuat pesanan." },
-            { q: "Berapa lama prosesnya?", a: "Setelah bukti bayar diunggah dan diverifikasi oleh admin, pesanan akan diproses secepatnya, biasanya dalam 5-15 menit pada jam kerja." }
-        ];
+    // --- PERUBAHAN --- Membuat daftar FAQ dinamis dari Firebase
+    function loadAndRenderFaq() {
         const faqContainer = document.getElementById('faq-container');
-        faqContainer.innerHTML = '';
-        faqData.forEach(itemData => {
-            const item = document.createElement('div');
-            item.className = 'faq-item';
-            item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
-            faqContainer.appendChild(item);
-        });
-        document.querySelectorAll('.faq-question').forEach(item => {
-            item.addEventListener('click', () => {
-                const parentItem = item.parentElement;
-                parentItem.classList.toggle('active');
+        db.ref('faq').once('value').then(snap => {
+            faqContainer.innerHTML = '';
+            if (!snap.exists()) {
+                faqContainer.innerHTML = '<p>FAQ tidak tersedia saat ini.</p>';
+                return;
+            }
+            const faqData = snap.val();
+            // Urutkan berdasarkan properti 'urutan' jika ada
+            const sortedKeys = Object.keys(faqData).sort((a,b) => (faqData[a].urutan || 0) - (faqData[b].urutan || 0));
+
+            sortedKeys.forEach(key => {
+                const itemData = faqData[key];
+                const item = document.createElement('div');
+                item.className = 'faq-item';
+                item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
+                faqContainer.appendChild(item);
             });
+
+            // Tambahkan event listener setelah semua item FAQ dibuat
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => {
+                    item.parentElement.classList.toggle('active');
+                });
+            });
+        }).catch(err => {
+            console.error("Gagal memuat FAQ:", err);
+            faqContainer.innerHTML = '<p>Gagal memuat FAQ. Coba lagi nanti.</p>';
         });
     }
   </script>
