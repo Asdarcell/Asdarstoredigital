@@ -62,7 +62,6 @@
     }
     .qr-btn.upload { background: #28a745; }
     .qr-btn.status { background: #17a2b8; }
-    
     #promo-banner {
         padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;
         background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white;
@@ -79,11 +78,9 @@
     [data-theme="dark"] .claim-promo-card { background-color: #1e3a5a; border-color: #4a6d91; }
     .claim-promo-card button { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #bc1888); }
     .text-danger { color: var(--danger) !important; font-weight: bold; }
-    
     #claim-discount-section button { background-color: #28a745; }
     #claim-discount-section button:disabled { background-color: #6c757d; cursor: not-allowed; }
     .order-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); border: 1px solid var(--border); }
-
     #testimoniContainer {
       background: var(--card); border-radius: 12px; padding: 20px; height: 400px;
       overflow: hidden; position: relative; box-shadow: 0 4px 12px var(--shadow);
@@ -98,7 +95,6 @@
     .testimonial-bubble b { display: block; font-size: 0.9em; opacity: 0.8; }
     @keyframes slideInUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; height: 0; padding: 0; margin: 0; border: 0; } }
-
     .faq-item { border-bottom: 1px solid var(--border); padding: 15px 0; }
     .faq-item:last-child { border-bottom: none; }
     .faq-question {
@@ -199,6 +195,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
@@ -207,7 +204,10 @@
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4"
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll.appspot.com",
+      messagingSenderId: "220670500351",
+      appId: "1:220670500351:web:5737ae5958a6f5a67d5bca"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -249,6 +249,7 @@
         produkSelect.addEventListener('change', handleProductSelection);
         document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
+        document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
     function loadInitialData() {
@@ -368,24 +369,98 @@
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || produkTerpilihData.cara || '-'}`;
     }
     
-    document.getElementById('formPesanan').addEventListener('submit', async e => {
+    async function handleOrderSubmit(e) {
         e.preventDefault();
-        // ... Logika submit lengkap dari sebelumnya ...
-    });
+        if (submitBtn.disabled) return;
+        if (!produkTerpilihData || (typeof produkTerpilihData.stok !== 'undefined' && produkTerpilihData.stok !== null && produkTerpilihData.stok <= 0)) {
+            return alert("Maaf, stok produk ini telah habis.");
+        }
+        
+        const nama = document.getElementById('nama').value.trim();
+        const nomor = document.getElementById('nomor').value.trim();
+        const waAktif = normalizePhone(document.getElementById('waAktif').value.trim());
+        const kategori = kategoriSelect.value;
+        const produk = produkSelect.value;
+        const waktu = new Date().toISOString();
+        const id = "P" + Date.now();
+
+        if (!nama || !nomor || !waAktif || !kategori || !produk) return alert("Harap lengkapi semua field!");
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
+
+        try {
+            const snapProduk = await db.ref(`produk/${kategori}/${produk}`).once('value');
+            const dataProduk = snapProduk.val();
+            
+            let hargaAwal = dataProduk.harga;
+            let hargaFinal = hargaAwal;
+            let promoDigunakan = null;
+            let diskonShareDigunakan = false;
+
+            if (promoProdukTerpakai && dataProduk.promo) {
+                let potongan = (dataProduk.promo.jenis === 'nominal') ? dataProduk.promo.nilai : hargaAwal * (dataProduk.promo.nilai / 100);
+                hargaFinal = hargaAwal - potongan;
+                promoDigunakan = dataProduk.promo;
+            } else if (diskonShareTerpakai) {
+                hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
+                diskonShareDigunakan = true;
+                await db.ref('hakDiskon/' + waAktif).remove();
+            }
+
+            if (typeof dataProduk.stok === 'number') {
+                await db.ref(`produk/${kategori}/${produk}/stok`).set(dataProduk.stok - 1);
+            }
+
+            await db.ref('pesanan/' + id).set({
+                nama, nomor, wa_aktif: waAktif, kategori, produk, waktu, 
+                status: 'Belum Bayar',
+                harga_asli: hargaAwal,
+                harga_final: hargaFinal,
+                promo_digunakan: promoDigunakan,
+                diskon_share: diskonShareDigunakan
+            });
+            
+            hasilDiv.style.display = 'block';
+            hasilDiv.innerHTML = `
+                <p class="fw-bold" style="color:var(--success);">✅ Pesanan Anda berhasil dibuat!</p>
+                <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
+                <div class="info">
+                    <p><strong>Silakan lakukan pembayaran sejumlah Rp${formatRupiah(hargaFinal)}</strong> ke salah satu tujuan berikut:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>ShopeePay:</strong> 081803004607</li>
+                        <li><strong>Dana:</strong> 087755432880</li>
+                    </ul>
+                </div>
+                <a class='qr-btn upload' href="uplod.html?id=${id}">📤 Upload Bukti</a>
+                <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>
+            `;
+            
+            document.getElementById('formPesanan').reset();
+            resetFormState();
+            window.scrollTo(0, document.getElementById('hasil').offsetTop); 
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan saat memproses pesanan.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pesan Sekarang';
+        }
+    }
 
     window.cekStatus = () => {
       const id = document.getElementById('idCek').value.trim();
       if (id) window.location.href = `status.html?id=${id}`;
     };
 
-    // === Logika Testimoni ===
     function loadTestimoni() {
         const testimoniContainer = document.getElementById('testimoniContainer');
         db.ref('testimoni').on('value', snap => {
             const dataTesti = Object.values(snap.val() || {});
             if (dataTesti.length > 0) {
                 let i = 0;
-                setInterval(() => {
+                if(window.testimoniInterval) clearInterval(window.testimoniInterval);
+                window.testimoniInterval = setInterval(() => {
                     if(document.visibilityState === 'visible') {
                         tampilkanSatuTesti(dataTesti[i], testimoniContainer);
                         i = (i + 1) % dataTesti.length;
@@ -413,23 +488,15 @@
         const nama = document.getElementById('testiNama').value.trim();
         const pesan = document.getElementById('testiPesan').value.trim();
         const statusEl = document.getElementById('testiStatus');
-        if (!nama || !pesan) {
-            statusEl.textContent = 'Nama dan pesan tidak boleh kosong!';
-            statusEl.style.color = 'red';
-            return;
-        }
+        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan tidak boleh kosong!'; statusEl.style.color = 'red'; return; }
         try {
             await db.ref('testimoni_pending').push({ nama, pesan, waktu: new Date().toISOString() });
             statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
             statusEl.style.color = 'green';
             e.target.reset();
-        } catch (error) {
-            statusEl.textContent = 'Gagal mengirim testimoni.';
-            statusEl.style.color = 'red';
-        }
+        } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'red'; }
     }
 
-    // === Logika FAQ ===
     function renderFaq() {
         const faqData = [
           { q: "Bagaimana cara memesan?", a: "Pilih kategori dan produk, isi data diri, lalu klik 'Pesan Sekarang'. Lakukan pembayaran sesuai instruksi dan unggah bukti bayar." },
@@ -447,12 +514,15 @@
         });
         document.querySelectorAll('.faq-question').forEach(item => {
             item.addEventListener('click', () => {
+                const currentActive = document.querySelector('.faq-item.active');
+                if (currentActive && currentActive !== item.parentElement) {
+                    currentActive.classList.remove('active');
+                }
                 item.parentElement.classList.toggle('active');
             });
         });
     }
 
-    // === Logika Banner Promo ===
     function loadPromoBanner() {
         const banner = document.getElementById('promo-banner');
         db.ref('featuredPromo').once('value').then(snap => {
