@@ -13,6 +13,7 @@
             --light-blue: #00d5ff;
             --text-light: #a7b2d3;
             --text-white: #ffffff;
+            --border-color: rgba(0, 170, 255, 0.3);
         }
 
         * {
@@ -36,7 +37,7 @@
             position: relative;
             width: 800px;
             height: 500px;
-            max-width: 90%;
+            max-width: 100%;
         }
 
         .card-login, .card-regis {
@@ -54,21 +55,25 @@
         }
 
         .card-login {
-            transform: translateX(0%);
+            opacity: 1;
+            transform: translateX(0);
             z-index: 2;
         }
-        
+
         .card-regis {
+            opacity: 0;
             transform: translateX(-100%);
             z-index: 1;
         }
 
         .Box-Pembungkus.active .card-login {
             transform: translateX(100%);
+            opacity: 0;
             z-index: 1;
         }
         .Box-Pembungkus.active .card-regis {
-            transform: translateX(0%);
+            transform: translateX(0);
+            opacity: 1;
             z-index: 2;
         }
 
@@ -84,15 +89,15 @@
         .quotes {
             color: var(--text-white);
             background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
-            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         .card-regis .quotes {
-            order: 2;
+            order: 2; /* Pindahkan quotes ke kanan pada form registrasi */
         }
 
         h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
         .form {
@@ -178,52 +183,42 @@
             text-decoration: underline;
         }
         
-        /* --- KUNCI ANIMASI PERSIS SEPERTI VIDEO --- */
+        /* Animasi elemen masuk */
         .animasi {
-            opacity: 1;
-            transform: translateY(0);
-            transition: 0.5s ease-in-out;
-            transition-delay: var(--anim-in);
+            opacity: 0;
+            animation: animasi 0.8s ease-in-out forwards;
+            animation-delay: var(--anim-in);
         }
-        
-        /* Saat card tidak aktif (tersembunyi), sembunyikan elemennya */
-        .card-login .animasi,
-        .Box-Pembungkus.active .card-regis .animasi {
-             transform: translateY(30px);
-             opacity: 0;
+        .Box-Pembungkus.active .card-login .animasi {
+             animation-delay: var(--anim-ex);
+        }
+         .Box-Pembungkus.active .card-regis .animasi {
+             animation-delay: var(--anim-in);
         }
 
-        /* Saat card aktif, tampilkan elemennya */
-        .Box-Pembungkus.active .card-login .animasi,
-        .card-regis .animasi {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        /* Atur delay kebalikan saat transisi keluar */
-        .Box-Pembungkus.active .card-login .animasi {
-            transition-delay: var(--anim-ex);
+
+        @keyframes animasi {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         /* TAMPILAN MOBILE */
         @media (max-width: 820px) {
             .Box-Pembungkus {
                 height: auto;
-                background: var(--card-bg);
-                border-radius: 15px;
+                max-height: none;
             }
             .card-login, .card-regis {
-                position: relative;
                 flex-direction: column;
-                transform: none !important; /* Hapus transform di mobile */
-                opacity: 1 !important;
-                z-index: 1 !important;
-            }
-            .card-regis {
-                display: none; /* Sembunyikan form regis di awal */
             }
             .quotes {
-                display: none; /* Sembunyikan panel quotes di mobile */
+                display: none; /* Sembunyikan panel quotes di mobile untuk hemat ruang */
             }
             .form {
                 width: 100%;
@@ -296,28 +291,13 @@
     const section = document.getElementById('Box-Pembungkus');
     const linkDaftar = document.getElementById('linkDaftar');
     const linkLogin = document.getElementById('linkLogin');
-    
-    // --- Logika untuk Desktop & Mobile ---
-    const cardLogin = document.querySelector('.card-login');
-    const cardRegis = document.querySelector('.card-regis');
 
     linkDaftar.onclick = () => {
-        // Jika di mobile, gunakan show/hide. Jika di desktop, gunakan class 'active'.
-        if (window.innerWidth <= 820) {
-            cardLogin.style.display = 'none';
-            cardRegis.style.display = 'flex';
-        } else {
-            section.classList.add('active');
-        }
+        section.classList.add('active');
     };
 
     linkLogin.onclick = () => {
-        if (window.innerWidth <= 820) {
-            cardRegis.style.display = 'none';
-            cardLogin.style.display = 'flex';
-        } else {
-            section.classList.remove('active');
-        }
+        section.classList.remove('active');
     };
 </script>
 
