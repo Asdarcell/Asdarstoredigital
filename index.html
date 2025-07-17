@@ -170,9 +170,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
+    // --- Variabel Global ---
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonShareTerpakai = false;
+    let currentProductRef = null; // Untuk menyimpan referensi listener real-time
     const POTONGAN_DISKON_SHARE = 5000;
 
     const submitBtn = document.getElementById('submitBtn');
@@ -207,9 +209,7 @@
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.body.setAttribute('data-theme', savedTheme);
       document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
-
       loadInitialData();
-      
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
@@ -233,7 +233,6 @@
         resetFormState();
         const kategori = kategoriSelect.value;
         if (!kategori) return;
-
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
         db.ref(`produk/${kategori}`).once('value').then(snapshot => {
             const data = snapshot.val() || {};
@@ -245,14 +244,16 @@
     }
 
     function resetFormState() {
+        if (currentProductRef) {
+            currentProductRef.off(); // Matikan listener lama
+            currentProductRef = null;
+        }
         produkTerpilihData = null;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        
         document.getElementById('claim-button').disabled = false;
         document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
         document.getElementById('claim-discount-section').style.display = 'none';
-        
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         submitBtn.disabled = true;
         submitBtn.textContent = 'Pilih Produk Dahulu';
@@ -260,17 +261,13 @@
         hideNotification();
     }
 
-    // --- FUNGSI DIPERBAIKI UNTUK MENGHINDARI BUG ---
     function handleProductSelection() {
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
-
-        // Reset semua state diskon saat produk baru dipilih
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        document.getElementById('claim-button').disabled = false;
-        document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
-        document.getElementById('claim-discount-section').style.display = 'none';
+        
+        if (currentProductRef) currentProductRef.off();
 
         if (!produk) {
             resetFormState();
@@ -282,21 +279,18 @@
         submitBtn.textContent = '...';
         document.getElementById('product-promo-container').innerHTML = '';
 
-        db.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
+        currentProductRef = db.ref(`produk/${kategori}/${produk}`);
+        // --- PERBAIKAN UTAMA: Menggunakan .on() untuk data real-time ---
+        currentProductRef.on('value', snapshot => {
             if (!snapshot.exists()) {
                 infoProduk.innerHTML = 'Produk tidak ditemukan.';
                 return;
             }
             
             produkTerpilihData = snapshot.val();
-            
-            // Panggil fungsi untuk menghitung harga dan render semua info
             updateTotalHarga();
-            
-            // Cek status diskon WA setelah data produk dimuat
             checkDiskonShare(); 
 
-            // Atur status tombol berdasarkan stok
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
@@ -304,8 +298,6 @@
             } else {
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-                
-                // Tampilkan promo HANYA jika stok tersedia
                 if (produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
                     document.getElementById('product-promo-container').innerHTML = `
@@ -318,51 +310,11 @@
         });
     }
 
-    window.klaimPromoProduk = () => {
-        promoProdukTerpakai = true;
-        diskonShareTerpakai = false;
-        document.getElementById('claim-discount-section').style.display = 'none';
-        updateTotalHarga(); // Hitung ulang harga setelah klaim
-        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
-    };
-    
-    async function checkDiskonShare() {
-        // Jangan tampilkan diskon share jika promo produk sudah diklaim
-        if (promoProdukTerpakai) return;
-
-        const waInput = document.getElementById('waAktif');
-        const claimSection = document.getElementById('claim-discount-section');
-        const nomorWA = normalizePhone(waInput.value);
-
-        if (waInput.checkValidity() && nomorWA.length > 10) {
-            try {
-                const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value');
-                claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
-            } catch (error) {
-                console.error("Error checking discount:", error);
-                claimSection.style.display = 'none';
-            }
-        } else {
-            claimSection.style.display = 'none';
-        }
-    }
-
-    window.gunakanDiskonShare = () => {
-        diskonShareTerpakai = true;
-        promoProdukTerpakai = false;
-        document.getElementById('product-promo-container').innerHTML = ''; // Sembunyikan promo produk
-        updateTotalHarga(); // Hitung ulang harga
-        document.getElementById('claim-button').disabled = true; 
-        document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
-    };
-
     function updateTotalHarga() {
         if (!produkTerpilihData) return;
-        
         let hargaAwal = produkTerpilihData.harga;
         let hargaFinal = hargaAwal;
         let deskripsiHarga = `<b>Harga:</b> ${formatRupiah(hargaAwal)}`;
-
         if (promoProdukTerpakai && produkTerpilihData.promo) {
             let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
             hargaFinal = Math.max(0, hargaAwal - potongan);
@@ -371,11 +323,9 @@
             hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
         }
-        
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
-    
-    // Fungsi lainnya tetap sama
+
     async function handleOrderSubmit(e) {
         e.preventDefault();
         hideNotification();
@@ -420,7 +370,7 @@
             if (!transactionResult.committed) {
                  showNotification("Maaf, stok produk ini baru saja habis. Silakan pilih produk lain.");
                  submitBtn.textContent = 'Stok Habis';
-                 handleProductSelection();
+                 submitBtn.disabled = true;
                  return;
             }
             if (diskonShareTerpakai) await db.ref('hakDiskon/' + waAktif).remove();
@@ -462,7 +412,11 @@
             submitBtn.textContent = 'Pesan Sekarang';
         }
     }
-
+    
+    // Fungsi lainnya tidak perlu diubah
+    window.klaimPromoProduk = () => { promoProdukTerpakai = true; diskonShareTerpakai = false; document.getElementById('claim-discount-section').style.display = 'none'; updateTotalHarga(); document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`; };
+    async function checkDiskonShare() { if (promoProdukTerpakai) return; const waInput = document.getElementById('waAktif'); const claimSection = document.getElementById('claim-discount-section'); const nomorWA = normalizePhone(waInput.value); if (waInput.checkValidity() && nomorWA.length > 10) { try { const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value'); claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none'; } catch (error) { console.error("Error checking discount:", error); claimSection.style.display = 'none'; } } else { claimSection.style.display = 'none'; } }
+    window.gunakanDiskonShare = () => { diskonShareTerpakai = true; promoProdukTerpakai = false; document.getElementById('product-promo-container').innerHTML = ''; updateTotalHarga(); document.getElementById('claim-button').disabled = true; document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan"; };
     async function handleTestimoniSubmit(e) { e.preventDefault(); const nama = document.getElementById('testiNama').value.trim(); const pesan = document.getElementById('testiPesan').value.trim(); const statusEl = document.getElementById('testiStatus'); if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan wajib diisi!'; statusEl.style.color = 'var(--danger)'; return; } try { await db.ref('testimonials').push({ nama, isi: pesan, status: 'pending', createdAt: new Date().toISOString() }); statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.'; statusEl.style.color = 'var(--success)'; e.target.reset(); setTimeout(() => { statusEl.textContent = ''; }, 4000); } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'var(--danger)'; } }
     function loadApprovedTestimonials() { const container = document.getElementById('testimoniContainer'); db.ref('testimonials').orderByChild('status').equalTo('disetujui').on('value', snap => { container.innerHTML = ''; if (snap.exists()) { const dataTesti = []; snap.forEach(childSnap => { dataTesti.push(childSnap.val()); }); dataTesti.reverse().forEach(testimoni => { const bubble = document.createElement('div'); bubble.className = 'testimonial-bubble'; bubble.innerHTML = `<b>${testimoni.nama || 'Anonim'}</b> ${testimoni.isi || ''}`; container.appendChild(bubble); }); } else { container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`; } }); }
     function loadAndRenderFaq() { const faqContainer = document.getElementById('faq-container'); db.ref('faq').once('value').then(snap => { faqContainer.innerHTML = ''; if (!snap.exists()) { faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>'; return; } const faqData = snap.val(); if (Array.isArray(faqData)) { faqData.forEach(itemData => { const item = document.createElement('div'); item.className = 'faq-item'; item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`; faqContainer.appendChild(item); }); } document.querySelectorAll('.faq-question').forEach(item => { item.addEventListener('click', () => item.parentElement.classList.toggle('active')); }); }).catch(err => { console.error("Gagal memuat FAQ:", err); }); }
