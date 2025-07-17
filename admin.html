@@ -168,13 +168,13 @@
     
     function showConfirm(title, body) {
         return new Promise(resolve => {
+            const okBtn = document.getElementById('confirmModalOk');
+            const onOk = () => { resolve(true); confirmModal.hide(); };
+            const onCancel = () => { resolve(false); confirmModal.hide(); };
             document.getElementById('confirmModalTitle').textContent = title;
             document.getElementById('confirmModalBody').textContent = body;
-            const okBtn = document.getElementById('confirmModalOk');
-            const onOk = () => resolve(true);
-            const cleanup = () => { okBtn.removeEventListener('click', onOk); confirmModal.hide(); };
-            okBtn.addEventListener('click', () => { cleanup(); resolve(true); }, { once: true });
-            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => { cleanup(); resolve(false); }, { once: true });
+            okBtn.addEventListener('click', onOk, { once: true });
+            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', onCancel, { once: true });
             confirmModal.show();
         });
     }
@@ -196,7 +196,8 @@
             let discountSectionHTML = pelangganSudahBerhak
                 ? `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-success">Telah Berhak</span></p><button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check-circle me-1"></i>Hak Diberikan</button>`
                 : `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-muted">Belum Dapat</span></p><button class="btn btn-sm btn-success" onclick="beriHakDiskon('${p.wa_aktif}', '${id}')"><i class="fas fa-gift me-1"></i>Beri Hak Diskon</button>`;
-            let hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final || p.harga_asli)}</p>`;
+
+            let hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)}</p>`;
             if (p.promo_digunakan || p.diskon_share) {
                 hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)} <span class="badge bg-success">Diskon</span></p><p><small class="text-muted">Harga Asli: Rp${formatRupiah(p.harga_asli)}</small></p>`;
             }
@@ -326,7 +327,7 @@
         db.ref('testimoni_pending').on('value', snap => {
             container.innerHTML = '';
             const data = snap.val();
-            if (!data) { container.innerHTML = '<p class="text-muted">Tidak ada testimoni yang perlu direview.</p>'; return; }
+            if (!data) { container.innerHTML = '<p class="text-muted p-3">Tidak ada testimoni yang perlu direview.</p>'; return; }
             for(const key in data) {
                 const testi = data[key];
                 const card = document.createElement('div');
@@ -364,10 +365,22 @@
         db.ref('dynamicContent/' + halaman).set(data).then(() => showToast('Konten dinamis disimpan!', 'success'));
     }
 
+    function loadDinamisEditor() {
+        const halaman = document.getElementById('halamanDinamis').value;
+        if (!halaman) return;
+        db.ref(`dynamicContent/${halaman}`).once('value').then(s => {
+            const k = s.val() || {html:"", css:"", js:""};
+            document.getElementById('editorHTML').value = k.html;
+            document.getElementById('editorCSS').value = k.css;
+            document.getElementById('editorJS').value = k.js;
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         
         db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
+        
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
         loadProduk();
         
@@ -377,6 +390,8 @@
         loadTestimoniPending();
         
         document.getElementById('simpanDinamisBtn').addEventListener('click', handleSimpanDinamis);
+        document.getElementById('halamanDinamis').addEventListener('change', loadDinamisEditor);
+        loadDinamisEditor();
     });
 </script>
 </body>
