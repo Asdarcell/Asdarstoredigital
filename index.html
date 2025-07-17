@@ -161,7 +161,6 @@
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
 
-    // --- PERBAIKAN: Menggunakan firebaseConfig yang sama dengan admin.html ---
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -239,9 +238,10 @@
             const data = snapshot.val() || {};
             const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
             sortedVarian.forEach(nama => {
-                if (data[nama].stok > 0) {
+                // Modifikasi kecil: kita tetap tampilkan produk meski stok 0, agar pesan "Stok Habis" bisa muncul
+                // if (data[nama].stok > 0) {
                     produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
-                }
+                // }
             });
         });
     }
@@ -272,12 +272,14 @@
             if (!snapshot.exists()) return;
             produkTerpilihData = snapshot.val();
             
-            if (produkTerpilihData.stok <= 0) {
-                infoProduk.innerHTML = `<b class="text-danger">Stok Habis!</b>`;
+            // Logika ini tetap sama, jika stok 0 atau kurang, tombol akan disable
+            if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
+                updateTotalHarga(); // Tetap panggil ini agar info harga & stok 0 muncul
+                infoProduk.innerHTML += `<br><b class="text-danger">Stok saat ini habis.</b>`;
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
             } else {
-                updateTotalHarga();
+                updateTotalHarga(); // Panggil ini untuk menampilkan harga, deskripsi, dan stok
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
                 if (produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
@@ -305,7 +307,7 @@
         const waInput = document.getElementById('waAktif');
         const claimSection = document.getElementById('claim-discount-section');
         const nomorWA = normalizePhone(waInput.value);
-        if (waInput.checkValidity() && nomorWA.length > 10) { // Cek panjang nomor WA
+        if (waInput.checkValidity() && nomorWA.length > 10) {
             try {
                 const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value');
                 if (snapshot.exists() && snapshot.val() === true) {
@@ -345,7 +347,10 @@
             hargaFinal = hargaAwal - POTONGAN_DISKON_SHARE;
             deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
         }
-        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}`;
+        
+        // --- INI BAGIAN YANG DIPERBAIKI ---
+        // Sekarang, deskripsi, harga, dan stok akan selalu ditampilkan.
+        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
     
     async function handleOrderSubmit(e) {
@@ -386,12 +391,14 @@
                     }
                     return dataProduk;
                 }
-                return; // Abort transaction
+                return; 
             });
             
             if (!transactionResult.committed) {
                  showNotification("Maaf, stok produk ini baru saja habis. Silakan pilih produk lain.");
                  submitBtn.textContent = 'Stok Habis';
+                 // Muat ulang info produk untuk menunjukkan stok 0
+                 handleProductSelection();
                  return;
             }
             if (diskonShareTerpakai) await db.ref('hakDiskon/' + waAktif).remove();
@@ -420,7 +427,6 @@
                                     <p><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke:</p>${paymentHtml}
                                     <p class="mt-2">Setelah membayar, silakan upload bukti pembayaran Anda.</p>
                                   </div>
-                                  // --- PERBAIKAN: Memperbaiki typo 'uplod.html' menjadi 'upload.html' ---
                                   <a class='qr-btn upload' href="upload.html?id=${id}">📤 Upload Bukti</a>
                                   <a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a>`;
             
@@ -478,7 +484,6 @@
             if (!snap.exists()) { faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>'; return; }
             
             const faqData = snap.val();
-            // Cek apakah data berupa array (hasil dari perbaikan di admin.html)
             if (Array.isArray(faqData)) {
                 faqData.forEach(itemData => {
                     const item = document.createElement('div');
