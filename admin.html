@@ -125,17 +125,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI DENGAN KUNCI ANDA
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI DENGAN DOMAIN ANDA
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI DENGAN URL ANDA
+      projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN ID PROYEK ANDA
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+    const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc"; // GANTI DENGAN KUNCI ImgBB ANDA
     const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
 
-    let allDataPesanan = {}, allHakDiskon = {}, confirmModal;
+    let allProducts = {}, allDataPesanan = {}, allHakDiskon = {}, confirmModal;
     let selectedId = null;
 
     const showToast = (message, type = 'info') => {
@@ -245,20 +245,20 @@
 
     const loadProduk = () => {
         db.ref('produk').on('value', snap => {
-            const data = snap.val() || {};
+            allProducts = snap.val() || {};
             const container = document.getElementById('product-container');
             const katList = document.getElementById('kategori-list');
             container.innerHTML = "";
             katList.innerHTML = "";
             const kategoriUnik = new Set();
-            Object.keys(data).sort().forEach(kategori => {
+            Object.keys(allProducts).sort().forEach(kategori => {
                 kategoriUnik.add(kategori);
                 const catDiv = document.createElement('div');
                 catDiv.className = 'product-category mb-4';
                 catDiv.innerHTML = `<h4 class="bg-light p-2 rounded">${kategori}</h4>`;
                 const ul = document.createElement('ul');
                 ul.className = 'list-group product-list';
-                const varianArr = Object.entries(data[kategori]).map(([v, d]) => ({ varian: v, ...d }));
+                const varianArr = Object.entries(allProducts[kategori]).map(([v, d]) => ({ varian: v, ...d }));
                 varianArr.sort((a,b) => (a.urutan || 0) - (b.urutan || 0));
                 varianArr.forEach(p => {
                     const li = document.createElement('li');
@@ -294,10 +294,11 @@
         showToast("Produk berhasil disimpan!", 'success');
         form.reset();
         form.batalEditBtn.classList.add('d-none');
+        form.originalVarian.value = '';
     };
 
     window.editProduk = (kategori, varian) => {
-        const p = allDataPesanan[kategori][varian];
+        const p = allProducts[kategori][varian];
         const form = document.getElementById('formProduk');
         form.kategori.value = kategori;
         form.varian.value = varian;
@@ -353,7 +354,7 @@
         document.getElementById('add-faq-item').onclick = () => faqContainer.insertAdjacentHTML('beforeend', createFaqRow());
 
         document.getElementById('infoPembayaranForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.payment-method-row').forEach(r=>{const i=r.querySelectorAll('input'),k=i[0].value.trim();if(k)data[k]={nomor:i[1].value.trim(),nama:i[2].value.trim()}}); if(await showConfirm('Simpan Info Pembayaran', 'Yakin simpan?')){db.ref('infoPembayaran').set(data).then(()=>showToast('Info pembayaran disimpan!', 'success'))} };
-        document.getElementById('faqForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.faq-item-row').forEach((r,idx)=>{const q=r.querySelector('input').value.trim(),a=r.querySelector('textarea').value.trim();if(q&&a)data['item'+Date.now()+idx]={q,a,urutan:idx}}); if(await showConfirm('Simpan FAQ', 'Yakin simpan?')){db.ref('faq').set(data).then(()=>showToast('FAQ disimpan!', 'success'))} };
+        document.getElementById('faqForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.faq-item-row').forEach((r,idx)=>{const q=r.querySelector('input').value.trim(),a=r.querySelector('textarea').value.trim();if(q&&a)data['item'+Date.now()+idx]={q,a,urutan:idx}}); if(await showConfirm('Simpan FAQ', 'Yakin simpan?')){db.ref('faq').set(data).then(()=>showToast('FAQ berhasil disimpan!', 'success'))} };
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -362,7 +363,7 @@
         document.getElementById('searchId').addEventListener('input', renderPesanan);
         document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
-        document.getElementById('batalEditBtn').addEventListener('click', () => { document.getElementById('formProduk').reset(); document.getElementById('batalEditBtn').classList.add('d-none'); });
+        document.getElementById('batalEditBtn').addEventListener('click', () => { document.getElementById('formProduk').reset(); document.getElementById('batalEditBtn').classList.add('d-none'); document.getElementById('originalVarian').value = ''; });
 
         db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
         db.ref('hakDiskon').on('value', s => { allHakDiskon = s.val() || {}; renderPesanan(); });
