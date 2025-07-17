@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asdar Store Digital</title>
   <link rel="icon" href="favicon.png" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <style>
@@ -100,7 +100,6 @@
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
     .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
     .faq-item.active .faq-question::after { transform: rotate(180deg); }
-    /* --- PERUBAHAN --- Notifikasi baru */
     .notification {
         padding: 12px; margin-bottom: 15px; border-radius: 8px; text-align: center;
         font-weight: 500; display: none;
@@ -195,50 +194,40 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
-    // Inisialisasi AOS (Animasi saat scroll)
     AOS.init({ duration: 800, once: true, offset: 50 });
 
     // =================================================================
     // KONFIGURASI FIREBASE
-    // --- PERUBAHAN --- PENTING: Ganti dengan konfigurasi Firebase Anda!
+    // PENTING: Ganti dengan konfigurasi Firebase Anda sendiri!
     // =================================================================
     const firebaseConfig = {
-      apiKey: "AIzaSy...GANTI_DENGAN_API_KEY_ANDA",
-      authDomain: "proyek-anda.firebaseapp.com",
-      databaseURL: "https://proyek-anda-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "proyek-anda",
-      storageBucket: "proyek-anda.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abcdef123456"
+      apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+      authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+      databaseURL: "GANTI_DENGAN_DATABASE_URL_ANDA",
+      projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    // Variabel global untuk menyimpan state
     let produkTerpilihData = null;
     let diskonShareTerpakai = false;
     const POTONGAN_DISKON_SHARE = 5000;
     let countdownInterval;
 
-    // Elemen DOM yang sering dipakai
     const submitBtn = document.getElementById('submitBtn');
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
-    // --- PERUBAHAN --- Menambahkan elemen notifikasi
     const formNotification = document.getElementById('formNotification');
 
-
-    // Fungsi bantuan
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
       let n = String(num).trim().replace(/[^0-9]/g, '');
       if (n.startsWith('0')) return '62' + n.slice(1);
       if (n.startsWith('62')) return n;
-      return num; // Kembalikan nomor asli jika format tidak dikenali
+      return num;
     };
-    // --- PERUBAHAN --- Fungsi untuk menampilkan notifikasi
     const showNotification = (message, type = 'error') => {
         formNotification.textContent = message;
         formNotification.className = `notification ${type}`;
@@ -248,7 +237,6 @@
         formNotification.style.display = 'none';
     };
 
-    // Fungsi tema gelap/terang
     window.toggleTheme = () => {
       const currentTheme = document.body.getAttribute('data-theme');
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -257,20 +245,16 @@
       localStorage.setItem('theme', newTheme);
     };
 
-    // Fungsi untuk memuat data dan event listener saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
-      // Set tema dari local storage jika ada
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.body.setAttribute('data-theme', savedTheme);
       document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
 
-      // Muat data dinamis dari Firebase
       loadPromoFromAdmin();
       loadInitialData();
       loadApprovedTestimonials();
-      loadAndRenderFaq(); // --- PERUBAHAN --- Memanggil fungsi FAQ baru
+      loadAndRenderFaq();
       
-      // Tambahkan event listener ke elemen form
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
@@ -278,7 +262,6 @@
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
-    // Memuat kategori produk dari Firebase
     function loadInitialData() {
         db.ref('produk').once('value').then(snapshot => {
             const data = snapshot.val() || {};
@@ -289,7 +272,6 @@
         });
     }
 
-    // Menangani perubahan pada pilihan kategori
     function handleCategoryChange() {
         resetFormState();
         const kategori = kategoriSelect.value;
@@ -307,7 +289,6 @@
         });
     }
 
-    // Mengatur ulang state form jika pilihan berubah
     function resetFormState() {
         produkTerpilihData = null;
         diskonShareTerpakai = false;
@@ -317,12 +298,11 @@
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         submitBtn.disabled = true;
         submitBtn.textContent = 'Pilih Produk Dahulu';
-        hideNotification(); // --- PERUBAHAN --- Sembunyikan notifikasi saat reset
+        hideNotification();
     }
 
-    // Menangani perubahan pada pilihan produk
     function handleProductSelection() {
-        hideNotification(); // --- PERUBAHAN --- Sembunyikan notifikasi saat produk dipilih
+        hideNotification();
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
         if (!produk || !kategori) {
@@ -346,7 +326,6 @@
         });
     }
 
-    // Cek apakah nomor WA berhak mendapatkan diskon
     async function checkDiskonShare() {
         const waInput = document.getElementById('waAktif');
         const claimSection = document.getElementById('claim-discount-section');
@@ -364,7 +343,6 @@
         }
     }
 
-    // Menggunakan diskon share
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
         updateTotalHarga();
@@ -373,7 +351,6 @@
         claimButton.innerText = "✅ Diskon Telah Diterapkan";
     };
 
-    // Memperbarui tampilan harga total
     function updateTotalHarga() {
         if (!produkTerpilihData) return;
         let hargaFinal = produkTerpilihData.harga;
@@ -386,7 +363,6 @@
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}`;
     }
     
-    // --- PERUBAHAN --- Logika submit pesanan diperbarui
     async function handleOrderSubmit(e) {
         e.preventDefault();
         hideNotification();
@@ -416,12 +392,12 @@
                     hargaFinal = dataProduk.harga;
                     return dataProduk;
                 }
-                return; // Batalkan jika stok habis atau data tidak ada
+                return;
             });
             
             if (!transactionResult.committed) {
                  showNotification("Maaf, stok produk ini baru saja habis. Silakan muat ulang halaman.");
-                 submitBtn.textContent = 'Stok Habis'; // Tombol tetap non-aktif
+                 submitBtn.textContent = 'Stok Habis';
                  return;
             }
 
@@ -440,7 +416,6 @@
                 diskon_share: diskonShareTerpakai
             });
             
-            // --- PERUBAHAN --- Mengambil info pembayaran dari Firebase
             const paymentSnapshot = await db.ref('infoPembayaran').once('value');
             const paymentData = paymentSnapshot.val() || {};
             let paymentHtml = '<ul class="list-unstyled">';
@@ -470,7 +445,6 @@
         }
     }
 
-    // Menampilkan promo dari admin panel
     function loadPromoFromAdmin() {
         const container = document.getElementById('promo-banner-container');
         db.ref('bannerPromo').limitToLast(1).on('value', snap => {
@@ -489,7 +463,6 @@
         });
     }
 
-    // Menjalankan hitung mundur promo
     function startCountdown(endDateString) {
         const countdownEl = document.getElementById('countdown-timer');
         if (!countdownEl) return;
@@ -511,7 +484,6 @@
         }, 1000);
     }
     
-    // Memuat testimoni yang sudah disetujui
     function loadApprovedTestimonials() {
         const testimoniContainer = document.getElementById('testimoniContainer');
         db.ref('testimonials').orderByChild('status').equalTo('disetujui').on('value', snap => {
@@ -531,7 +503,6 @@
         });
     }
     
-    // Menangani pengiriman testimoni baru
     async function handleTestimoniSubmitToAdmin(e) {
         e.preventDefault();
         const nama = document.getElementById('testiNama').value.trim();
@@ -556,13 +527,11 @@
         }
     }
 
-    // Mengarahkan ke halaman cek status
     window.cekStatus = () => {
         const id = document.getElementById('idCek').value.trim();
         if (id) window.location.href = `status.html?id=${id}`;
     };
     
-    // --- PERUBAHAN --- Membuat daftar FAQ dinamis dari Firebase
     function loadAndRenderFaq() {
         const faqContainer = document.getElementById('faq-container');
         db.ref('faq').once('value').then(snap => {
@@ -572,7 +541,6 @@
                 return;
             }
             const faqData = snap.val();
-            // Urutkan berdasarkan properti 'urutan' jika ada
             const sortedKeys = Object.keys(faqData).sort((a,b) => (faqData[a].urutan || 0) - (faqData[b].urutan || 0));
 
             sortedKeys.forEach(key => {
@@ -583,7 +551,6 @@
                 faqContainer.appendChild(item);
             });
 
-            // Tambahkan event listener setelah semua item FAQ dibuat
             document.querySelectorAll('.faq-question').forEach(item => {
                 item.addEventListener('click', () => {
                     item.parentElement.classList.toggle('active');
