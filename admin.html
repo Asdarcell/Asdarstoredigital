@@ -52,6 +52,7 @@
     <li class="nav-item" role="presentation"><button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button"><i class="fas fa-box-open me-2"></i>Produk</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="promo-banner-tab" data-bs-toggle="tab" data-bs-target="#promo-banner-pane" type="button"><i class="fas fa-bullhorn me-2"></i>Banner Promo</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="moderasi-tab" data-bs-toggle="tab" data-bs-target="#moderasi-pane" type="button"><i class="fas fa-comment-dots me-2"></i>Moderasi Testimoni</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button"><i class="fas fa-file-code me-2"></i>Konten Dinamis</button></li>
   </ul>
 
   <div class="tab-content" id="adminTabContent">
@@ -92,12 +93,10 @@
         <div class="card mt-3"><div class="card-body">
             <h3 class="mb-3">Manajemen Banner Promo</h3>
             <p class="text-muted">Buat satu promo unggulan yang akan tampil sebagai banner dengan hitung mundur di halaman utama.</p>
-            
             <div class="card bg-light p-3 mb-4">
                 <h5 class="mb-3">Promo Aktif Saat Ini:</h5>
                 <div id="active-promo-display"><p class="text-muted">Tidak ada promo aktif.</p></div>
             </div>
-
             <form id="formPromoBanner">
                 <div class="mb-3">
                     <label for="promoJudul" class="form-label">Judul Banner</label>
@@ -120,6 +119,20 @@
         <div class="card mt-3"><div class="card-body">
             <h3 class="mb-3">Moderasi Testimoni</h3>
             <div id="testimoni-pending-container"><p class="text-muted">Memuat testimoni...</p></div>
+        </div></div>
+    </div>
+
+    <div class="tab-pane fade" id="content-pane" role="tabpanel">
+        <div class="card mt-3"><div class="card-body">
+            <h3 class="mb-3">Editor Konten Dinamis</h3>
+            <div class="mb-3">
+                <label for="halamanDinamis" class="form-label">Pilih Halaman untuk Diedit:</label>
+                <select id="halamanDinamis" class="form-select w-auto"><option value="index">index.html</option><option value="admin">admin.html</option><option value="status">status.html</option><option value="uplod">uplod.html</option></select>
+            </div>
+            <div class="mb-3"><label for="editorHTML" class="form-label">HTML</label><textarea id="editorHTML" rows="8" class="form-control font-monospace"></textarea></div>
+            <div class="mb-3"><label for="editorCSS" class="form-label">CSS</label><textarea id="editorCSS" rows="6" class="form-control font-monospace"></textarea></div>
+            <div class="mb-3"><label for="editorJS" class="form-label">JavaScript</label><textarea id="editorJS" rows="8" class="form-control font-monospace"></textarea></div>
+            <button id="simpanDinamisBtn" class="btn btn-primary"><i class="fas fa-save me-2"></i>Simpan Konten Dinamis</button>
         </div></div>
     </div>
   </div>
@@ -159,10 +172,7 @@
             document.getElementById('confirmModalBody').textContent = body;
             const okBtn = document.getElementById('confirmModalOk');
             const onOk = () => resolve(true);
-            const cleanup = () => {
-                okBtn.removeEventListener('click', onOk);
-                confirmModal.hide();
-            };
+            const cleanup = () => { okBtn.removeEventListener('click', onOk); confirmModal.hide(); };
             okBtn.addEventListener('click', () => { cleanup(); resolve(true); }, { once: true });
             document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => { cleanup(); resolve(false); }, { once: true });
             confirmModal.show();
@@ -177,8 +187,7 @@
         
         container.innerHTML = '';
         if (sortedIds.length === 0) {
-            container.innerHTML = '<p class="text-center text-muted p-4">Tidak ada pesanan.</p>';
-            return;
+            container.innerHTML = '<p class="text-center text-muted p-4">Tidak ada pesanan.</p>'; return;
         }
 
         sortedIds.forEach(id => {
@@ -187,13 +196,10 @@
             let discountSectionHTML = pelangganSudahBerhak
                 ? `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-success">Telah Berhak</span></p><button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check-circle me-1"></i>Hak Diberikan</button>`
                 : `<p class="mb-1"><strong>Status Diskon:</strong> <span class="text-muted">Belum Dapat</span></p><button class="btn btn-sm btn-success" onclick="beriHakDiskon('${p.wa_aktif}', '${id}')"><i class="fas fa-gift me-1"></i>Beri Hak Diskon</button>`;
-
-            let hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)}</p>`;
+            let hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final || p.harga_asli)}</p>`;
             if (p.promo_digunakan || p.diskon_share) {
-                hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)} <span class="badge bg-success">Diskon</span></p>
-                             <p><small class="text-muted">Harga Asli: Rp${formatRupiah(p.harga_asli)}</small></p>`;
+                hargaInfo = `<p><strong>Total:</strong> Rp${formatRupiah(p.harga_final)} <span class="badge bg-success">Diskon</span></p><p><small class="text-muted">Harga Asli: Rp${formatRupiah(p.harga_asli)}</small></p>`;
             }
-
             const card = document.createElement('div');
             card.className = 'order-card';
             card.innerHTML = `
@@ -346,15 +352,31 @@
             showToast('Testimoni ditolak.', 'info');
         }
     };
+    
+    function handleSimpanDinamis() {
+        const halaman = document.getElementById('halamanDinamis').value;
+        if (!halaman) return showToast('Pilih halaman!', 'error');
+        const data = {
+            html: document.getElementById('editorHTML').value,
+            css: document.getElementById('editorCSS').value,
+            js: document.getElementById('editorJS').value,
+        };
+        db.ref('dynamicContent/' + halaman).set(data).then(() => showToast('Konten dinamis disimpan!', 'success'));
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
         db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
         loadProduk();
+        
         document.getElementById('formPromoBanner').addEventListener('submit', handleSimpanPromoBanner);
         loadActivePromo();
+
         loadTestimoniPending();
+        
+        document.getElementById('simpanDinamisBtn').addEventListener('click', handleSimpanDinamis);
     });
 </script>
 </body>
