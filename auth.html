@@ -7,13 +7,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --dark-bg: #12172b;
-            --card-bg: #1e294e;
+            --dark-bg: #0f1224; /* Sedikit diubah untuk kontras yang lebih baik */
+            --card-bg: rgba(30, 41, 78, 0.5); /* Dibuat semi-transparan untuk efek kaca */
             --primary-blue: #00aaff;
             --light-blue: #00d5ff;
             --text-light: #a7b2d3;
             --text-white: #ffffff;
-            --border-color: rgba(0, 170, 255, 0.3);
         }
 
         * {
@@ -24,13 +23,22 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--dark-bg);
             color: var(--text-light);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            /* EFEK BARU: Animasi Background Gradien */
+            background: linear-gradient(45deg, #12172b, #1a2342, #12172b);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .Box-Pembungkus {
@@ -52,30 +60,16 @@
             display: flex;
             transition: 0.7s ease-in-out;
             overflow: hidden;
+            /* EFEK BARU: Glassmorphism (Kaca Buram) */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .card-login {
-            opacity: 1;
-            transform: translateX(0);
-            z-index: 2;
-        }
-
-        .card-regis {
-            opacity: 0;
-            transform: translateX(-100%);
-            z-index: 1;
-        }
-
-        .Box-Pembungkus.active .card-login {
-            transform: translateX(100%);
-            opacity: 0;
-            z-index: 1;
-        }
-        .Box-Pembungkus.active .card-regis {
-            transform: translateX(0);
-            opacity: 1;
-            z-index: 2;
-        }
+        .card-login { transform: translateX(0%); z-index: 2; }
+        .card-regis { transform: translateX(-100%); z-index: 1; }
+        .Box-Pembungkus.active .card-login { transform: translateX(100%); z-index: 1; }
+        .Box-Pembungkus.active .card-regis { transform: translateX(0%); z-index: 2; }
 
         .quotes, .form {
             width: 50%;
@@ -89,33 +83,23 @@
         .quotes {
             color: var(--text-white);
             background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
-        }
-        .card-regis .quotes {
-            order: 2; /* Pindahkan quotes ke kanan pada form registrasi */
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
             text-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+        .card-regis .quotes { order: 2; }
 
-        .form {
-            align-items: center;
-        }
+        h1 { font-size: 2.5em; margin-bottom: 10px; }
+
+        .form { align-items: center; }
 
         .form h2 {
             font-size: 2em;
             color: var(--primary-blue);
             margin-bottom: 20px;
+            /* EFEK BARU: Neon Glow */
+            text-shadow: 0 0 5px var(--primary-blue), 0 0 10px var(--primary-blue);
         }
 
-        .input-box {
-            position: relative;
-            width: 100%;
-            margin-bottom: 35px;
-        }
-
+        .input-box { position: relative; width: 100%; margin-bottom: 35px; }
         .input-box input {
             width: 100%;
             background: transparent;
@@ -125,32 +109,16 @@
             padding: 10px 0;
             font-size: 1em;
             outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
-
-        .input-box label {
-            position: absolute;
-            top: 10px;
-            left: 0;
-            font-size: 1em;
-            transition: 0.3s;
-            pointer-events: none;
-        }
-
-        .input-box input:focus + label,
-        .input-box input:valid + label {
-            top: -15px;
-            font-size: 0.8em;
-            color: var(--primary-blue);
-        }
-        
+        .input-box label { position: absolute; top: 10px; left: 0; font-size: 1em; transition: 0.3s; pointer-events: none; }
+        .input-box input:focus + label, .input-box input:valid + label { top: -15px; font-size: 0.8em; color: var(--primary-blue); }
         .input-box input:focus {
             border-bottom-color: var(--primary-blue);
+            box-shadow: 0 5px 15px -10px var(--primary-blue); /* EFEK BARU: Glow pada input */
         }
 
-        .tombol {
-            width: 100%;
-        }
-        
+        .tombol { width: 100%; }
         .tombol button {
             width: 100%;
             background: var(--primary-blue);
@@ -161,68 +129,48 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 1.1em;
-            transition: 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 0 5px var(--primary-blue), 0 0 10px var(--primary-blue); /* EFEK BARU: Glow pada tombol */
         }
         .tombol button:hover {
             background: var(--light-blue);
+            box-shadow: 0 0 10px var(--light-blue), 0 0 20px var(--light-blue);
         }
         
-        .link-switch {
-            width: 100%;
-            margin-top: 25px;
-            text-align: center;
-        }
-
-        .link-switch a {
-            color: var(--primary-blue);
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .link-switch a:hover {
-            text-decoration: underline;
-        }
+        .link-switch { width: 100%; margin-top: 25px; text-align: center; }
+        .link-switch a { color: var(--primary-blue); text-decoration: none; font-weight: 600; cursor: pointer; }
+        .link-switch a:hover { text-decoration: underline; }
         
-        /* Animasi elemen masuk */
-        .animasi {
-            opacity: 0;
-            animation: animasi 0.8s ease-in-out forwards;
-            animation-delay: var(--anim-in);
-        }
-        .Box-Pembungkus.active .card-login .animasi {
-             animation-delay: var(--anim-ex);
-        }
-         .Box-Pembungkus.active .card-regis .animasi {
-             animation-delay: var(--anim-in);
-        }
+        .animasi { opacity: 1; transform: translateY(0); transition: 0.5s ease-in-out; transition-delay: var(--anim-in); }
+        .card-login .animasi, .Box-Pembungkus.active .card-regis .animasi { transform: translateY(30px); opacity: 0; }
+        .Box-Pembungkus.active .card-login .animasi, .card-regis .animasi { transform: translateY(0); opacity: 1; }
+        .Box-Pembungkus.active .card-login .animasi { transition-delay: var(--anim-ex); }
 
-
-        @keyframes animasi {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* TAMPILAN MOBILE */
+        /* TAMPILAN MOBILE YANG DISEMPURNAKAN */
         @media (max-width: 820px) {
             .Box-Pembungkus {
                 height: auto;
-                max-height: none;
+                background: transparent; /* Hilangkan background agar efek blur terlihat */
+                box-shadow: none;
             }
             .card-login, .card-regis {
+                position: relative;
                 flex-direction: column;
+                transform: none !important;
+                opacity: 1 !important;
+                z-index: 1 !important;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.5); /* Shadow tetap ada di mobile */
+            }
+            .card-regis {
+                display: none; /* Sembunyikan form regis di awal pada mobile */
             }
             .quotes {
-                display: none; /* Sembunyikan panel quotes di mobile untuk hemat ruang */
+                display: none; /* Sembunyikan panel quotes di mobile */
             }
             .form {
                 width: 100%;
                 min-height: 480px;
+                padding: 40px 30px;
             }
         }
     </style>
@@ -255,7 +203,6 @@
             <p class="animasi" style="--anim-in: 0.3s; --anim-ex: 0.8s;">Masuk untuk mengakses semua fitur dan penawaran spesial untuk Anda.</p>
         </div>
     </div>
-
     <div class="card-regis">
         <div class="quotes">
             <h1 class="animasi" style="--anim-in: 0.1s; --anim-ex: 1s;">Selamat Mendaftar & Bergabung!</h1>
@@ -291,13 +238,31 @@
     const section = document.getElementById('Box-Pembungkus');
     const linkDaftar = document.getElementById('linkDaftar');
     const linkLogin = document.getElementById('linkLogin');
+    
+    // PERBAIKAN LOGIKA JAVASCRIPT UNTUK MOBILE
+    const cardLogin = document.querySelector('.card-login');
+    const cardRegis = document.querySelector('.card-regis');
 
-    linkDaftar.onclick = () => {
-        section.classList.add('active');
+    linkDaftar.onclick = (e) => {
+        e.preventDefault();
+        // Jika layar kecil (mobile), ganti tampilan langsung
+        if (window.innerWidth <= 820) {
+            cardLogin.style.display = 'none';
+            cardRegis.style.display = 'flex';
+        } else { // Jika layar besar (desktop), gunakan animasi geser
+            section.classList.add('active');
+        }
     };
 
-    linkLogin.onclick = () => {
-        section.classList.remove('active');
+    linkLogin.onclick = (e) => {
+        e.preventDefault();
+        // Jika layar kecil (mobile), ganti tampilan langsung
+        if (window.innerWidth <= 820) {
+            cardRegis.style.display = 'none';
+            cardLogin.style.display = 'flex';
+        } else { // Jika layar besar (desktop), gunakan animasi geser
+            section.classList.remove('active');
+        }
     };
 </script>
 
