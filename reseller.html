@@ -437,88 +437,68 @@
         e.preventDefault();
         hideNotification();
         if (submitBtn.disabled || !produkTerpilihData) return;
-        
+
         const nomor = document.getElementById('nomor').value.trim();
         const waAktif = normalizePhone(waAktifInput.value.trim());
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
-        const hargaProduk = produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0;
+        const hargaProduk = parseFloat(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Memproses...';
 
         try {
-            const resellerRef = db.ref('resellers/' + waAktif);
-            const produkRef = db.ref(`produk/${kategori}/${produk}`);
-            
-            const resellerSnapshot = await resellerRef.once('value');
-            const resellerData = resellerSnapshot.val();
-            const saldoReseller = (resellerData && resellerData.saldo) || 0;
-
-            if (saldoReseller < hargaProduk) {
-                showNotification("Maaf, saldo Anda tidak cukup untuk membeli produk ini.", "error");
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Beli dengan Saldo';
-                return;
-            }
-
-            const transactionSaldo = await resellerRef.transaction(currentData => {
-                if (currentData && currentData.saldo >= hargaProduk) {
-                    currentData.saldo -= hargaProduk;
-                    return currentData;
+            const dbRef = db.ref('/');
+            const result = await dbRef.transaction(data => {
+                if (!data || !data.resellers || !data.produk || !data.resellers[waAktif] || !data.produk[kategori] || !data.produk[kategori][produk]) {
+                    return;
                 }
-                return;
-            });
-            
-            if (!transactionSaldo.committed) {
-                showNotification("Gagal memproses transaksi saldo. Saldo tidak cukup atau terjadi kesalahan.", "error");
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Beli dengan Saldo';
-                return;
-            }
-            
-            const transactionStok = await produkRef.transaction(dataProduk => {
-                if (dataProduk && dataProduk.stok > 0) {
-                    dataProduk.stok--;
-                    return dataProduk;
+
+                let resellerData = data.resellers[waAktif];
+                let produkData = data.produk[kategori][produk];
+                let saldoReseller = parseFloat(resellerData.saldo || 0);
+                let stokProduk = parseFloat(produkData.stok || 0);
+
+                if (saldoReseller < hargaProduk) {
+                    showNotification("Maaf, saldo Anda tidak cukup.", "error");
+                    return;
                 }
-                return;
+                if (stokProduk <= 0) {
+                    showNotification("Maaf, stok produk ini baru saja habis.", "error");
+                    return;
+                }
+
+                resellerData.saldo = saldoReseller - hargaProduk;
+                produkData.stok = stokProduk - 1;
+
+                return data;
             });
-            
-            if (!transactionStok.committed) {
-                showNotification("Maaf, stok produk ini baru saja habis. Saldo Anda telah dikembalikan.", "error");
-                resellerRef.transaction(currentData => {
-                    if (currentData) {
-                        currentData.saldo += hargaProduk;
-                    }
-                    return currentData;
+
+            if (result.committed) {
+                const id = "P" + Date.now();
+                await db.ref('pesanan/' + id).set({
+                    id: id,
+                    nama: waAktif,
+                    nomor: nomor,
+                    kategori: kategori,
+                    produk: produk,
+                    waktu: new Date().toISOString(),
+                    status: 'Menunggu diproses',
+                    harga_bayar: hargaProduk,
+                    tipe_pembayaran: 'Saldo Reseller'
                 });
-                submitBtn.textContent = 'Stok Habis';
-                submitBtn.disabled = true;
-                return;
+
+                orderIdText.textContent = id;
+                successModal.style.display = 'flex';
+                document.getElementById('formPesanan').reset();
+                resetFormState();
+                checkResellerSaldo();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Beli dengan Saldo';
             }
 
-            const id = "P" + Date.now();
-            await db.ref('pesanan/' + id).set({
-                id: id,
-                nama: waAktif,
-                nomor: nomor,
-                kategori: kategori,
-                produk: produk,
-                waktu: new Date().toISOString(),
-                status: 'Menunggu diproses', // Status awal
-                harga_bayar: hargaProduk,
-                tipe_pembayaran: 'Saldo Reseller'
-            });
-
-            // Tampilkan modal sukses pesanan
-            orderIdText.textContent = id;
-            successModal.style.display = 'flex';
-            
-            document.getElementById('formPesanan').reset();
-            resetFormState();
-            checkResellerSaldo();
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
         } catch (error) {
             console.error("Error saat memesan:", error);
             showNotification("Terjadi kesalahan. Silakan coba lagi.");
@@ -526,7 +506,7 @@
             submitBtn.textContent = 'Beli dengan Saldo';
         }
     }
-
+    
     window.cekStatus = async () => {
         const id = document.getElementById('idCek').value.trim();
         if (!id) return;
