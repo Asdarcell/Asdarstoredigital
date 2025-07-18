@@ -4,28 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Reseller - Asdar Store</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
         :root {
-            --dark-bg: #1a1a2e; --card-bg: #2c2c40; --primary: #1abc9c;
-            --light-primary: #25e0b9; --text: #e0e0e0; --text-muted: #8a93a2;
-            --border: #444; --success: #28a745;
+            --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
+            --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
+            --success: #28a745; --danger: #e74c3c;
+            --muted-text: #6c757d;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        [data-theme="dark"] {
+            --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
+            --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+            --muted-text: #8a93a2;
+        }
         body {
-            font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: var(--text);
+            font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease; margin: 0; line-height: 1.6;
             display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
         }
-        /* Kontainer untuk Auth dan Dashboard */
-        #auth-container, #dashboard-container { width: 100%; max-width: 800px; }
+        main { width: 100%; max-width: 800px; }
         .hidden { display: none !important; }
 
-        /* === Gaya untuk Form Auth (Login/Register) === */
+        /* --- Gaya untuk Form Auth (Login/Register) --- */
         .box-pembungkus { position: relative; width: 100%; height: 550px; }
         .card-auth {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--card-bg); border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            background: var(--card); border-radius: 15px; box-shadow: 0 15px 35px var(--shadow);
             display: flex; transition: 0.7s ease-in-out; overflow: hidden;
         }
         .card-login { opacity: 1; transform: translateX(0); z-index: 2; }
@@ -33,38 +41,38 @@
         .box-pembungkus.active .card-login { transform: translateX(100%); opacity: 0; z-index: 1; }
         .box-pembungkus.active .card-regis { transform: translateX(0); opacity: 1; z-index: 2; }
         .quotes, .form { width: 50%; height: 100%; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-        .quotes { color: white; background: linear-gradient(135deg, var(--light-primary), var(--primary)); }
+        .quotes { color: white; background: linear-gradient(135deg, var(--light-primary, #25e0b9), var(--primary)); }
         .card-regis .quotes { order: 2; }
         .form h2 { color: var(--primary); }
         .input-box { position: relative; width: 100%; margin-bottom: 30px; }
         .input-box input, .input-box select {
-            width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--text-muted);
+            width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--muted-text);
             color: var(--text); padding: 10px 0; font-size: 1em; outline: none; appearance: none;
         }
         .input-box select { cursor: pointer; }
-        .input-box label { position: absolute; top: 10px; left: 0; font-size: 1em; transition: 0.3s; pointer-events: none; color: var(--text-muted); }
+        .input-box label { position: absolute; top: 10px; left: 0; font-size: 1em; transition: 0.3s; pointer-events: none; color: var(--muted-text); }
         .input-box input:focus + label, .input-box input:valid + label,
         .input-box select:focus + label, .input-box select:valid + label { top: -15px; font-size: 0.8em; color: var(--primary); }
         .input-box input:focus, .input-box select:focus { border-bottom-color: var(--primary); }
         .tombol button { width: 100%; padding: 12px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; font-size: 1em; border-radius: 8px; }
-        .tombol button:hover { background: var(--light-primary); }
+        .tombol button:hover { background: var(--light-primary, #25e0b9); }
         .link-switch { text-align: center; margin-top: 20px; font-size: 0.9em; }
         .link-switch a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 600; }
 
-        /* === Gaya untuk Dashboard === */
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        /* --- Gaya untuk Dashboard --- */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px var(--shadow); }
         .saldo-display { text-align: center; }
-        .saldo-display .label { font-size: 1em; color: var(--text-muted); }
+        .saldo-display .label { font-size: 1em; color: var(--muted-text); }
         .saldo-display .amount { font-size: 2.5em; font-weight: 700; color: var(--primary); line-height: 1.2; }
-        #logout-btn { background: none; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 8px 15px; border-radius: 8px; cursor: pointer; }
-        .dashboard-content { background: var(--card-bg); padding: 30px; border-radius: 15px; }
+        #logout-btn { background: none; border: 1px solid var(--muted-text); color: var(--muted-text); padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        .dashboard-content { background: var(--card); padding: 30px; border-radius: 15px; box-shadow: 0 4px 12px var(--shadow); }
         .product-card {
-            background: var(--dark-bg); border: 1px solid var(--border); border-radius: 10px;
-            padding: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+            padding: 15px; text-align: center; box-shadow: 0 5px 15px var(--shadow);
         }
         .product-card h4 { color: var(--primary); margin-bottom: 5px; }
         .product-card p { font-size: 0.9em; color: var(--text); margin-bottom: 10px; }
-        .product-card .price { font-size: 1.5em; font-weight: 700; color: var(--light-primary); }
+        .product-card .price { font-size: 1.5em; font-weight: 700; color: var(--success); }
 
         @media (max-width: 820px) {
             .quotes { display: none; }
@@ -74,70 +82,72 @@
         }
     </style>
 </head>
-<body>
 
-    <div id="auth-container">
-        <div class="box-pembungkus">
-            <div class="card-auth card-login">
-                <div class="form">
-                    <h2>LOGIN RESELLER</h2>
-                    <form id="form-login">
-                        <div class="input-box"><input type="email" id="login-email" required><label>Email Reseller</label></div>
-                        <div class="input-box"><input type="password" id="login-pass" required><label>Password</label></div>
-                        <div class="tombol"><button type="submit">LOGIN</button></div>
-                        <div class="link-switch"><p>Belum punya akun? <a id="linkDaftar">Daftar di sini</a></p></div>
-                    </form>
+<body data-theme="dark">
+    <main id="main-content">
+        <div id="auth-container">
+            <div class="box-pembungkus">
+                <div class="card-auth card-login">
+                    <div class="form">
+                        <h2>LOGIN RESELLER</h2>
+                        <form id="form-login">
+                            <div class="input-box"><input type="email" id="login-email" required><label>Email Reseller</label></div>
+                            <div class="input-box"><input type="password" id="login-pass" required><label>Password</label></div>
+                            <div class="tombol"><button type="submit">LOGIN</button></div>
+                            <div class="link-switch"><p>Belum punya akun? <a id="linkDaftar">Daftar di sini</a></p></div>
+                        </form>
+                    </div>
+                    <div class="quotes"><h1>Selamat Datang, Partner!</h1><p>Login untuk mengelola toko dan produk Anda.</p></div>
                 </div>
-                <div class="quotes"><h1>Selamat Datang, Partner!</h1><p>Login untuk mengelola toko dan produk Anda.</p></div>
-            </div>
-            <div class="card-auth card-regis">
-                <div class="quotes"><h1>Mulai Berjualan!</h1><p>Daftar dan jangkau lebih banyak pelanggan.</p></div>
-                <div class="form">
-                    <h2>DAFTAR RESELLER</h2>
-                    <form id="form-register">
-                        <div class="input-box"><input type="text" id="regis-toko" required><label>Nama Toko</label></div>
-                        <div class="input-box"><input type="email" id="regis-email" required><label>Email Address</label></div>
-                        <div class="input-box"><input type="password" id="regis-pass" required><label>Password</label></div>
-                        <div class="input-box">
-                            <select id="regis-tier" required>
-                                <option value="" disabled selected></option>
-                                <option value="B">Tier B (Top Up 50k - Diskon 10%)</option>
-                                <option value="A">Tier A (Top Up 100k - Diskon 15%)</option>
-                            </select>
-                            <label>Pilih Paket Reseller</label>
-                        </div>
-                        <div class="tombol"><button type="submit">DAFTAR SEKARANG</button></div>
-                        <div class="link-switch"><p>Sudah punya akun? <a id="linkLogin">Login di sini</a></p></div>
-                    </form>
+                <div class="card-auth card-regis">
+                    <div class="quotes"><h1>Mulai Berjualan!</h1><p>Daftar dan jangkau lebih banyak pelanggan.</p></div>
+                    <div class="form">
+                        <h2>DAFTAR RESELLER</h2>
+                        <form id="form-register">
+                            <div class="input-box"><input type="text" id="regis-toko" required><label>Nama Toko</label></div>
+                            <div class="input-box"><input type="email" id="regis-email" required><label>Email Address</label></div>
+                            <div class="input-box"><input type="password" id="regis-pass" required><label>Password</label></div>
+                            <div class="input-box">
+                                <select id="regis-tier" required>
+                                    <option value="" disabled selected></option>
+                                    <option value="B">Tier B (Top Up 50k - Diskon 10%)</option>
+                                    <option value="A">Tier A (Top Up 100k - Diskon 15%)</option>
+                                </select>
+                                <label>Pilih Paket Reseller</label>
+                            </div>
+                            <div class="tombol"><button type="submit">DAFTAR SEKARANG</button></div>
+                            <div class="link-switch"><p>Sudah punya akun? <a id="linkLogin">Login di sini</a></p></div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="dashboard-container" class="hidden">
-        <div class="dashboard-header">
-            <div>
-                <h2 style="text-align: left; margin: 0; color: var(--text);" id="dashboard-nama-toko"></h2>
-                <p style="margin: 0; color: var(--text-muted);" id="dashboard-email-tier"></p>
-            </div>
-            <div class="saldo-display">
-                <div class="label">Saldo Anda</div>
-                <div class="amount" id="dashboard-saldo">Rp 0</div>
-            </div>
-            <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        </div>
-        <div class="dashboard-content">
-            <h3>Selamat Datang di Dashboard</h3>
-            <p>Di sini Anda akan bisa melakukan top up dan memesan produk dengan harga reseller.</p>
-            
-            <hr style="margin: 20px 0; border-color: var(--border);">
-
-            <h3>Katalog Produk</h3>
-            <p style="color: var(--text-muted);">Harga yang tertera adalah harga spesial untuk Anda.</p>
-            <div id="product-list" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-top: 20px;">
+        <div id="dashboard-container" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 style="text-align: left; margin: 0; color: var(--text);" id="dashboard-nama-toko"></h2>
+                    <p style="margin: 0; color: var(--muted-text);" id="dashboard-email-tier"></p>
                 </div>
+                <div class="saldo-display">
+                    <div class="label">Saldo Anda</div>
+                    <div class="amount" id="dashboard-saldo">Rp 0</div>
+                </div>
+                <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            <div class="dashboard-content">
+                <h3>Selamat Datang di Dashboard</h3>
+                <p>Di sini Anda akan bisa melakukan top up dan memesan produk dengan harga reseller.</p>
+                
+                <hr style="margin: 20px 0; border-color: var(--border);">
+
+                <h3>Katalog Produk</h3>
+                <p style="color: var(--muted-text);">Harga yang tertera adalah harga spesial untuk Anda.</p>
+                <div id="product-list" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-top: 20px;">
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -172,7 +182,6 @@
             document.getElementById('dashboard-saldo').textContent = `Rp ${resellerData.saldo.toLocaleString('id-ID')}`;
             document.getElementById('dashboard-email-tier').textContent = `${resellerData.email} (Tier ${resellerData.tier})`;
 
-            // Panggil fungsi untuk memuat produk setelah dashboard ditampilkan
             loadProducts(resellerData.diskon);
         }
         
@@ -180,23 +189,6 @@
         function showLogin() {
             authContainer.classList.remove('hidden');
             dashboardContainer.classList.add('hidden');
-        }
-
-        // Fungsi untuk menambahkan produk dummy (Hanya dijalankan sekali!)
-        async function addDummyProducts() {
-            const products = [
-                { name: "Paket Netflix Premium", price: 50000, description: "Akses nonton tanpa batas di 4 perangkat." },
-                { name: "Spotify Premium Family", price: 30000, description: "Nikmati jutaan lagu bebas iklan." },
-                { name: "Akun Canva Pro", price: 45000, description: "Desain profesional lebih mudah." },
-                { name: "Ebook Bisnis Digital", price: 25000, description: "Panduan lengkap untuk pemula." }
-            ];
-            
-            const productsRef = db.collection('products');
-            console.log("Menambahkan produk dummy ke Firestore...");
-            for (const product of products) {
-                await productsRef.add(product);
-            }
-            console.log("Produk dummy berhasil ditambahkan!");
         }
 
         // Fungsi untuk memuat dan menampilkan produk
@@ -208,14 +200,11 @@
                 const snapshot = await db.collection('products').get();
                 
                 if (snapshot.empty) {
-                    productListDiv.innerHTML = '<p style="color: var(--text-muted);">Belum ada produk yang tersedia saat ini.</p>';
-                    // Uncomment baris di bawah ini untuk menambahkan produk dummy
-                    // saat koleksi produk kosong
-                    // addDummyProducts();
+                    productListDiv.innerHTML = '<p style="color: var(--muted-text);">Belum ada produk yang tersedia saat ini.</p>';
                     return;
                 }
 
-                productListDiv.innerHTML = ''; // Bersihkan tulisan "Memuat produk..."
+                productListDiv.innerHTML = '';
                 
                 snapshot.forEach(doc => {
                     const product = doc.data();
@@ -245,14 +234,11 @@
                     if (doc.exists) {
                         showDashboard(doc.data());
                     } else {
-                        // Jika dokumen tidak ada, jangan langsung logout.
-                        // Biarkan user tetap login dan cek konsol untuk error.
-                        // auth.signOut();
+                        auth.signOut();
                     }
                 }).catch(error => {
                     console.error("Gagal mengambil data reseller: ", error);
-                    // Jika terjadi error, jangan langsung logout.
-                    // auth.signOut();
+                    auth.signOut();
                 });
             } else {
                 showLogin();
@@ -283,6 +269,10 @@
                         saldo: 0,
                         uid: user.uid,
                         bergabungPada: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(error => {
+                        user.delete();
+                        console.error("Gagal menyimpan data reseller, akun akan dihapus:", error);
+                        throw new Error("Pendaftaran Gagal: Gagal menyimpan data, silakan coba lagi.");
                     });
                 })
                 .then(() => {
