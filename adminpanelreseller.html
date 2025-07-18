@@ -26,39 +26,19 @@
     .table th, .table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
     .table th { background-color: #f8f9fa; font-weight: 600; color: #6c757d; }
     table img { max-height: 50px; cursor: pointer; }
-    
     .photo-modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.9);
-        justify-content: center;
-        align-items: center;
+        display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+        width: 100%; height: 100%; overflow: auto;
+        background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center;
     }
     .photo-modal img { max-width: 90%; max-height: 90%; }
     .photo-modal .close {
-        position: absolute;
-        top: 20px;
-        right: 35px;
-        color: #f1f1f1;
-        font-size: 40px;
-        font-weight: bold;
-        transition: 0.3s;
+        position: absolute; top: 20px; right: 35px;
+        color: #f1f1f1; font-size: 40px; font-weight: bold; transition: 0.3s;
     }
-    .photo-modal .close:hover, .photo-modal .close:focus {
-        color: #bbb;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
+    .photo-modal .close:hover, .photo-modal .close:focus { color: #bbb; text-decoration: none; cursor: pointer; }
     .form-manage { display: grid; grid-template-columns: 1fr; gap: 15px; }
     @media (min-width: 768px) { .form-manage { grid-template-columns: repeat(2, 1fr); } }
-
   </style>
 </head>
 <body>
@@ -73,7 +53,7 @@
                     <li class="nav-item"><a class="nav-link" href="#kelola-reseller"><i class="fas fa-users-cog me-2"></i>Kelola Reseller</a></li>
                     <li class="nav-item"><a class="nav-link" href="#manajemen-saldo"><i class="fas fa-wallet me-2"></i>Manajemen Saldo</a></li>
                     <li class="nav-item"><a class="nav-link" href="#manajemen-produk"><i class="fas fa-box me-2"></i>Manajemen Produk</a></li>
-                    <li class="nav-item"><a class="nav-link" href="loginadmin.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </nav>
@@ -95,8 +75,7 @@
                                     <th>Bukti</th>
                                 </tr>
                             </thead>
-                            <tbody id="pesananTableBody">
-                                </tbody>
+                            <tbody id="pesananTableBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -109,16 +88,12 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>Nama Toko</th>
-                                    <th>Email</th>
-                                    <th>Tier</th>
+                                    <th>Nomor WA</th>
                                     <th>Saldo</th>
-                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="resellerTableBody">
-                                </tbody>
+                            <tbody id="resellerTableBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -150,11 +125,7 @@
                                         <th>Saldo</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabelResellerSaldo">
-                                    <tr>
-                                        <td colspan="2" style="text-align: center;">Memuat data...</td>
-                                    </tr>
-                                </tbody>
+                                <tbody id="tabelResellerSaldo"></tbody>
                             </table>
                         </div>
                     </div>
@@ -193,7 +164,6 @@
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 </div>
@@ -209,11 +179,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI dengan API Key Anda
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI dengan Auth Domain Anda
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI dengan Database URL Anda
+      projectId: "asdarstoredigitalll-d89c4", // GANTI dengan Project ID Anda
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // GANTI dengan Storage Bucket Anda
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -242,12 +212,11 @@
 
     const loadData = () => {
         loadPesanan();
-        loadResellers(); // Mengisi tabel kelola reseller (lama)
-        loadResellerSaldoData(); // Mengisi tabel manajemen saldo (baru)
-        loadProductManagementData(); // Mengisi dropdown manajemen produk (baru)
+        loadResellers(); 
+        loadResellerSaldoData(); 
+        loadProductManagementData(); 
     };
 
-    // Fungsi-fungsi dari kode yang saya berikan sebelumnya
     const loadPesanan = () => {
         db.ref('pesanan').on('value', (snapshot) => {
             const pesananData = snapshot.val() || {};
@@ -288,19 +257,23 @@
             for (const key in resellerData) {
                 const reseller = resellerData[key];
                 const row = document.createElement('tr');
-                const statusBadge = reseller.status === 'Aktif' ? 'text-success' : 'text-danger';
                 row.innerHTML = `
-                    <td>${reseller.namaToko || '-'}</td>
-                    <td>${reseller.email || '-'}</td>
-                    <td>${reseller.tier || '-'}</td>
+                    <td>${key}</td>
                     <td>${formatRupiah(reseller.saldo || 0)}</td>
-                    <td><span class="${statusBadge} fw-bold">${reseller.status || '-'}</span></td>
                     <td><button class="btn btn-sm btn-danger" onclick="hapusReseller('${key}')"><i class="fas fa-trash"></i> Hapus</button></td>
                 `;
                 resellerTableBody.appendChild(row);
             }
         });
     };
+    
+    window.hapusReseller = (wa) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus reseller dengan nomor WA ${wa}?`)) {
+            db.ref('resellers/' + wa).remove()
+            .then(() => alert(`Reseller ${wa} berhasil dihapus.`))
+            .catch(error => alert("Gagal menghapus reseller: " + error.message));
+        }
+    }
 
     const uploadBukti = (input, orderId) => {
         const file = input.files[0];
@@ -337,11 +310,17 @@
             document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
             document.querySelectorAll('.main-content > div').forEach(section => section.style.display = 'none');
-            document.querySelector(this.getAttribute('href')).style.display = 'block';
+            const targetId = this.getAttribute('href').substring(1);
+            document.getElementById(targetId).style.display = 'block';
+        });
+    });
+    
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'loginadmin.html';
         });
     });
 
-    // Fungsi-fungsi dari kode yang Anda berikan
     function loadResellerSaldoData() {
         db.ref('resellers').on('value', (snapshot) => {
             const resellers = snapshot.val() || {};
@@ -462,7 +441,6 @@
         }
     }
     
-    // Setup Event Listeners
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('kategoriProduk').addEventListener('change', handleProductCategoryChange);
         document.getElementById('namaProduk').addEventListener('change', handleProductNameChange);
