@@ -501,6 +501,9 @@
                 return;
             }
 
+            // --- Kode Debugging Dimulai di Sini ---
+            alert("Langkah 1: Memulai pemesanan. Coba lihat Saldo dan Harga");
+            
             submitBtn.disabled = true;
             submitBtn.textContent = 'Memproses...';
 
@@ -510,6 +513,9 @@
 
                 const resellerResult = await resellerRef.transaction(currentData => {
                     const currentSaldo = parseInt(currentData && currentData.saldo) || 0;
+                    
+                    // Langkah 2: Menampilkan Saldo dan Harga Produk
+                    alert(`Langkah 2: Saldo saat ini: ${currentSaldo}. Harga produk: ${hargaProduk}`);
                     
                     if (currentSaldo < hargaProduk) {
                         return;
@@ -523,7 +529,13 @@
                     return currentData;
                 });
                 
+                // Langkah 3: Menampilkan hasil transaksi
+                alert(`Langkah 3: Transaksi selesai. committed: ${resellerResult.committed}`);
+                
                 if (resellerResult.committed) {
+                    // ... (kode yang akan berjalan jika transaksi berhasil)
+                    alert("Langkah 4: Transaksi berhasil!");
+                    // ...
                     const produkResult = await produkRef.transaction(currentData => {
                         const stok = parseInt(currentData && currentData.stok) || 0;
                         if (stok <= 0) {
@@ -568,6 +580,7 @@
                         showNotification("Maaf, stok produk ini baru saja habis.", "error");
                     }
                 } else {
+                    // ... (kode jika transaksi gagal)
                     const finalSnapshot = await resellerRef.once('value');
                     const finalSaldo = parseInt(finalSnapshot.val() && finalSnapshot.val().saldo) || 0;
                     if (finalSaldo < hargaProduk) {
@@ -577,7 +590,7 @@
                     }
                 }
             } catch (error) {
-                console.error("Error saat memesan:", error);
+                alert("Langkah 5: Ada error di luar transaksi: " + error.message);
                 showNotification("Terjadi kesalahan yang tidak terduga. Silakan coba lagi.");
             } finally {
                 submitBtn.disabled = false;
