@@ -147,6 +147,7 @@
     <script>
         AOS.init({ duration: 800, once: true, offset: 50 });
 
+        // Pastikan konfigurasi Firebase Anda sudah benar
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -157,8 +158,10 @@
         const db = firebase.database();
         
         let produkTerpilihData = null;
-        const WA_ADMIN = "6281234567890"; // GANTI dengan nomor WA Admin Anda
+        // Ganti dengan nomor WA Admin Anda
+        const WA_ADMIN = "6281234567890"; 
 
+        // Ambil elemen HTML
         const submitBtn = document.getElementById('submitBtn');
         const kategoriSelect = document.getElementById('kategori');
         const produkSelect = document.getElementById('produk');
@@ -171,8 +174,11 @@
         const orderIdText = document.getElementById('orderIdText');
         const statusPesananDiv = document.getElementById('statusPesanan');
         let nominalIsiSaldo = 0;
+        let saldoCheckTimeout = null;
 
+        // Fungsi pembantu (helper functions)
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        
         const normalizePhone = (num) => {
             const cleanNum = String(num).trim().replace(/[^0-9]/g, '');
             if (cleanNum.startsWith('0')) {
@@ -180,107 +186,147 @@
             }
             return cleanNum;
         };
+        
         const showNotification = (message, type = 'error') => {
             formNotification.textContent = message;
             formNotification.className = `notification ${type}`;
             formNotification.style.display = 'block';
         };
-        const hideNotification = () => { formNotification.style.display = 'none'; };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadInitialData();
-            kategoriSelect.addEventListener('change', handleCategoryChange);
-            produkSelect.addEventListener('change', handleProductSelection);
-            document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
-            waAktifInput.addEventListener('input', checkResellerSaldo);
-        });
         
-        function loadInitialData() {
-            db.ref('produk').once('value').then(snapshot => {
-                const data = snapshot.val() || {};
-                kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-                for (const kategori in data) {
-                    kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-                }
-            });
-        }
-
-        function handleCategoryChange() {
-            resetFormState();
-            const kategori = kategoriSelect.value;
-            if (!kategori) return;
-            produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-            db.ref(`produk/${kategori}`).once('value').then(snapshot => {
-                const data = snapshot.val() || {};
-                const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
-                sortedVarian.forEach(nama => {
-                    produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
-                });
-            });
-        }
-
-        function resetFormState() {
+        const hideNotification = () => { formNotification.style.display = 'none'; };
+        
+        const resetFormState = () => {
             produkTerpilihData = null;
             infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
             submitBtn.disabled = true;
             submitBtn.textContent = 'Pilih Produk Dahulu';
             hideNotification();
+        };
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInitialData();
+            kategoriSelect.addEventListener('change', handleCategoryChange);
+            produkSelect.addEventListener('change', handleProductSelection);
+            document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
+            waAktifInput.addEventListener('input', () => {
+                clearTimeout(saldoCheckTimeout);
+                saldoCheckTimeout = setTimeout(checkResellerSaldo, 500); // Tunda 500ms
+            });
+        });
+        
+        // --- Fungsi Utama ---
+
+        // Memuat kategori produk dari Firebase
+        async function loadInitialData() {
+            try {
+                const snapshot = await db.ref('produk').once('value');
+                const data = snapshot.val() || {};
+                kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
+                for (const kategori in data) {
+                    kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+                }
+            } catch (error) {
+                console.error("Error loading categories:", error);
+                showNotification("Gagal memuat kategori produk. Silakan refresh halaman.", "error");
+            }
         }
 
-        function handleProductSelection() {
+        // Menangani perubahan kategori
+        async function handleCategoryChange() {
+            resetFormState();
+            const kategori = kategoriSelect.value;
+            if (!kategori) {
+                produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+                return;
+            }
+            
+            try {
+                produkSelect.innerHTML = '<option value="">Memuat produk...</option>';
+                const snapshot = await db.ref(`produk/${kategori}`).once('value');
+                const data = snapshot.val() || {};
+                const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
+                
+                produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+                sortedVarian.forEach(nama => {
+                    produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+                });
+            } catch (error) {
+                console.error("Error loading products:", error);
+                showNotification("Gagal memuat produk. Coba pilih kategori lain.", "error");
+            }
+        }
+
+        // Menangani pemilihan produk
+        async function handleProductSelection() {
             const kategori = kategoriSelect.value;
             const produk = produkSelect.value;
             if (!produk) {
                 resetFormState();
                 return;
             }
+            
             infoProduk.innerHTML = 'Memuat detail produk...';
             submitBtn.disabled = true;
             submitBtn.textContent = '...';
-            db.ref(`produk/${kategori}/${produk}`).once('value', snapshot => {
+            
+            try {
+                const snapshot = await db.ref(`produk/${kategori}/${produk}`).once('value');
                 if (!snapshot.exists()) {
                     infoProduk.innerHTML = 'Produk tidak ditemukan.';
                     return;
                 }
+                
                 produkTerpilihData = snapshot.val();
                 const hargaReseller = parseFloat(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
                 const stok = parseInt(produkTerpilihData.stok || 0);
                 
                 if (stok <= 0) {
                     submitBtn.textContent = 'Stok Habis';
-                    submitBtn.disabled = true;
                     infoProduk.innerHTML = `<b class="text-danger">Stok saat ini habis.</b><br><b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}`;
                 } else {
                     submitBtn.textContent = `Beli dengan Saldo`;
                     submitBtn.disabled = false;
                     infoProduk.innerHTML = `<b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${stok}`;
                 }
-            });
+            } catch (error) {
+                console.error("Error selecting product:", error);
+                infoProduk.innerHTML = 'Gagal memuat detail produk.';
+            }
         }
         
+        // Memeriksa saldo reseller
         async function checkResellerSaldo() {
-            const waInput = document.getElementById('waAktif');
-            const nomorWA = normalizePhone(waInput.value);
-            if (nomorWA.length > 10) {
-                try {
-                    const snapshot = await db.ref('resellers/' + nomorWA).once('value');
-                    const data = snapshot.val();
-                    const saldo = parseInt(data && data.saldo) || 0;
-                    saldoInfoDiv.innerHTML = `<p><strong>Saldo Anda:</strong> <span style="color:var(--success); font-weight:700;">${formatRupiah(saldo)}</span></p>`;
-                } catch (error) {
-                    console.error("Error checking saldo:", error);
-                    saldoInfoDiv.innerHTML = `<p class="text-danger">Gagal memuat saldo. Silakan coba lagi.</p>`;
-                }
-            } else {
+            const waInput = waAktifInput.value.trim();
+            if (!waInput) {
                 saldoInfoDiv.innerHTML = `<p>Masukkan nomor WhatsApp Anda untuk melihat saldo.</p>`;
+                return;
+            }
+            
+            const nomorWA = normalizePhone(waInput);
+            if (nomorWA.length < 10) {
+                saldoInfoDiv.innerHTML = `<p>Nomor WhatsApp tidak valid.</p>`;
+                return;
+            }
+
+            try {
+                const snapshot = await db.ref('resellers/' + nomorWA).once('value');
+                const data = snapshot.val();
+                const saldo = parseInt(data && data.saldo) || 0;
+                saldoInfoDiv.innerHTML = `<p><strong>Saldo Anda:</strong> <span style="color:var(--success); font-weight:700;">${formatRupiah(saldo)}</span></p>`;
+            } catch (error) {
+                console.error("Error checking saldo:", error);
+                saldoInfoDiv.innerHTML = `<p class="text-danger">Gagal memuat saldo. Silakan coba lagi.</p>`;
             }
         }
 
+        // Menangani pengiriman pesanan
         async function handleOrderSubmit(e) {
             e.preventDefault();
             hideNotification();
+            
             if (submitBtn.disabled || !produkTerpilihData) return;
-
+            
             const nomor = document.getElementById('nomor').value.trim();
             const waAktif = normalizePhone(waAktifInput.value.trim());
             const kategori = kategoriSelect.value;
@@ -331,6 +377,7 @@
                     // Jika pengurangan stok gagal, kembalikan saldo
                     await resellerRef.transaction(currentData => {
                         const saldo = parseInt(currentData.saldo) + hargaProduk;
+                        if (!currentData) currentData = {};
                         currentData.saldo = saldo;
                         return currentData;
                     });
@@ -376,6 +423,7 @@
             }
         }
         
+        // --- Fungsi Modal dan Lainnya ---
         window.cekStatus = async () => {
             const id = document.getElementById('idCek').value.trim();
             if (!id) return;
