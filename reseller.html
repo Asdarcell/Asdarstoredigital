@@ -245,6 +245,17 @@
             border-radius: 8px;
             display: none;
         }
+        /* Tambahan untuk pesan reseller tidak terdaftar */
+        #resellerPanel {
+            display: none; /* Sembunyikan panel secara default */
+        }
+        #notResellerMessage {
+            text-align: center;
+            padding: 50px;
+            margin-top: 50px;
+            background-color: var(--surface);
+            border-radius: 12px;
+        }
     </style>
 </head>
 <body>
@@ -252,51 +263,59 @@
         <div class="header" data-aos="fade-down">
             <h1>Panel Reseller</h1>
             <div class="header-buttons">
-                <button id="logoutBtn" class="btn-logout">Keluar</button>
+                <button id="logoutBtn" class="btn-logout" style="display:none;">Keluar</button>
                 <a href="#" class="btn-isi-saldo" onclick="showIsiSaldoModal()">Isi Saldo</a>
             </div>
         </div>
 
-        <div class="card" data-aos="fade-up">
-            <h2>Detail Akun</h2>
-            <div id="userInfo" class="info-panel">
-                <p>Memuat informasi akun...</p>
-            </div>
+        <div id="notResellerMessage" style="display:none;">
+            <h2>Akses Ditolak</h2>
+            <p>Anda belum terdaftar sebagai reseller. Silakan hubungi admin untuk mendaftar.</p>
+            <a href="index.html" class="btn-beranda">Kembali ke Beranda</a>
         </div>
 
-        <div class="card" data-aos="fade-up">
-            <h2>Pesan Produk</h2>
-            <div id="formNotification" class="notification error"></div>
-            
-            <form id="formPesanan">
-                <label for="nomor">Nomor HP / ID Game</label>
-                <input type="text" id="nomor" placeholder="Cth: 081234567890 atau ID Anda" required>
-                
-                <label for="kategori">Kategori Produk</label>
-                <select id="kategori" required>
-                    <option value="">Pilih Kategori</option>
-                </select>
-
-                <label for="produk">Produk</label>
-                <select id="produk" required>
-                    <option value="">Pilih Produk Dahulu</option>
-                </select>
-                
-                <div class="info-panel" id="infoProduk">
-                    Harga dan deskripsi akan muncul di sini.
+        <div id="resellerPanel">
+            <div class="card" data-aos="fade-up">
+                <h2>Detail Akun</h2>
+                <div id="userInfo" class="info-panel">
+                    <p>Memuat informasi akun...</p>
                 </div>
-                
-                <button type="submit" id="submitBtn" class="btn-submit" disabled>Pilih Produk Dahulu</button>
-            </form>
-        </div>
-
-        <div class="card" data-aos="fade-up">
-            <h2>Cek Status Pesanan</h2>
-            <div class="form-cek-status">
-                <input type="text" id="idCek" placeholder="Masukkan ID Pesanan">
-                <button type="button" class="btn-cek" onclick="cekStatus()">Cek</button>
             </div>
-            <div id="statusPesanan" class="status-container"></div>
+
+            <div class="card" data-aos="fade-up">
+                <h2>Pesan Produk</h2>
+                <div id="formNotification" class="notification error"></div>
+                
+                <form id="formPesanan">
+                    <label for="nomor">Nomor HP / ID Game</label>
+                    <input type="text" id="nomor" placeholder="Cth: 081234567890 atau ID Anda" required>
+                    
+                    <label for="kategori">Kategori Produk</label>
+                    <select id="kategori" required>
+                        <option value="">Pilih Kategori</option>
+                    </select>
+
+                    <label for="produk">Produk</label>
+                    <select id="produk" required>
+                        <option value="">Pilih Produk Dahulu</option>
+                    </select>
+                    
+                    <div class="info-panel" id="infoProduk">
+                        Harga dan deskripsi akan muncul di sini.
+                    </div>
+                    
+                    <button type="submit" id="submitBtn" class="btn-submit" disabled>Pilih Produk Dahulu</button>
+                </form>
+            </div>
+
+            <div class="card" data-aos="fade-up">
+                <h2>Cek Status Pesanan</h2>
+                <div class="form-cek-status">
+                    <input type="text" id="idCek" placeholder="Masukkan ID Pesanan">
+                    <button type="button" class="btn-cek" onclick="cekStatus()">Cek</button>
+                </div>
+                <div id="statusPesanan" class="status-container"></div>
+            </div>
         </div>
     </div>
 
@@ -344,8 +363,8 @@
         const db = firebase.database();
         
         let produkTerpilihData = null;
-        let currentUser = null; // Variabel untuk menyimpan data pengguna yang login
-        const WA_ADMIN = "6281234567890"; // Ganti dengan nomor WhatsApp admin Anda
+        let currentUser = null;
+        const WA_ADMIN = "6281234567890";
 
         const submitBtn = document.getElementById('submitBtn');
         const kategoriSelect = document.getElementById('kategori');
@@ -357,6 +376,8 @@
         const successModal = document.getElementById('successModal');
         const orderIdText = document.getElementById('orderIdText');
         const statusPesananDiv = document.getElementById('statusPesanan');
+        const resellerPanel = document.getElementById('resellerPanel');
+        const notResellerMessage = document.getElementById('notResellerMessage');
         let nominalIsiSaldo = 0;
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -374,31 +395,44 @@
             hideNotification();
         };
 
-        // --- Pengecekan status login pengguna ---
+        // --- Pengecekan status login dan verifikasi reseller ---
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // Pengguna sudah login
                 currentUser = user;
-                document.getElementById('logoutBtn').style.display = 'block';
                 
-                // Tampilkan info pengguna
-                userInfoDiv.innerHTML = `<p><strong>Email:</strong> ${currentUser.email}</p><p><strong>Saldo:</strong> <span id="saldoDisplay">Memuat...</span></p>`;
-
-                // Ambil saldo dari database
-                db.ref('resellers/' + currentUser.uid).on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    const saldo = parseInt(data && data.saldo) || 0;
-                    document.getElementById('saldoDisplay').textContent = formatRupiah(saldo);
-                });
-
-                // Muat data produk
-                loadInitialData();
+                // Cek apakah pengguna terdaftar di node 'resellers'
+                const resellerRef = db.ref('resellers/' + currentUser.uid);
+                const snapshot = await resellerRef.once('value');
+                
+                if (snapshot.exists()) {
+                    // Pengguna adalah reseller, tampilkan panel
+                    resellerPanel.style.display = 'block';
+                    notResellerMessage.style.display = 'none';
+                    document.getElementById('logoutBtn').style.display = 'block';
+                    
+                    // Muat info akun dan produk
+                    loadResellerData(currentUser.uid);
+                    loadInitialData();
+                } else {
+                    // Pengguna bukan reseller, sembunyikan panel
+                    resellerPanel.style.display = 'none';
+                    notResellerMessage.style.display = 'block';
+                    document.getElementById('logoutBtn').style.display = 'block'; // Tetap tampilkan tombol logout
+                }
             } else {
                 // Pengguna belum login, alihkan ke halaman login
                 window.location.href = 'login.html';
             }
         });
         
+        function loadResellerData(uid) {
+             db.ref('resellers/' + uid).on('value', (snapshot) => {
+                const data = snapshot.val();
+                const saldo = parseInt(data && data.saldo) || 0;
+                userInfoDiv.innerHTML = `<p><strong>Email:</strong> ${currentUser.email}</p><p><strong>Saldo:</strong> <span id="saldoDisplay">${formatRupiah(saldo)}</span></p>`;
+            });
+        }
+
         // Fungsi untuk logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
@@ -417,6 +451,7 @@
         });
         
         async function loadInitialData() {
+            // ... (logika load kategori dan produk sama seperti sebelumnya) ...
             try {
                 const snapshot = await db.ref('produk').once('value');
                 const data = snapshot.val() || {};
@@ -431,6 +466,7 @@
         }
 
         async function handleCategoryChange() {
+            // ... (logika pemilihan kategori dan produk sama seperti sebelumnya) ...
             resetFormState();
             const kategori = kategoriSelect.value;
             if (!kategori) {
@@ -455,6 +491,7 @@
         }
 
         async function handleProductSelection() {
+            // ... (logika detail produk sama seperti sebelumnya) ...
             const kategori = kategoriSelect.value;
             const produk = produkSelect.value;
             if (!produk) {
@@ -492,6 +529,7 @@
         }
         
         async function handleOrderSubmit(e) {
+            // ... (logika transaksi sama seperti sebelumnya) ...
             e.preventDefault();
             hideNotification();
             
@@ -544,7 +582,7 @@
                         const orderId = "P" + Date.now();
                         await db.ref('pesanan/' + orderId).set({
                             id: orderId,
-                            reseller: currentUser.email, // Sekarang menggunakan email untuk identifikasi
+                            reseller: currentUser.email,
                             idGame: nomor,
                             kategori: kategori,
                             produk: produk,
@@ -591,6 +629,7 @@
         }
         
         window.cekStatus = async () => {
+            // ... (logika cek status sama seperti sebelumnya) ...
             const id = document.getElementById('idCek').value.trim();
             if (!id) return;
             
