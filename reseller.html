@@ -44,6 +44,10 @@
             font-size: 1.8rem;
             margin: 0;
         }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
         .btn-isi-saldo {
             background-color: var(--success);
             color: white;
@@ -59,7 +63,7 @@
         .btn-isi-saldo:hover {
             background-color: #2F855A;
         }
-        .btn-beranda {
+        .btn-beranda, .btn-logout {
             background-color: var(--primary);
             color: white;
             border: none;
@@ -71,7 +75,7 @@
             text-align: center;
             transition: background-color 0.3s;
         }
-        .btn-beranda:hover {
+        .btn-beranda:hover, .btn-logout:hover {
             background-color: #434190;
         }
         .card {
@@ -245,24 +249,25 @@
 <body>
     <div class="container">
         <div class="header" data-aos="fade-down">
-            <h1>Asdar Store Digital</h1>
-            <div>
-                <a href="index.html" class="btn-beranda">Beranda</a>
+            <h1>Panel Reseller</h1>
+            <div class="header-buttons">
+                <button id="logoutBtn" class="btn-logout">Keluar</button>
                 <a href="#" class="btn-isi-saldo" onclick="showIsiSaldoModal()">Isi Saldo</a>
             </div>
         </div>
 
         <div class="card" data-aos="fade-up">
-            <h2>Panel Reseller</h2>
-            <div id="formNotification" class="notification error"></div>
-            <div class="info-panel" id="saldoInfo">
-                <p>Masukkan nomor WhatsApp Anda untuk melihat saldo.</p>
+            <h2>Detail Akun</h2>
+            <div id="userInfo" class="info-panel">
+                <p>Memuat informasi akun...</p>
             </div>
+        </div>
+
+        <div class="card" data-aos="fade-up">
+            <h2>Pesan Produk</h2>
+            <div id="formNotification" class="notification error"></div>
             
             <form id="formPesanan">
-                <label for="waAktif">Nomor WhatsApp Aktif</label>
-                <input type="text" id="waAktif" placeholder="Cth: 081234567890 (awali 08...)" required>
-                
                 <label for="nomor">Nomor HP / ID Game</label>
                 <input type="text" id="nomor" placeholder="Cth: 081234567890 atau ID Anda" required>
                 
@@ -321,6 +326,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
@@ -333,9 +339,11 @@
             projectId: "asdarstoredigitalll-d89c4",
         };
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.database();
         
         let produkTerpilihData = null;
+        let currentUser = null; // Variabel untuk menyimpan data pengguna yang login
         const WA_ADMIN = "6281234567890"; // Ganti dengan nomor WhatsApp admin Anda
 
         const submitBtn = document.getElementById('submitBtn');
@@ -343,24 +351,15 @@
         const produkSelect = document.getElementById('produk');
         const infoProduk = document.getElementById('infoProduk');
         const formNotification = document.getElementById('formNotification');
-        const waAktifInput = document.getElementById('waAktif');
-        const saldoInfoDiv = document.getElementById('saldoInfo');
+        const userInfoDiv = document.getElementById('userInfo');
+        const saldoInfoDiv = document.getElementById('saldoInfo'); // Ini akan kita ubah
         const isiSaldoModal = document.getElementById('isiSaldoModal');
         const successModal = document.getElementById('successModal');
         const orderIdText = document.getElementById('orderIdText');
         const statusPesananDiv = document.getElementById('statusPesanan');
         let nominalIsiSaldo = 0;
-        let saldoCheckTimeout = null;
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
-        
-        // --- FUNGSI normalizePhone() YANG SUDAH DIPERBAIKI ---
-        const normalizePhone = (num) => {
-            const cleanNum = String(num).trim().replace(/[^0-9]/g, '');
-            return cleanNum;
-        };
-        // --- AKHIR FUNGSI normalizePhone() YANG DIPERBAIKI ---
-        
         const showNotification = (message, type = 'error') => {
             formNotification.textContent = message;
             formNotification.className = `notification ${type}`;
@@ -375,15 +374,47 @@
             hideNotification();
         };
 
+        // --- Pengecekan status login pengguna ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // Pengguna sudah login
+                currentUser = user;
+                document.getElementById('logoutBtn').style.display = 'block';
+                document.getElementById('waAktifInput')?.remove(); // Hapus input lama
+                
+                // Tampilkan info pengguna
+                userInfoDiv.innerHTML = `<p><strong>Email:</strong> ${currentUser.email}</p><p><strong>Saldo:</strong> <span id="saldoDisplay">Memuat...</span></p>`;
+
+                // Ambil saldo dari database
+                db.ref('resellers/' + currentUser.uid).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const saldo = parseInt(data && data.saldo) || 0;
+                    document.getElementById('saldoDisplay').textContent = formatRupiah(saldo);
+                });
+
+                // Muat data produk
+                loadInitialData();
+            } else {
+                // Pengguna belum login, alihkan ke halaman login
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Fungsi untuk logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Gagal logout:", error);
+                alert("Gagal logout. Silakan coba lagi.");
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
-            loadInitialData();
             kategoriSelect.addEventListener('change', handleCategoryChange);
             produkSelect.addEventListener('change', handleProductSelection);
             document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
-            waAktifInput.addEventListener('input', () => {
-                clearTimeout(saldoCheckTimeout);
-                saldoCheckTimeout = setTimeout(checkResellerSaldo, 500);
-            });
         });
         
         async function loadInitialData() {
@@ -461,43 +492,18 @@
             }
         }
         
-        async function checkResellerSaldo() {
-            const waInput = waAktifInput.value.trim();
-            if (!waInput) {
-                saldoInfoDiv.innerHTML = `<p>Masukkan nomor WhatsApp Anda untuk melihat saldo.</p>`;
-                return;
-            }
-            
-            const nomorWA = normalizePhone(waInput);
-            if (nomorWA.length < 10) {
-                saldoInfoDiv.innerHTML = `<p>Nomor WhatsApp tidak valid.</p>`;
-                return;
-            }
-
-            try {
-                const snapshot = await db.ref('resellers/' + nomorWA).once('value');
-                const data = snapshot.val();
-                const saldo = parseInt(data && data.saldo) || 0;
-                saldoInfoDiv.innerHTML = `<p><strong>Saldo Anda:</strong> <span style="color:var(--success); font-weight:700;">${formatRupiah(saldo)}</span></p>`;
-            } catch (error) {
-                console.error("Error checking saldo:", error);
-                saldoInfoDiv.innerHTML = `<p class="text-danger">Gagal memuat saldo. Silakan coba lagi.</p>`;
-            }
-        }
-
         async function handleOrderSubmit(e) {
             e.preventDefault();
             hideNotification();
             
-            if (submitBtn.disabled || !produkTerpilihData) return;
+            if (submitBtn.disabled || !produkTerpilihData || !currentUser) return;
             
             const nomor = document.getElementById('nomor').value.trim();
-            const waAktif = normalizePhone(waAktifInput.value.trim());
             const kategori = kategoriSelect.value;
             const produk = produkSelect.value;
             const hargaProduk = parseInt(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
 
-            if (!waAktif || !nomor || !kategori || !produk) {
+            if (!nomor || !kategori || !produk) {
                 showNotification("Harap lengkapi semua data.", "error");
                 return;
             }
@@ -506,7 +512,7 @@
             submitBtn.textContent = 'Memproses...';
 
             try {
-                const resellerRef = db.ref('resellers/' + waAktif);
+                const resellerRef = db.ref('resellers/' + currentUser.uid);
                 const produkRef = db.ref(`produk/${kategori}/${produk}`);
 
                 const resellerResult = await resellerRef.transaction(currentData => {
@@ -539,7 +545,7 @@
                         const orderId = "P" + Date.now();
                         await db.ref('pesanan/' + orderId).set({
                             id: orderId,
-                            reseller: waAktif,
+                            reseller: currentUser.email, // Sekarang menggunakan email untuk identifikasi
                             idGame: nomor,
                             kategori: kategori,
                             produk: produk,
@@ -552,12 +558,12 @@
                         orderIdText.textContent = orderId;
                         successModal.style.display = 'flex';
                         
-                        const pesanWa = `Halo Admin, ada pesanan baru dari reseller:\n\n*ID Pesanan:* ${orderId}\n*Reseller:* ${waAktif}\n*Produk:* ${produk}\n*ID Game:* ${nomor}\n*Harga:* ${formatRupiah(hargaProduk)}\n\nLink Cepat untuk Memproses:\nhttps://sdarcell.github.io/adminpanelreseller.html?orderId=${orderId}`;
+                        const pesanWa = `Halo Admin, ada pesanan baru dari reseller:\n\n*ID Pesanan:* ${orderId}\n*Reseller:* ${currentUser.email}\n*Produk:* ${produk}\n*ID Game:* ${nomor}\n*Harga:* ${formatRupiah(hargaProduk)}\n\nLink Cepat untuk Memproses:\nhttps://sdarcell.github.io/adminpanelreseller.html?orderId=${orderId}`;
                         window.open(`https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(pesanWa)}`, '_blank');
                         
                         document.getElementById('formPesanan').reset();
                         resetFormState();
-                        checkResellerSaldo();
+                        // checkResellerSaldo() tidak lagi dibutuhkan
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } else {
                         await resellerRef.transaction(currentData => {
@@ -622,9 +628,8 @@
         };
         
         window.showIsiSaldoModal = () => {
-            const wa = normalizePhone(waAktifInput.value);
-            if (!wa || wa.length < 10) {
-                alert('Harap masukkan nomor WhatsApp Anda di form utama terlebih dahulu.');
+            if (!currentUser) {
+                alert('Silakan login terlebih dahulu.');
                 return;
             }
             isiSaldoModal.style.display = 'flex';
@@ -642,18 +647,16 @@
         };
 
         window.kirimBuktiTransfer = () => {
-            const wa = normalizePhone(waAktifInput.value);
-            const nominalLainnya = parseInt(document.getElementById('nominalLainnya').value);
-            if (!wa || wa.length < 10) {
-                alert('Harap masukkan nomor WhatsApp Anda.');
+            if (!currentUser) {
+                alert('Silakan login terlebih dahulu.');
                 return;
             }
-            const jumlah = nominalIsiSaldo > 0 ? nominalIsiSaldo : nominalLainnya;
+            const jumlah = nominalIsiSaldo > 0 ? nominalIsiSaldo : parseInt(document.getElementById('nominalLainnya').value);
             if (isNaN(jumlah) || jumlah <= 0) {
                 alert('Harap pilih nominal atau masukkan jumlah yang valid.');
                 return;
             }
-            const message = encodeURIComponent(`Halo admin, saya mau isi saldo reseller sebesar ${formatRupiah(jumlah)}. Nomor WA saya ${wa}.`);
+            const message = encodeURIComponent(`Halo admin, saya mau isi saldo reseller sebesar ${formatRupiah(jumlah)}. Email saya ${currentUser.email}.`);
             const url = `https://wa.me/${WA_ADMIN}?text=${message}`;
             window.open(url, '_blank');
             hideIsiSaldoModal();
