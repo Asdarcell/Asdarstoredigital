@@ -3,105 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Reseller - Asdar Store</title>
+    <title>Dashboard Reseller - Asdar Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --light-gray: #f8f9fa;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        body {
-            background-color: var(--light-gray);
-            font-family: 'Poppins', sans-serif;
-        }
+        :root { --primary-color: #0d6efd; --light-gray: #f8f9fa; --shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+        body { background-color: var(--light-gray); font-family: 'Poppins', sans-serif; }
         .container { max-width: 500px; }
         .card { border-radius: 12px; box-shadow: var(--shadow); border: none; }
     </style>
 </head>
 <body>
-
 <div class="container py-5">
     <div class="card p-4">
-        <div class="text-center">
-            <h2 class="mb-4">Daftar Reseller</h2>
-            <p class="text-muted">Isi formulir di bawah untuk bergabung sebagai reseller.</p>
+        <div id="login-form">
+            <h2 class="mb-4">Login Reseller</h2>
+            <form id="resellerLoginForm">
+                <div class="mb-3"><input type="email" class="form-control" id="loginEmail" placeholder="Email" required></div>
+                <div class="mb-3"><input type="password" class="form-control" id="loginPassword" placeholder="Password" required></div>
+                <button type="submit" class="btn btn-primary w-100">Masuk</button>
+            </form>
+            <p class="mt-3">Belum punya akun? <a href="register-reseller.html">Daftar di sini</a></p>
         </div>
-        <form id="resellerRegistrationForm">
-            <div class="mb-3">
-                <label for="namaToko" class="form-label">Nama Toko</label>
-                <input type="text" class="form-control" id="namaToko" required>
+        
+        <div id="reseller-dashboard" style="display: none;">
+            <div class="text-center mb-4"><h2 class="mb-2">Halo, <span id="namaToko"></span></h2><p class="text-muted">Selamat datang di dashboard Anda.</p></div>
+            <div class="row g-2 mb-4 text-center">
+                <div class="col-6"><div class="p-3 bg-light rounded"><small class="text-muted">Tier</small><h4 id="resellerTier"></h4></div></div>
+                <div class="col-6"><div class="p-3 bg-light rounded"><small class="text-muted">Saldo</small><h4 id="resellerSaldo"></h4></div></div>
             </div>
-            <div class="mb-3">
-                <label for="regEmail" class="form-label">Email</label>
-                <input type="email" class="form-control" id="regEmail" required>
-            </div>
-            <div class="mb-3">
-                <label for="regPassword" class="form-label">Password</label>
-                <input type="password" class="form-control" id="regPassword" required>
-            </div>
-            <div class="mb-3">
-                <label for="tier" class="form-label">Pilih Paket Reseller</label>
-                <select class="form-select" id="tier" required>
-                    <option value="">Pilih Tier</option>
-                    <option value="Tier B">Tier B (Top Up 50k - Diskon 10%)</option>
-                    <option value="Tier A">Tier A (Top Up 100k - Diskon 15%)</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Daftar Sekarang</button>
-        </form>
-        <p class="mt-3 text-center">Sudah punya akun? <a href="reseller.html">Login di sini</a></p>
+            <h4>Informasi Pembayaran</h4>
+            <ul id="payment-list" class="list-group"><li>Memuat...</li></ul>
+            <button class="btn btn-danger mt-4 w-100" onclick="logout()">Keluar</button>
+        </div>
+
+        <div id="access-denied" style="display: none;">
+            <div class="text-center text-danger"><h2 class="mb-3">Akses Ditolak</h2><p class="lead">Akun Anda masih menunggu persetujuan dari admin. Silakan coba lagi nanti.</p></div>
+        </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-    // Pastikan konfigurasi ini SAMA persis dengan yang di file admin.html
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", projectId: "asdarstoredigitalll-d89c4",
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const dbFirestore = firebase.firestore();
-
-    document.getElementById('resellerRegistrationForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const namaToko = document.getElementById('namaToko').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const tier = document.getElementById('tier').value;
-
-        try {
-            // Ini membuat akun pengguna di Firebase Authentication
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            const uid = userCredential.user.uid;
-
-            // Ini menyimpan data pengguna ke Firestore, sehingga muncul di panel admin
-            await dbFirestore.collection('resellers').doc(uid).set({
-                namaToko: namaToko,
-                email: email,
-                tier: tier,
-                saldo: 0,
-                isApproved: false, // Akun reseller perlu disetujui admin
-                bergabungPada: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            alert('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.');
-            window.location.href = 'reseller.html'; // Redirect ke halaman login
-        } catch (error) {
-            alert('Pendaftaran Gagal: ' + error.message);
-        }
+    const auth = firebase.auth(); const dbFirestore = firebase.firestore(); const db = firebase.database();
+    const loginFormEl = document.getElementById('login-form');
+    const accessDeniedEl = document.getElementById('access-denied'); const dashboardEl = document.getElementById('reseller-dashboard');
+    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+    const showSection = (section) => {
+        loginFormEl.style.display = 'none'; accessDeniedEl.style.display = 'none'; dashboardEl.style.display = 'none';
+        section.style.display = 'block';
+    };
+    async function loadPaymentMethods() {
+        const paymentList = document.getElementById('payment-list');
+        const snapshot = await db.ref('infoPembayaran').once('value');
+        const payments = snapshot.val() || {};
+        paymentList.innerHTML = Object.entries(payments).length > 0 ? Object.entries(payments).map(([k, v]) => `<li class="list-group-item"><strong>${k}</strong>: ${v.nomor} a.n ${v.nama}</li>`).join('') : `<li>Informasi pembayaran belum tersedia.</li>`;
+    }
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            try {
+                const doc = await dbFirestore.collection('resellers').doc(user.uid).get();
+                if (doc.exists) {
+                    const resellerData = doc.data();
+                    if (resellerData.isApproved) {
+                        document.getElementById('namaToko').textContent = resellerData.namaToko;
+                        document.getElementById('resellerTier').textContent = resellerData.tier;
+                        document.getElementById('resellerSaldo').textContent = formatRupiah(resellerData.saldo);
+                        showSection(dashboardEl);
+                        loadPaymentMethods();
+                    } else { showSection(accessDeniedEl); }
+                } else { showSection(loginFormEl); auth.signOut(); }
+            } catch (e) { showSection(loginFormEl); }
+        } else { showSection(loginFormEl); }
     });
+    document.getElementById('resellerLoginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value; const password = document.getElementById('loginPassword').value;
+        try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { alert("Login Gagal: " + error.message); }
+    });
+    function logout() { auth.signOut(); }
 </script>
-
 </body>
 </html>
