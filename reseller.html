@@ -243,8 +243,8 @@
                     return;
                 }
                 produkTerpilihData = snapshot.val();
-                const hargaReseller = produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0;
-                const stok = produkTerpilihData.stok || 0;
+                const hargaReseller = parseFloat(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
+                const stok = parseInt(produkTerpilihData.stok || 0);
                 
                 if (stok <= 0) {
                     submitBtn.textContent = 'Stok Habis';
@@ -265,7 +265,7 @@
                 try {
                     const snapshot = await db.ref('resellers/' + nomorWA).once('value');
                     const data = snapshot.val();
-                    const saldo = (data && data.saldo) || 0;
+                    const saldo = parseInt(data && data.saldo) || 0;
                     saldoInfoDiv.innerHTML = `<p><strong>Saldo Anda:</strong> <span style="color:var(--success); font-weight:700;">${formatRupiah(saldo)}</span></p>`;
                 } catch (error) {
                     console.error("Error checking saldo:", error);
@@ -285,7 +285,7 @@
             const waAktif = normalizePhone(waAktifInput.value.trim());
             const kategori = kategoriSelect.value;
             const produk = produkSelect.value;
-            const hargaProduk = parseFloat(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
+            const hargaProduk = parseInt(produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0);
 
             if (!waAktif || !nomor || !kategori || !produk) {
                 showNotification("Harap lengkapi semua data.", "error");
@@ -299,18 +299,17 @@
                 // Gunakan transaction untuk pemotongan saldo yang aman
                 const resellerRef = db.ref('resellers/' + waAktif);
                 const resellerResult = await resellerRef.transaction(currentData => {
-                    let currentSaldo = (currentData && currentData.saldo) || 0;
+                    const currentSaldo = parseInt(currentData && currentData.saldo) || 0;
                     if (currentSaldo < hargaProduk) {
-                        showNotification("Maaf, saldo Anda tidak cukup.", "error");
                         return; // Batalkan transaksi
                     }
-                    currentSaldo -= hargaProduk;
                     if (!currentData) currentData = {};
-                    currentData.saldo = currentSaldo;
+                    currentData.saldo = currentSaldo - hargaProduk;
                     return currentData;
                 });
                 
                 if (!resellerResult.committed) {
+                    showNotification("Maaf, saldo Anda tidak cukup.", "error");
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Beli dengan Saldo';
                     return;
@@ -319,23 +318,23 @@
                 // Kurangi stok produk
                 const produkRef = db.ref(`produk/${kategori}/${produk}`);
                 const produkResult = await produkRef.transaction(currentData => {
-                    let stok = (currentData && currentData.stok) || 0;
+                    const stok = parseInt(currentData && currentData.stok) || 0;
                     if (stok <= 0) {
-                        showNotification("Maaf, stok produk ini baru saja habis.", "error");
                         return;
                     }
-                    stok -= 1;
                     if (!currentData) currentData = {};
-                    currentData.stok = stok;
+                    currentData.stok = stok - 1;
                     return currentData;
                 });
 
                 if (!produkResult.committed) {
                     // Jika pengurangan stok gagal, kembalikan saldo
                     await resellerRef.transaction(currentData => {
-                        currentData.saldo += hargaProduk;
+                        const saldo = parseInt(currentData.saldo) + hargaProduk;
+                        currentData.saldo = saldo;
                         return currentData;
                     });
+                    showNotification("Maaf, stok produk ini baru saja habis.", "error");
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Beli dengan Saldo';
                     return;
@@ -397,7 +396,7 @@
                     <p><strong>ID Pesanan:</strong> ${data.id}</p>
                     <p><strong>Status:</strong> <span style="color:${data.status === 'Selesai' ? 'var(--success)' : 'orange'};font-weight:700;">${data.status}</span></p>
                     <p><strong>Produk:</strong> ${data.produk} (${data.kategori})</p>
-                    <p><strong>Nomor/ID:</strong> ${data.idGame}</p>
+                    <p><strong>Nomor/ID:</strong> ${data.idGame || data.nomor}</p>
                     <p><strong>Harga Bayar:</strong> ${formatRupiah(data.harga_bayar)}</p>
                 `;
                 if (data.status === 'Selesai' && data.bukti_url) {
