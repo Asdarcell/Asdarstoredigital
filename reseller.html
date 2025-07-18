@@ -58,6 +58,13 @@
         .saldo-display .amount { font-size: 2.5em; font-weight: 700; color: var(--primary); line-height: 1.2; }
         #logout-btn { background: none; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 8px 15px; border-radius: 8px; cursor: pointer; }
         .dashboard-content { background: var(--card-bg); padding: 30px; border-radius: 15px; }
+        .product-card {
+            background: var(--dark-bg); border: 1px solid var(--border); border-radius: 10px;
+            padding: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .product-card h4 { color: var(--primary); margin-bottom: 5px; }
+        .product-card p { font-size: 0.9em; color: var(--text); margin-bottom: 10px; }
+        .product-card .price { font-size: 1.5em; font-weight: 700; color: var(--light-primary); }
 
         @media (max-width: 820px) {
             .quotes { display: none; }
@@ -122,7 +129,14 @@
         <div class="dashboard-content">
             <h3>Selamat Datang di Dashboard</h3>
             <p>Di sini Anda akan bisa melakukan top up dan memesan produk dengan harga reseller.</p>
-            </div>
+            
+            <hr style="margin: 20px 0; border-color: var(--border);">
+
+            <h3>Katalog Produk</h3>
+            <p style="color: var(--text-muted);">Harga yang tertera adalah harga spesial untuk Anda.</p>
+            <div id="product-list" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-top: 20px;">
+                </div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -145,7 +159,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Elemen Halaman
         const authContainer = document.getElementById('auth-container');
         const dashboardContainer = document.getElementById('dashboard-container');
         const boxPembungkus = document.querySelector('.box-pembungkus');
@@ -158,29 +171,87 @@
             document.getElementById('dashboard-nama-toko').textContent = resellerData.namaToko;
             document.getElementById('dashboard-saldo').textContent = `Rp ${resellerData.saldo.toLocaleString('id-ID')}`;
             document.getElementById('dashboard-email-tier').textContent = `${resellerData.email} (Tier ${resellerData.tier})`;
-        }
 
+            // Panggil fungsi untuk memuat produk setelah dashboard ditampilkan
+            loadProducts(resellerData.diskon);
+        }
+        
         // Fungsi untuk menampilkan halaman login
         function showLogin() {
             authContainer.classList.remove('hidden');
             dashboardContainer.classList.add('hidden');
         }
 
+        // Fungsi untuk menambahkan produk dummy (Hanya dijalankan sekali!)
+        async function addDummyProducts() {
+            const products = [
+                { name: "Paket Netflix Premium", price: 50000, description: "Akses nonton tanpa batas di 4 perangkat." },
+                { name: "Spotify Premium Family", price: 30000, description: "Nikmati jutaan lagu bebas iklan." },
+                { name: "Akun Canva Pro", price: 45000, description: "Desain profesional lebih mudah." },
+                { name: "Ebook Bisnis Digital", price: 25000, description: "Panduan lengkap untuk pemula." }
+            ];
+            
+            const productsRef = db.collection('products');
+            console.log("Menambahkan produk dummy ke Firestore...");
+            for (const product of products) {
+                await productsRef.add(product);
+            }
+            console.log("Produk dummy berhasil ditambahkan!");
+        }
+
+        // Fungsi untuk memuat dan menampilkan produk
+        async function loadProducts(diskonReseller) {
+            const productListDiv = document.getElementById('product-list');
+            productListDiv.innerHTML = 'Memuat produk...';
+
+            try {
+                const snapshot = await db.collection('products').get();
+                
+                if (snapshot.empty) {
+                    productListDiv.innerHTML = '<p style="color: var(--text-muted);">Belum ada produk yang tersedia saat ini.</p>';
+                    // Uncomment baris di bawah ini untuk menambahkan produk dummy
+                    // saat koleksi produk kosong
+                    // addDummyProducts();
+                    return;
+                }
+
+                productListDiv.innerHTML = ''; // Bersihkan tulisan "Memuat produk..."
+                
+                snapshot.forEach(doc => {
+                    const product = doc.data();
+                    const originalPrice = product.price;
+                    const resellerPrice = originalPrice - (originalPrice * diskonReseller / 100);
+
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        <h4>${product.name}</h4>
+                        <p>${product.description}</p>
+                        <div class="price">Rp ${resellerPrice.toLocaleString('id-ID')}</div>
+                    `;
+                    productListDiv.appendChild(productCard);
+                });
+                
+            } catch (error) {
+                console.error("Gagal memuat produk: ", error);
+                productListDiv.innerHTML = '<p style="color: red;">Gagal memuat produk. Silakan coba lagi.</p>';
+            }
+        }
+
         // PENGELOLA STATUS LOGIN (SANGAT PENTING)
-        // Mengecek apakah pengguna sudah login atau belum saat halaman dimuat
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Pengguna sudah login, ambil datanya dari Firestore
                 db.collection('resellers').doc(user.uid).get().then(doc => {
                     if (doc.exists) {
                         showDashboard(doc.data());
                     } else {
-                        // Data tidak ditemukan, mungkin akun user biasa? Logout saja.
                         auth.signOut();
                     }
+                }).catch(error => {
+                    console.error("Gagal mengambil data reseller: ", error);
+                    auth.signOut();
                 });
             } else {
-                // Pengguna belum login, tampilkan form
                 showLogin();
             }
         });
@@ -200,22 +271,20 @@
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // 1. Akun dibuat di Authentication
                     const user = userCredential.user;
-                    // 2. Simpan data tambahan ke database Firestore
                     return db.collection('resellers').doc(user.uid).set({
                         namaToko: namaToko,
                         email: email,
                         tier: tier,
                         diskon: diskon,
-                        saldo: 0, // Saldo awal adalah 0
+                        saldo: 0,
                         uid: user.uid,
                         bergabungPada: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 })
                 .then(() => {
                     alert(`Pendaftaran toko "${namaToko}" berhasil! Silakan login.`);
-                    boxPembungkus.classList.remove('active'); // Kembali ke form login
+                    boxPembungkus.classList.remove('active');
                 })
                 .catch(error => {
                     alert('Pendaftaran Gagal: ' + error.message);
@@ -229,7 +298,7 @@
             const password = document.getElementById('login-pass').value;
             auth.signInWithEmailAndPassword(email, password)
                 .catch(error => {
-                    alert('Login Gagal: ' + error.message);
+                    alert('Login Gagal: ' +  error.message);
                 });
         });
         
