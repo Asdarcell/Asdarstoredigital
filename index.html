@@ -54,12 +54,7 @@
     hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
     h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
     
-    /* --- CSS BARU UNTUK TOMBOL RESELLER DAN LOGOUT --- */
-    .header-buttons {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    /* --- CSS BARU UNTUK TOMBOL RESELLER --- */
     .reseller-btn {
         display: inline-flex;
         align-items: center;
@@ -77,20 +72,6 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    .logout-btn {
-        background-color: var(--danger);
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 50px;
-        font-size: 0.9em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-    }
-    .logout-btn:hover {
-        background-color: #c0392b;
     }
     
     /* ... CSS lainnya tetap sama ... */
@@ -123,15 +104,10 @@
 <body data-theme="dark">
   <header id="header">
     <h1>Asdar Store Digital</h1>
-    <div id="headerButtons" class="header-buttons">
-      <a href="#" id="resellerLink" class="reseller-btn">
-        <i class="fas fa-user-tie"></i>
-        <span>Reseller</span>
-      </a>
-      <button id="logoutBtn" class="logout-btn" style="display: none;">
-        <i class="fas fa-sign-out-alt"></i> Keluar
-      </button>
-    </div>
+    <a href="reseller.html" class="reseller-btn">
+      <i class="fas fa-user-tie"></i>
+      <span>Reseller</span>
+    </a>
   </header>
 
   <main id="main-content">
@@ -197,9 +173,9 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
+    // --- SCRIPT LENGKAP TANPA PERUBAHAN FUNGSI INTI ---
     AOS.init({ duration: 800, once: true, offset: 50 });
 
     const firebaseConfig = {
@@ -210,7 +186,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
     
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
@@ -225,35 +200,6 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
     const formNotification = document.getElementById('formNotification');
-    const resellerLink = document.getElementById('resellerLink');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    // --- Logika untuk mengecek status login dan menyesuaikan tombol reseller ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            // Pengguna sudah login
-            resellerLink.href = 'reseller.html';
-            resellerLink.style.display = 'inline-flex';
-            logoutBtn.style.display = 'inline-flex';
-        } else {
-            // Pengguna belum login
-            resellerLink.href = 'login.html';
-            resellerLink.style.display = 'inline-flex';
-            logoutBtn.style.display = 'none';
-        }
-    });
-
-    // Fungsi untuk logout dari halaman utama
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            await auth.signOut();
-            alert('Anda telah keluar dari akun reseller.');
-            // onAuthStateChanged akan otomatis mengubah href tombol
-        } catch (error) {
-            console.error("Gagal logout:", error);
-            alert("Gagal logout. Silakan coba lagi.");
-        }
-    });
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
@@ -285,6 +231,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      // PERUBAHAN JS: Menghapus logika tema
       loadInitialData();
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
