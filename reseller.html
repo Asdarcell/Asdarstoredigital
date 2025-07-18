@@ -70,8 +70,8 @@
         /* --- Gaya untuk Dashboard - Tampilan Mirip index.html --- */
         .dashboard-header {
             display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px var(--shadow);
-            flex-wrap: wrap; /* New: Allow wrap on smaller screens */
-            gap: 15px; /* New: Space between items */
+            flex-wrap: wrap; 
+            gap: 15px; 
         }
         .user-info h2, .user-info p { margin: 0; }
         .saldo-display { text-align: right; }
@@ -159,7 +159,7 @@
                     <div class="label">Saldo Anda</div>
                     <div class="amount" id="dashboard-saldo">Rp 0</div>
                 </div>
-                <button id="logout-btn" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <button id="back-to-buyer-btn" class="btn btn-secondary"><i class="fas fa-home"></i> Kembali ke Beranda</button>
             </div>
             
             <div class="dashboard-content">
@@ -214,8 +214,8 @@
         const formNotification = document.getElementById('formNotification');
         
         let produkTerpilihData = null;
-        let resellerData = null; // Store reseller data
-        let resellerUID = null; // Store reseller UID
+        let resellerData = null; 
+        let resellerUID = null; 
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
         const normalizePhone = (num) => {
@@ -260,7 +260,6 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 resellerUID = user.uid;
-                // Ambil data reseller dari Firestore dan pantau perubahannya
                 dbFirestore.collection('resellers').doc(user.uid).onSnapshot(doc => {
                     if (doc.exists) {
                         resellerData = doc.data();
@@ -339,7 +338,9 @@
                     statusEl.className = 'status-message error';
                 });
         });
-        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut(); });
+        document.getElementById('back-to-buyer-btn').addEventListener('click', () => { 
+            window.location.href = 'index.html'; 
+        });
         kategoriSelect.addEventListener('change', handleCategoryChange);
         produkSelect.addEventListener('change', handleProductSelection);
         document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
