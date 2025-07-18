@@ -25,6 +25,7 @@
     .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
     #pesananList, #product-container { max-height: 65vh; overflow-y: auto; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: #f8f9fa; }
+    .hidden { display: none !important; } /* CSS untuk menyembunyikan kontainer */
   </style>
 </head>
 <body>
@@ -49,6 +50,7 @@
   <ul class="nav nav-tabs" id="adminTab" role="tablist">
     <li class="nav-item" role="presentation"><button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-pane" type="button"><i class="fas fa-receipt me-2"></i>Pesanan</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button"><i class="fas fa-box-open me-2"></i>Produk & Promo</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="resellers-tab" data-bs-toggle="tab" data-bs-target="#resellers-pane" type="button"><i class="fas fa-users-cog me-2"></i>Kelola Reseller</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="moderasi-tab" data-bs-toggle="tab" data-bs-target="#moderasi-pane" type="button"><i class="fas fa-comment-check me-2"></i>Moderasi Testimoni</button></li>
     <li class="nav-item" role="presentation"><button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button"><i class="fas fa-cog me-2"></i>Pengaturan Toko</button></li>
   </ul>
@@ -94,6 +96,30 @@
         </div></div>
     </div>
 
+    <div class="tab-pane fade" id="resellers-pane" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-body">
+                <h3 class="mb-3">Kelola Reseller</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nama Toko</th>
+                                <th>Email</th>
+                                <th>Tier</th>
+                                <th>Saldo</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reseller-table-body">
+                            <tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="tab-pane fade" id="moderasi-pane" role="tabpanel">
         <div class="card mt-3"><div class="card-body" id="testimonial-moderation-container">Memuat data moderasi...</div></div>
     </div>
@@ -122,7 +148,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
     // KONFIGURASI SESUAI PERMINTAAN ANDA
     const firebaseConfig = {
@@ -133,6 +159,7 @@
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const dbFirestore = firebase.firestore(); // INI BARU
     
     // KUNCI API IMGBB ANDA
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
@@ -384,6 +411,58 @@
         };
     };
 
+    // START FUNGSI BARU UNTUK KELOLA RESELLER
+    const loadResellers = () => {
+        const resellerTableBody = document.getElementById('reseller-table-body');
+        resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
+        
+        dbFirestore.collection('resellers').orderBy('bergabungPada', 'desc').onSnapshot(snapshot => {
+            resellerTableBody.innerHTML = ''; // Kosongkan tabel
+            if (snapshot.empty) {
+                resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Tidak ada data reseller.</td></tr>';
+                return;
+            }
+            snapshot.forEach(doc => {
+                const reseller = doc.data();
+                const row = document.createElement('tr');
+                
+                const statusColor = reseller.isApproved ? 'text-success' : 'text-danger';
+                const statusText = reseller.isApproved ? 'Disetujui' : 'Menunggu';
+                const buttonHtml = reseller.isApproved ? 
+                    '' :
+                    `<button class="btn btn-success btn-sm" onclick="approveReseller('${reseller.uid}')">Setujui</button>`;
+                const saldoFormatted = formatRupiah(reseller.saldo);
+
+                row.innerHTML = `
+                    <td>${reseller.namaToko}</td>
+                    <td>${reseller.email}</td>
+                    <td>${reseller.tier}</td>
+                    <td>${saldoFormatted}</td>
+                    <td><span class="${statusColor}">${statusText}</span></td>
+                    <td>${buttonHtml}</td>
+                `;
+                resellerTableBody.appendChild(row);
+            });
+        }, err => {
+            console.error("Error loading resellers: ", err);
+            resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
+        });
+    };
+
+    window.approveReseller = async (uid) => {
+        if (await showConfirm('Setujui Reseller', 'Yakin ingin menyetujui reseller ini?')) {
+            try {
+                await dbFirestore.collection('resellers').doc(uid).update({
+                    isApproved: true
+                });
+                showToast("Reseller berhasil disetujui!", 'success');
+            } catch (error) {
+                showToast("Gagal menyetujui reseller: " + error.message, 'error');
+            }
+        }
+    };
+    // END FUNGSI BARU UNTUK KELOLA RESELLER
+
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         document.getElementById('filterStatus').addEventListener('change', renderPesanan);
@@ -398,6 +477,9 @@
         loadProduk();
         loadTestimonials();
         loadContentSettings();
+        
+        // Memuat daftar reseller saat tab diaktifkan
+        document.getElementById('resellers-tab').addEventListener('shown.bs.tab', loadResellers);
     });
 </script>
 </body>
