@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Asdar Store Digital - Dashboard Penjual</title>
+    <title>Asdar Store Digital - Dashboard Admin</title>
     <link rel="icon" href="favicon.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -107,17 +107,22 @@
             color: white;
             transition: opacity 0.2s;
         }
+        .action-btn.tambah { background-color: var(--success); }
+        .action-btn.kurang { background-color: var(--danger); }
         .action-btn.proses { background-color: var(--info); }
         .action-btn.selesai { background-color: var(--success); }
         .action-btn.batal { background-color: var(--danger); }
         .action-btn:hover { opacity: 0.8; }
-
-        .form-manage-product {
+        .form-manage {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
         }
-
+        @media (min-width: 768px) {
+            .form-manage {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
         .toggle-theme {
             background: none;
             border: none;
@@ -125,66 +130,12 @@
             cursor: pointer;
             color: var(--text);
         }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: var(--card);
-            margin: auto;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 5px 15px var(--shadow);
-            position: relative;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .modal-header h4 {
-            margin: 0;
-            color: var(--primary);
-        }
-        .close-btn {
-            color: var(--muted-text);
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @media (min-width: 768px) {
-            .form-manage-product {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
     </style>
 </head>
 
 <body data-theme="dark">
     <header id="header">
-        <h1>Dashboard Penjual</h1>
+        <h1>Dashboard Admin</h1>
         <button id="theme-toggle" class="toggle-theme"><i class="fas fa-sun"></i></button>
     </header>
 
@@ -231,9 +182,42 @@
         </div>
         
         <div data-aos="fade-up" class="section-container">
+            <h2>Manajemen Saldo Reseller</h2>
+            <div class="form-manage">
+                <div>
+                    <label for="waReseller">Nomor WhatsApp Reseller</label>
+                    <input type="tel" id="waReseller" placeholder="Cth: 6281234567890" pattern="^62[0-9]{8,15}$" required>
+                </div>
+                <div>
+                    <label for="jumlahSaldo">Jumlah Saldo (Rp)</label>
+                    <input type="number" id="jumlahSaldo" placeholder="Jumlah" required>
+                </div>
+            </div>
+            <div class="d-grid gap-2 mt-3">
+                <button type="button" class="btn btn-success" id="tambahSaldoBtn">Tambah Saldo</button>
+                <button type="button" class="btn btn-danger" id="kurangiSaldoBtn">Kurangi Saldo</button>
+            </div>
+            <div class="table-responsive mt-4">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nomor WA</th>
+                            <th>Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelReseller">
+                        <tr>
+                            <td colspan="2" style="text-align: center;">Memuat data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div data-aos="fade-up" class="section-container">
             <h2>Manajemen Produk</h2>
             <form id="formProduk">
-                <div class="form-manage-product">
+                <div class="form-manage">
                     <div>
                         <label for="kategoriProduk">Kategori Produk</label>
                         <select id="kategoriProduk" required></select>
@@ -251,7 +235,7 @@
                         <input type="number" id="stokProduk" placeholder="Stok" required>
                     </div>
                 </div>
-                <button type="button" id="updateProdukBtn">Perbarui Produk</button>
+                <button type="button" id="updateProdukBtn" class="btn btn-primary mt-3">Perbarui Produk</button>
             </form>
         </div>
 
@@ -277,16 +261,6 @@
         </div>
     </main>
 
-    <div id="orderModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4>Detail Pesanan</h4>
-                <span class="close-btn">&times;</span>
-            </div>
-            <div id="modalBody"></div>
-        </div>
-    </div>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -303,11 +277,18 @@
         const db = firebase.database();
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        const normalizePhone = (num) => {
+          let n = String(num).trim().replace(/[^0-9]/g, '');
+          if (n.startsWith('0')) return '62' + n.slice(1);
+          if (n.startsWith('62')) return n;
+          return num;
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
             loadPendingTestimonials();
             loadProductManagementData();
+            loadResellerData();
             setupEventListeners();
         });
 
@@ -321,67 +302,55 @@
             document.getElementById('namaProduk').addEventListener('change', handleProductNameChange);
             document.getElementById('updateProdukBtn').addEventListener('click', updateProductData);
 
-            const modal = document.getElementById("orderModal");
-            const closeModal = document.querySelector(".close-btn");
-            closeModal.onclick = () => modal.style.display = "none";
-            window.onclick = (event) => {
-                if (event.target == modal) {
-                    modal.style.display = "none";
-                }
-            };
+            document.getElementById('tambahSaldoBtn').addEventListener('click', () => updateResellerSaldo('tambah'));
+            document.getElementById('kurangiSaldoBtn').addEventListener('click', () => updateResellerSaldo('kurang'));
         }
 
+        // BAGIAN UNTUK DASBOR UTAMA
         function loadDashboardData() {
             db.ref('pesanan').on('value', (snapshot) => {
                 const orders = snapshot.val() || {};
                 const orderList = Object.values(orders);
-
                 let totalOrders = orderList.length;
                 let totalRevenue = orderList.reduce((sum, order) => {
-                    if (order.status === 'Selesai') {
+                    if (order.status === 'Selesai' && order.tipe_pembayaran !== 'Saldo Reseller') {
                         return sum + (order.harga_final || 0);
                     }
                     return sum;
                 }, 0);
                 let uniqueCustomers = new Set(orderList.map(o => o.nama)).size;
-                
                 document.getElementById('totalPesanan').innerText = totalOrders;
                 document.getElementById('totalPendapatan').innerText = formatRupiah(totalRevenue);
                 document.getElementById('totalPelanggan').innerText = uniqueCustomers;
-
                 renderOrderTable(orderList);
             });
         }
-
         function renderOrderTable(orders) {
             const tableBody = document.getElementById('tabelPesanan');
             if (orders.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Belum ada pesanan.</td></tr>`;
                 return;
             }
-
             const html = orders.sort((a,b) => new Date(b.waktu) - new Date(a.waktu)).map(order => `
                 <tr>
                     <td>${order.id || "N/A"}</td>
                     <td>${order.nama}</td>
                     <td>${order.produk}</td>
-                    <td>${formatRupiah(order.harga_final)}</td>
+                    <td>${formatRupiah(order.harga_final || order.harga_bayar || 0)}</td>
                     <td><span class="badge ${getStatusClass(order.status)}">${order.status}</span></td>
                     <td>
-                        <button class="action-btn proses" onclick="updateOrderStatus('${order.id}', 'Selesai')">Selesaikan</button>
+                        <button class="action-btn selesai" onclick="updateOrderStatus('${order.id}', 'Selesai')">Selesaikan</button>
                         <button class="action-btn batal" onclick="updateOrderStatus('${order.id}', 'Batal')">Batalkan</button>
                     </td>
                 </tr>
             `).join('');
             tableBody.innerHTML = html;
         }
-
         function getStatusClass(status) {
             if (status === 'Selesai') return 'selesai';
             if (status === 'Batal') return 'batal';
             return 'pending';
         }
-
         async function updateOrderStatus(orderId, newStatus) {
             if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ${orderId} menjadi ${newStatus}?`)) {
                 return;
@@ -394,46 +363,8 @@
                 alert('Gagal memperbarui status pesanan.');
             }
         }
-        
-        function loadPendingTestimonials() {
-            db.ref('testimonials').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
-                const tableBody = document.getElementById('tabelTestimoni');
-                const testimonials = snapshot.val() || {};
-                const pendingTestiList = Object.keys(testimonials).map(key => ({ id: key, ...testimonials[key] }));
 
-                if (pendingTestiList.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Tidak ada testimoni pending.</td></tr>`;
-                    return;
-                }
-
-                const html = pendingTestiList.map(testi => `
-                    <tr>
-                        <td>${testi.nama}</td>
-                        <td>${testi.isi.length > 50 ? testi.isi.substring(0, 50) + '...' : testi.isi}</td>
-                        <td><span class="badge pending">${testi.status}</span></td>
-                        <td>
-                            <button class="action-btn selesai" onclick="updateTestimonialStatus('${testi.id}', 'disetujui')">Setujui</button>
-                            <button class="action-btn batal" onclick="updateTestimonialStatus('${testi.id}', 'ditolak')">Tolak</button>
-                        </td>
-                    </tr>
-                `).join('');
-                tableBody.innerHTML = html;
-            });
-        }
-        
-        async function updateTestimonialStatus(testiId, newStatus) {
-            if (!confirm(`Apakah Anda yakin ingin ${newStatus === 'disetujui' ? 'menyetujui' : 'menolak'} testimoni ini?`)) {
-                return;
-            }
-            try {
-                await db.ref(`testimonials/${testiId}`).update({ status: newStatus });
-                alert('Status testimoni berhasil diperbarui!');
-            } catch (error) {
-                console.error("Gagal memperbarui status testimoni:", error);
-                alert('Gagal memperbarui status testimoni.');
-            }
-        }
-        
+        // BAGIAN UNTUK MANAJEMEN PRODUK
         function loadProductManagementData() {
             db.ref('produk').once('value').then(snapshot => {
                 const data = snapshot.val() || {};
@@ -444,7 +375,6 @@
                 }
             });
         }
-        
         function handleProductCategoryChange() {
             const kategori = document.getElementById('kategoriProduk').value;
             const namaProdukSelect = document.getElementById('namaProduk');
@@ -459,7 +389,6 @@
                 }
             });
         }
-        
         function handleProductNameChange() {
             const kategori = document.getElementById('kategoriProduk').value;
             const produk = document.getElementById('namaProduk').value;
@@ -472,22 +401,18 @@
                 document.getElementById('stokProduk').value = data.stok || 0;
             });
         }
-        
         async function updateProductData() {
             const kategori = document.getElementById('kategoriProduk').value;
             const produk = document.getElementById('namaProduk').value;
             const harga = parseInt(document.getElementById('hargaProduk').value);
             const stok = parseInt(document.getElementById('stokProduk').value);
-            
             if (!kategori || !produk || isNaN(harga) || isNaN(stok)) {
                 alert('Harap lengkapi semua data produk dengan benar!');
                 return;
             }
-            
             if (!confirm(`Yakin ingin memperbarui harga produk ${produk} menjadi ${formatRupiah(harga)} dan stok menjadi ${stok}?`)) {
                 return;
             }
-            
             try {
                 await db.ref(`produk/${kategori}/${produk}`).update({
                     harga: harga,
@@ -497,6 +422,98 @@
             } catch (error) {
                 console.error("Gagal memperbarui produk:", error);
                 alert('Gagal memperbarui data produk.');
+            }
+        }
+        
+        // BAGIAN UNTUK MANAJEMEN TESTIMONI
+        function loadPendingTestimonials() {
+            db.ref('testimonials').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
+                const tableBody = document.getElementById('tabelTestimoni');
+                const testimonials = snapshot.val() || {};
+                const pendingTestiList = Object.keys(testimonials).map(key => ({ id: key, ...testimonials[key] }));
+                if (pendingTestiList.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Tidak ada testimoni pending.</td></tr>`;
+                    return;
+                }
+                const html = pendingTestiList.map(testi => `
+                    <tr>
+                        <td>${testi.nama}</td>
+                        <td>${testi.isi.length > 50 ? testi.isi.substring(0, 50) + '...' : testi.isi}</td>
+                        <td><span class="badge pending">${testi.status}</span></td>
+                        <td>
+                            <button class="action-btn selesai" onclick="updateTestimonialStatus('${testi.id}', 'disetujui')">Setujui</button>
+                            <button class="action-btn batal" onclick="updateTestimonialStatus('${testi.id}', 'ditolak')">Tolak</button>
+                        </td>
+                    </tr>
+                `).join('');
+                tableBody.innerHTML = html;
+            });
+        }
+        async function updateTestimonialStatus(testiId, newStatus) {
+            if (!confirm(`Apakah Anda yakin ingin ${newStatus === 'disetujui' ? 'menyetujui' : 'menolak'} testimoni ini?`)) {
+                return;
+            }
+            try {
+                await db.ref(`testimonials/${testiId}`).update({ status: newStatus });
+                alert('Status testimoni berhasil diperbarui!');
+            } catch (error) {
+                console.error("Gagal memperbarui status testimoni:", error);
+                alert('Gagal memperbarui status testimoni.');
+            }
+        }
+
+        // BAGIAN BARU UNTUK MANAJEMEN SALDO RESELLER
+        function loadResellerData() {
+            db.ref('resellers').on('value', (snapshot) => {
+                const resellers = snapshot.val() || {};
+                const tableBody = document.getElementById('tabelReseller');
+                const html = Object.keys(resellers).map(wa => `
+                    <tr>
+                        <td>${wa}</td>
+                        <td>${formatRupiah(resellers[wa].saldo)}</td>
+                    </tr>
+                `).join('');
+                tableBody.innerHTML = html || '<tr><td colspan="2" style="text-align: center;">Belum ada data reseller.</td></tr>';
+            });
+        }
+        async function updateResellerSaldo(action) {
+            const waInput = document.getElementById('waReseller');
+            const jumlahInput = document.getElementById('jumlahSaldo');
+            const wa = normalizePhone(waInput.value);
+            const jumlah = parseInt(jumlahInput.value);
+            if (!wa || isNaN(jumlah) || jumlah <= 0) {
+                alert('Harap masukkan nomor WhatsApp dan jumlah saldo yang valid.');
+                return;
+            }
+            const konfirmasi = confirm(`Apakah Anda yakin ingin ${action === 'tambah' ? 'menambah' : 'mengurangi'} saldo sebesar ${formatRupiah(jumlah)} untuk reseller ${wa}?`);
+            if (!konfirmasi) return;
+            try {
+                const resellerRef = db.ref('resellers/' + wa);
+                const result = await resellerRef.transaction(currentData => {
+                    let currentSaldo = (currentData && currentData.saldo) || 0;
+                    if (action === 'tambah') {
+                        currentSaldo += jumlah;
+                    } else if (action === 'kurang') {
+                        if (currentSaldo < jumlah) {
+                            alert('Saldo tidak cukup untuk dikurangi!');
+                            return; // Batalkan transaksi
+                        }
+                        currentSaldo -= jumlah;
+                    }
+                    if (!currentData) currentData = {};
+                    currentData.saldo = currentSaldo;
+                    return currentData;
+                });
+                if (result.committed) {
+                    alert('Saldo reseller berhasil diperbarui!');
+                    waInput.value = '';
+                    jumlahInput.value = '';
+                } else {
+                    alert('Gagal memperbarui saldo.');
+                }
+            } catch (error) {
+                console.error("Error memperbarui saldo:", error);
+                alert('Terjadi kesalahan saat memperbarui saldo.');
             }
         }
     </script>
