@@ -164,22 +164,16 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
-    // KONFIGURASI SESUAI PERMINTAAN ANDA
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", projectId: "asdarstoredigitalll-d89c4",
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
     const dbFirestore = firebase.firestore();
-    
-    // KUNCI API IMGBB ANDA
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
     const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
-
     let allProducts = {}, allDataPesanan = {}, allHakDiskon = {}, confirmModal;
     let selectedId = null;
 
@@ -327,9 +321,7 @@
         const varian = form.varian.value.trim();
         const originalVarian = form.originalVarian.value;
         const data = {
-            harga: Number(form.harga.value),
-            cara: form.cara.value,
-            stok: Number(form.stok.value),
+            harga: Number(form.harga.value), cara: form.cara.value, stok: Number(form.stok.value),
             urutan: form.urutan.value ? Number(form.urutan.value) : Date.now(),
             promo: form['promo-jenis'].value ? { jenis: form['promo-jenis'].value, nilai: Number(form['promo-nilai'].value) } : null
         };
@@ -341,7 +333,6 @@
         form.batalEditBtn.classList.add('d-none');
         form.originalVarian.value = '';
     };
-
     window.editProduk = (kategori, varian) => {
         const p = allProducts[kategori][varian];
         const form = document.getElementById('formProduk');
@@ -352,20 +343,10 @@
         form.stok.value = p.stok;
         form.cara.value = p.cara;
         form.urutan.value = p.urutan || '';
-        if(p.promo) {
-            form['promo-jenis'].value = p.promo.jenis;
-            form['promo-nilai'].value = p.promo.nilai;
-        } else {
-            form['promo-jenis'].value = '';
-            form['promo-nilai'].value = '';
-        }
-        form.batalEditBtn.classList.remove('d-none');
-        document.getElementById('products-tab').click();
-        form.kategori.focus();
+        if(p.promo) { form['promo-jenis'].value = p.promo.jenis; form['promo-nilai'].value = p.promo.nilai; } else { form['promo-jenis'].value = ''; form['promo-nilai'].value = ''; }
+        form.batalEditBtn.classList.remove('d-none'); document.getElementById('products-tab').click(); form.kategori.focus();
     };
-    
     window.hapusProduk = async (k,v) => { if(await showConfirm('Hapus Produk', `Yakin ingin hapus produk ${v}?`)) { db.ref(`produk/${k}/${v}`).remove().then(()=>showToast('Produk dihapus', 'success')); } };
-
     const loadTestimonials = () => {
         const container = document.getElementById('testimonial-moderation-container');
         db.ref('testimonials').orderByChild('status').equalTo('pending').on('value', snap => {
@@ -383,139 +364,67 @@
             container.appendChild(list);
         });
     };
-
     window.updateTestimonialStatus = (id, status) => db.ref(`testimonials/${id}/status`).set(status).then(() => showToast(`Testimoni di-${status}.`, 'success'));
-
     const loadContentSettings = () => {
         const createPaymentRow = (key = '', val = {nama: '', nomor: ''}) => `<div class="row g-2 mb-2 payment-method-row"><div class="col-3"><input type="text" class="form-control" placeholder="Metode (cth: Dana)" value="${key}" required></div><div class="col-4"><input type="text" class="form-control" placeholder="Nomor (cth: 0812...)" value="${val.nomor}" required></div><div class="col-4"><input type="text" class="form-control" placeholder="Atas Nama (cth: Budi)" value="${val.nama}" required></div><div class="col-1"><button type="button" class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.remove()">X</button></div></div>`;
         const createFaqRow = (val = {q: '', a: ''}) => `<div class="row g-2 mb-2 faq-item-row"><div class="col-11"><input type="text" class="form-control mb-1" placeholder="Pertanyaan" value="${val.q.replace(/"/g, '&quot;')}" required><textarea class="form-control" placeholder="Jawaban" rows="2" required>${val.a}</textarea></div><div class="col-1"><button type="button" class="btn btn-sm btn-danger w-100" onclick="this.parentElement.parentElement.remove()">X</button></div></div>`;
         const paymentContainer = document.getElementById('payment-methods-container');
         const faqContainer = document.getElementById('faq-editor-container');
-        
         db.ref('infoPembayaran').once('value', s => { paymentContainer.innerHTML = Object.entries(s.val()||{}).map(([k,v]) => createPaymentRow(k,v)).join('') || createPaymentRow(); });
-        db.ref('faq').once('value', s => {
-            if (s.exists() && Array.isArray(s.val())) {
-                faqContainer.innerHTML = s.val().map(v => createFaqRow(v)).join('') || createFaqRow();
-            } else {
-                faqContainer.innerHTML = createFaqRow();
-            }
-        });
-
+        db.ref('faq').once('value', s => { if (s.exists() && Array.isArray(s.val())) { faqContainer.innerHTML = s.val().map(v => createFaqRow(v)).join('') || createFaqRow(); } else { faqContainer.innerHTML = createFaqRow(); }});
         document.getElementById('add-payment-method').onclick = () => paymentContainer.insertAdjacentHTML('beforeend', createPaymentRow());
         document.getElementById('add-faq-item').onclick = () => faqContainer.insertAdjacentHTML('beforeend', createFaqRow());
-
         document.getElementById('infoPembayaranForm').onsubmit = async e => { e.preventDefault(); const data={}; document.querySelectorAll('.payment-method-row').forEach(r=>{const i=r.querySelectorAll('input'),k=i[0].value.trim();if(k)data[k]={nomor:i[1].value.trim(),nama:i[2].value.trim()}}); if(await showConfirm('Simpan Info Pembayaran', 'Yakin simpan?')){db.ref('infoPembayaran').set(data).then(()=>showToast('Info pembayaran disimpan!', 'success'))} };
-        
-        // --- PERBAIKAN LOGIKA SIMPAN FAQ ---
         document.getElementById('faqForm').onsubmit = async e => {
-            e.preventDefault();
-            const newData = [];
-            document.querySelectorAll('.faq-item-row').forEach((r, idx) => {
-                const q = r.querySelector('input').value.trim();
-                const a = r.querySelector('textarea').value.trim();
-                if (q && a) {
-                    newData.push({ q, a, urutan: idx });
-                }
-            });
-
-            if (await showConfirm('Simpan FAQ', 'Yakin ingin menimpa semua data FAQ dengan yang baru? Ini akan menghapus item yang kosong.')) {
-                db.ref('faq').set(newData)
-                    .then(() => showToast('FAQ berhasil disimpan!', 'success'))
-                    .catch(err => showToast(`Gagal menyimpan: ${err.message}`, 'error'));
-            }
+            e.preventDefault(); const newData = []; document.querySelectorAll('.faq-item-row').forEach((r, idx) => { const q = r.querySelector('input').value.trim(); const a = r.querySelector('textarea').value.trim(); if (q && a) { newData.push({ q, a, urutan: idx }); }});
+            if (await showConfirm('Simpan FAQ', 'Yakin ingin menimpa semua data FAQ dengan yang baru?')) { db.ref('faq').set(newData).then(() => showToast('FAQ berhasil disimpan!', 'success')).catch(err => showToast(`Gagal menyimpan: ${err.message}`, 'error')); }
         };
     };
-
-    // START FUNGSI BARU UNTUK KELOLA RESELLER
     const loadResellers = () => {
         const resellerTableBody = document.getElementById('reseller-table-body');
         resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
-        
         dbFirestore.collection('resellers').orderBy('bergabungPada', 'desc').onSnapshot(snapshot => {
             resellerTableBody.innerHTML = '';
             if (snapshot.empty) {
-                resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Tidak ada data reseller.</td></tr>';
-                return;
+                resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Tidak ada data reseller.</td></tr>'; return;
             }
             snapshot.forEach(doc => {
-                const reseller = doc.data();
-                const row = document.createElement('tr');
-                
+                const reseller = doc.data(); const row = document.createElement('tr');
                 const statusColor = reseller.isApproved ? 'text-success' : 'text-danger';
                 const statusText = reseller.isApproved ? 'Disetujui' : 'Menunggu';
-                const buttonHtml = reseller.isApproved ? 
-                    '' :
-                    `<button class="btn btn-success btn-sm" onclick="approveReseller('${doc.id}')">Setujui</button>`;
+                const buttonHtml = reseller.isApproved ? '' : `<button class="btn btn-success btn-sm" onclick="approveReseller('${doc.id}')">Setujui</button>`;
                 const saldoFormatted = formatRupiah(reseller.saldo);
-
                 row.innerHTML = `
-                    <td>${reseller.namaToko}</td>
-                    <td>${reseller.email}</td>
-                    <td>${reseller.tier}</td>
-                    <td>${saldoFormatted}</td>
-                    <td><span class="${statusColor}">${statusText}</span></td>
-                    <td>${buttonHtml}</td>
-                `;
+                    <td>${reseller.namaToko}</td><td>${reseller.email}</td><td>${reseller.tier}</td>
+                    <td>${saldoFormatted}</td><td><span class="${statusColor}">${statusText}</span></td>
+                    <td>${buttonHtml}</td>`;
                 resellerTableBody.appendChild(row);
             });
-        }, err => {
-            console.error("Error loading resellers: ", err);
-            resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
-        });
+        }, err => { console.error("Error loading resellers: ", err); resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';});
     };
-
     window.approveReseller = async (uid) => {
         if (await showConfirm('Setujui Reseller', 'Yakin ingin menyetujui reseller ini?')) {
-            try {
-                await dbFirestore.collection('resellers').doc(uid).update({
-                    isApproved: true
-                });
-                showToast("Reseller berhasil disetujui!", 'success');
-            } catch (error) {
-                showToast("Gagal menyetujui reseller: " + error.message, 'error');
-            }
+            try { await dbFirestore.collection('resellers').doc(uid).update({ isApproved: true }); showToast("Reseller berhasil disetujui!", 'success');
+            } catch (error) { showToast("Gagal menyetujui reseller: " + error.message, 'error'); }
         }
     };
-    // END FUNGSI BARU UNTUK KELOLA RESELLER
-
-    // START FUNGSI LOGIN ADMIN
     const loginContainer = document.getElementById('login-container');
     const mainDashboard = document.getElementById('main-dashboard');
-
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('adminEmail').value;
         const password = document.getElementById('adminPassword').value;
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-            showToast("Login Gagal: " + error.message, 'error');
-        }
+        try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { showToast("Login Gagal: " + error.message, 'error'); }
     });
-
     auth.onAuthStateChanged(user => {
         if (user) {
-            // Admin berhasil login
-            loginContainer.classList.add('hidden');
-            mainDashboard.classList.remove('hidden');
-            // Muat semua data admin
-            loadPesanan();
-            loadProduk();
-            loadResellers();
-            loadTestimonials();
-            loadContentSettings();
+            loginContainer.classList.add('hidden'); mainDashboard.classList.remove('hidden');
+            loadPesanan(); loadProduk(); loadResellers(); loadTestimonials(); loadContentSettings();
         } else {
-            // Tidak ada user yang login
-            loginContainer.classList.remove('hidden');
-            mainDashboard.classList.add('hidden');
+            loginContainer.classList.remove('hidden'); mainDashboard.classList.add('hidden');
         }
     });
-    
-    function logout() {
-        auth.signOut();
-    }
-    // END FUNGSI LOGIN ADMIN
-
+    function logout() { auth.signOut(); }
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         document.getElementById('filterStatus').addEventListener('change', renderPesanan);
@@ -523,17 +432,8 @@
         document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
         document.getElementById('batalEditBtn').addEventListener('click', () => {
-            document.getElementById('formProduk').reset();
-            document.getElementById('formProduk').originalVarian.value = '';
-            document.getElementById('batalEditBtn').classList.add('d-none');
+            document.getElementById('formProduk').reset(); document.getElementById('formProduk').originalVarian.value = ''; document.getElementById('batalEditBtn').classList.add('d-none');
         });
-        
-        // Fungsi-fungsi ini akan dipanggil setelah admin login
-        // loadPesanan();
-        // loadProduk();
-        // loadResellers();
-        // loadTestimonials();
-        // loadContentSettings();
     });
 </script>
 </body>
