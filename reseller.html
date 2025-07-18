@@ -31,14 +31,18 @@
       border-bottom: 1px solid var(--border); z-index: 999; transition: box-shadow 0.3s ease;
     }
     header h1 { margin: 0; font-size: 24px; color: var(--primary); }
-    .saldo-btn {
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .saldo-btn, .home-btn {
       display: inline-flex; align-items: center; gap: 8px;
       background-color: var(--success); color: white;
       padding: 8px 16px; border-radius: 50px;
       font-size: 0.9em; font-weight: 600; text-decoration: none;
       transition: all 0.2s ease-in-out;
     }
-    .saldo-btn:hover {
+    .home-btn {
+        background-color: var(--primary);
+    }
+    .saldo-btn:hover, .home-btn:hover {
       color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     main { max-width: 700px; margin: 20px auto; padding: 0 20px; }
@@ -63,16 +67,94 @@
     }
     hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
     h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
+
+    /* Gaya baru untuk modal isi saldo */
+    .saldo-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+        backdrop-filter: blur(5px);
+        align-items: center;
+        justify-content: center;
+    }
+    .saldo-modal-content {
+        background-color: var(--card);
+        margin: auto;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 5px 15px var(--shadow);
+        position: relative;
+        animation: fadeIn 0.3s ease-out;
+    }
+    .saldo-modal-content h3 { color: var(--primary); text-align: center; margin-bottom: 20px; }
+    .saldo-modal-content .close-btn {
+        color: var(--muted-text);
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+    }
+    .payment-info {
+        text-align: center;
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    [data-theme="dark"] .payment-info {
+        background-color: #333;
+    }
+    .payment-info p { margin: 5px 0; }
+    .nominal-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .nominal-buttons button {
+        background: #e9ecef;
+        color: var(--text);
+        border: 1px solid #ccc;
+        font-weight: normal;
+        transition: all 0.2s;
+    }
+    [data-theme="dark"] .nominal-buttons button {
+        background: #444;
+        color: var(--text);
+        border: 1px solid #555;
+    }
+    .nominal-buttons button:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 
 <body data-theme="dark">
   <header id="header">
     <h1>Asdar Store Digital</h1>
-    <a href="#" class="saldo-btn" onclick="isiSaldo()">
-      <i class="fas fa-wallet"></i>
-      <span>Isi Saldo</span>
-    </a>
+    <div class="header-actions">
+        <a href="index.html" class="home-btn"><i class="fas fa-home me-2"></i>Beranda</a>
+        <a href="#" class="saldo-btn" onclick="showIsiSaldoModal()">
+          <i class="fas fa-wallet"></i>
+          <span>Isi Saldo</span>
+        </a>
+    </div>
   </header>
 
   <main id="main-content">
@@ -111,6 +193,31 @@
     </div>
   </main>
 
+  <div id="isiSaldoModal" class="saldo-modal">
+      <div class="saldo-modal-content">
+          <span class="close-btn" onclick="hideIsiSaldoModal()">&times;</span>
+          <h3>Isi Saldo Reseller</h3>
+          <div class="payment-info">
+              <p><strong>🟣PAYMENT🟣</strong></p>
+              <p><strong>ShopeePay:</strong> 081803004607</p>
+              <p><strong>Dana:</strong> 087755432880</p>
+          </div>
+          <p class="text-center">Pilih nominal atau masukkan jumlah lain:</p>
+          <div class="nominal-buttons">
+              <button onclick="pilihNominal(10000)">Rp 10.000</button>
+              <button onclick="pilihNominal(25000)">Rp 25.000</button>
+              <button onclick="pilihNominal(50000)">Rp 50.000</button>
+              <button onclick="pilihNominal(100000)">Rp 100.000</button>
+          </div>
+          <label for="nominalLainnya">Nominal Lainnya (Rp)</label>
+          <input type="number" id="nominalLainnya" placeholder="Cth: 50000" />
+          <button onclick="kirimBuktiTransfer()">Kirim Bukti Transfer</button>
+          <p class="text-center mt-3" style="font-size: 0.9em; color: var(--muted-text);">
+              Setelah transfer, klik tombol di atas untuk mengirim bukti pembayaran ke WhatsApp admin.
+          </p>
+      </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -127,7 +234,7 @@
     const db = firebase.database();
     
     let produkTerpilihData = null;
-    const WA_ADMIN = "6281234567890"; // Ganti dengan nomor WA Admin
+    const WA_ADMIN = "6281234567890"; // Ganti dengan nomor WA Admin Anda
 
     const submitBtn = document.getElementById('submitBtn');
     const kategoriSelect = document.getElementById('kategori');
@@ -137,12 +244,15 @@
     const formNotification = document.getElementById('formNotification');
     const waAktifInput = document.getElementById('waAktif');
     const saldoInfoDiv = document.getElementById('saldoInfo');
+    const isiSaldoModal = document.getElementById('isiSaldoModal');
+    let nominalIsiSaldo = 0;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
       let n = String(num).trim().replace(/[^0-9]/g, '');
       if (n.startsWith('0')) return '62' + n.slice(1);
-      if (n.startsWith('62')) return n;
+      if (n.startsWith('62') && n.length > 10) return n;
+      if (n.startsWith('0')) return '62' + n.slice(1);
       return num;
     };
     const showNotification = (message, type = 'error') => {
@@ -208,15 +318,16 @@
                 return;
             }
             produkTerpilihData = snapshot.val();
+            const hargaReseller = produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0; // Menggunakan harga_reseller
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
-                infoProduk.innerHTML += `<br><b class="text-danger">Stok saat ini habis.</b>`;
+                infoProduk.innerHTML = `<b class="text-danger">Stok saat ini habis.</b><br><b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}`;
             } else {
                 submitBtn.textContent = `Beli dengan Saldo`;
                 submitBtn.disabled = false;
+                infoProduk.innerHTML = `<b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
             }
-            infoProduk.innerHTML = `<b>Harga:</b> ${formatRupiah(produkTerpilihData.harga)}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
         });
     }
     
@@ -247,7 +358,7 @@
         const waAktif = normalizePhone(waAktifInput.value.trim());
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
-        const hargaProduk = produkTerpilihData.harga;
+        const hargaProduk = produkTerpilihData.harga_reseller || produkTerpilihData.harga || 0;
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Memproses...';
@@ -336,11 +447,42 @@
         if (id) window.location.href = `status.html?id=${id}`;
     };
     
-    window.isiSaldo = () => {
-      const wa = normalizePhone(waAktifInput.value);
-      const message = encodeURIComponent(`Halo admin, saya mau isi saldo reseller. Nomor WA saya ${wa}.`);
-      const url = `https://wa.me/${WA_ADMIN}?text=${message}`;
-      window.open(url, '_blank');
+    window.showIsiSaldoModal = () => {
+        const wa = normalizePhone(waAktifInput.value);
+        if (!wa || wa.length < 10) {
+            alert('Harap masukkan nomor WhatsApp Anda di form utama terlebih dahulu.');
+            return;
+        }
+        isiSaldoModal.style.display = 'flex';
+        nominalIsiSaldo = 0;
+        document.getElementById('nominalLainnya').value = '';
+    };
+
+    window.hideIsiSaldoModal = () => {
+        isiSaldoModal.style.display = 'none';
+    };
+
+    window.pilihNominal = (nominal) => {
+        nominalIsiSaldo = nominal;
+        document.getElementById('nominalLainnya').value = nominal;
+    };
+
+    window.kirimBuktiTransfer = () => {
+        const wa = normalizePhone(waAktifInput.value);
+        const nominalLainnya = parseInt(document.getElementById('nominalLainnya').value);
+        if (!wa || wa.length < 10) {
+            alert('Harap masukkan nomor WhatsApp Anda.');
+            return;
+        }
+        const jumlah = nominalIsiSaldo > 0 ? nominalIsiSaldo : nominalLainnya;
+        if (isNaN(jumlah) || jumlah <= 0) {
+            alert('Harap pilih nominal atau masukkan jumlah yang valid.');
+            return;
+        }
+        const message = encodeURIComponent(`Halo admin, saya mau isi saldo reseller sebesar ${formatRupiah(jumlah)}. Nomor WA saya ${wa}.`);
+        const url = `https://wa.me/${WA_ADMIN}?text=${message}`;
+        window.open(url, '_blank');
+        hideIsiSaldoModal();
     };
   </script>
 </body>
