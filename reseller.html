@@ -43,21 +43,19 @@
       width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; font-size: 16px; transition: background-color 0.2s ease;
     }
     button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-    .saldo-info { text-align: center; font-size: 1.2em; font-weight: 600; }
-    .saldo-value { color: var(--success); font-size: 1.5em; }
-    .error-message {
-      background: var(--danger); color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: 600;
+    .message {
+      padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: 600;
     }
-    .info-message {
-      background: var(--primary); color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: 600;
-    }
+    .error-message { background: var(--danger); color: white; }
+    .info-message { background: var(--primary); color: white; }
+    .success-message { background: var(--success); color: white; }
     #loadingPanel, #authPanel, #resellerPanel, #notResellerPanel { display: none; }
     #resellerPanel { animation: fadeIn 0.5s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body data-theme="dark">
-  
+
   <div id="loadingPanel" style="text-align: center; padding-top: 50px;">
     <h2>Memuat...</h2>
   </div>
@@ -68,7 +66,7 @@
     </header>
     <main>
       <h2>Selamat Datang, Reseller!</h2>
-      <div id="authMessage" class="info-message" style="display:none;"></div>
+      <div id="authMessage" class="message" style="display:none;"></div>
       <form id="loginForm">
         <label for="loginEmail">Email</label>
         <input type="email" id="loginEmail" placeholder="Masukkan Email" required />
@@ -158,6 +156,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // --- Bagian Inisialisasi dan Elemen ---
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -173,7 +172,27 @@
     const resellerPanel = document.getElementById('resellerPanel');
     const notResellerPanel = document.getElementById('notResellerPanel');
     const notResellerAction = document.getElementById('notResellerAction');
+    const authMessage = document.getElementById('authMessage');
 
+    // Semua elemen terkait formulir
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const showRegisterLink = document.getElementById('showRegister');
+    const showLoginLink = document.getElementById('showLogin');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutBtn2 = document.getElementById('logoutBtn2');
+    const requestResellerBtn = document.getElementById('requestResellerBtn');
+    const orderForm = document.getElementById('orderForm');
+    const resellerKategoriSelect = document.getElementById('resellerKategori');
+    const resellerProdukSelect = document.getElementById('resellerProduk');
+    const infoProdukReseller = document.getElementById('infoProdukReseller');
+    const resellerSubmitBtn = document.getElementById('resellerSubmitBtn');
+    const saldoValue = document.getElementById('saldoValue');
+    
+    let produkResellerData = null;
+    let produkTerpilihDataReseller = null;
+
+    // --- Fungsi Bantuan ---
     const showPanel = (panel) => {
       loadingPanel.style.display = 'none';
       authPanel.style.display = 'none';
@@ -182,199 +201,193 @@
       panel.style.display = 'block';
     };
 
-    // Fungsi baru untuk mengajukan permintaan reseller
-    async function requestResellerAccess(user) {
-        if (!user) return;
-        const uid = user.uid;
-        try {
-            await db.ref(`pending_resellers/${uid}`).set({
-                email: user.email,
-                requested_at: new Date().toISOString()
-            });
-            notResellerAction.innerHTML = '<p style="color:var(--success); font-weight:bold;">✅ Permintaan Anda berhasil dikirim! Silakan tunggu persetujuan dari admin.</p>';
-        } catch (error) {
-            console.error("Gagal mengajukan permintaan:", error);
-            notResellerAction.innerHTML = '<p style="color:var(--danger); font-weight:bold;">Terjadi kesalahan saat mengirim permintaan. Silakan coba lagi.</p>';
+    const showMessage = (element, message, type) => {
+      element.textContent = message;
+      element.className = `message ${type}-message`;
+      element.style.display = 'block';
+    };
+
+    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+    // --- Fungsi Otentikasi dan Registrasi ---
+    const handleAuth = async (isLogin) => {
+      const form = isLogin ? loginForm : registerForm;
+      const email = form.querySelector('input[type="email"]').value;
+      const password = form.querySelector('input[type="password"]').value;
+
+      try {
+        if (isLogin) {
+          await auth.signInWithEmailAndPassword(email, password);
+        } else {
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          // Permintaan otomatis saat pengguna baru mendaftar
+          await db.ref(`pending_resellers/${userCredential.user.uid}`).set({
+            email: userCredential.user.email,
+            requested_at: new Date().toISOString()
+          });
         }
+      } catch (error) {
+        showMessage(authMessage, error.message, 'error');
+      }
+    };
+
+    const requestResellerAccess = async (user) => {
+      if (!user) return;
+      const uid = user.uid;
+      try {
+        await db.ref(`pending_resellers/${uid}`).set({
+          email: user.email,
+          requested_at: new Date().toISOString()
+        });
+        notResellerAction.innerHTML = '<p style="color:var(--success); font-weight:bold;">✅ Permintaan Anda berhasil dikirim! Silakan tunggu persetujuan dari admin.</p>';
+      } catch (error) {
+        console.error("Gagal mengajukan permintaan:", error);
+        notResellerAction.innerHTML = '<p style="color:var(--danger); font-weight:bold;">Terjadi kesalahan saat mengirim permintaan. Silakan coba lagi.</p>';
+      }
+    };
+
+    // --- Fungsi untuk Panel Reseller ---
+    function loadResellerData(uid) {
+      // Load Saldo (Real-time listener)
+      db.ref(`resellers/${uid}/saldo`).on('value', snap => {
+        saldoValue.textContent = formatRupiah(snap.val() || 0);
+      });
+
+      // Load Produk (Sekali muat)
+      db.ref('produk').once('value').then(snapshot => {
+        produkResellerData = snapshot.val() || {};
+        resellerKategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
+        for (const kategori in produkResellerData) {
+          resellerKategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+        }
+      });
     }
 
-    // Main Auth State Listener
+    // --- Event Listeners ---
+    // Pastikan halaman loading muncul di awal
+    showPanel(loadingPanel);
+
+    // Listener untuk otentikasi Firebase
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         const uid = user.uid;
-        // Check if user is an approved reseller
         const resellerSnap = await db.ref(`resellers/${uid}`).once('value');
         if (resellerSnap.exists()) {
           showPanel(resellerPanel);
-          // Load reseller data, saldo, etc.
           loadResellerData(uid);
           return;
         }
 
-        // Check if user has a pending request
         const pendingSnap = await db.ref(`pending_resellers/${uid}`).once('value');
         if (pendingSnap.exists()) {
-            showPanel(notResellerPanel);
-            notResellerAction.innerHTML = '<p style="color:var(--primary); font-weight:bold;">Permintaan Anda untuk menjadi reseller sedang dalam proses review.</p>';
+          showPanel(notResellerPanel);
+          notResellerAction.innerHTML = '<p style="color:var(--primary); font-weight:bold;">Permintaan Anda untuk menjadi reseller sedang dalam proses review.</p>';
         } else {
-            showPanel(notResellerPanel);
-            // Add event listener for the new button
-            document.getElementById('requestResellerBtn').onclick = () => requestResellerAccess(user);
+          showPanel(notResellerPanel);
+          requestResellerBtn.onclick = () => requestResellerAccess(user);
         }
       } else {
         showPanel(authPanel);
       }
     });
 
-    // --- Fungsi lainnya sama seperti sebelumnya ---
-    // Pastikan Anda memindahkan seluruh kode fungsi lama dari sini ke bawah.
-    // Contoh:
-    // const loginForm = document.getElementById('loginForm');
-    // const registerForm = document.getElementById('registerForm');
-    // ... dst.
-    // ... loadResellerData(), handleOrderSubmit(), dll.
-    
-    // LOGIN & REGISTER LOGIC
-    document.getElementById('showRegister').onclick = (e) => { e.preventDefault(); document.getElementById('loginForm').style.display = 'none'; document.getElementById('registerForm').style.display = 'block'; };
-    document.getElementById('showLogin').onclick = (e) => { e.preventDefault(); document.getElementById('registerForm').style.display = 'none'; document.getElementById('loginForm').style.display = 'block'; };
-    document.getElementById('logoutBtn').onclick = () => auth.signOut();
-    document.getElementById('logoutBtn2').onclick = () => auth.signOut();
+    // Event listener untuk form auth
+    loginForm.onsubmit = (e) => { e.preventDefault(); handleAuth(true); };
+    registerForm.onsubmit = (e) => { e.preventDefault(); handleAuth(false); };
+    showRegisterLink.onclick = (e) => { e.preventDefault(); loginForm.style.display = 'none'; registerForm.style.display = 'block'; showMessage(authMessage, '', 'info'); };
+    showLoginLink.onclick = (e) => { e.preventDefault(); registerForm.style.display = 'none'; loginForm.style.display = 'block'; showMessage(authMessage, '', 'info'); };
+    logoutBtn.onclick = () => auth.signOut();
+    logoutBtn2.onclick = () => auth.signOut();
 
-    document.getElementById('loginForm').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        auth.signInWithEmailAndPassword(email, password)
-            .catch(error => { alert(error.message); });
+    // Event listener untuk form pemesanan
+    resellerKategoriSelect.addEventListener('change', () => {
+      const kategori = resellerKategoriSelect.value;
+      resellerProdukSelect.innerHTML = '<option value="">Pilih Produk</option>';
+      if (kategori && produkResellerData[kategori]) {
+        for (const produk in produkResellerData[kategori]) {
+          resellerProdukSelect.innerHTML += `<option value="${produk}">${produk}</option>`;
+        }
+      }
+      infoProdukReseller.textContent = '';
+      resellerSubmitBtn.disabled = true;
+      resellerSubmitBtn.textContent = 'Pilih Produk Dahulu';
+    });
+
+    resellerProdukSelect.addEventListener('change', () => {
+      const kategori = resellerKategoriSelect.value;
+      const produk = resellerProdukSelect.value;
+      produkTerpilihDataReseller = null;
+      if (kategori && produk && produkResellerData[kategori][produk]) {
+        produkTerpilihDataReseller = produkResellerData[kategori][produk];
+        const hargaReseller = produkTerpilihDataReseller.harga_reseller || produkTerpilihDataReseller.harga;
+        infoProdukReseller.textContent = `Harga Reseller: ${formatRupiah(hargaReseller)}\nStok Tersedia: ${produkTerpilihDataReseller.stok}`;
+        resellerSubmitBtn.disabled = false;
+        resellerSubmitBtn.textContent = 'Beli dengan Saldo';
+      } else {
+        infoProdukReseller.textContent = '';
+        resellerSubmitBtn.disabled = true;
+        resellerSubmitBtn.textContent = 'Pilih Produk Dahulu';
+      }
+    });
+
+    orderForm.onsubmit = async (e) => {
+      e.preventDefault();
+      resellerSubmitBtn.disabled = true;
+      resellerSubmitBtn.textContent = 'Memproses...';
+      const currentSaldo = parseFloat(saldoValue.textContent.replace(/[Rp.]/g, '')) || 0;
+      const produkHarga = produkTerpilihDataReseller.harga_reseller || produkTerpilihDataReseller.harga;
+      const uid = auth.currentUser.uid;
+
+      if (currentSaldo < produkHarga) {
+        showMessage(document.getElementById('orderMessage'), 'Saldo tidak cukup!', 'error');
+        resellerSubmitBtn.disabled = false;
+        resellerSubmitBtn.textContent = 'Beli dengan Saldo';
+        return;
+      }
+      
+      const produkPath = `produk/${resellerKategoriSelect.value}/${resellerProdukSelect.value}`;
+      const saldoPath = `resellers/${uid}/saldo`;
+
+      try {
+        const result = await db.ref('/').transaction(rootData => {
+          const produkRef = rootData[produkPath.split('/')[0]][produkPath.split('/')[1]][produkPath.split('/')[2]];
+          const saldoRef = rootData[saldoPath.split('/')[0]][saldoPath.split('/')[1]];
+
+          if (produkRef.stok > 0 && saldoRef.saldo >= produkHarga) {
+            produkRef.stok--;
+            saldoRef.saldo -= produkHarga;
+            return rootData;
+          } else {
+            return; // Batalkan transaksi
+          }
+        });
+
+        if (result.committed) {
+          const id = "P" + Date.now();
+          await db.ref('pesanan/' + id).set({
+            nama: auth.currentUser.email,
+            nomor: document.getElementById('resellerIdGame').value,
+            wa_aktif: document.getElementById('resellerWa').value,
+            kategori: resellerKategoriSelect.value,
+            produk: resellerProdukSelect.value,
+            harga_beli: produkHarga,
+            waktu: new Date().toISOString(),
+            status: 'Diproses'
+          });
+          showMessage(document.getElementById('orderMessage'), 'Pesanan berhasil dibuat!', 'success');
+          orderForm.reset();
+          resellerKategoriSelect.dispatchEvent(new Event('change'));
+        } else {
+          showMessage(document.getElementById('orderMessage'), 'Transaksi gagal. Stok habis atau saldo tidak mencukupi.', 'error');
+        }
+      } catch (error) {
+        showMessage(document.getElementById('orderMessage'), 'Terjadi kesalahan saat memproses pesanan: ' + error.message, 'error');
+        console.error(error);
+      } finally {
+        resellerSubmitBtn.disabled = false;
+        resellerSubmitBtn.textContent = 'Beli dengan Saldo';
+      }
     };
-
-    document.getElementById('registerForm').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        auth.createUserWithEmailAndPassword(email, password)
-            .catch(error => { alert(error.message); });
-    };
-    
-    let produkResellerData = null;
-    let produkTerpilihDataReseller = null;
-    const infoProdukReseller = document.getElementById('infoProdukReseller');
-    const resellerSubmitBtn = document.getElementById('resellerSubmitBtn');
-    const resellerKategoriSelect = document.getElementById('resellerKategori');
-    const resellerProdukSelect = document.getElementById('resellerProduk');
-    const saldoValue = document.getElementById('saldoValue');
-    const orderForm = document.getElementById('orderForm');
-
-    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
-
-    function loadResellerData(uid) {
-        // Load Saldo
-        db.ref(`resellers/${uid}/saldo`).on('value', snap => {
-            saldoValue.textContent = formatRupiah(snap.val() || 0);
-        });
-
-        // Load Produk
-        db.ref('produk').once('value').then(snapshot => {
-            produkResellerData = snapshot.val() || {};
-            resellerKategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-            for (const kategori in produkResellerData) {
-                resellerKategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-            }
-        });
-
-        // Event listeners untuk form
-        resellerKategoriSelect.addEventListener('change', () => {
-            const kategori = resellerKategoriSelect.value;
-            resellerProdukSelect.innerHTML = '<option value="">Pilih Produk</option>';
-            if (kategori && produkResellerData[kategori]) {
-                for (const produk in produkResellerData[kategori]) {
-                    resellerProdukSelect.innerHTML += `<option value="${produk}">${produk}</option>`;
-                }
-            }
-            infoProdukReseller.textContent = '';
-            resellerSubmitBtn.disabled = true;
-            resellerSubmitBtn.textContent = 'Pilih Produk Dahulu';
-        });
-
-        resellerProdukSelect.addEventListener('change', () => {
-            const kategori = resellerKategoriSelect.value;
-            const produk = resellerProdukSelect.value;
-            produkTerpilihDataReseller = null;
-            if (kategori && produk && produkResellerData[kategori][produk]) {
-                produkTerpilihDataReseller = produkResellerData[kategori][produk];
-                const hargaReseller = produkTerpilihDataReseller.harga_reseller || produkTerpilihDataReseller.harga;
-                infoProdukReseller.textContent = `Harga Reseller: ${formatRupiah(hargaReseller)}\nStok Tersedia: ${produkTerpilihDataReseller.stok}`;
-                resellerSubmitBtn.disabled = false;
-                resellerSubmitBtn.textContent = 'Beli dengan Saldo';
-            } else {
-                infoProdukReseller.textContent = '';
-                resellerSubmitBtn.disabled = true;
-                resellerSubmitBtn.textContent = 'Pilih Produk Dahulu';
-            }
-        });
-
-        // Form Submission
-        orderForm.onsubmit = async (e) => {
-            e.preventDefault();
-            resellerSubmitBtn.disabled = true;
-            resellerSubmitBtn.textContent = 'Memproses...';
-            const currentSaldo = parseFloat(saldoValue.textContent.replace(/[Rp.]/g, '')) || 0;
-            const produkHarga = produkTerpilihDataReseller.harga_reseller || produkTerpilihDataReseller.harga;
-            if (currentSaldo < produkHarga) {
-                alert('Saldo tidak cukup!');
-                resellerSubmitBtn.disabled = false;
-                resellerSubmitBtn.textContent = 'Beli dengan Saldo';
-                return;
-            }
-            
-            // Transaction to update stock and balance
-            const updates = {};
-            const produkPath = `produk/${resellerKategoriSelect.value}/${resellerProdukSelect.value}`;
-            const saldoPath = `resellers/${uid}/saldo`;
-            
-            try {
-                // Gunakan transaksi untuk memastikan stok dan saldo aman
-                const result = await db.ref('/').transaction(rootData => {
-                    const produkData = rootData[produkPath.split('/')[0]][produkPath.split('/')[1]][produkPath.split('/')[2]];
-                    const saldoData = rootData[saldoPath.split('/')[0]][saldoPath.split('/')[1]].saldo;
-
-                    if (produkData.stok > 0 && saldoData >= produkHarga) {
-                        produkData.stok--;
-                        rootData[saldoPath.split('/')[0]][saldoPath.split('/')[1]].saldo = saldoData - produkHarga;
-                        return rootData;
-                    } else {
-                        return; // Abort the transaction
-                    }
-                });
-
-                if (result.committed) {
-                    const id = "P" + Date.now();
-                    await db.ref('pesanan/' + id).set({
-                        nama: user.email, // Nama reseller
-                        nomor: document.getElementById('resellerIdGame').value,
-                        wa_aktif: document.getElementById('resellerWa').value,
-                        kategori: resellerKategoriSelect.value,
-                        produk: resellerProdukSelect.value,
-                        harga_beli: produkHarga,
-                        waktu: new Date().toISOString(),
-                        status: 'Diproses'
-                    });
-                    alert('Pesanan berhasil dibuat dan saldo sudah terpotong!');
-                    // Reset form
-                    orderForm.reset();
-                    resellerKategoriSelect.dispatchEvent(new Event('change'));
-                } else {
-                    alert('Transaksi gagal. Stok habis atau saldo tidak mencukupi.');
-                }
-            } catch (error) {
-                alert('Terjadi kesalahan saat memproses pesanan: ' + error.message);
-                console.error(error);
-            } finally {
-                resellerSubmitBtn.disabled = false;
-                resellerSubmitBtn.textContent = 'Beli dengan Saldo';
-            }
-        };
-    }
   </script>
 </body>
 </html>
