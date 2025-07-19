@@ -417,12 +417,10 @@
         };
     };
 
-    // --- FUNGSI BARU UNTUK KELOLA RESELLER YANG DIPERBAIKI ---
     const loadResellers = () => {
         const resellerTableBody = document.getElementById('reseller-table-body');
         resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
         
-        // Mengambil semua reseller dan mengurutkannya berdasarkan waktu pendaftaran
         dbFirestore.collection('resellers').orderBy('registeredAt', 'desc').onSnapshot(snapshot => {
             resellerTableBody.innerHTML = '';
             if (snapshot.empty) {
@@ -440,7 +438,6 @@
                     `<button class="btn btn-success btn-sm" onclick="approveReseller('${uid}')">Setujui</button>` :
                     `<button class="btn btn-warning btn-sm" onclick="rejectReseller('${uid}')">Tolak</button>`;
 
-                // Tangani kasus `registeredAt` jika berupa Timestamp
                 const registeredDate = reseller.registeredAt ? reseller.registeredAt.toDate().toLocaleString('id-ID') : '-';
 
                 row.innerHTML = `
@@ -463,7 +460,6 @@
                 await dbFirestore.collection('resellers').doc(uid).update({
                     status: 'approved'
                 });
-                // Jika ingin otomatis membuat saldo
                 await db.ref(`resellers/${uid}/saldo`).set(0); 
                 showToast("Reseller berhasil disetujui!", 'success');
             } catch (error) {
@@ -482,9 +478,7 @@
             }
         }
     };
-    // --- AKHIR FUNGSI UNTUK KELOLA RESELLER ---
 
-    // Aksi saat tab berubah
     const tabTriggers = document.querySelectorAll('#adminTab button');
     tabTriggers.forEach(tab => tab.addEventListener('shown.bs.tab', event => {
       const activeTabId = event.target.id;
@@ -494,7 +488,6 @@
       if (activeTabId === 'settings-tab') loadContentSettings();
     }));
 
-    // Inisialisasi
     document.addEventListener('DOMContentLoaded', () => {
       confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
       document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
@@ -503,19 +496,28 @@
       document.getElementById('filterStatus').addEventListener('change', renderPesanan);
       document.getElementById('searchId').addEventListener('input', renderPesanan);
 
-      // Login dan pengalihan
       document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           const email = document.getElementById('adminEmail').value;
           const password = document.getElementById('adminPassword').value;
           try {
               const userCredential = await auth.signInWithEmailAndPassword(email, password);
+
+              // --- KODE SEMENTARA YANG HARUS DITAMBAHKAN (UNTUK MENGATASI LOGIN PERTAMA KALI) ---
               const user = userCredential.user;
-              const adminDoc = await dbFirestore.collection('admins').doc(user.uid).get();
-              if (adminDoc.exists) {
+              console.log("UID Anda: " + user.uid);
+              const adminRef = dbFirestore.collection('admins').doc(user.uid);
+              const adminDoc = await adminRef.get();
+              if (!adminDoc.exists) {
+                  await adminRef.set({ role: 'admin' });
+                  console.log("Dokumen admin berhasil dibuat.");
+              }
+              // --- AKHIR DARI KODE SEMENTARA ---
+
+              const adminDocCheck = await dbFirestore.collection('admins').doc(user.uid).get();
+              if (adminDocCheck.exists) {
                   document.getElementById('login-container').classList.add('hidden');
                   document.getElementById('main-dashboard').classList.remove('hidden');
-                  // Muat data awal saat login berhasil
                   loadPesanan();
                   loadHakDiskon();
               } else {
@@ -541,7 +543,6 @@
         });
       };
       
-      // Cek status login saat halaman dimuat
       auth.onAuthStateChanged(async user => {
           if (user) {
               const adminDoc = await dbFirestore.collection('admins').doc(user.uid).get();
