@@ -75,8 +75,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script> <script>
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -85,7 +84,7 @@
             projectId: "asdarstoredigitalll-d89c4",
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const db = firebase.firestore(); // Menggunakan Firestore
 
         // --- API KEY IMGBB ANDA ---
         const IMGBB_API_KEY = "f71ccc1a662c9f8656766990018d3a33";
@@ -140,13 +139,14 @@
             }
 
             try {
-                const resellerSnap = await db.ref('resellers/' + uid).once('value');
-                if (!resellerSnap.exists()) {
+                // Mengambil data dari Firestore
+                const resellerDoc = await db.collection('resellers').doc(uid).get();
+                if (!resellerDoc.exists) {
                     depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
                     submitBtn.disabled = true;
                     return;
                 }
-                const resellerData = resellerSnap.val();
+                const resellerData = resellerDoc.data();
                 const plan = resellerData.paket;
                 const depositAmount = DEPOSIT_AMOUNTS[plan];
 
@@ -204,15 +204,15 @@
                 }
                 const proofLink = imgbbData.data.url;
 
-                // Simpan bukti pembayaran ke database
-                await db.ref(`resellers/${uid}/deposit_proof`).set({
-                    sender_name: senderName,
-                    proof_link: proofLink,
-                    submittedAt: new Date().toISOString()
+                // Simpan bukti pembayaran ke Firestore
+                await db.collection('resellers').doc(uid).update({
+                    deposit_proof: {
+                        sender_name: senderName,
+                        proof_link: proofLink,
+                        submittedAt: new Date().toISOString()
+                    },
+                    status: 'pending-deposit'
                 });
-
-                // Perbarui status pengguna
-                await db.ref(`resellers/${uid}/status`).set('pending-deposit');
 
                 statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
                 statusMessageEl.style.color = 'green';
@@ -229,7 +229,6 @@
             }
         });
 
-        // Catatan: Karena metode pembayaran sudah hardcoded, fungsi loadPaymentMethods() tidak perlu dijalankan.
         loadDepositInfo();
     </script>
 </body>
