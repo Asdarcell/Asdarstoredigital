@@ -48,10 +48,10 @@
             <label for="sender-name">Nama Pengirim (Sesuai Rekening / E-Wallet)</label>
             <input type="text" id="sender-name" required placeholder="Contoh: Budi Santoso">
             
-            <label for="proof-link">Link Bukti Pembayaran</label>
-            <input type="url" id="proof-link" required placeholder="Contoh: https://i.imgur.com/your-proof.jpg">
+            <label for="proof-file">Upload Bukti Pembayaran (Gambar)</label>
+            <input type="file" id="proof-file" accept="image/*" required>
             <p style="font-size: 0.8em; color: #888; margin-top: -10px;">
-                Anda bisa mengunggah gambar ke layanan seperti <a href="https://imgur.com" target="_blank" style="color: var(--primary);">Imgur</a> atau <a href="https://ibb.co" target="_blank" style="color: var(--primary);">ImgBB</a>, lalu tempelkan link-nya di sini.
+                Unggah gambar bukti transfer Anda di sini.
             </p>
 
             <button type="submit" id="submit-btn" disabled>Kirim Bukti Pembayaran</button>
@@ -72,6 +72,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // --- API KEY IMGBB ANDA ---
+        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+
         const DEPOSIT_AMOUNTS = {
             'A': 100000,
             'B': 50000
@@ -85,6 +88,7 @@
         const depositForm = document.getElementById('deposit-form');
         const submitBtn = document.getElementById('submit-btn');
         const statusMessageEl = document.getElementById('status-message');
+        const proofFileEl = document.getElementById('proof-file'); // New input for file upload
 
         // Fungsi untuk format rupiah
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -104,10 +108,19 @@
             });
         }
 
+        // Fungsi untuk mengonversi file menjadi Base64
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]); // Ambil hanya bagian base64
+            reader.onerror = error => reject(error);
+        });
+
         // Memuat data reseller dan info deposit
         async function loadDepositInfo() {
             if (!uid) {
                 depositTextEl.textContent = 'UID tidak ditemukan. Silakan kembali ke halaman pendaftaran.';
+                submitBtn.disabled = true; // Disable button if UID is missing
                 return;
             }
 
@@ -115,11 +128,18 @@
                 const resellerSnap = await db.ref('resellers/' + uid).once('value');
                 if (!resellerSnap.exists()) {
                     depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
+                    submitBtn.disabled = true; // Disable button if reseller data is missing
                     return;
                 }
                 const resellerData = resellerSnap.val();
                 const plan = resellerData.paket;
                 const depositAmount = DEPOSIT_AMOUNTS[plan];
+
+                if (depositAmount === undefined) { // Handle case where plan is not in DEPOSIT_AMOUNTS
+                    depositTextEl.textContent = `Error: Jumlah deposit untuk paket "${plan}" tidak ditemukan.`;
+                    submitBtn.disabled = true;
+                    return;
+                }
 
                 depositTextEl.innerHTML = `<i class="fas fa-money-bill-wave me-2"></i><strong>Deposit Reseller Paket ${plan}</strong><br>
                                             Jumlah yang harus dibayar: <b>${formatRupiah(depositAmount)}</b>`;
@@ -129,6 +149,7 @@
             } catch (error) {
                 console.error("Gagal memuat info deposit:", error);
                 depositTextEl.textContent = 'Terjadi kesalahan saat memuat data.';
+                submitBtn.disabled = true;
             }
         }
 
@@ -138,6 +159,10 @@
                 const paymentSnap = await db.ref('infoPembayaran').once('value');
                 const paymentData = paymentSnap.val() || {};
                 let paymentHtml = '';
+                if (Object.keys(paymentData).length === 0) {
+                    paymentMethodsListEl.innerHTML = `<p class="text-center">Metode pembayaran belum diatur oleh admin.</p>`;
+                    return;
+                }
                 for (const [metode, detail] of Object.entries(paymentData)) {
                     paymentHtml += `<div class="payment-method-item">
                                         <div class="payment-details">
@@ -163,9 +188,34 @@
             statusMessageEl.textContent = '';
 
             const senderName = document.getElementById('sender-name').value;
-            const proofLink = document.getElementById('proof-link').value;
+            const proofFile = proofFileEl.files[0]; // Get the selected file
+
+            if (!proofFile) {
+                statusMessageEl.textContent = 'Mohon unggah file bukti pembayaran.';
+                statusMessageEl.style.color = 'red';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Bukti Pembayaran';
+                return;
+            }
 
             try {
+                // Upload image to ImgBB
+                const base64Image = await toBase64(proofFile);
+                const formData = new FormData();
+                formData.append("key", IMGBB_API_KEY);
+                formData.append("image", base64Image);
+
+                const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const imgbbData = await imgbbResponse.json();
+
+                if (!imgbbData.success) {
+                    throw new Error(imgbbData.error.message || 'Gagal mengunggah gambar ke ImgBB.');
+                }
+                const proofLink = imgbbData.data.url;
+
                 // Simpan bukti pembayaran ke database
                 await db.ref(`resellers/${uid}/deposit_proof`).set({
                     sender_name: senderName,
@@ -174,16 +224,17 @@
                 });
 
                 // Perbarui status pengguna
-                await db.ref(`resellers/${uid}/status`).set('pending-verification');
+                await db.ref(`resellers/${uid}/status`).set('pending-deposit'); // Changed to pending-deposit for admin verification
 
                 statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
                 statusMessageEl.style.color = 'green';
                 depositForm.reset();
                 submitBtn.textContent = 'Bukti Terkirim';
+                submitBtn.disabled = true; // Keep button disabled after successful submission
 
             } catch (error) {
                 console.error("Gagal mengirim bukti pembayaran:", error);
-                statusMessageEl.textContent = 'Gagal mengirim. Silakan coba lagi.';
+                statusMessageEl.textContent = `Gagal mengirim: ${error.message}`;
                 statusMessageEl.style.color = 'red';
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Kirim Bukti Pembayaran';
