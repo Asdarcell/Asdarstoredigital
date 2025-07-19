@@ -112,31 +112,30 @@
         });
     };
 
-    // Ini adalah logika yang akan berjalan setelah login
     auth.onAuthStateChanged(async user => {
       if (user) {
-        // Hanya cek apakah pengguna adalah reseller, tidak peduli dia juga admin
-        const resellerDoc = await firestore.collection('resellers').doc(user.uid).get();
-        
-        if (resellerDoc.exists) {
-          const resellerData = resellerDoc.data();
-          if (resellerData.status === 'approved') {
-            // Jika reseller disetujui, arahkan ke halaman reseller
-            window.location.href = 'reseller.html';
-          } else if (resellerData.status === 'pending') {
-            // Jika reseller belum disetujui, berikan notifikasi
-            showNotification('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.', 'success');
+        try {
+          const resellerDoc = await firestore.collection('resellers').doc(user.uid).get();
+          
+          if (resellerDoc.exists) {
+            const resellerData = resellerDoc.data();
+            if (resellerData.status === 'approved') {
+              window.location.href = 'reseller.html';
+            } else if (resellerData.status === 'pending') {
+              showNotification('Akun Anda menunggu persetujuan admin.', 'success');
+              auth.signOut();
+            }
+          } else {
+            showNotification('Maaf, akun Anda tidak terdaftar sebagai reseller.', 'error');
             auth.signOut();
           }
-        } else {
-            // Jika pengguna tidak terdaftar sebagai reseller, berikan notifikasi
-            showNotification('Maaf, akun Anda tidak memiliki akses reseller.', 'error');
-            auth.signOut();
+        } catch (error) {
+          showNotification('Terjadi kesalahan saat memeriksa status akun. Coba muat ulang halaman.', 'error');
+          auth.signOut();
         }
       }
     });
 
-    // Menangani pengiriman formulir login atau daftar
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideNotification();
@@ -148,17 +147,15 @@
 
       try {
         if (isLogin) {
-          // Logika untuk login
           await auth.signInWithEmailAndPassword(email, password);
         } else {
-          // Logika untuk pendaftaran akun baru
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           await firestore.collection('resellers').doc(userCredential.user.uid).set({
             email: userCredential.user.email,
             status: 'pending',
             registeredAt: firebase.firestore.FieldValue.serverTimestamp()
           });
-          showNotification('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.', 'success');
+          showNotification('Pendaftaran berhasil! Akun Anda menunggu persetujuan admin.', 'success');
           isLogin = true;
           updateUI();
         }
