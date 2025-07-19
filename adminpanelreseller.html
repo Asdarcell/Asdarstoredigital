@@ -170,7 +170,7 @@
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -184,13 +184,9 @@
             storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
-        
-        // UBAH DARI REALTIME DATABASE KE FIRESTORE
-        const firestoreDb = firebase.firestore();
-        const realtimeDb = firebase.database();
+        const db = firebase.database();
         const auth = firebase.auth();
         const storage = firebase.storage();
-        
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
         const normalizePhone = (num) => {
             const cleanNum = String(num).trim().replace(/[^0-9]/g, '');
@@ -210,7 +206,7 @@
                 if (user) {
                     loading.style.display = 'none';
                     content.style.display = 'block';
-                    loadPendingResellers();
+                    loadPendingResellers(); // Panggil fungsi baru
                     loadPesananData();
                     loadResellerData();
                     loadProductManagementData();
@@ -225,7 +221,7 @@
             if (orderId) {
                 setTimeout(() => {
                     alert(`Ada pesanan baru! ID: ${orderId}. Silakan cek tabel pesanan.`);
-                    window.history.replaceState({}, document.title, "adminpanelreseller.html");
+                    window.history.replaceState({}, document.title, "adminpanelreseller.html"); // Bersihkan URL
                 }, 1000);
             }
         });
@@ -252,19 +248,19 @@
             document.getElementById('kurangiSaldoBtn').addEventListener('click', () => updateResellerSaldo('kurang'));
         }
 
-        // FUNGSI BARU UNTUK MANAJEMEN PENDAFTARAN RESELLER (FIREBASE FIRESTORE)
+        // FUNGSI BARU UNTUK MANAJEMEN PENDAFTARAN RESELLER
         function loadPendingResellers() {
             const tableBody = document.getElementById('tabelPendaftaranReseller');
-            // Menggunakan Firestore untuk mengambil data
-            firestoreDb.collection('resellers').where('status', '==', 'pending-deposit').onSnapshot(snapshot => {
+            // Mengambil data reseller dengan status 'pending-deposit'
+            db.ref('resellers').orderByChild('status').equalTo('pending-deposit').on('value', (snapshot) => {
+                const resellersData = snapshot.val() || {};
                 let html = '';
-                if (snapshot.empty) {
+                if (Object.keys(resellersData).length === 0) {
                     html = `<tr><td colspan="6" style="text-align: center;">Tidak ada pendaftaran baru.</td></tr>`;
                 } else {
-                    snapshot.docs.forEach(doc => {
-                        const reseller = doc.data();
-                        const uid = doc.id;
-                        const buktiHtml = reseller.deposit_proof?.proof_link ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : 'Belum ada';
+                    Object.keys(resellersData).reverse().forEach(uid => {
+                        const reseller = resellersData[uid];
+                        const buktiHtml = reseller.deposit_proof ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : 'Belum ada';
                         html += `
                             <tr>
                                 <td>${reseller.nama}</td>
@@ -281,14 +277,11 @@
                     });
                 }
                 tableBody.innerHTML = html;
-            }, error => {
-                console.error("Error loading pending resellers:", error);
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Gagal memuat data pendaftaran.</td></tr>`;
             });
         }
         
         async function verifyReseller(uid, isApproved) {
-            const resellerRef = firestoreDb.collection('resellers').doc(uid);
+            const resellerRef = db.ref('resellers/' + uid);
             const status = isApproved ? 'approved' : 'rejected';
             const confirmationMessage = isApproved ? `Yakin ingin mengaktifkan akun reseller ini?` : `Yakin ingin menolak akun ini?`;
             
@@ -305,9 +298,8 @@
             }
         }
 
-        // FUNGSI MANAJEMEN PESANAN (TETAP MENGGUNAKAN REALTIME DATABASE)
         function loadPesananData() {
-            realtimeDb.ref('pesanan').on('value', (snapshot) => {
+            db.ref('pesanan').on('value', (snapshot) => {
                 const pesananData = snapshot.val() || {};
                 const tableBody = document.getElementById('tabelPesanan');
                 const html = Object.keys(pesananData).reverse().map(key => {
@@ -339,7 +331,7 @@
         }
         
         async function selesaikanPesanan(pesananId) {
-            const pesananRef = realtimeDb.ref('pesanan/' + pesananId);
+            const pesananRef = db.ref('pesanan/' + pesananId);
             const pesananSnapshot = await pesananRef.once('value');
             const pesananData = pesananSnapshot.val();
             
@@ -371,7 +363,7 @@
 
                     const resellerWa = pesananData.reseller;
                     const produk = pesananData.produk;
-                    const idGame = pesananData.idGame || pesanan.nomor;
+                    const idGame = pesananData.idGame || pesananData.nomor;
 
                     const pesanWa = `Halo reseller, pesanan Anda dengan ID *${pesananId}* telah *Selesai*.\n\n*Produk:* ${produk}\n*ID Game:* ${idGame}\n\nSilakan cek bukti pengerjaan melalui link berikut:\n${buktiUrl}`;
                     window.open(`https://wa.me/${resellerWa}?text=${encodeURIComponent(pesanWa)}`, '_blank');
@@ -384,9 +376,8 @@
             fileInput.click();
         }
 
-        // FUNGSI MANAJEMEN SALDO RESELLER (TETAP MENGGUNAKAN REALTIME DATABASE)
         function loadResellerData() {
-            realtimeDb.ref('resellers').on('value', (snapshot) => {
+            db.ref('resellers').on('value', (snapshot) => {
                 const resellers = snapshot.val() || {};
                 const tableBody = document.getElementById('tabelReseller');
                 const html = Object.keys(resellers).map(wa => `
@@ -411,7 +402,7 @@
             const konfirmasi = confirm(`Apakah Anda yakin ingin ${action === 'tambah' ? 'menambah' : 'mengurangi'} saldo sebesar ${formatRupiah(jumlah)} untuk reseller ${wa}?`);
             if (!konfirmasi) return;
             try {
-                const resellerRef = realtimeDb.ref('resellers/' + wa);
+                const resellerRef = db.ref('resellers/' + wa);
                 const result = await resellerRef.transaction(currentData => {
                     if (!currentData) currentData = { saldo: 0 };
                     let currentSaldo = currentData.saldo;
@@ -419,7 +410,7 @@
                         currentSaldo += jumlah;
                     } else if (action === 'kurang') {
                         if (currentSaldo < jumlah) {
-                            return;
+                            return; // Abort transaction
                         }
                         currentSaldo -= jumlah;
                     }
@@ -438,10 +429,8 @@
                 alert('Terjadi kesalahan saat memperbarui saldo.');
             }
         }
-
-        // FUNGSI MANAJEMEN PRODUK RESELLER (TETAP MENGGUNAKAN REALTIME DATABASE)
         function loadProductManagementData() {
-            realtimeDb.ref('produk').once('value').then(snapshot => {
+            db.ref('produk').once('value').then(snapshot => {
                 const data = snapshot.val() || {};
                 const kategoriSelect = document.getElementById('kategoriProduk');
                 kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
@@ -458,7 +447,7 @@
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
             if (!kategori) return;
-            realtimeDb.ref(`produk/${kategori}`).once('value').then(snapshot => {
+            db.ref(`produk/${kategori}`).once('value').then(snapshot => {
                 const data = snapshot.val() || {};
                 const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
                 sortedVarian.forEach(produk => {
@@ -473,7 +462,7 @@
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
             if (!kategori || !produk) return;
-            realtimeDb.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
+            db.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
                 const data = snapshot.val() || {};
                 document.getElementById('hargaProduk').value = data.harga || 0;
                 document.getElementById('hargaResellerProduk').value = data.harga_reseller || 0;
@@ -494,7 +483,7 @@
                 return;
             }
             try {
-                await realtimeDb.ref(`produk/${kategori}/${produk}`).update({
+                await db.ref(`produk/${kategori}/${produk}`).update({
                     harga_reseller: hargaReseller,
                     stok: stok
                 });
