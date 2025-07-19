@@ -468,15 +468,48 @@
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
         document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
-        document.getElementById('batalEditBtn').addEventListener('click', () => { document.getElementById('formProduk').reset(); document.getElementById('formProduk').originalVarian.value = ''; document.getElementById('formProduk').batalEditBtn.classList.add('d-none'); });
+        document.getElementById('batalEditBtn').addEventListener('click', () => {
+            document.getElementById('formProduk').reset();
+            document.getElementById('formProduk').batalEditBtn.classList.add('d-none');
+        });
+        
+        // Panggil fungsi pemuatan data berdasarkan tab yang aktif saat dimuat
+        const initialTab = document.querySelector('.nav-link.active').id;
+        if (initialTab === 'orders-tab') {
+            db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
+            db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
+        } else if (initialTab === 'products-tab') {
+            loadProduk();
+        } else if (initialTab === 'resellers-tab') {
+            loadResellers();
+        } else if (initialTab === 'moderasi-tab') {
+            loadTestimonials();
+        } else if (initialTab === 'settings-tab') {
+            loadContentSettings();
+        }
+        
+        // Atur event listener untuk setiap klik tab
+        document.querySelectorAll('.nav-link').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', event => {
+                const targetTabId = event.target.id;
+                if (targetTabId === 'orders-tab') {
+                    db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
+                    db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
+                } else if (targetTabId === 'products-tab') {
+                    loadProduk();
+                } else if (targetTabId === 'resellers-tab') {
+                    loadResellers();
+                } else if (targetTabId === 'moderasi-tab') {
+                    loadTestimonials();
+                } else if (targetTabId === 'settings-tab') {
+                    loadContentSettings();
+                }
+            });
+        });
+        
+        // Handle filter dan search
         document.getElementById('filterStatus').addEventListener('change', renderPesanan);
         document.getElementById('searchId').addEventListener('input', renderPesanan);
-        loadResellers();
-        loadTestimonials();
-        loadContentSettings();
-        loadProduk();
-        db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
-        db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
     });
 </script>
 </body>
