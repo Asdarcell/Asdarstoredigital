@@ -84,22 +84,19 @@
     const toggleText = document.querySelector('.toggle-link p');
     let isLogin = true;
 
+    // Menampilkan notifikasi pesan
     function showNotification(message, type) {
       notification.textContent = message;
       notification.className = `notification ${type}`;
       notification.style.display = 'block';
     }
 
+    // Menyembunyikan notifikasi
     function hideNotification() {
       notification.style.display = 'none';
     }
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        window.location.href = 'reseller.html';
-      }
-    });
-
+    // Fungsi untuk memperbarui tampilan UI
     const updateUI = () => {
         if (isLogin) {
             formTitle.textContent = 'Login Reseller';
@@ -111,7 +108,7 @@
             toggleText.innerHTML = 'Sudah punya akun? <a href="#" id="toggle-link">Login Sekarang</a>';
         }
 
-        // Re-attach event listener to the new anchor tag
+        // Memasang kembali event listener ke tautan yang baru
         document.getElementById('toggle-link').addEventListener('click', (e) => {
             e.preventDefault();
             isLogin = !isLogin;
@@ -120,7 +117,32 @@
         });
     };
 
-    form.addEventListener('submit', (e) => {
+    // Main logic ketika status otentikasi berubah
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        // Cek apakah pengguna adalah admin
+        const adminDoc = await firestore.collection('admins').doc(user.uid).get();
+        if (adminDoc.exists) {
+          window.location.href = 'admin.html';
+          return;
+        }
+        
+        // Jika bukan admin, cek apakah pengguna adalah reseller
+        const resellerDoc = await firestore.collection('resellers').doc(user.uid).get();
+        if (resellerDoc.exists && resellerDoc.data().status === 'approved') {
+          window.location.href = 'reseller.html';
+          return;
+        }
+
+        // Jika bukan admin atau reseller yang disetujui, arahkan ke halaman login
+        // atau berikan notifikasi (kita akan tinggal di halaman ini)
+        showNotification('Maaf, akun Anda belum disetujui atau tidak memiliki akses.', 'error');
+        auth.signOut(); // Opsional: logout otomatis jika tidak memiliki akses
+      }
+    });
+
+    // Menangani pengiriman formulir
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideNotification();
       const email = emailInput.value;
@@ -129,40 +151,30 @@
       authBtn.disabled = true;
       authBtn.textContent = 'Memproses...';
 
-      if (isLogin) {
-        auth.signInWithEmailAndPassword(email, password)
-          .then((userCredential) => {
-            // Login berhasil, onAuthStateChanged akan mengarahkan
-          })
-          .catch((error) => {
-            showNotification(error.message, 'error');
-            authBtn.disabled = false;
-            authBtn.textContent = 'Masuk';
+      try {
+        if (isLogin) {
+          await auth.signInWithEmailAndPassword(email, password);
+          // Jika login berhasil, onAuthStateChanged akan mengarahkan
+        } else {
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          await firestore.collection('resellers').doc(userCredential.user.uid).set({
+            email: userCredential.user.email,
+            status: 'pending',
+            registeredAt: firebase.firestore.FieldValue.serverTimestamp()
           });
-      } else {
-        auth.createUserWithEmailAndPassword(email, password)
-          .then((userCredential) => {
-            const user = userCredential.user;
-            return firestore.collection('resellers').doc(user.uid).set({
-              email: user.email,
-              status: 'pending',
-              registeredAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-          })
-          .then(() => {
-            showNotification('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.', 'success');
-            isLogin = true;
-            updateUI();
-          })
-          .catch((error) => {
-            showNotification(error.message, 'error');
-            authBtn.disabled = false;
-            authBtn.textContent = 'Daftar';
-          });
+          showNotification('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.', 'success');
+          isLogin = true;
+          updateUI();
+        }
+      } catch (error) {
+        showNotification(error.message, 'error');
+      } finally {
+        authBtn.disabled = false;
+        authBtn.textContent = isLogin ? 'Masuk' : 'Daftar';
       }
     });
 
-    updateUI(); // Panggil pertama kali saat halaman dimuat
+    updateUI();
   </script>
 </body>
 </html>
