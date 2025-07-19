@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran Deposit Reseller</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; }
+        [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; line-height: 1.6; padding-top: 20px; }
+        .deposit-container { max-width: 700px; margin: 0 auto; padding: 25px; background: var(--card); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 25px; }
+        .info { background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; text-align: center; }
+        .info h2 { margin: 0; color: var(--success); }
+        .info p { margin: 5px 0; }
+        .payment-methods-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .payment-method-item { background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .payment-details { line-height: 1.4; }
+        .payment-method-name { font-weight: 600; font-size: 1.1em; color: var(--text); }
+        .payment-method-number { font-size: 1em; font-weight: 500; color: var(--primary); }
+        .payment-method-an { font-size: 0.85em; color: var(--text); }
+        .copy-btn { background-color: transparent; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-size: 0.9em; white-space: nowrap; }
+        .copy-btn:hover { background-color: var(--primary); color: white; border-color: var(--primary); }
+        label { font-weight: 600; margin-top: 15px; display: block; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--bg); color: var(--text); }
+        button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; font-size: 16px; transition: all 0.2s ease; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #status-message { text-align: center; margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="deposit-container">
+        <h1>Pembayaran Deposit</h1>
+        <div id="deposit-info" class="info">
+            <p id="deposit-text">Memuat detail deposit...</p>
+        </div>
+        
+        <h2>Lakukan Pembayaran ke Salah Satu Rekening Ini</h2>
+        <div id="payment-methods-list" class="payment-methods-list">
+            <p class="text-center">Memuat metode pembayaran...</p>
+        </div>
+
+        <h2 style="margin-top: 40px;">Konfirmasi Pembayaran</h2>
+        <form id="deposit-form">
+            <label for="sender-name">Nama Pengirim (Sesuai Rekening / E-Wallet)</label>
+            <input type="text" id="sender-name" required placeholder="Contoh: Budi Santoso">
+            
+            <label for="proof-link">Link Bukti Pembayaran</label>
+            <input type="url" id="proof-link" required placeholder="Contoh: https://i.imgur.com/your-proof.jpg">
+            <p style="font-size: 0.8em; color: #888; margin-top: -10px;">
+                Anda bisa mengunggah gambar ke layanan seperti <a href="https://imgur.com" target="_blank" style="color: var(--primary);">Imgur</a> atau <a href="https://ibb.co" target="_blank" style="color: var(--primary);">ImgBB</a>, lalu tempelkan link-nya di sini.
+            </p>
+
+            <button type="submit" id="submit-btn" disabled>Kirim Bukti Pembayaran</button>
+        </form>
+        <p id="status-message"></p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const DEPOSIT_AMOUNTS = {
+            'A': 100000,
+            'B': 50000
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const uid = urlParams.get('uid');
+
+        const depositTextEl = document.getElementById('deposit-text');
+        const paymentMethodsListEl = document.getElementById('payment-methods-list');
+        const depositForm = document.getElementById('deposit-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusMessageEl = document.getElementById('status-message');
+
+        // Fungsi untuk format rupiah
+        const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+        // Fungsi untuk menyalin teks ke clipboard
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                element.textContent = 'Tersalin!';
+                element.disabled = true;
+                setTimeout(() => {
+                    element.innerHTML = `<i class="far fa-copy"></i> Salin`;
+                    element.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                console.error('Gagal menyalin teks: ', err);
+                alert('Gagal menyalin. Mohon salin secara manual.');
+            });
+        }
+
+        // Memuat data reseller dan info deposit
+        async function loadDepositInfo() {
+            if (!uid) {
+                depositTextEl.textContent = 'UID tidak ditemukan. Silakan kembali ke halaman pendaftaran.';
+                return;
+            }
+
+            try {
+                const resellerSnap = await db.ref('resellers/' + uid).once('value');
+                if (!resellerSnap.exists()) {
+                    depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
+                    return;
+                }
+                const resellerData = resellerSnap.val();
+                const plan = resellerData.paket;
+                const depositAmount = DEPOSIT_AMOUNTS[plan];
+
+                depositTextEl.innerHTML = `<i class="fas fa-money-bill-wave me-2"></i><strong>Deposit Reseller Paket ${plan}</strong><br>
+                                            Jumlah yang harus dibayar: <b>${formatRupiah(depositAmount)}</b>`;
+
+                submitBtn.disabled = false;
+                
+            } catch (error) {
+                console.error("Gagal memuat info deposit:", error);
+                depositTextEl.textContent = 'Terjadi kesalahan saat memuat data.';
+            }
+        }
+
+        // Memuat metode pembayaran
+        async function loadPaymentMethods() {
+            try {
+                const paymentSnap = await db.ref('infoPembayaran').once('value');
+                const paymentData = paymentSnap.val() || {};
+                let paymentHtml = '';
+                for (const [metode, detail] of Object.entries(paymentData)) {
+                    paymentHtml += `<div class="payment-method-item">
+                                        <div class="payment-details">
+                                            <div class="payment-method-name">${metode}</div>
+                                            <div class="payment-method-number">${detail.nomor}</div>
+                                            <div class="payment-method-an">a.n ${detail.nama}</div>
+                                        </div>
+                                        <button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
+                                    </div>`;
+                }
+                paymentMethodsListEl.innerHTML = paymentHtml;
+            } catch (error) {
+                console.error("Gagal memuat metode pembayaran:", error);
+                paymentMethodsListEl.innerHTML = `<p class="text-center">Gagal memuat metode pembayaran.</p>`;
+            }
+        }
+
+        // Menangani pengiriman form bukti pembayaran
+        depositForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mengirim...';
+            statusMessageEl.textContent = '';
+
+            const senderName = document.getElementById('sender-name').value;
+            const proofLink = document.getElementById('proof-link').value;
+
+            try {
+                // Simpan bukti pembayaran ke database
+                await db.ref(`resellers/${uid}/deposit_proof`).set({
+                    sender_name: senderName,
+                    proof_link: proofLink,
+                    submittedAt: new Date().toISOString()
+                });
+
+                // Perbarui status pengguna
+                await db.ref(`resellers/${uid}/status`).set('pending-verification');
+
+                statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
+                statusMessageEl.style.color = 'green';
+                depositForm.reset();
+                submitBtn.textContent = 'Bukti Terkirim';
+
+            } catch (error) {
+                console.error("Gagal mengirim bukti pembayaran:", error);
+                statusMessageEl.textContent = 'Gagal mengirim. Silakan coba lagi.';
+                statusMessageEl.style.color = 'red';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Bukti Pembayaran';
+            }
+        });
+
+        // Panggil fungsi saat halaman dimuat
+        loadDepositInfo();
+        loadPaymentMethods();
+    </script>
+</body>
+</html>
