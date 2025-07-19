@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Reseller - Asdar Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root { --primary-color: #0d6efd; --success-color: #198754; --shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; }
+        .dashboard-card { border-radius: 12px; box-shadow: var(--shadow); border: none; }
+        .order-list { max-height: 50vh; overflow-y: auto; }
+        .order-item { border-left: 4px solid var(--primary-color); }
+    </style>
+</head>
+<body>
+
+    <div class="container py-4">
+        <div class="text-center mb-4">
+            <h1 class="display-5 fw-bold">Dashboard Reseller</h1>
+            <p id="welcomeMessage" class="text-muted">Selamat datang, Reseller!</p>
+            <button class="btn btn-sm btn-outline-danger" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Keluar</button>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card dashboard-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div><p class="mb-0 fw-bold">Total Pesanan</p><h2 class="mb-0 display-4" id="totalOrders">0</h2></div>
+                            <i class="fas fa-receipt fa-4x opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card dashboard-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div><p class="mb-0 fw-bold">Total Komisi</p><h2 class="mb-0 display-4" id="totalCommission">Rp0</h2></div>
+                            <i class="fas fa-wallet fa-4x opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card dashboard-card mb-4">
+            <div class="card-body">
+                <h4 class="card-title mb-3">Tautan Referral Anda</h4>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="referralLink" readonly>
+                    <button class="btn btn-primary" id="copyBtn"><i class="fas fa-copy me-2"></i>Salin</button>
+                </div>
+                <small class="form-text text-muted">Bagikan tautan ini ke teman Anda agar pesanan tercatat.</small>
+            </div>
+        </div>
+
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h4 class="card-title">Daftar Pesanan</h4>
+                <div id="ordersList" class="list-group order-list">
+                    <p class="text-center text-muted p-4">Memuat pesanan...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const BASE_URL = window.location.origin + window.location.pathname.replace('reseller-dashboard.html', '');
+        
+        const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                db.ref(`resellers/${user.uid}`).once('value').then(snapshot => {
+                    const resellerData = snapshot.val();
+                    if (resellerData && resellerData.status === 'approved') {
+                        document.getElementById('welcomeMessage').textContent = `Selamat datang, ${resellerData.nama || 'Reseller'}!`;
+                        const referralLink = `${BASE_URL}?r=${user.uid}`;
+                        document.getElementById('referralLink').value = referralLink;
+                        loadOrders(user.uid);
+                    } else {
+                        window.location.href = 'reseller-login.html';
+                    }
+                }).catch(() => {
+                    window.location.href = 'reseller-login.html';
+                });
+            } else {
+                window.location.href = 'reseller-login.html';
+            }
+        });
+
+        const loadOrders = (uid) => {
+            const ordersList = document.getElementById('ordersList');
+            let totalOrdersCount = 0;
+            let totalCommissionValue = 0;
+            
+            db.ref('pesanan').orderByChild('reseller_uid').equalTo(uid).on('value', snapshot => {
+                ordersList.innerHTML = '';
+                totalOrdersCount = 0;
+                totalCommissionValue = 0;
+
+                if (!snapshot.exists()) {
+                    ordersList.innerHTML = '<p class="text-center text-muted p-4">Anda belum memiliki pesanan.</p>';
+                    return;
+                }
+
+                const orders = [];
+                snapshot.forEach(child => orders.push({ id: child.key, ...child.val() }));
+                
+                orders.sort((a,b) => new Date(b.waktu) - new Date(a.waktu));
+
+                orders.forEach(order => {
+                    const commission = (order.harga_final || order.harga_asli) * 0.1; // Komisi 10%
+                    totalOrdersCount++;
+                    totalCommissionValue += commission;
+                    
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center order-item my-2';
+                    listItem.innerHTML = `
+                        <div>
+                            <h6 class="mb-1 fw-bold">${order.produk || 'Produk'} - ${order.kategori || 'Kategori'}</h6>
+                            <small class="text-muted"><i class="fas fa-user-circle me-1"></i>${order.nama || 'Pelanggan'} | <i class="fas fa-clock me-1"></i>${new Date(order.waktu).toLocaleString('id-ID')}</small>
+                        </div>
+                        <span class="badge bg-success ms-2">${formatRupiah(commission)}</span>
+                    `;
+                    ordersList.appendChild(listItem);
+                });
+
+                document.getElementById('totalOrders').textContent = totalOrdersCount;
+                document.getElementById('totalCommission').textContent = formatRupiah(totalCommissionValue);
+            });
+        };
+
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const referralLink = document.getElementById('referralLink');
+            referralLink.select();
+            document.execCommand('copy');
+            alert('Tautan berhasil disalin!');
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'reseller-login.html';
+            });
+        });
+
+    </script>
+</body>
+</html>
