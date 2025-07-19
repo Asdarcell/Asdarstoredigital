@@ -75,7 +75,8 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
@@ -83,12 +84,11 @@
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Tambahkan ini
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // --- API KEY IMGBB ANDA YANG BARU ---
-        const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+        const db = firebase.database(); // Perubahan utama: Realtime Database
+        const storage = firebase.storage(); // Perubahan utama: Tambahkan Storage
 
         const DEPOSIT_AMOUNTS = {
             'A': 100000,
@@ -123,14 +123,6 @@
             });
         }
 
-        // Fungsi untuk mengonversi file menjadi Base64
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = error => reject(error);
-        });
-
         // Memuat data reseller dan info deposit
         async function loadDepositInfo() {
             if (!uid) {
@@ -140,14 +132,14 @@
             }
 
             try {
-                // Mengambil data dari Firestore
-                const resellerDoc = await db.collection('resellers').doc(uid).get();
-                if (!resellerDoc.exists) {
+                // Mengambil data dari Realtime Database
+                const resellerSnapshot = await db.ref('resellers/' + uid).once('value');
+                if (!resellerSnapshot.exists()) {
                     depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
                     submitBtn.disabled = true;
                     return;
                 }
-                const resellerData = resellerDoc.data();
+                const resellerData = resellerSnapshot.val();
                 const plan = resellerData.paket;
                 const depositAmount = DEPOSIT_AMOUNTS[plan];
 
@@ -188,29 +180,17 @@
             }
 
             try {
-                // Upload image to ImgBB
-                const base64Image = await toBase64(proofFile);
-                const formData = new FormData();
-                formData.append("key", IMGBB_API_KEY);
-                formData.append("image", base64Image);
+                // Upload image to Firebase Storage (menggantikan ImgBB)
+                const storageRef = storage.ref(`deposit_proofs/${uid}/${proofFile.name}`);
+                const uploadTask = await storageRef.put(proofFile);
+                const proofLink = await uploadTask.ref.getDownloadURL();
 
-                const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
-                    method: "POST",
-                    body: formData
-                });
-                const imgbbData = await imgbbResponse.json();
-
-                if (!imgbbData.success) {
-                    throw new Error(imgbbData.error.message || 'Gagal mengunggah gambar ke ImgBB.');
-                }
-                const proofLink = imgbbData.data.url;
-
-                // Simpan bukti pembayaran ke Firestore
-                await db.collection('resellers').doc(uid).update({
+                // Simpan bukti pembayaran ke Realtime Database (menggantikan Firestore)
+                await db.ref('resellers/' + uid).update({
                     deposit_proof: {
                         sender_name: senderName,
                         proof_link: proofLink,
-                        submittedAt: new Date().toISOString()
+                        submitted_at: new Date().toISOString()
                     },
                     status: 'pending-deposit'
                 });
