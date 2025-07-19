@@ -40,7 +40,22 @@
         
         <h2>Lakukan Pembayaran ke Salah Satu Rekening Ini</h2>
         <div id="payment-methods-list" class="payment-methods-list">
-            <p class="text-center">Memuat metode pembayaran...</p>
+            <div class="payment-method-item">
+                <div class="payment-details">
+                    <div class="payment-method-name">Shopee Pay</div>
+                    <div class="payment-method-number">081803004607</div>
+                    <div class="payment-method-an">a.n (Nama Akun Anda)</div>
+                </div>
+                <button class="copy-btn" onclick="copyToClipboard('081803004607', this)"><i class="far fa-copy"></i> Salin</button>
+            </div>
+            <div class="payment-method-item">
+                <div class="payment-details">
+                    <div class="payment-method-name">Dana</div>
+                    <div class="payment-method-number">087755432880</div>
+                    <div class="payment-method-an">a.n (Nama Akun Anda)</div>
+                </div>
+                <button class="copy-btn" onclick="copyToClipboard('087755432880', this)"><i class="far fa-copy"></i> Salin</button>
+            </div>
         </div>
 
         <h2 style="margin-top: 40px;">Konfirmasi Pembayaran</h2>
@@ -88,7 +103,7 @@
         const depositForm = document.getElementById('deposit-form');
         const submitBtn = document.getElementById('submit-btn');
         const statusMessageEl = document.getElementById('status-message');
-        const proofFileEl = document.getElementById('proof-file'); // New input for file upload
+        const proofFileEl = document.getElementById('proof-file');
 
         // Fungsi untuk format rupiah
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -112,7 +127,7 @@
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]); // Ambil hanya bagian base64
+            reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.onerror = error => reject(error);
         });
 
@@ -120,7 +135,7 @@
         async function loadDepositInfo() {
             if (!uid) {
                 depositTextEl.textContent = 'UID tidak ditemukan. Silakan kembali ke halaman pendaftaran.';
-                submitBtn.disabled = true; // Disable button if UID is missing
+                submitBtn.disabled = true;
                 return;
             }
 
@@ -128,14 +143,14 @@
                 const resellerSnap = await db.ref('resellers/' + uid).once('value');
                 if (!resellerSnap.exists()) {
                     depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
-                    submitBtn.disabled = true; // Disable button if reseller data is missing
+                    submitBtn.disabled = true;
                     return;
                 }
                 const resellerData = resellerSnap.val();
                 const plan = resellerData.paket;
                 const depositAmount = DEPOSIT_AMOUNTS[plan];
 
-                if (depositAmount === undefined) { // Handle case where plan is not in DEPOSIT_AMOUNTS
+                if (depositAmount === undefined) {
                     depositTextEl.textContent = `Error: Jumlah deposit untuk paket "${plan}" tidak ditemukan.`;
                     submitBtn.disabled = true;
                     return;
@@ -153,33 +168,6 @@
             }
         }
 
-        // Memuat metode pembayaran
-        async function loadPaymentMethods() {
-            try {
-                const paymentSnap = await db.ref('infoPembayaran').once('value');
-                const paymentData = paymentSnap.val() || {};
-                let paymentHtml = '';
-                if (Object.keys(paymentData).length === 0) {
-                    paymentMethodsListEl.innerHTML = `<p class="text-center">Metode pembayaran belum diatur oleh admin.</p>`;
-                    return;
-                }
-                for (const [metode, detail] of Object.entries(paymentData)) {
-                    paymentHtml += `<div class="payment-method-item">
-                                        <div class="payment-details">
-                                            <div class="payment-method-name">${metode}</div>
-                                            <div class="payment-method-number">${detail.nomor}</div>
-                                            <div class="payment-method-an">a.n ${detail.nama}</div>
-                                        </div>
-                                        <button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
-                                    </div>`;
-                }
-                paymentMethodsListEl.innerHTML = paymentHtml;
-            } catch (error) {
-                console.error("Gagal memuat metode pembayaran:", error);
-                paymentMethodsListEl.innerHTML = `<p class="text-center">Gagal memuat metode pembayaran.</p>`;
-            }
-        }
-
         // Menangani pengiriman form bukti pembayaran
         depositForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -188,7 +176,7 @@
             statusMessageEl.textContent = '';
 
             const senderName = document.getElementById('sender-name').value;
-            const proofFile = proofFileEl.files[0]; // Get the selected file
+            const proofFile = proofFileEl.files[0];
 
             if (!proofFile) {
                 statusMessageEl.textContent = 'Mohon unggah file bukti pembayaran.';
@@ -224,13 +212,13 @@
                 });
 
                 // Perbarui status pengguna
-                await db.ref(`resellers/${uid}/status`).set('pending-deposit'); // Changed to pending-deposit for admin verification
+                await db.ref(`resellers/${uid}/status`).set('pending-deposit');
 
                 statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
                 statusMessageEl.style.color = 'green';
                 depositForm.reset();
                 submitBtn.textContent = 'Bukti Terkirim';
-                submitBtn.disabled = true; // Keep button disabled after successful submission
+                submitBtn.disabled = true;
 
             } catch (error) {
                 console.error("Gagal mengirim bukti pembayaran:", error);
@@ -241,9 +229,8 @@
             }
         });
 
-        // Panggil fungsi saat halaman dimuat
+        // Catatan: Karena metode pembayaran sudah hardcoded, fungsi loadPaymentMethods() tidak perlu dijalankan.
         loadDepositInfo();
-        loadPaymentMethods();
     </script>
 </body>
 </html>
