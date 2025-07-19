@@ -41,8 +41,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script> <script>
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -52,7 +51,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const db = firebase.database();
+        const db = firebase.firestore(); // Menggunakan Firestore
 
         const form = document.getElementById('register-form');
         const namaInput = document.getElementById('nama');
@@ -64,11 +63,9 @@
         
         let selectedPlan = '';
 
-        // Fungsi untuk mengambil parameter dari URL
         const urlParams = new URLSearchParams(window.location.search);
         selectedPlan = urlParams.get('plan');
 
-        // Menampilkan informasi paket
         if (selectedPlan === 'A') {
             planInfo.innerHTML = "Anda memilih **Reseller Paket A** dengan keuntungan 15% dan minimal deposit Rp 100.000.";
         } else if (selectedPlan === 'B') {
@@ -97,23 +94,21 @@
             }
 
             try {
-                // Buat pengguna baru di Firebase Authentication
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const uid = userCredential.user.uid;
 
-                // Simpan data reseller ke Realtime Database
-                await db.ref('resellers/' + uid).set({
+                // Simpan data reseller ke Firestore
+                await db.collection('resellers').doc(uid).set({
                     nama: nama,
                     email: email,
                     paket: selectedPlan,
-                    status: 'pending-deposit', // Status awal, menunggu pembayaran deposit
+                    status: 'pending-deposit',
                     registeredAt: new Date().toISOString()
                 });
 
                 statusMessage.textContent = 'Pendaftaran berhasil! Mengalihkan ke halaman pembayaran...';
                 statusMessage.style.color = 'green';
                 
-                // Setelah pendaftaran, arahkan pengguna ke halaman pembayaran deposit
                 setTimeout(() => {
                     window.location.href = `deposit.html?uid=${uid}`; 
                 }, 2000);
