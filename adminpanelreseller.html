@@ -58,6 +58,29 @@
         </div>
         <div id="content" style="display: none;">
             <div data-aos="fade-up" class="section-container">
+                <h2>Manajemen Pendaftaran Reseller</h2>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Email</th>
+                                <th>Paket</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                                <th>Bukti</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelPendaftaranReseller">
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div data-aos="fade-up" class="section-container">
                 <h2>Manajemen Pesanan</h2>
                 <div class="table-responsive">
                     <table class="table">
@@ -183,6 +206,7 @@
                 if (user) {
                     loading.style.display = 'none';
                     content.style.display = 'block';
+                    loadPendingResellers(); // Panggil fungsi baru
                     loadPesananData();
                     loadResellerData();
                     loadProductManagementData();
@@ -222,6 +246,56 @@
             document.getElementById('updateProdukBtn').addEventListener('click', updateProductData);
             document.getElementById('tambahSaldoBtn').addEventListener('click', () => updateResellerSaldo('tambah'));
             document.getElementById('kurangiSaldoBtn').addEventListener('click', () => updateResellerSaldo('kurang'));
+        }
+
+        // FUNGSI BARU UNTUK MANAJEMEN PENDAFTARAN RESELLER
+        function loadPendingResellers() {
+            const tableBody = document.getElementById('tabelPendaftaranReseller');
+            // Mengambil data reseller dengan status 'pending-deposit'
+            db.ref('resellers').orderByChild('status').equalTo('pending-deposit').on('value', (snapshot) => {
+                const resellersData = snapshot.val() || {};
+                let html = '';
+                if (Object.keys(resellersData).length === 0) {
+                    html = `<tr><td colspan="6" style="text-align: center;">Tidak ada pendaftaran baru.</td></tr>`;
+                } else {
+                    Object.keys(resellersData).reverse().forEach(uid => {
+                        const reseller = resellersData[uid];
+                        const buktiHtml = reseller.deposit_proof ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : 'Belum ada';
+                        html += `
+                            <tr>
+                                <td>${reseller.nama}</td>
+                                <td>${reseller.email}</td>
+                                <td>${reseller.paket}</td>
+                                <td><span class="badge pending">${reseller.status}</span></td>
+                                <td>
+                                    <button class="action-btn selesai" onclick="verifyReseller('${uid}', true)">Verifikasi</button>
+                                    <button class="action-btn batal" onclick="verifyReseller('${uid}', false)">Tolak</button>
+                                </td>
+                                <td>${buktiHtml}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                tableBody.innerHTML = html;
+            });
+        }
+        
+        async function verifyReseller(uid, isApproved) {
+            const resellerRef = db.ref('resellers/' + uid);
+            const status = isApproved ? 'approved' : 'rejected';
+            const confirmationMessage = isApproved ? `Yakin ingin mengaktifkan akun reseller ini?` : `Yakin ingin menolak akun ini?`;
+            
+            if (confirm(confirmationMessage)) {
+                try {
+                    await resellerRef.update({
+                        status: status
+                    });
+                    alert(`Akun reseller berhasil ${isApproved ? 'diverifikasi' : 'ditolak'}.`);
+                } catch (error) {
+                    console.error(`Gagal ${isApproved ? 'memverifikasi' : 'menolak'} akun:`, error);
+                    alert(`Terjadi kesalahan saat memperbarui status akun.`);
+                }
+            }
         }
 
         function loadPesananData() {
