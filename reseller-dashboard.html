@@ -72,8 +72,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script> <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -83,26 +82,32 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         
         const auth = firebase.auth();
-        const db = firebase.database();
+        const db = firebase.firestore(); // Menggunakan Firestore
         const BASE_URL = window.location.origin + window.location.pathname.replace('reseller-dashboard.html', '');
         
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async user => {
             if (user) {
-                db.ref(`resellers/${user.uid}`).once('value').then(snapshot => {
-                    const resellerData = snapshot.val();
-                    if (resellerData && resellerData.status === 'approved') {
-                        document.getElementById('welcomeMessage').textContent = `Selamat datang, ${resellerData.nama || 'Reseller'}!`;
-                        const referralLink = `${BASE_URL}?r=${user.uid}`;
-                        document.getElementById('referralLink').value = referralLink;
-                        loadOrders(user.uid);
+                try {
+                    const resellerDoc = await db.collection('resellers').doc(user.uid).get();
+                    if (resellerDoc.exists) {
+                        const resellerData = resellerDoc.data();
+                        if (resellerData.status === 'approved') {
+                            document.getElementById('welcomeMessage').textContent = `Selamat datang, ${resellerData.nama || 'Reseller'}!`;
+                            const referralLink = `${BASE_URL}register.html?r=${user.uid}`;
+                            document.getElementById('referralLink').value = referralLink;
+                            loadOrders(user.uid);
+                        } else {
+                            window.location.href = 'reseller-login.html';
+                        }
                     } else {
                         window.location.href = 'reseller-login.html';
                     }
-                }).catch(() => {
+                } catch (e) {
+                    console.error("Error loading reseller data:", e);
                     window.location.href = 'reseller-login.html';
-                });
+                }
             } else {
                 window.location.href = 'reseller-login.html';
             }
@@ -110,40 +115,38 @@
 
         const loadOrders = (uid) => {
             const ordersList = document.getElementById('ordersList');
-            let totalOrdersCount = 0;
-            let totalCommissionValue = 0;
             
-            db.ref('pesanan').orderByChild('reseller_uid').equalTo(uid).on('value', snapshot => {
+            // Menggunakan onSnapshot untuk mendengarkan perubahan real-time di Firestore
+            db.collection('pesanan').where('reseller_uid', '==', uid).onSnapshot(snapshot => {
                 ordersList.innerHTML = '';
-                totalOrdersCount = 0;
-                totalCommissionValue = 0;
+                let totalOrdersCount = 0;
+                let totalCommissionValue = 0;
 
-                if (!snapshot.exists()) {
+                if (snapshot.empty) {
                     ordersList.innerHTML = '<p class="text-center text-muted p-4">Anda belum memiliki pesanan.</p>';
-                    return;
-                }
-
-                const orders = [];
-                snapshot.forEach(child => orders.push({ id: child.key, ...child.val() }));
-                
-                orders.sort((a,b) => new Date(b.waktu) - new Date(a.waktu));
-
-                orders.forEach(order => {
-                    const commission = (order.harga_final || order.harga_asli) * 0.1; // Komisi 10%
-                    totalOrdersCount++;
-                    totalCommissionValue += commission;
+                } else {
+                    const orders = [];
+                    snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
                     
-                    const listItem = document.createElement('div');
-                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center order-item my-2';
-                    listItem.innerHTML = `
-                        <div>
-                            <h6 class="mb-1 fw-bold">${order.produk || 'Produk'} - ${order.kategori || 'Kategori'}</h6>
-                            <small class="text-muted"><i class="fas fa-user-circle me-1"></i>${order.nama || 'Pelanggan'} | <i class="fas fa-clock me-1"></i>${new Date(order.waktu).toLocaleString('id-ID')}</small>
-                        </div>
-                        <span class="badge bg-success ms-2">${formatRupiah(commission)}</span>
-                    `;
-                    ordersList.appendChild(listItem);
-                });
+                    orders.sort((a,b) => b.waktu.toDate() - a.waktu.toDate()); // Firestore timestamp
+    
+                    orders.forEach(order => {
+                        const commission = (order.harga_final || order.harga_asli) * 0.1;
+                        totalOrdersCount++;
+                        totalCommissionValue += commission;
+                        
+                        const listItem = document.createElement('div');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center order-item my-2';
+                        listItem.innerHTML = `
+                            <div>
+                                <h6 class="mb-1 fw-bold">${order.produk || 'Produk'} - ${order.kategori || 'Kategori'}</h6>
+                                <small class="text-muted"><i class="fas fa-user-circle me-1"></i>${order.nama || 'Pelanggan'} | <i class="fas fa-clock me-1"></i>${new Date(order.waktu.toDate()).toLocaleString('id-ID')}</small>
+                            </div>
+                            <span class="badge bg-success ms-2">${formatRupiah(commission)}</span>
+                        `;
+                        ordersList.appendChild(listItem);
+                    });
+                }
 
                 document.getElementById('totalOrders').textContent = totalOrdersCount;
                 document.getElementById('totalCommission').textContent = formatRupiah(totalCommissionValue);
@@ -153,13 +156,16 @@
         document.getElementById('copyBtn').addEventListener('click', () => {
             const referralLink = document.getElementById('referralLink');
             referralLink.select();
-            document.execCommand('copy');
-            alert('Tautan berhasil disalin!');
+            navigator.clipboard.writeText(referralLink.value).then(() => {
+                alert('Tautan disalin!');
+            });
         });
         
         document.getElementById('logoutBtn').addEventListener('click', () => {
             auth.signOut().then(() => {
                 window.location.href = 'reseller-login.html';
+            }).catch(error => {
+                console.error("Error signing out:", error);
             });
         });
 
