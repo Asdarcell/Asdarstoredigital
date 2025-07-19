@@ -112,6 +112,7 @@
         });
     };
 
+    // Ini adalah logika yang akan berjalan setelah login
     auth.onAuthStateChanged(async user => {
       if (user) {
         // Hanya cek apakah pengguna adalah reseller, tidak peduli dia juga admin
@@ -128,13 +129,14 @@
             auth.signOut();
           }
         } else {
-            // Jika pengguna bukan reseller, arahkan ke halaman ini dan berikan notifikasi
+            // Jika pengguna tidak terdaftar sebagai reseller, berikan notifikasi
             showNotification('Maaf, akun Anda tidak memiliki akses reseller.', 'error');
             auth.signOut();
         }
       }
     });
 
+    // Menangani pengiriman formulir login atau daftar
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideNotification();
@@ -146,8 +148,10 @@
 
       try {
         if (isLogin) {
+          // Logika untuk login
           await auth.signInWithEmailAndPassword(email, password);
         } else {
+          // Logika untuk pendaftaran akun baru
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           await firestore.collection('resellers').doc(userCredential.user.uid).set({
             email: userCredential.user.email,
