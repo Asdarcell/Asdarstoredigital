@@ -116,16 +116,14 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Nama Toko</th>
                                 <th>Email</th>
-                                <th>Tier</th>
-                                <th>Saldo</th>
                                 <th>Status</th>
+                                <th>Bergabung Pada</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="reseller-table-body">
-                            <tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted p-4">Memuat data reseller...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -419,41 +417,43 @@
         };
     };
 
-    // START FUNGSI BARU UNTUK KELOLA RESELLER
+    // --- FUNGSI BARU UNTUK KELOLA RESELLER YANG DIPERBAIKI ---
     const loadResellers = () => {
         const resellerTableBody = document.getElementById('reseller-table-body');
-        resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
+        resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
         
-        dbFirestore.collection('resellers').orderBy('bergabungPada', 'desc').onSnapshot(snapshot => {
+        // Mengambil semua reseller dan mengurutkannya berdasarkan waktu pendaftaran
+        dbFirestore.collection('resellers').orderBy('registeredAt', 'desc').onSnapshot(snapshot => {
             resellerTableBody.innerHTML = '';
             if (snapshot.empty) {
-                resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Tidak ada data reseller.</td></tr>';
+                resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Tidak ada data reseller.</td></tr>';
                 return;
             }
             snapshot.forEach(doc => {
                 const reseller = doc.data();
+                const uid = doc.id;
                 const row = document.createElement('tr');
                 
-                const statusColor = reseller.isApproved ? 'text-success' : 'text-danger';
-                const statusText = reseller.isApproved ? 'Disetujui' : 'Menunggu';
-                const buttonHtml = reseller.isApproved ? 
-                    '' :
-                    `<button class="btn btn-success btn-sm" onclick="approveReseller('${doc.id}')">Setujui</button>`;
-                const saldoFormatted = formatRupiah(reseller.saldo);
+                const statusColor = reseller.status === 'approved' ? 'text-success' : 'text-danger';
+                const statusText = reseller.status === 'approved' ? 'Disetujui' : 'Menunggu';
+                const buttonHtml = reseller.status === 'pending' ? 
+                    `<button class="btn btn-success btn-sm" onclick="approveReseller('${uid}')">Setujui</button>` :
+                    `<button class="btn btn-warning btn-sm" onclick="rejectReseller('${uid}')">Tolak</button>`;
+
+                // Tangani kasus `registeredAt` jika berupa Timestamp
+                const registeredDate = reseller.registeredAt ? reseller.registeredAt.toDate().toLocaleString('id-ID') : '-';
 
                 row.innerHTML = `
-                    <td>${reseller.namaToko}</td>
                     <td>${reseller.email}</td>
-                    <td>${reseller.tier}</td>
-                    <td>${saldoFormatted}</td>
                     <td><span class="${statusColor}">${statusText}</span></td>
+                    <td>${registeredDate}</td>
                     <td>${buttonHtml}</td>
                 `;
                 resellerTableBody.appendChild(row);
             });
         }, err => {
             console.error("Error loading resellers: ", err);
-            resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
+            resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
         });
     };
 
@@ -461,65 +461,104 @@
         if (await showConfirm('Setujui Reseller', 'Yakin ingin menyetujui reseller ini?')) {
             try {
                 await dbFirestore.collection('resellers').doc(uid).update({
-                    isApproved: true
+                    status: 'approved'
                 });
+                // Jika ingin otomatis membuat saldo
+                await db.ref(`resellers/${uid}/saldo`).set(0); 
                 showToast("Reseller berhasil disetujui!", 'success');
             } catch (error) {
                 showToast("Gagal menyetujui reseller: " + error.message, 'error');
             }
         }
     };
-    // END FUNGSI BARU UNTUK KELOLA RESELLER
-
-    const loginContainer = document.getElementById('login-container');
-    const mainDashboard = document.getElementById('main-dashboard');
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('adminEmail').value;
-        const password = document.getElementById('adminPassword').value;
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-            showToast("Login Gagal: " + error.message, 'error');
-        }
-    });
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            loginContainer.classList.add('hidden');
-            mainDashboard.classList.remove('hidden');
-            loadPesanan();
-            loadProduk();
-            loadResellers(); // Panggil fungsi ini saat login
-            loadTestimonials();
-            loadContentSettings();
-        } else {
-            loginContainer.classList.remove('hidden');
-            mainDashboard.classList.add('hidden');
-        }
-    });
     
-    function logout() {
-        auth.signOut();
-    }
-    
+    window.rejectReseller = async (uid) => {
+        if (await showConfirm('Tolak Reseller', 'Yakin ingin menolak dan menghapus reseller ini?')) {
+            try {
+                await dbFirestore.collection('resellers').doc(uid).delete();
+                showToast("Reseller berhasil ditolak dan dihapus!", 'success');
+            } catch (error) {
+                showToast("Gagal menolak reseller: " + error.message, 'error');
+            }
+        }
+    };
+    // --- AKHIR FUNGSI UNTUK KELOLA RESELLER ---
+
+    // Aksi saat tab berubah
+    const tabTriggers = document.querySelectorAll('#adminTab button');
+    tabTriggers.forEach(tab => tab.addEventListener('shown.bs.tab', event => {
+      const activeTabId = event.target.id;
+      if (activeTabId === 'resellers-tab') loadResellers();
+      if (activeTabId === 'moderasi-tab') loadTestimonials();
+      if (activeTabId === 'products-tab') loadProduk();
+      if (activeTabId === 'settings-tab') loadContentSettings();
+    }));
+
+    // Inisialisasi
     document.addEventListener('DOMContentLoaded', () => {
-        confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        document.getElementById('filterStatus').addEventListener('change', renderPesanan);
-        document.getElementById('searchId').addEventListener('input', renderPesanan);
-        document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
-        document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
-        document.getElementById('batalEditBtn').addEventListener('click', () => {
-            document.getElementById('formProduk').reset();
-            document.getElementById('formProduk').originalVarian.value = '';
-            document.getElementById('batalEditBtn').classList.add('d-none');
-        });
-    });
+      confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+      document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
+      document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
+      document.getElementById('batalEditBtn').addEventListener('click', e => { e.target.classList.add('d-none'); document.getElementById('formProduk').reset(); document.getElementById('formProduk').originalVarian.value = ''; });
+      document.getElementById('filterStatus').addEventListener('change', renderPesanan);
+      document.getElementById('searchId').addEventListener('input', renderPesanan);
 
-    function loadPesanan() {
-        db.ref('pesanan').on('value', s => { allDataPesanan = s.val() || {}; renderPesanan(); });
-        db.ref('hakDiskon').on('value', s => { allHakDiskon = s.val() || {}; renderPesanan(); });
-    }
+      // Login dan pengalihan
+      document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const email = document.getElementById('adminEmail').value;
+          const password = document.getElementById('adminPassword').value;
+          try {
+              const userCredential = await auth.signInWithEmailAndPassword(email, password);
+              const user = userCredential.user;
+              const adminDoc = await dbFirestore.collection('admins').doc(user.uid).get();
+              if (adminDoc.exists) {
+                  document.getElementById('login-container').classList.add('hidden');
+                  document.getElementById('main-dashboard').classList.remove('hidden');
+                  // Muat data awal saat login berhasil
+                  loadPesanan();
+                  loadHakDiskon();
+              } else {
+                  showToast("Akses ditolak. Anda bukan admin.", 'error');
+                  await auth.signOut();
+              }
+          } catch (error) {
+              showToast("Login Gagal: " + error.message, 'error');
+          }
+      });
+      window.logout = () => auth.signOut().then(() => location.reload());
+
+      const loadPesanan = () => {
+        db.ref('pesanan').on('value', snap => {
+          allDataPesanan = snap.val() || {};
+          renderPesanan();
+        });
+      };
+      const loadHakDiskon = () => {
+        db.ref('hakDiskon').on('value', snap => {
+          allHakDiskon = snap.val() || {};
+          renderPesanan();
+        });
+      };
+      
+      // Cek status login saat halaman dimuat
+      auth.onAuthStateChanged(async user => {
+          if (user) {
+              const adminDoc = await dbFirestore.collection('admins').doc(user.uid).get();
+              if (adminDoc.exists) {
+                  document.getElementById('login-container').classList.add('hidden');
+                  document.getElementById('main-dashboard').classList.remove('hidden');
+                  loadPesanan();
+                  loadHakDiskon();
+              } else {
+                  await auth.signOut();
+              }
+          } else {
+              document.getElementById('login-container').classList.remove('hidden');
+              document.getElementById('main-dashboard').classList.add('hidden');
+          }
+      });
+    });
 </script>
 </body>
 </html>
