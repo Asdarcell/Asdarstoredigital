@@ -41,7 +41,7 @@
   </div>
 </div>
 
-<div class="container py-5" id="login-container">
+<div class="container py-5 hidden" id="login-container">
     <div class="card p-4 mx-auto" style="max-width: 400px;">
         <h2 class="text-center mb-4">Login Admin</h2>
         <form id="adminLoginForm">
@@ -496,38 +496,28 @@
       document.getElementById('filterStatus').addEventListener('change', renderPesanan);
       document.getElementById('searchId').addEventListener('input', renderPesanan);
 
-      document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      const loginContainer = document.getElementById('login-container');
+      const mainDashboard = document.getElementById('main-dashboard');
+
+      if (window.location.search === '?login') {
+        loginContainer.classList.remove('hidden');
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           const email = document.getElementById('adminEmail').value;
           const password = document.getElementById('adminPassword').value;
           try {
               const userCredential = await auth.signInWithEmailAndPassword(email, password);
-
-              // --- KODE SEMENTARA YANG HARUS DITAMBAHKAN (UNTUK MENGATASI LOGIN PERTAMA KALI) ---
               const user = userCredential.user;
-              console.log("UID Anda: " + user.uid);
-              const adminRef = dbFirestore.collection('admins').doc(user.uid);
-              const adminDoc = await adminRef.get();
-              if (!adminDoc.exists) {
-                  await adminRef.set({ role: 'admin' });
-                  console.log("Dokumen admin berhasil dibuat.");
-              }
-              // --- AKHIR DARI KODE SEMENTARA ---
-
-              const adminDocCheck = await dbFirestore.collection('admins').doc(user.uid).get();
-              if (adminDocCheck.exists) {
-                  document.getElementById('login-container').classList.add('hidden');
-                  document.getElementById('main-dashboard').classList.remove('hidden');
-                  loadPesanan();
-                  loadHakDiskon();
-              } else {
-                  showToast("Akses ditolak. Anda bukan admin.", 'error');
-                  await auth.signOut();
-              }
+              await dbFirestore.collection('admins').doc(user.uid).set({ role: 'admin' });
+              showToast("Login berhasil! Sesi akan disimpan.", 'success');
+              // Muat ulang untuk masuk ke dashboard
+              window.location.href = window.location.pathname;
           } catch (error) {
               showToast("Login Gagal: " + error.message, 'error');
           }
-      });
+        }, { once: true });
+      }
+
       window.logout = () => auth.signOut().then(() => location.reload());
 
       const loadPesanan = () => {
@@ -547,16 +537,18 @@
           if (user) {
               const adminDoc = await dbFirestore.collection('admins').doc(user.uid).get();
               if (adminDoc.exists) {
-                  document.getElementById('login-container').classList.add('hidden');
-                  document.getElementById('main-dashboard').classList.remove('hidden');
+                  loginContainer.classList.add('hidden');
+                  mainDashboard.classList.remove('hidden');
                   loadPesanan();
                   loadHakDiskon();
               } else {
                   await auth.signOut();
+                  // Arahkan ke halaman login
+                  window.location.href = window.location.pathname + '?login';
               }
           } else {
-              document.getElementById('login-container').classList.remove('hidden');
-              document.getElementById('main-dashboard').classList.add('hidden');
+              loginContainer.classList.remove('hidden');
+              mainDashboard.classList.add('hidden');
           }
       });
     });
