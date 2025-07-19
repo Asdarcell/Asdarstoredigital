@@ -84,19 +84,16 @@
     const toggleText = document.querySelector('.toggle-link p');
     let isLogin = true;
 
-    // Menampilkan notifikasi pesan
     function showNotification(message, type) {
       notification.textContent = message;
       notification.className = `notification ${type}`;
       notification.style.display = 'block';
     }
 
-    // Menyembunyikan notifikasi
     function hideNotification() {
       notification.style.display = 'none';
     }
 
-    // Fungsi untuk memperbarui tampilan UI
     const updateUI = () => {
         if (isLogin) {
             formTitle.textContent = 'Login Reseller';
@@ -107,8 +104,6 @@
             authBtn.textContent = 'Daftar';
             toggleText.innerHTML = 'Sudah punya akun? <a href="#" id="toggle-link">Login Sekarang</a>';
         }
-
-        // Memasang kembali event listener ke tautan yang baru
         document.getElementById('toggle-link').addEventListener('click', (e) => {
             e.preventDefault();
             isLogin = !isLogin;
@@ -117,31 +112,29 @@
         });
     };
 
-    // Main logic ketika status otentikasi berubah
     auth.onAuthStateChanged(async user => {
       if (user) {
-        // Cek apakah pengguna adalah admin
-        const adminDoc = await firestore.collection('admins').doc(user.uid).get();
-        if (adminDoc.exists) {
-          window.location.href = 'admin.html';
-          return;
-        }
-        
-        // Jika bukan admin, cek apakah pengguna adalah reseller
+        // Hanya cek apakah pengguna adalah reseller, tidak peduli dia juga admin
         const resellerDoc = await firestore.collection('resellers').doc(user.uid).get();
-        if (resellerDoc.exists && resellerDoc.data().status === 'approved') {
-          window.location.href = 'reseller.html';
-          return;
+        
+        if (resellerDoc.exists) {
+          const resellerData = resellerDoc.data();
+          if (resellerData.status === 'approved') {
+            // Jika reseller disetujui, arahkan ke halaman reseller
+            window.location.href = 'reseller.html';
+          } else if (resellerData.status === 'pending') {
+            // Jika reseller belum disetujui, berikan notifikasi
+            showNotification('Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan admin.', 'success');
+            auth.signOut();
+          }
+        } else {
+            // Jika pengguna bukan reseller, arahkan ke halaman ini dan berikan notifikasi
+            showNotification('Maaf, akun Anda tidak memiliki akses reseller.', 'error');
+            auth.signOut();
         }
-
-        // Jika bukan admin atau reseller yang disetujui, arahkan ke halaman login
-        // atau berikan notifikasi (kita akan tinggal di halaman ini)
-        showNotification('Maaf, akun Anda belum disetujui atau tidak memiliki akses.', 'error');
-        auth.signOut(); // Opsional: logout otomatis jika tidak memiliki akses
       }
     });
 
-    // Menangani pengiriman formulir
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideNotification();
@@ -154,7 +147,6 @@
       try {
         if (isLogin) {
           await auth.signInWithEmailAndPassword(email, password);
-          // Jika login berhasil, onAuthStateChanged akan mengarahkan
         } else {
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           await firestore.collection('resellers').doc(userCredential.user.uid).set({
