@@ -103,14 +103,16 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th>Nama Reseller</th>
                                 <th>Email</th>
+                                <th>Paket</th>
                                 <th>Status</th>
-                                <th>Bergabung Pada</th>
+                                <th>Bukti Deposit</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="reseller-table-body">
-                            <tr><td colspan="4" class="text-center text-muted p-4">Memuat data reseller...</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -145,7 +147,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
     const firebaseConfig = {
@@ -154,7 +155,6 @@
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const dbFirestore = firebase.firestore();
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
     const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html', '');
     let allProducts = {}, allDataPesanan = {}, allHakDiskon = {}, confirmModal;
@@ -404,46 +404,60 @@
 
     const loadResellers = () => {
         const resellerTableBody = document.getElementById('reseller-table-body');
-        resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
+        resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">Memuat data reseller...</td></tr>';
         
-        dbFirestore.collection('resellers').orderBy('registeredAt', 'desc').onSnapshot(snapshot => {
-            resellerTableBody.innerHTML = '';
-            if (snapshot.empty) {
-                resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Tidak ada data reseller.</td></tr>';
+        db.ref('resellers').orderByChild('registeredAt').on('value', snapshot => {
+            const resellers = snapshot.val() || {};
+            let html = '';
+            
+            if (Object.keys(resellers).length === 0) {
+                resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Tidak ada data reseller.</td></tr>';
                 return;
             }
-            snapshot.forEach(doc => {
-                const reseller = doc.data();
-                const uid = doc.id;
-                const row = document.createElement('tr');
+            
+            Object.keys(resellers).sort((a,b) => new Date(resellers[b].registeredAt) - new Date(resellers[a].registeredAt)).forEach(uid => {
+                const reseller = resellers[uid];
+                let statusBadge, actionButton;
+
+                if (reseller.status === 'pending-deposit') {
+                    statusBadge = `<span class="badge bg-warning text-dark">Menunggu Deposit</span>`;
+                    actionButton = `<button class="btn btn-success btn-sm me-1" onclick="approveReseller('${uid}')">Verifikasi & Setujui</button>
+                                    <button class="btn btn-danger btn-sm" onclick="rejectReseller('${uid}')">Tolak & Hapus</button>`;
+                } else if (reseller.status === 'approved') {
+                    statusBadge = `<span class="badge bg-success">Disetujui</span>`;
+                    actionButton = `<span class="text-success">Sudah Aktif</span>`;
+                } else {
+                    statusBadge = `<span class="badge bg-secondary">Tidak Diketahui</span>`;
+                    actionButton = `<button class="btn btn-danger btn-sm" onclick="rejectReseller('${uid}')">Hapus</button>`;
+                }
                 
-                const statusColor = reseller.status === 'approved' ? 'text-success' : 'text-danger';
-                const statusText = reseller.status === 'approved' ? 'Disetujui' : 'Menunggu';
-                const buttonHtml = reseller.status === 'pending' ? 
-                    `<button class="btn btn-success btn-sm" onclick="approveReseller('${uid}')">Setujui</button>` :
-                    `<button class="btn btn-warning btn-sm" onclick="rejectReseller('${uid}')">Tolak</button>`;
+                const depositProof = reseller.deposit_proof?.proof_link ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : '-';
 
-                const registeredDate = reseller.registeredAt ? reseller.registeredAt.toDate().toLocaleString('id-ID') : '-';
-
-                row.innerHTML = `
-                    <td>${reseller.email}</td>
-                    <td><span class="${statusColor}">${statusText}</span></td>
-                    <td>${registeredDate}</td>
-                    <td>${buttonHtml}</td>
+                html += `
+                    <tr>
+                        <td>${reseller.nama || '-'}</td>
+                        <td>${reseller.email || '-'}</td>
+                        <td><span class="badge bg-info text-dark">Paket ${reseller.paket}</span></td>
+                        <td>${statusBadge}</td>
+                        <td>${depositProof}</td>
+                        <td>${actionButton}</td>
+                    </tr>
                 `;
-                resellerTableBody.appendChild(row);
             });
+
+            resellerTableBody.innerHTML = html;
         }, err => {
             console.error("Error loading resellers: ", err);
-            resellerTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
+            resellerTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-danger">Gagal memuat data.</td></tr>';
         });
     };
 
     window.approveReseller = async (uid) => {
-        if (await showConfirm('Setujui Reseller', 'Yakin ingin menyetujui reseller ini?')) {
+        if (await showConfirm('Setujui Reseller', 'Yakin ingin menyetujui reseller ini? Statusnya akan diubah menjadi "approved" dan data bukti pembayaran dihapus.')) {
             try {
-                await dbFirestore.collection('resellers').doc(uid).update({
-                    status: 'approved'
+                await db.ref(`resellers/${uid}`).update({
+                    status: 'approved',
+                    deposit_proof: null
                 });
                 showToast('Reseller berhasil disetujui.', 'success');
             } catch (error) {
@@ -453,9 +467,9 @@
     };
 
     window.rejectReseller = async (uid) => {
-         if (await showConfirm('Tolak Reseller', 'Yakin ingin menolak reseller ini?')) {
+         if (await showConfirm('Tolak Reseller', 'Yakin ingin menolak reseller ini? Data pendaftaran akan dihapus permanen.')) {
             try {
-                await dbFirestore.collection('resellers').doc(uid).delete();
+                await db.ref(`resellers/${uid}`).remove();
                 showToast('Reseller berhasil ditolak dan dihapus.', 'success');
             } catch (error) {
                 showToast(`Gagal: ${error.message}`, 'error');
@@ -463,53 +477,28 @@
         }
     };
 
-    // Panggil semua fungsi inisialisasi secara langsung saat dokumen dimuat.
     document.addEventListener('DOMContentLoaded', () => {
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         document.getElementById('uploadBuktiBtn').addEventListener('click', handleUploadBukti);
-        document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
-        document.getElementById('batalEditBtn').addEventListener('click', () => {
-            document.getElementById('formProduk').reset();
-            document.getElementById('formProduk').batalEditBtn.classList.add('d-none');
-        });
-        
-        // Panggil fungsi pemuatan data berdasarkan tab yang aktif saat dimuat
-        const initialTab = document.querySelector('.nav-link.active').id;
-        if (initialTab === 'orders-tab') {
-            db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
-            db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
-        } else if (initialTab === 'products-tab') {
-            loadProduk();
-        } else if (initialTab === 'resellers-tab') {
-            loadResellers();
-        } else if (initialTab === 'moderasi-tab') {
-            loadTestimonials();
-        } else if (initialTab === 'settings-tab') {
-            loadContentSettings();
-        }
-        
-        // Atur event listener untuk setiap klik tab
-        document.querySelectorAll('.nav-link').forEach(tab => {
-            tab.addEventListener('shown.bs.tab', event => {
-                const targetTabId = event.target.id;
-                if (targetTabId === 'orders-tab') {
-                    db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
-                    db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
-                } else if (targetTabId === 'products-tab') {
-                    loadProduk();
-                } else if (targetTabId === 'resellers-tab') {
-                    loadResellers();
-                } else if (targetTabId === 'moderasi-tab') {
-                    loadTestimonials();
-                } else if (targetTabId === 'settings-tab') {
-                    loadContentSettings();
-                }
-            });
-        });
-        
-        // Handle filter dan search
         document.getElementById('filterStatus').addEventListener('change', renderPesanan);
         document.getElementById('searchId').addEventListener('input', renderPesanan);
+        document.getElementById('formProduk').addEventListener('submit', handleSimpanProduk);
+        document.getElementById('batalEditBtn').addEventListener('click', () => { document.getElementById('formProduk').reset(); document.getElementById('formProduk').batalEditBtn.classList.add('d-none'); });
+        
+        const adminTabEl = document.getElementById('adminTab');
+        adminTabEl.addEventListener('show.bs.tab', event => {
+            const targetId = event.target.id;
+            if (targetId === 'products-tab') loadProduk();
+            else if (targetId === 'resellers-tab') loadResellers();
+            else if (targetId === 'moderasi-tab') loadTestimonials();
+            else if (targetId === 'settings-tab') loadContentSettings();
+            else if (targetId === 'orders-tab') renderPesanan();
+        });
+
+        db.ref('pesanan').on('value', snap => { allDataPesanan = snap.val() || {}; renderPesanan(); });
+        db.ref('hakDiskon').on('value', snap => { allHakDiskon = snap.val() || {}; renderPesanan(); });
+        
+        loadProduk();
     });
 </script>
 </body>
