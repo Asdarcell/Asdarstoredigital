@@ -30,11 +30,11 @@
         .table th { background-color: var(--bg); font-weight: 600; color: var(--muted-text); }
         .badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8em; }
         .badge.pending { background-color: var(--warning); color: #664d03; }
-        .badge.selesai { background-color: var(--success); color: white; }
-        .badge.batal { background-color: var(--danger); color: white; }
+        .badge.selesai, .badge.approved { background-color: var(--success); color: white; }
+        .badge.batal, .badge.rejected { background-color: var(--danger); color: white; }
         .action-btn { padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; color: white; transition: opacity 0.2s; }
-        .action-btn.selesai { background-color: var(--success); }
-        .action-btn.batal { background-color: var(--danger); }
+        .action-btn.selesai, .action-btn.approve { background-color: var(--success); }
+        .action-btn.batal, .action-btn.reject { background-color: var(--danger); }
         .action-btn:hover { opacity: 0.8; }
         .form-manage { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media (min-width: 768px) { .form-manage { grid-template-columns: repeat(2, 1fr); } }
@@ -74,6 +74,31 @@
                         <tbody id="tabelPendaftaranReseller">
                             <tr>
                                 <td colspan="6" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div data-aos="fade-up" class="section-container">
+                <h2>Manajemen Konfirmasi Top Up</h2>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Reseller</th>
+                                <th>Nominal</th>
+                                <th>Metode</th>
+                                <th>Nama Pengirim</th>
+                                <th>Bukti</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelKonfirmasiTopup">
+                            <tr>
+                                <td colspan="8" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -125,13 +150,14 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Email</th>
                                 <th>Nomor WA</th>
                                 <th>Saldo</th>
                             </tr>
                         </thead>
                         <tbody id="tabelReseller">
                             <tr>
-                                <td colspan="2" style="text-align: center;">Memuat data...</td>
+                                <td colspan="3" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -173,6 +199,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({ duration: 800, once: true, offset: 50 });
@@ -184,18 +211,15 @@
             storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const dbFS = firebase.firestore();
+        const dbRT = firebase.database();
         const auth = firebase.auth();
         const storage = firebase.storage();
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
         const normalizePhone = (num) => {
             const cleanNum = String(num).trim().replace(/[^0-9]/g, '');
-            if (cleanNum.startsWith('0')) {
-                return '62' + cleanNum.slice(1);
-            }
-            if (cleanNum.startsWith('62')) {
-                return cleanNum;
-            }
+            if (cleanNum.startsWith('0')) { return '62' + cleanNum.slice(1); }
+            if (cleanNum.startsWith('62')) { return cleanNum; }
             return num;
         };
 
@@ -210,12 +234,12 @@
                     loadPesananData();
                     loadResellerData();
                     loadProductManagementData();
+                    loadPendingTopups();
                     setupEventListeners();
                 } else {
                     window.location.href = 'loginadmin.html';
                 }
             });
-            
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('orderId');
             if (orderId) {
@@ -248,10 +272,10 @@
             document.getElementById('kurangiSaldoBtn').addEventListener('click', () => updateResellerSaldo('kurang'));
         }
 
-        // Fungsi yang sudah diubah ke Firestore
+        // FUNGSI UNTUK MANAJEMEN PENDAFTARAN RESELLER
         function loadPendingResellers() {
             const tableBody = document.getElementById('tabelPendaftaranReseller');
-            db.collection('resellers').where('status', '==', 'pending-deposit').onSnapshot(snapshot => {
+            dbFS.collection('resellers').where('status', '==', 'pending-deposit').onSnapshot(snapshot => {
                 let html = '';
                 if (snapshot.empty) {
                     html = `<tr><td colspan="6" style="text-align: center;">Tidak ada pendaftaran baru.</td></tr>`;
@@ -259,16 +283,16 @@
                     snapshot.docs.forEach(doc => {
                         const reseller = doc.data();
                         const uid = doc.id;
-                        const buktiHtml = reseller.deposit_proof ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : 'Belum ada';
+                        const buktiHtml = reseller.deposit_proof && reseller.deposit_proof.proof_link ? `<a href="${reseller.deposit_proof.proof_link}" target="_blank">Lihat Bukti</a>` : 'Belum ada';
                         html += `
                             <tr>
                                 <td>${reseller.nama}</td>
                                 <td>${reseller.email}</td>
-                                <td>${reseller.paket}</td>
+                                <td>${reseller.paket || '-'}</td>
                                 <td><span class="badge pending">${reseller.status}</span></td>
                                 <td>
-                                    <button class="action-btn selesai" onclick="verifyReseller('${uid}', true)">Verifikasi</button>
-                                    <button class="action-btn batal" onclick="verifyReseller('${uid}', false)">Tolak</button>
+                                    <button class="action-btn approve" onclick="verifyReseller('${uid}', true)">Verifikasi</button>
+                                    <button class="action-btn reject" onclick="verifyReseller('${uid}', false)">Tolak</button>
                                 </td>
                                 <td>${buktiHtml}</td>
                             </tr>
@@ -279,17 +303,14 @@
             });
         }
         
-        // Fungsi yang sudah diubah ke Firestore
         async function verifyReseller(uid, isApproved) {
-            const resellerRef = db.collection('resellers').doc(uid);
+            const resellerRef = dbFS.collection('resellers').doc(uid);
             const status = isApproved ? 'approved' : 'rejected';
             const confirmationMessage = isApproved ? `Yakin ingin mengaktifkan akun reseller ini?` : `Yakin ingin menolak akun ini?`;
             
             if (confirm(confirmationMessage)) {
                 try {
-                    await resellerRef.update({
-                        status: status
-                    });
+                    await resellerRef.update({ status: status });
                     alert(`Akun reseller berhasil ${isApproved ? 'diverifikasi' : 'ditolak'}.`);
                 } catch (error) {
                     console.error(`Gagal ${isApproved ? 'memverifikasi' : 'menolak'} akun:`, error);
@@ -297,10 +318,70 @@
                 }
             }
         }
+        
+        // FUNGSI UNTUK MANAJEMEN KONFIRMASI TOP UP
+        function loadPendingTopups() {
+            const tableBody = document.getElementById('tabelKonfirmasiTopup');
+            dbFS.collection('konfirmasiTopup').where('status', '==', 'pending').onSnapshot(snapshot => {
+                let html = '';
+                if (snapshot.empty) {
+                    html = `<tr><td colspan="8" style="text-align: center;">Tidak ada konfirmasi top up baru.</td></tr>`;
+                } else {
+                    snapshot.docs.forEach(doc => {
+                        const konfirmasi = doc.data();
+                        const id = doc.id;
+                        const buktiHtml = konfirmasi.bukti_url ? `<a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a>` : 'Tidak ada';
+                        html += `
+                            <tr>
+                                <td>${id}</td>
+                                <td>${konfirmasi.reseller_email}</td>
+                                <td>${formatRupiah(konfirmasi.nominal)}</td>
+                                <td>${konfirmasi.metode_pembayaran}</td>
+                                <td>${konfirmasi.nama_pengirim}</td>
+                                <td>${buktiHtml}</td>
+                                <td><span class="badge pending">${konfirmasi.status}</span></td>
+                                <td>
+                                    <button class="action-btn approve" onclick="prosesKonfirmasiTopup('${id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, true)">Setujui</button>
+                                    <button class="action-btn reject" onclick="prosesKonfirmasiTopup('${id}', '${konfirmasi.reseller_uid}', 0, false)">Tolak</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                tableBody.innerHTML = html;
+            });
+        }
+        
+        async function prosesKonfirmasiTopup(konfirmasiId, resellerUid, nominal, isApproved) {
+            const konfirmasiRef = dbFS.collection('konfirmasiTopup').doc(konfirmasiId);
+            const status = isApproved ? 'approved' : 'rejected';
+            const confirmationMessage = isApproved ? `Yakin ingin menyetujui top up sebesar ${formatRupiah(nominal)} untuk reseller ini?` : `Yakin ingin menolak konfirmasi ini?`;
+            
+            if (confirm(confirmationMessage)) {
+                try {
+                    await konfirmasiRef.update({ status: status });
+                    if (isApproved) {
+                        const resellerRef = dbFS.collection('resellers').doc(resellerUid);
+                        await dbFS.runTransaction(async (transaction) => {
+                            const resellerDoc = await transaction.get(resellerRef);
+                            const currentSaldo = resellerDoc.data().saldo || 0;
+                            const newSaldo = currentSaldo + nominal;
+                            transaction.update(resellerRef, { saldo: newSaldo });
+                        });
+                        alert('Top up berhasil disetujui dan saldo reseller telah ditambahkan.');
+                    } else {
+                        alert('Konfirmasi top up berhasil ditolak.');
+                    }
+                } catch (error) {
+                    console.error("Gagal memproses konfirmasi top up:", error);
+                    alert('Terjadi kesalahan saat memproses konfirmasi.');
+                }
+            }
+        }
 
-        // Fungsi yang sudah diubah ke Firestore
+        // FUNGSI UNTUK MANAJEMEN PESANAN
         function loadPesananData() {
-            db.collection('pesanan').onSnapshot(snapshot => {
+            dbFS.collection('pesananReseller').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('tabelPesanan');
                 const pesananDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 const html = pesananDocs.reverse().map(pesanan => {
@@ -309,10 +390,9 @@
                         hour: '2-digit', minute: '2-digit'
                     });
                     const buktiHtml = pesanan.bukti_url ? `<a href="${pesanan.bukti_url}" target="_blank">Lihat Bukti</a>` : 'Tidak ada';
-                    const aksiHtml = pesanan.status === 'Menunggu diproses' ? 
-                        `<button class="action-btn selesai" onclick="selesaikanPesanan('${pesanan.id}')">Selesaikan</button>` : '';
+                    const aksiHtml = pesanan.status === 'Selesai' ? '' : `<button class="action-btn selesai" onclick="selesaikanPesanan('${pesanan.id}')">Selesaikan</button>`;
                     const statusClass = pesanan.status === 'Selesai' ? 'selesai' : 'pending';
-                    const idGameDisplay = pesanan.idGame || pesanan.nomor || '-';
+                    const idGameDisplay = pesanan.nomor || '-';
                     return `
                         <tr>
                             <td>${pesanan.id}</td>
@@ -330,9 +410,8 @@
             });
         }
         
-        // Fungsi yang sudah diubah ke Firestore
         async function selesaikanPesanan(pesananId) {
-            const pesananRef = db.collection('pesanan').doc(pesananId);
+            const pesananRef = dbFS.collection('pesananReseller').doc(pesananId);
             const pesananDoc = await pesananRef.get();
             const pesananData = pesananDoc.data();
             
@@ -348,7 +427,7 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 try {
-                    const storageRef = storage.ref(`bukti/${pesananId}_${file.name}`);
+                    const storageRef = storage.ref(`bukti_pesanan/${pesananId}_${file.name}`);
                     const uploadTask = await storageRef.put(file);
                     const buktiUrl = await uploadTask.ref.getDownloadURL();
                     
@@ -360,8 +439,8 @@
                     alert('Pesanan berhasil diselesaikan dan bukti diunggah!');
                     const resellerEmail = pesananData.reseller_email;
                     const produk = pesananData.produk;
-                    const idGame = pesananData.idGame || pesananData.nomor;
-                    const resellerQuery = await db.collection('resellers').where('email', '==', resellerEmail).get();
+                    const idGame = pesananData.nomor;
+                    const resellerQuery = await dbFS.collection('resellers').where('email', '==', resellerEmail).get();
                     if (!resellerQuery.empty) {
                         const resellerWa = resellerQuery.docs[0].data().whatsapp;
                         const pesanWa = `Halo reseller, pesanan Anda dengan ID *${pesananId}* telah *Selesai*.\n\n*Produk:* ${produk}\n*ID Game:* ${idGame}\n\nSilakan cek bukti pengerjaan melalui link berikut:\n${buktiUrl}`;
@@ -375,24 +454,24 @@
             fileInput.click();
         }
 
-        // Fungsi yang sudah diubah ke Firestore
+        // FUNGSI UNTUK MANAJEMEN SALDO RESELLER
         function loadResellerData() {
-            db.collection('resellers').onSnapshot(snapshot => {
+            dbFS.collection('resellers').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('tabelReseller');
                 const html = snapshot.docs.map(doc => {
                     const reseller = doc.data();
                     return `
                         <tr>
+                            <td>${reseller.email}</td>
                             <td>${reseller.whatsapp || '-'}</td>
                             <td>${formatRupiah(reseller.saldo)}</td>
                         </tr>
                     `;
                 }).join('');
-                tableBody.innerHTML = html || '<tr><td colspan="2" style="text-align: center;">Belum ada data reseller.</td></tr>';
+                tableBody.innerHTML = html || '<tr><td colspan="3" style="text-align: center;">Belum ada data reseller.</td></tr>';
             });
         }
         
-        // Fungsi yang sudah diubah ke Firestore
         async function updateResellerSaldo(action) {
             const waInput = document.getElementById('waReseller');
             const jumlahInput = document.getElementById('jumlahSaldo');
@@ -402,63 +481,50 @@
                 alert('Harap masukkan nomor WhatsApp dan jumlah saldo yang valid.');
                 return;
             }
-            
-            const konfirmasi = confirm(`Apakah Anda yakin ingin ${action === 'tambah' ? 'menambah' : 'mengurangi'} saldo sebesar ${formatRupiah(jumlah)} untuk reseller ${wa}?`);
+            const konfirmasi = confirm(`Apakah Anda yakin ingin ${action === 'tambah' ? 'menambah' : 'mengurangi'} saldo sebesar ${formatRupiah(jumlah)} untuk reseller dengan nomor ${wa}?`);
             if (!konfirmasi) return;
 
             try {
-                // Mencari UID reseller berdasarkan nomor WhatsApp
-                const resellerQuery = await db.collection('resellers').where('whatsapp', '==', wa).get();
+                const resellerQuery = await dbFS.collection('resellers').where('whatsapp', '==', wa).get();
                 if (resellerQuery.empty) {
                     alert('Reseller tidak ditemukan!');
                     return;
                 }
                 const resellerDoc = resellerQuery.docs[0];
-                const resellerRef = db.collection('resellers').doc(resellerDoc.id);
+                const resellerRef = dbFS.collection('resellers').doc(resellerDoc.id);
 
-                await db.runTransaction(async (transaction) => {
+                await dbFS.runTransaction(async (transaction) => {
                     const doc = await transaction.get(resellerRef);
-                    if (!doc.exists) {
-                        throw "Dokumen reseller tidak ada!";
-                    }
-
+                    if (!doc.exists) { throw "Dokumen reseller tidak ada!"; }
                     const currentSaldo = doc.data().saldo || 0;
                     let newSaldo;
-                    if (action === 'tambah') {
-                        newSaldo = currentSaldo + jumlah;
-                    } else {
-                        if (currentSaldo < jumlah) {
-                            throw "Saldo tidak cukup untuk dikurangi!";
-                        }
+                    if (action === 'tambah') { newSaldo = currentSaldo + jumlah; } 
+                    else {
+                        if (currentSaldo < jumlah) { throw "Saldo tidak cukup untuk dikurangi!"; }
                         newSaldo = currentSaldo - jumlah;
                     }
-
                     transaction.update(resellerRef, { saldo: newSaldo });
                 });
-
                 alert('Saldo reseller berhasil diperbarui!');
                 waInput.value = '';
                 jumlahInput.value = '';
-
             } catch (error) {
                 console.error("Error memperbarui saldo:", error);
                 alert('Terjadi kesalahan saat memperbarui saldo. ' + error);
             }
         }
 
-        // Fungsi yang sudah diubah ke Firestore
+        // FUNGSI UNTUK MANAJEMEN PRODUK
         function loadProductManagementData() {
-            db.collection('produk').get().then(snapshot => {
-                const kategoriSelect = document.getElementById('kategoriProduk');
-                kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-                snapshot.docs.forEach(doc => {
-                    const kategori = doc.id;
-                    kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+            const kategoriSelect = document.getElementById('kategoriProduk');
+            kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
+            dbRT.ref('produk').once('value').then(snapshot => {
+                snapshot.forEach(childSnapshot => {
+                    kategoriSelect.innerHTML += `<option value="${childSnapshot.key}">${childSnapshot.key}</option>`;
                 });
             });
         }
 
-        // Fungsi yang sudah diubah ke Firestore
         function handleProductCategoryChange() {
             const kategori = document.getElementById('kategoriProduk').value;
             const namaProdukSelect = document.getElementById('namaProduk');
@@ -467,15 +533,15 @@
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
             if (!kategori) return;
-            db.collection('produk').doc(kategori).collection('varian').get().then(snapshot => {
-                const sortedVarian = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
+            dbRT.ref(`produk/${kategori}`).once('value').then(snapshot => {
+                const data = snapshot.val() || {};
+                const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
                 sortedVarian.forEach(produk => {
-                    namaProdukSelect.innerHTML += `<option value="${produk.id}">${produk.id}</option>`;
+                    namaProdukSelect.innerHTML += `<option value="${produk}">${produk}</option>`;
                 });
             });
         }
         
-        // Fungsi yang sudah diubah ke Firestore
         function handleProductNameChange() {
             const kategori = document.getElementById('kategoriProduk').value;
             const produk = document.getElementById('namaProduk').value;
@@ -483,17 +549,16 @@
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
             if (!kategori || !produk) return;
-            db.collection('produk').doc(kategori).collection('varian').doc(produk).get().then(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
+            dbRT.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
                     document.getElementById('hargaProduk').value = data.harga || 0;
-                    document.getElementById('hargaResellerProduk').value = data.harga_reseller || 0;
+                    document.getElementById('hargaResellerProduk').value = data.harga_reseller || data.harga || 0;
                     document.getElementById('stokProduk').value = data.stok || 0;
                 }
             });
         }
         
-        // Fungsi yang sudah diubah ke Firestore
         async function updateProductData() {
             const kategori = document.getElementById('kategoriProduk').value;
             const produk = document.getElementById('namaProduk').value;
@@ -507,7 +572,7 @@
                 return;
             }
             try {
-                await db.collection('produk').doc(kategori).collection('varian').doc(produk).update({
+                await dbRT.ref(`produk/${kategori}/${produk}`).update({
                     harga_reseller: hargaReseller,
                     stok: stok
                 });
