@@ -5,6 +5,7 @@
   <title>Upload Bukti Pembayaran</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f7f9fc; }
     .container { max-width: 500px; margin: auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -31,9 +32,8 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script>
-    // --- Konfigurasi ---
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -42,39 +42,36 @@
     };
 
     const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
-    const ADMIN_WA_NUMBER = "6281803004607"; // Nomor WA Admin (format 62)
+    const ADMIN_WA_NUMBER = "6281803004607";
 
-    // --- Inisialisasi Firebase ---
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-    const db = firebase.database();
+    const dbFS = firebase.firestore();
 
-    // --- Elemen DOM ---
     const idPesananInput = document.getElementById("idPesanan");
     const fileInput = document.getElementById("fileInput");
     const statusDiv = document.getElementById("status");
     const uploadBtn = document.querySelector('button');
     
-    // --- Fungsi Utama Upload ---
     async function upload() {
       const id = idPesananInput.value.trim();
       const file = fileInput.files[0];
       if (!id || !file) {
         statusDiv.innerText = "❌ Lengkapi ID Pesanan dan pilih gambar!";
-        statusDiv.style.borderColor = "#dc3545"; // Merah
+        statusDiv.style.borderColor = "#dc3545";
         return;
       }
       
       uploadBtn.disabled = true;
-      uploadBtn.innerText = "⏳ Mengupload...";
+      uploadBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Mengupload...";
       statusDiv.innerText = "⏳ Mengupload gambar, mohon tunggu...";
-      statusDiv.style.borderColor = "#0d6efd"; // Biru
+      statusDiv.style.borderColor = "#0d6efd";
 
       try {
-        const orderSnapshot = await db.ref(`pesanan/${id}`).once('value');
-        if (!orderSnapshot.exists()) throw new Error('ID Pesanan tidak ditemukan.');
-        const orderData = orderSnapshot.val();
+        const orderDoc = await dbFS.collection('pesananUmum').doc(id).get();
+        if (!orderDoc.exists) throw new Error('ID Pesanan tidak ditemukan.');
+        const orderData = orderDoc.data();
         
         const base64 = await toBase64(file);
         const formDataImg = new FormData();
@@ -87,13 +84,13 @@
         
         const imageUrl = jsonImg.data.url;
         
-        await db.ref("pesanan/" + id).update({ 
+        await dbFS.collection("pesananUmum").doc(id).update({ 
             buktiBayar: imageUrl, 
             status: "Sudah Bayar"
         });
         
         statusDiv.innerHTML = `✅ Upload Berhasil! Anda akan dialihkan ke WhatsApp untuk mengirim konfirmasi.`;
-        statusDiv.style.borderColor = "#198754"; // Hijau
+        statusDiv.style.borderColor = "#198754";
 
         const pesanWA = `🔔 *Notifikasi Pembayaran* 🔔
 
@@ -115,13 +112,12 @@ Segera lakukan verifikasi di dashboard admin.`;
       } catch (error) {
         console.error(error);
         statusDiv.innerText = "❌ Gagal: " + error.message;
-        statusDiv.style.borderColor = "#dc3545"; // Merah
+        statusDiv.style.borderColor = "#dc3545";
         uploadBtn.disabled = false;
-        uploadBtn.innerText = "📤 Upload & Konfirmasi via WhatsApp";
+        uploadBtn.innerHTML = "📤 Upload & Konfirmasi via WhatsApp";
       }
     }
 
-    // --- Fungsi Helper ---
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -131,11 +127,9 @@ Segera lakukan verifikasi di dashboard admin.`;
       });
     }
 
-    // Mengambil ID dari URL saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        // --- PERBAIKAN KESALAHAN KETIK ---
-        const orderIdFromUrl = urlParams.get('id'); // Menghapus ' v' yang salah
+        const orderIdFromUrl = urlParams.get('id');
         if (orderIdFromUrl) {
             idPesananInput.value = orderIdFromUrl;
         }
