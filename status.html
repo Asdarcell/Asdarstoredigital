@@ -64,9 +64,8 @@
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
-        // --- Config ---
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -78,40 +77,29 @@
             measurementId: "G-CMRW37J19G"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        // [BARU] Nomor WA Admin untuk verifikasi promo
+        const dbFS = firebase.firestore();
         const ADMIN_WA_NUMBER = "6281803004607";
 
-        // --- DOM Elements ---
         const orderStatusContainer = document.getElementById('order-status-container');
         const searchInput = document.getElementById('searchKeyword');
         const searchResultsDiv = document.getElementById('searchResults');
-        // [BARU] Elemen Promo
         const promoSection = document.getElementById('promo-section');
 
-        // --- Helpers ---
         const formatRupiah = (angka) => angka ? parseFloat(angka).toLocaleString('id-ID') : '0';
-        const normalizePhone = (num) => {
-            if (!num) return '';
-            let n = String(num).replace(/[^0-9]/g, '');
-            if (n.startsWith('0')) n = '62' + n.slice(1);
-            return n;
-        };
-        const statusLevels = { 'Belum Bayar': 0, 'Sudah Bayar': 1, 'Diproses': 2, 'Selesai': 3, 'Dibatalkan': -1 };
+        const normalizePhone = (num) => { if (!num) return ''; let n = String(num).replace(/[^0-9]/g, ''); if (n.startsWith('0')) n = '62' + n.slice(1); return n; };
+        const statusLevels = { 'Belum Bayar': 0, 'Sudah Bayar': 1, 'Diproses': 2, 'Selesai': 3, 'Ditolak': -1 };
 
-        // [BARU] Fungsi untuk membagikan promo
         function bagikanPromo() {
             const pesanPromo = "Wah, belanja di Asdar Store Digital pelayanannya cepat dan aman! Produknya juga lengkap. Recommended banget! 👍\n\nYuk cek juga tokonya di:\nhttps://asdarcell.github.io/Asdarstoredigital/";
             const linkWA = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanPromo)}`;
             window.open(linkWA, '_blank');
         }
 
-        // --- Display Logic ---
         function renderOrderStatus(order) {
             const level = statusLevels[order.status] ?? -1;
             const timelineWidth = level >= 0 ? (level / 3) * 100 : 0;
             const isCancelled = level === -1;
-            const date = order.waktu ? new Date(order.waktu).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Tidak tersedia';
+            const date = order.waktu ? new Date(order.waktu.seconds * 1000).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Tidak tersedia';
             
             orderStatusContainer.innerHTML = `
                 <h2 class="!text-xl !text-center !mb-4">Detail Pesanan #${order.id || 'N/A'}</h2>
@@ -126,16 +114,15 @@
                 <div class="order-detail mt-8">
                     <p><strong>Status:</strong> <span class="font-bold">${order.status || 'N/A'}</span></p>
                     <p><strong>Produk:</strong> ${order.produk || 'N/A'}</p>
-                    <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
+                    <p><strong>Harga:</strong> Rp${formatRupiah(order.harga_final)}</p>
                     <p><strong>Waktu Pesan:</strong> ${date}</p>
                     ${order.buktiAdmin ? `<p><strong>Bukti dari Admin:</strong><br><img src="${order.buktiAdmin}" class="max-w-full rounded-lg mt-2 shadow-lg" /></p>` : ''}
                 </div>
             `;
 
-            // [BARU] Logika untuk menampilkan promo jika pesanan selesai
             if (order.status === 'Selesai') {
                 const adminWaLink = document.getElementById('admin-wa-link');
-                adminWaLink.href = `https://wa.me/${ADMIN_WA_NUMBER}?text=Halo%20Admin,%20ini%20bukti%20screenshot%20share%20promo%20saya%20untuk%20pesanan%20ID%20${order.id}.`;
+                adminWaLink.href = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent('Halo Admin, ini bukti screenshot share promo saya untuk pesanan ID ' + order.id + '.')}`;
                 promoSection.style.display = 'block';
             } else {
                 promoSection.style.display = 'none';
@@ -143,13 +130,12 @@
         }
         function renderNotFound() { orderStatusContainer.innerHTML = `<div class="placeholder"><p class="text-red-500">Pesanan tidak ditemukan.</p></div>`; }
 
-        // --- Data Logic ---
         function listenToOrderStatus(orderId) {
             orderStatusContainer.innerHTML = `<div class="spinner"></div>`;
-            db.ref(`pesanan/${orderId}`).on('value', snapshot => {
-                if (snapshot.exists()) {
-                    const orderData = snapshot.val();
-                    orderData.id = orderId; // Pastikan ID selalu ada di objek
+            dbFS.collection('pesananUmum').doc(orderId).onSnapshot(doc => {
+                if (doc.exists) {
+                    const orderData = doc.data();
+                    orderData.id = doc.id;
                     renderOrderStatus(orderData);
                 } else {
                     renderNotFound();
@@ -166,22 +152,21 @@
             searchResultsDiv.innerHTML = `<div class="spinner !w-6 !h-6 mx-auto"></div>`;
 
             try {
-                const snapshot = await db.ref('pesanan').once('value');
-                const allOrders = snapshot.val() || {};
+                const snapshot = await dbFS.collection('pesananUmum').get();
                 const foundOrders = [];
                 const normalizedKeyword = normalizePhone(keyword);
 
-                for (const id in allOrders) {
-                    const order = allOrders[id];
-                    order.id = id; // Tambahkan ID ke objek pesanan
-                    if (id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedKeyword && normalizePhone(order.wa_aktif) === normalizedKeyword)) {
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    order.id = doc.id;
+                    if (doc.id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedKeyword && normalizePhone(order.wa_aktif) === normalizedKeyword)) {
                         foundOrders.push(order);
                     }
-                }
+                });
                 
                 if (foundOrders.length > 0) {
                     searchResultsDiv.innerHTML = `<p class="font-semibold mb-2">${foundOrders.length} pesanan ditemukan:</p>` +
-                    foundOrders.sort((a,b) => new Date(b.waktu) - new Date(a.waktu)).map(order => `
+                    foundOrders.sort((a,b) => b.waktu.seconds - a.waktu.seconds).map(order => `
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2 flex justify-between items-center">
                             <div>
                                 <p class="font-semibold">${order.produk}</p>
@@ -206,7 +191,6 @@
             searchResultsDiv.innerHTML = '';
         };
 
-        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleSearch(); });
             const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
