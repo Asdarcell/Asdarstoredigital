@@ -212,7 +212,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database();
+        // dbRT tidak lagi digunakan, jadi kita bisa menghapusnya, tapi tidak masalah jika dibiarkan.
         const auth = firebase.auth();
         const storage = firebase.storage();
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -514,15 +514,30 @@
             }
         }
 
-        // FUNGSI UNTUK MANAJEMEN PRODUK (INI VERSI LAMA YANG PAKAI REALTIME DATABASE)
-        function loadProductManagementData() {
+        // FUNGSI UNTUK MANAJEMEN PRODUK (SUDAH DIUBAH AGAR MENGGUNAKAN FIRESTORE)
+        const produkDocs = {}; // Objek untuk menyimpan dokumen produk agar mudah diakses
+        
+        async function loadProductManagementData() {
             const kategoriSelect = document.getElementById('kategoriProduk');
             kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-            dbRT.ref('produk').once('value').then(snapshot => {
-                snapshot.forEach(childSnapshot => {
-                    kategoriSelect.innerHTML += `<option value="${childSnapshot.key}">${childSnapshot.key}</option>`;
+            try {
+                const snapshot = await dbFS.collection('produk').get();
+                const categories = new Set();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.kategori) {
+                        categories.add(data.kategori);
+                        produkDocs[doc.id] = doc.data(); // Simpan dokumen dengan ID
+                    }
                 });
-            });
+                const sortedCategories = [...categories].sort();
+                sortedCategories.forEach(cat => {
+                    kategoriSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            } catch (error) {
+                console.error("Gagal memuat kategori:", error);
+                alert("Gagal memuat kategori produk.");
+            }
         }
 
         function handleProductCategoryChange() {
@@ -533,53 +548,48 @@
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
             if (!kategori) return;
-            dbRT.ref(`produk/${kategori}`).once('value').then(snapshot => {
-                const data = snapshot.val() || {};
-                const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
-                sortedVarian.forEach(produk => {
-                    namaProdukSelect.innerHTML += `<option value="${produk}">${produk}</option>`;
-                });
+            const filteredProducts = Object.keys(produkDocs).filter(docId => produkDocs[docId].kategori === kategori);
+            filteredProducts.forEach(docId => {
+                const data = produkDocs[docId];
+                namaProdukSelect.innerHTML += `<option value="${docId}">${data.nama_produk}</option>`;
             });
         }
         
         function handleProductNameChange() {
-            const kategori = document.getElementById('kategoriProduk').value;
-            const produk = document.getElementById('namaProduk').value;
+            const docId = document.getElementById('namaProduk').value;
             document.getElementById('hargaProduk').value = '';
             document.getElementById('hargaResellerProduk').value = '';
             document.getElementById('stokProduk').value = '';
-            if (!kategori || !produk) return;
-            dbRT.ref(`produk/${kategori}/${produk}`).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    document.getElementById('hargaProduk').value = data.harga || 0;
-                    document.getElementById('hargaResellerProduk').value = data.harga_reseller || data.harga || 0;
-                    document.getElementById('stokProduk').value = data.stok || 0;
-                }
-            });
+            if (!docId) return;
+            const data = produkDocs[docId];
+            if (data) {
+                document.getElementById('hargaProduk').value = data.harga || 0;
+                document.getElementById('hargaResellerProduk').value = data.harga_reseller || data.harga || 0;
+                document.getElementById('stokProduk').value = data.stok || 0;
+            }
         }
         
         async function updateProductData() {
-            const kategori = document.getElementById('kategoriProduk').value;
-            const produk = document.getElementById('namaProduk').value;
+            const docId = document.getElementById('namaProduk').value;
             const hargaReseller = parseInt(document.getElementById('hargaResellerProduk').value);
             const stok = parseInt(document.getElementById('stokProduk').value);
-            if (!kategori || !produk || isNaN(hargaReseller) || isNaN(stok)) {
-                alert('Harap lengkapi semua data produk dengan benar!');
+            if (!docId || isNaN(hargaReseller) || isNaN(stok)) {
+                alert('Harap pilih produk dan lengkapi data produk dengan benar!');
                 return;
             }
-            if (!confirm(`Yakin ingin memperbarui harga reseller produk ${produk} menjadi ${formatRupiah(hargaReseller)} dan stok menjadi ${stok}?`)) {
+            if (!confirm(`Yakin ingin memperbarui produk ${produkDocs[docId].nama_produk} menjadi harga reseller ${formatRupiah(hargaReseller)} dan stok ${stok}?`)) {
                 return;
             }
             try {
-                await dbRT.ref(`produk/${kategori}/${produk}`).update({
+                const produkRef = dbFS.collection('produk').doc(docId);
+                await produkRef.update({
                     harga_reseller: hargaReseller,
                     stok: stok
                 });
-                alert('Data produk reseller berhasil diperbarui!');
+                alert('Data produk reseller berhasil diperbarui di Firestore!');
             } catch (error) {
                 console.error("Gagal memperbarui produk:", error);
-                alert('Gagal memperbarui data produk.');
+                alert('Gagal memperbarui data produk. Coba periksa aturan Firestore Anda.');
             }
         }
     </script>
