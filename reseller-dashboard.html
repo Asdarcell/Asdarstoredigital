@@ -103,6 +103,44 @@
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
     .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
     .faq-item.active .faq-question::after { transform: rotate(180deg); }
+  
+    /* Styles for Topup section */
+    .topup-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .nominal-btn {
+        background-color: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 15px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    .nominal-btn.selected, .nominal-btn:hover {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+    .nominal-btn:disabled {
+        background-color: var(--muted-text);
+        cursor: not-allowed;
+    }
+    .notification {
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .notification.success { background: #d4edda; color: #155724; }
+    .notification.error { background: #f8d7da; color: #721c24; }
   </style>
 </head>
 
@@ -111,10 +149,10 @@
     <h1>Asdar Store Digital</h1>
     <div>
         <div id="saldo-display" class="saldo-display">Memuat Saldo...</div>
-        <a href="reseller.html" class="reseller-btn">
-          <i class="fas fa-user-tie"></i>
-          <span>Reseller</span>
-        </a>
+        <button id="show-topup-btn" class="reseller-btn">
+          <i class="fas fa-wallet"></i>
+          <span>Top Up Saldo</span>
+        </button>
     </div>
   </header>
 
@@ -147,6 +185,71 @@
       </form>
     </div>
     <div id="hasil" class="section-container" style="display: none;" data-aos="zoom-in"></div>
+    <hr>
+    
+    <div id="topup-section" style="display: none;" data-aos="fade-up" class="section-container">
+      <h2 style="text-align: center; margin-top: 0; color: var(--primary);">Pilih Nominal Top Up</h2>
+      <p style="text-align: center; color: var(--muted-text);">Silakan pilih nominal yang ingin Anda top up.</p>
+      <div class="topup-options" id="nominal-options">
+        <button class="nominal-btn" data-nominal="10000">Rp10.000</button>
+        <button class="nominal-btn" data-nominal="25000">Rp25.000</button>
+        <button class="nominal-btn" data-nominal="50000">Rp50.000</button>
+        <button class="nominal-btn" data-nominal="100000">Rp100.000</button>
+        <button class="nominal-btn" data-nominal="250000">Rp250.000</button>
+        <button class="nominal-btn" data-nominal="500000">Rp500.000</button>
+      </div>
+      <div class="section-container" style="margin-top: 20px;">
+        <h2 style="text-align: center; margin-top: 0; color: var(--primary);">Lakukan Pembayaran</h2>
+        <div class="payment-methods-list">
+          <div class="payment-method-item">
+            <div class="payment-details">
+              <div>
+                <div class="payment-method-name">Shopee Pay</div>
+                <span id="shopee-pay-number" class="payment-method-number">081803004607</span>
+              </div>
+              <button class="copy-btn" onclick="copyToClipboard('081803004607', this)"><i class="fas fa-copy"></i> Salin</button>
+            </div>
+          </div>
+          <div class="payment-method-item">
+            <div class="payment-details">
+              <div>
+                <div class="payment-method-name">DANA</div>
+                <span id="dana-number" class="payment-method-number">087755432880</span>
+              </div>
+              <button class="copy-btn" onclick="copyToClipboard('087755432880', this)"><i class="fas fa-copy"></i> Salin</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-container" style="margin-top: 20px;">
+        <h2 style="text-align: center; margin-top: 0; color: var(--primary);">Konfirmasi Bukti Transfer</h2>
+        <form id="confirmation-form">
+          <div id="form-status" class="notification" style="display: none;"></div>
+          <div class="form-group">
+            <label for="nominalInput">Nominal</label>
+            <input type="number" id="nominalInput" placeholder="Masukkan nominal top up" required readonly>
+          </div>
+          <div class="form-group">
+            <label for="paymentMethodSelect">Metode Pembayaran</label>
+            <select id="paymentMethodSelect" required>
+              <option value="">Pilih Metode</option>
+              <option value="Shopee Pay">Shopee Pay</option>
+              <option value="DANA">DANA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="senderName">Nama Pengirim</label>
+            <input type="text" id="senderName" placeholder="Nama Anda" required>
+          </div>
+          <div class="form-group">
+              <label for="uploadProof">Unggah Bukti (screenshot)</label>
+              <input type="file" id="uploadProof" accept="image/*" required>
+          </div>
+          <button type="submit" id="submit-btn-topup" disabled>Pilih Nominal Dahulu</button>
+        </form>
+      </div>
+    </div>
+
     <hr>
     <div data-aos="fade-up">
         <h2>Testimoni Pelanggan Kami</h2>
@@ -183,6 +286,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
@@ -192,11 +296,13 @@
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
     };
     firebase.initializeApp(firebaseConfig);
-    const dbRT = firebase.database(); // Untuk Realtime DB (produk, testimoni, faq)
-    const dbFS = firebase.firestore(); // Untuk Firestore (saldo, user reseller)
+    const dbRT = firebase.database();
+    const dbFS = firebase.firestore();
     const auth = firebase.auth();
+    const storage = firebase.storage();
 
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
@@ -205,7 +311,6 @@
     let testimonialInterval;
     const POTONGAN_DISKON_SHARE = 5000;
     
-    // Informasi reseller yang sedang login
     let loggedInReseller = null;
 
     const submitBtn = document.getElementById('submitBtn');
@@ -230,12 +335,123 @@
     };
     const hideNotification = () => { formNotification.style.display = 'none'; };
 
+    // --- Bagian Top Up Saldo ---
+    const pikey = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
+    const topupSection = document.getElementById('topup-section');
+    const showTopupBtn = document.getElementById('show-topup-btn');
+    const nominalButtons = document.querySelectorAll('.nominal-btn');
+    const nominalInput = document.getElementById('nominalInput');
+    const confirmationForm = document.getElementById('confirmation-form');
+    const formStatusTopup = document.getElementById('form-status');
+    const submitBtnTopup = document.getElementById('submit-btn-topup');
+    let selectedNominal = null;
+
+    showTopupBtn.addEventListener('click', () => {
+        topupSection.style.display = 'block';
+        window.scrollTo({
+            top: topupSection.offsetTop,
+            behavior: 'smooth'
+        });
+    });
+
+    nominalButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            nominalButtons.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedNominal = parseInt(btn.dataset.nominal, 10);
+            nominalInput.value = selectedNominal;
+            submitBtnTopup.disabled = false;
+            submitBtnTopup.textContent = 'Kirim Bukti Sekarang';
+        });
+    });
+
+    function showStatusTopup(message, type) {
+        formStatusTopup.textContent = message;
+        formStatusTopup.className = `notification ${type}`;
+        formStatusTopup.style.display = 'block';
+    }
+
+    confirmationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!selectedNominal) {
+            showStatusTopup('Silakan pilih nominal terlebih dahulu!', 'error');
+            return;
+        }
+
+        const user = auth.currentUser;
+        if (!user) {
+            showStatusTopup('Anda harus login untuk mengirim konfirmasi!', 'error');
+            return;
+        }
+        
+        const senderName = document.getElementById('senderName').value;
+        const paymentMethod = document.getElementById('paymentMethodSelect').value;
+        const proofFile = document.getElementById('uploadProof').files[0];
+        
+        submitBtnTopup.disabled = true;
+        submitBtnTopup.textContent = 'Mengirim...';
+        showStatusTopup('Sedang mengirim konfirmasi, mohon tunggu...', 'info');
+
+        try {
+            let fileUrl = null;
+            if (proofFile) {
+                const storageRef = storage.ref();
+                const fileRef = storageRef.child(`topup_proofs/${user.uid}/${Date.now()}_${proofFile.name}`);
+                await fileRef.put(proofFile);
+                fileUrl = await fileRef.getDownloadURL();
+            }
+
+            const konfirmasiId = 'T' + Date.now();
+            await dbFS.collection('konfirmasiTopup').doc(konfirmasiId).set({
+                id: konfirmasiId,
+                reseller_uid: user.uid,
+                reseller_email: user.email,
+                nominal: selectedNominal,
+                metode_pembayaran: paymentMethod,
+                nama_pengirim: senderName,
+                bukti_url: fileUrl,
+                pikey: pikey,
+                status: 'pending',
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showStatusTopup('Konfirmasi berhasil dikirim! Silakan tunggu admin memprosesnya.', 'success');
+            confirmationForm.reset();
+            nominalButtons.forEach(b => b.classList.remove('selected'));
+            selectedNominal = null;
+            submitBtnTopup.disabled = true;
+            submitBtnTopup.textContent = 'Pilih Nominal Dahulu';
+
+        } catch (error) {
+            console.error("Error saat mengirim konfirmasi:", error);
+            showStatusTopup('Gagal mengirim konfirmasi. Silakan coba lagi.', 'error');
+            submitBtnTopup.disabled = false;
+            submitBtnTopup.textContent = 'Kirim Bukti Sekarang';
+        }
+    });
+
+    window.copyToClipboard = (text, element) => {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHtml = `<i class="fas fa-copy"></i> Salin`;
+            element.innerHTML = `<i class="fas fa-check"></i> Disalin!`;
+            element.disabled = true;
+            setTimeout(() => {
+                element.innerHTML = originalHtml;
+                element.disabled = false;
+            }, 2000);
+        }).catch(err => {
+            console.error('Gagal menyalin. Mohon salin secara manual.', err);
+            alert('Gagal menyalin. Mohon salin secara manual.');
+        });
+    };
+    
+    // --- Akhir Bagian Top Up Saldo ---
+
     document.addEventListener('DOMContentLoaded', () => {
       AOS.init({ duration: 800, once: true, offset: 50 });
-      // Cek status autentikasi saat halaman dimuat
       auth.onAuthStateChanged(user => {
         if (!user) {
-          // Jika tidak ada user, redirect ke halaman login reseller
           window.location.href = 'loginreseller.html';
         } else {
           loggedInReseller = user;
@@ -250,7 +466,6 @@
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
-    // BAGIAN BARU: Fungsi untuk memantau saldo reseller secara real-time
     function listenToResellerBalance(uid) {
         dbFS.collection('resellers').doc(uid).onSnapshot(doc => {
             if (doc.exists) {
@@ -364,7 +579,6 @@
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
     
-    // BAGIAN BARU: Logika pembelian dengan saldo (diganti total)
     async function handleOrderSubmit(e) {
         e.preventDefault();
         hideNotification();
@@ -380,7 +594,7 @@
         const waAktif = normalizePhone(waAktifInput.value.trim());
         const kategori = kategoriSelect.value;
         const produk = produkSelect.value;
-        const produkUID = produkTerpilihData.uid || produk; // Asumsi ada UID produk
+        const produkUID = produkTerpilihData.uid || produk;
         
         submitBtn.disabled = true;
         submitBtn.textContent = 'Memproses...';
@@ -398,7 +612,6 @@
                 hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             }
             
-            // Mengambil saldo reseller saat ini
             const resellerDocRef = dbFS.collection('resellers').doc(loggedInReseller.uid);
             const resellerDoc = await resellerDocRef.get();
             if (!resellerDoc.exists || resellerDoc.data().saldo < hargaFinal) {
@@ -408,13 +621,11 @@
                 return;
             }
 
-            // Melakukan transaksi untuk mengurangi saldo dan stok
             await dbFS.runTransaction(async (transaction) => {
                 const updatedResellerDoc = await transaction.get(resellerDocRef);
                 const currentSaldo = updatedResellerDoc.data().saldo;
                 const newSaldo = currentSaldo - hargaFinal;
 
-                // Transaksi Realtime Database untuk stok
                 const produkRefRT = dbRT.ref(`produk/${kategori}/${produk}`);
                 const produkSnapRT = await produkRefRT.once('value');
                 const produkDataRT = produkSnapRT.val();
@@ -423,14 +634,10 @@
                     throw new Error("Stok produk habis.");
                 }
 
-                // Update saldo di Firestore
                 transaction.update(resellerDocRef, { saldo: newSaldo });
-                
-                // Update stok di Realtime Database
                 produkRefRT.update({ stok: produkDataRT.stok - 1 });
             });
 
-            // Menyimpan riwayat pesanan reseller ke Firestore
             const idPesanan = "R" + Date.now();
             await dbFS.collection('pesananReseller').doc(idPesanan).set({
                 id: idPesanan,
@@ -442,19 +649,17 @@
                 kategori: kategori,
                 produk: produk,
                 waktu: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'Selesai', // Karena langsung terbayar
+                status: 'Selesai',
                 harga_beli: hargaFinal,
-                harga_jual: hargaAwal, // Asumsi harga jual sama dengan harga awal produk
+                harga_jual: hargaAwal,
                 promo_digunakan: promoDigunakan,
                 diskon_share: diskonShareTerpakai
             });
             
             showNotification(`Pesanan berhasil! Saldo Anda berkurang sebesar ${formatRupiah(hargaFinal)}.`, 'success');
             
-            // Menghilangkan hak diskon jika digunakan
             if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
 
-            // Tampilkan hasil pembelian
             hasilDiv.style.display = 'block';
             hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${idPesanan}</code></p><div class="info"><p class="text-center">Pesanan telah dibayar menggunakan saldo Anda dan akan segera diproses.</p></div><div class="d-flex justify-content-center gap-2"><a class='qr-btn status' href="status.html?id=${idPesanan}">📄 Cek Status</a></div>`;
             document.getElementById('formPesanan').reset();
@@ -473,17 +678,89 @@
         }
     }
 
-    // Fungsi lain tetap sama
     function loadApprovedTestimonials() {
-        // ... (fungsi ini tetap sama seperti kode Anda, menggunakan dbRT)
+        const container = document.getElementById('testimoniContainer');
+        const allTestimonials = [];
+        let currentIndex = 0;
+        dbRT.ref('testimonials').orderByChild('status').equalTo('disetujui').once('value', snap => {
+            container.innerHTML = '';
+            if (!snap.exists()) {
+                container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`;
+                return;
+            }
+            snap.forEach(childSnap => {
+                allTestimonials.push(childSnap.val());
+            });
+            allTestimonials.reverse();
+            if (testimonialInterval) clearInterval(testimonialInterval);
+            testimonialInterval = setInterval(() => {
+                if (allTestimonials.length === 0) return;
+                if (container.children.length > 6) {
+                    container.firstChild.remove();
+                }
+                const testi = allTestimonials[currentIndex];
+                const bubble = document.createElement('div');
+                bubble.className = 'testimonial-bubble';
+                bubble.innerHTML = `<div class="testimonial-header"><i class="fas fa-user-circle"></i><span class="testimonial-name">${testi.nama || 'Anonim'}</span></div><div class="testimonial-body">${testi.isi || ''}</div>`;
+                container.appendChild(bubble);
+                container.scrollTop = container.scrollHeight;
+                currentIndex = (currentIndex + 1) % allTestimonials.length;
+            }, 4000);
+        });
     }
 
     async function handleTestimoniSubmit(e) {
-        // ... (fungsi ini tetap sama seperti kode Anda, menggunakan dbRT)
+        e.preventDefault();
+        const nama = document.getElementById('testiNama').value.trim();
+        const pesan = document.getElementById('testiPesan').value.trim();
+        const statusEl = document.getElementById('testiStatus');
+        if (!nama || !pesan) {
+            statusEl.textContent = 'Nama dan pesan wajib diisi!';
+            statusEl.style.color = 'var(--danger)';
+            return;
+        }
+        try {
+            await dbRT.ref('testimonials').push({
+                nama,
+                isi: pesan,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
+            statusEl.style.color = 'var(--success)';
+            e.target.reset();
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 4000);
+        } catch (error) {
+            statusEl.textContent = 'Gagal mengirim testimoni.';
+            statusEl.style.color = 'var(--danger)';
+        }
     }
 
     function loadAndRenderFaq() {
-        // ... (fungsi ini tetap sama seperti kode Anda, menggunakan dbRT)
+        const faqContainer = document.getElementById('faq-container');
+        dbRT.ref('faq').once('value').then(snap => {
+            faqContainer.innerHTML = '';
+            if (!snap.exists()) {
+                faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
+                return;
+            }
+            const faqData = snap.val();
+            if (Array.isArray(faqData)) {
+                faqData.forEach(itemData => {
+                    const item = document.createElement('div');
+                    item.className = 'faq-item';
+                    item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
+                    faqContainer.appendChild(item);
+                });
+            }
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
+            });
+        }).catch(err => {
+            console.error("Gagal memuat FAQ:", err);
+        });
     }
     
     window.cekStatus = () => {
@@ -492,15 +769,38 @@
     };
 
     window.klaimPromoProduk = () => {
-        // ... (fungsi ini tetap sama seperti kode Anda)
+        promoProdukTerpakai = true;
+        diskonShareTerpakai = false;
+        document.getElementById('claim-discount-section').style.display = 'none';
+        updateTotalHarga();
+        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
     
     async function checkDiskonShare() {
-        // ... (fungsi ini tetap sama seperti kode Anda, menggunakan dbRT)
+        if (promoProdukTerpakai) return;
+        const waInput = document.getElementById('waAktif');
+        const claimSection = document.getElementById('claim-discount-section');
+        const nomorWA = normalizePhone(waInput.value);
+        if (waInput.checkValidity() && nomorWA.length > 10) {
+            try {
+                const snapshot = await dbRT.ref('hakDiskon/' + nomorWA).once('value');
+                claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
+            } catch (error) {
+                console.error("Error checking discount:", error);
+                claimSection.style.display = 'none';
+            }
+        } else {
+            claimSection.style.display = 'none';
+        }
     }
 
     window.gunakanDiskonShare = () => {
-        // ... (fungsi ini tetap sama seperti kode Anda)
+        diskonShareTerpakai = true;
+        promoProdukTerpakai = false;
+        document.getElementById('product-promo-container').innerHTML = '';
+        updateTotalHarga();
+        document.getElementById('claim-button').disabled = true;
+        document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
     };
   </script>
 </body>
