@@ -1,644 +1,651 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        :root {
-            --bg: #f4f7f9; --text: #34495e; --sidebar-bg: #2c3e50;
-            --sidebar-text: #ecf0f1; --primary: #3498db; --card: #ffffff;
-            --border: #e0e6ed; --shadow: rgba(0, 0, 0, 0.1);
-        }
-        [data-theme="dark"] {
-            --bg: #1e2a36; --text: #e0e6ed; --sidebar-bg: #131c26;
-            --sidebar-text: #aebfd4; --primary: #44a6ff; --card: #283745;
-            --border: #3f5161; --shadow: rgba(0, 0, 0, 0.25);
-        }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
-        #sidebar {
-            background: var(--sidebar-bg); color: var(--sidebar-text); height: 100vh;
-            position: fixed; top: 0; left: 0; width: 250px; padding: 20px;
-            transition: all 0.3s ease;
-        }
-        #sidebar.collapsed { width: 80px; }
-        #sidebar .nav-link { color: var(--sidebar-text); transition: all 0.2s ease; }
-        #sidebar .nav-link:hover { background-color: var(--primary); color: white; }
-        #sidebar .nav-link.active { background-color: var(--primary); color: white; }
-        #content { margin-left: 250px; padding: 20px; transition: margin-left 0.3s ease; }
-        #content.expanded { margin-left: 80px; }
-        .card { background: var(--card); border: 1px solid var(--border); box-shadow: 0 4px 12px var(--shadow); }
-        .table-responsive { overflow-x: auto; }
-        .table { color: var(--text); }
-        .table-striped > tbody > tr:nth-of-type(odd) { background-color: var(--bg); }
-        .btn-primary, .btn-danger, .btn-success { transition: all 0.2s ease; }
-        #sidebar-toggle { cursor: pointer; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f4f7f9; --text: #34495e; --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1; --primary: #3498db; --card: #ffffff;
+            --border: #e0e6ed; --shadow: rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="dark"] {
+            --bg: #1e2a36; --text: #e0e6ed; --sidebar-bg: #131c26;
+            --sidebar-text: #aebfd4; --primary: #44a6ff; --card: #283745;
+            --border: #3f5161; --shadow: rgba(0, 0, 0, 0.25);
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
+        #sidebar {
+            background: var(--sidebar-bg); color: var(--sidebar-text); height: 100vh;
+            position: fixed; top: 0; left: 0; width: 250px; padding: 20px;
+            transition: all 0.3s ease;
+        }
+        #sidebar.collapsed { width: 80px; }
+        #sidebar .nav-link { color: var(--sidebar-text); transition: all 0.2s ease; }
+        #sidebar .nav-link:hover { background-color: var(--primary); color: white; }
+        #sidebar .nav-link.active { background-color: var(--primary); color: white; }
+        #content { margin-left: 250px; padding: 20px; transition: margin-left 0.3s ease; }
+        #content.expanded { margin-left: 80px; }
+        .card { background: var(--card); border: 1px solid var(--border); box-shadow: 0 4px 12px var(--shadow); }
+        .table-responsive { overflow-x: auto; }
+        .table { color: var(--text); }
+        .table-striped > tbody > tr:nth-of-type(odd) { background-color: var(--bg); }
+        .btn-primary, .btn-danger, .btn-success { transition: all 0.2s ease; }
+        #sidebar-toggle { cursor: pointer; }
+    </style>
 </head>
 <body data-theme="dark">
-    <div id="wrapper">
-        <div id="sidebar">
-            <h4 class="text-center mb-4"><i class="fas fa-cubes me-2"></i>Admin Panel</h4>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#dashboard"><i class="fas fa-home me-2"></i><span>Dashboard</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#reseller-management"><i class="fas fa-users me-2"></i><span>Manajemen Reseller</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#product-management"><i class="fas fa-box me-2"></i><span>Manajemen Produk</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#order-management"><i class="fas fa-shopping-cart me-2"></i><span>Manajemen Pesanan</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#topup-management"><i class="fas fa-wallet me-2"></i><span>Manajemen Top Up</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#testimonial-management"><i class="fas fa-comments me-2"></i><span>Manajemen Testimoni</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" id="logout-btn"><i class="fas fa-sign-out-alt me-2"></i><span>Keluar</span></a>
-                </li>
-            </ul>
-        </div>
+    <div id="wrapper">
+        <div id="sidebar">
+            <h4 class="text-center mb-4"><i class="fas fa-cubes me-2"></i>Admin Panel</h4>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#dashboard"><i class="fas fa-home me-2"></i><span>Dashboard</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#reseller-management"><i class="fas fa-users me-2"></i><span>Manajemen Reseller</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#product-management"><i class="fas fa-box me-2"></i><span>Manajemen Produk</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#order-management"><i class="fas fa-shopping-cart me-2"></i><span>Manajemen Pesanan</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#topup-management"><i class="fas fa-wallet me-2"></i><span>Manajemen Top Up</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#testimonial-management"><i class="fas fa-comments me-2"></i><span>Manajemen Testimoni</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="logout-btn"><i class="fas fa-sign-out-alt me-2"></i><span>Keluar</span></a>
+                </li>
+            </ul>
+        </div>
 
-        <div id="content">
-            <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top mb-4 card">
-                <div class="container-fluid">
-                    <button class="btn btn-secondary me-3 d-md-none" id="sidebar-toggle-mobile"><i class="fas fa-bars"></i></button>
-                    <span class="navbar-brand">Dashboard Admin</span>
-                    <div class="d-flex align-items-center ms-auto">
-                        <span id="user-display" class="me-3"></span>
-                        <div class="form-check form-switch me-3">
-                            <input class="form-check-input" type="checkbox" id="darkModeSwitch">
-                            <label class="form-check-label" for="darkModeSwitch"><i class="fas fa-moon"></i></label>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+        <div id="content">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top mb-4 card">
+                <div class="container-fluid">
+                    <button class="btn btn-secondary me-3 d-md-none" id="sidebar-toggle-mobile"><i class="fas fa-bars"></i></button>
+                    <span class="navbar-brand">Dashboard Admin</span>
+                    <div class="d-flex align-items-center ms-auto">
+                        <span id="user-display" class="me-3"></span>
+                        <div class="form-check form-switch me-3">
+                            <input class="form-check-input" type="checkbox" id="darkModeSwitch">
+                            <label class="form-check-label" for="darkModeSwitch"><i class="fas fa-moon"></i></label>
+                        </div>
+                    </div>
+                </div>
+            </nav>
 
-            <section id="dashboard" class="mb-4">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="card p-3">
-                            <h5>Total Reseller</h5>
-                            <h2 id="total-reseller">0</h2>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="card p-3">
-                            <h5>Total Pesanan</h5>
-                            <h2 id="total-orders">0</h2>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <section id="dashboard" class="mb-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card p-3">
+                            <h5>Total Reseller</h5>
+                            <h2 id="total-reseller">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card p-3">
+                            <h5>Total Pesanan</h5>
+                            <h2 id="total-orders">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-            <section id="reseller-management" class="mb-4" style="display:none;">
-                <div class="card p-4">
-                    <h3>Manajemen Reseller</h3>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Email</th>
-                                    <th>UID</th>
-                                    <th>Saldo</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reseller-list">
-                                </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-3">
-                        <input type="email" id="new-reseller-email" class="form-control mb-2" placeholder="Email reseller baru">
-                        <input type="text" id="new-reseller-password" class="form-control mb-2" placeholder="Password (min 6 karakter)">
-                        <button class="btn btn-primary w-100" id="add-reseller-btn">Tambah Reseller Baru</button>
-                    </div>
-                </div>
-            </section>
+            <section id="reseller-management" class="mb-4" style="display:none;">
+                <div class="card p-4">
+                    <h3>Manajemen Reseller</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>UID</th>
+                                    <th>Saldo</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reseller-list">
+                                </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <input type="email" id="new-reseller-email" class="form-control mb-2" placeholder="Email reseller baru">
+                        <input type="text" id="new-reseller-password" class="form-control mb-2" placeholder="Password (min 6 karakter)">
+                        <button class="btn btn-primary w-100" id="add-reseller-btn">Tambah Reseller Baru</button>
+                    </div>
+                </div>
+            </section>
 
-            <section id="product-management" class="mb-4" style="display:none;">
-                <div class="card p-4">
-                    <h3>Manajemen Produk</h3>
-                    <form id="product-form">
-                        <input type="hidden" id="product-id">
-                        <div class="mb-3">
-                            <label for="product-category" class="form-label">Kategori</label>
-                            <input type="text" id="product-category" class="form-control" placeholder="Cth: Voucher Game" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-name" class="form-label">Nama Produk</label>
-                            <input type="text" id="product-name" class="form-control" placeholder="Cth: Free Fire 100 Diamond" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-price" class="form-label">Harga Beli</label>
-                            <input type="number" id="product-price" class="form-control" placeholder="Harga dari Supplier" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-reseller-price" class="form-label">Harga Jual Reseller</label>
-                            <input type="number" id="product-reseller-price" class="form-control" placeholder="Harga Jual ke Reseller" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-desc" class="form-label">Deskripsi / Cara Pakai</label>
-                            <textarea id="product-desc" class="form-control" placeholder="Cth: Masukkan ID game Anda..." rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-stock" class="form-label">Stok</label>
-                            <input type="number" id="product-stock" class="form-control" placeholder="Jumlah stok" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Simpan Produk</button>
-                        <button type="button" class="btn btn-secondary w-100 mt-2" id="clear-form-btn">Bersihkan Form</button>
-                    </form>
-                    <hr>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Kategori</th>
-                                    <th>Nama Produk</th>
-                                    <th>Harga Jual</th>
-                                    <th>Stok</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="product-list">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            <section id="product-management" class="mb-4" style="display:none;">
+                <div class="card p-4">
+                    <h3>Manajemen Produk</h3>
+                    <form id="product-form">
+                        <input type="hidden" id="product-id">
+                        <div class="mb-3">
+                            <label for="product-category" class="form-label">Kategori</label>
+                            <input type="text" id="product-category" class="form-control" placeholder="Cth: Voucher Game" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-name" class="form-label">Nama Produk</label>
+                            <input type="text" id="product-name" class="form-control" placeholder="Cth: Free Fire 100 Diamond" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-price" class="form-label">Harga Beli</label>
+                            <input type="number" id="product-price" class="form-control" placeholder="Harga dari Supplier" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-reseller-price" class="form-label">Harga Jual Reseller</label>
+                            <input type="number" id="product-reseller-price" class="form-control" placeholder="Harga Jual ke Reseller" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-desc" class="form-label">Deskripsi / Cara Pakai</label>
+                            <textarea id="product-desc" class="form-control" placeholder="Cth: Masukkan ID game Anda..." rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-stock" class="form-label">Stok</label>
+                            <input type="number" id="product-stock" class="form-control" placeholder="Jumlah stok" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Simpan Produk</button>
+                        <button type="button" class="btn btn-secondary w-100 mt-2" id="clear-form-btn">Bersihkan Form</button>
+                    </form>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Kategori</th>
+                                    <th>Nama Produk</th>
+                                    <th>Harga Jual</th>
+                                    <th>Stok</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-            <section id="order-management" class="mb-4" style="display:none;">
-                <div class="card p-4">
-                    <h3>Manajemen Pesanan</h3>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Waktu</th>
-                                    <th>Reseller</th>
-                                    <th>Pelanggan</th>
-                                    <th>Produk</th>
-                                    <th>Harga</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="order-list">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            <section id="order-management" class="mb-4" style="display:none;">
+                <div class="card p-4">
+                    <h3>Manajemen Pesanan</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Waktu</th>
+                                    <th>Reseller</th>
+                                    <th>Pelanggan</th>
+                                    <th>Produk</th>
+                                    <th>Harga</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-            <section id="topup-management" class="mb-4" style="display:none;">
-                <div class="card p-4">
-                    <h3>Manajemen Top Up</h3>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Waktu</th>
-                                    <th>Reseller</th>
-                                    <th>Nominal</th>
-                                    <th>Metode</th>
-                                    <th>Bukti</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="topup-list">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            <section id="topup-management" class="mb-4" style="display:none;">
+                <div class="card p-4">
+                    <h3>Manajemen Top Up</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Waktu</th>
+                                    <th>Reseller</th>
+                                    <th>Nominal</th>
+                                    <th>Metode</th>
+                                    <th>Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topup-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-            <section id="testimonial-management" class="mb-4" style="display:none;">
-                <div class="card p-4">
-                    <h3>Manajemen Testimoni</h3>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nama</th>
-                                    <th>Pesan</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="testimonial-list">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
+            <section id="testimonial-management" class="mb-4" style="display:none;">
+                <div class="card p-4">
+                    <h3>Manajemen Testimoni</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nama</th>
+                                    <th>Pesan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testimonial-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <script>
-        // Inisialisasi Firebase
-        const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-          projectId: "asdarstoredigitalll-d89c4",
-        };
-        firebase.initializeApp(firebaseConfig);
-        const dbFS = firebase.firestore();
-        const auth = firebase.auth();
-        const dbRT = firebase.database();
+    <script>
+        // Inisialisasi Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+          projectId: "asdarstoredigitalll-d89c4",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const dbFS = firebase.firestore();
+        const auth = firebase.auth();
+        const dbRT = firebase.database();
 
-        // Elemen DOM
-        const userDisplay = document.getElementById('user-display');
-        const sections = document.querySelectorAll('section');
-        const navLinks = document.querySelectorAll('#sidebar .nav-link');
-        const productForm = document.getElementById('product-form');
-        const productId = document.getElementById('product-id');
-        const productName = document.getElementById('product-name');
-        const productCategory = document.getElementById('product-category');
-        const productPrice = document.getElementById('product-price');
-        const productResellerPrice = document.getElementById('product-reseller-price');
-        const productDesc = document.getElementById('product-desc');
-        const productStock = document.getElementById('product-stock');
-        const productList = document.getElementById('product-list');
-        const orderList = document.getElementById('order-list');
-        const resellerList = document.getElementById('reseller-list');
-        const topupList = document.getElementById('topup-list');
-        const testimonialList = document.getElementById('testimonial-list');
-        const addResellerBtn = document.getElementById('add-reseller-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const clearFormBtn = document.getElementById('clear-form-btn');
-        const totalReseller = document.getElementById('total-reseller');
-        const totalOrders = document.getElementById('total-orders');
+        // Elemen DOM
+        const userDisplay = document.getElementById('user-display');
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('#sidebar .nav-link');
+        const productForm = document.getElementById('product-form');
+        const productId = document.getElementById('product-id');
+        const productName = document.getElementById('product-name');
+        const productCategory = document.getElementById('product-category');
+        const productPrice = document.getElementById('product-price');
+        const productResellerPrice = document.getElementById('product-reseller-price');
+        const productDesc = document.getElementById('product-desc');
+        const productStock = document.getElementById('product-stock');
+        const productList = document.getElementById('product-list');
+        const orderList = document.getElementById('order-list');
+        const resellerList = document.getElementById('reseller-list');
+        const topupList = document.getElementById('topup-list');
+        const testimonialList = document.getElementById('testimonial-list');
+        const addResellerBtn = document.getElementById('add-reseller-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const clearFormBtn = document.getElementById('clear-form-btn');
+        const totalReseller = document.getElementById('total-reseller');
+        const totalOrders = document.getElementById('total-orders');
 
-        // Fungsi utilitas
-        const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d\d\d)+(?!\d))/g, ".")}`;
-        const formatTimestamp = (timestamp) => {
-            if (!timestamp) return '-';
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            return date.toLocaleDateString('id-ID', options);
-        };
-        const showSection = (id) => {
-            sections.forEach(section => {
-                section.style.display = (section.id === id.substring(1)) ? 'block' : 'none';
-            });
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-            });
-            document.querySelector(`a[href="${id}"]`).classList.add('active');
-        };
+        // Fungsi utilitas
+        const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d\d\d)+(?!\d))/g, ".")}`;
+        const formatTimestamp = (timestamp) => {
+            if (!timestamp) return '-';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return date.toLocaleDateString('id-ID', options);
+        };
+        const showSection = (id) => {
+            sections.forEach(section => {
+                section.style.display = (section.id === id.substring(1)) ? 'block' : 'none';
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`a[href="${id}"]`).classList.add('active');
+        };
 
-        // Otentikasi dan pemuatan awal
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                userDisplay.textContent = `Masuk sebagai: ${user.email}`;
-                loadDashboardData();
-                loadResellers();
-                loadProducts();
-                loadResellerOrders();
-                loadTopupConfirmations();
-                loadTestimonials();
-            } else {
-                window.location.href = 'loginreseller.html';
-            }
-        });
+        // Otentikasi dan pemuatan awal
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                userDisplay.textContent = `Masuk sebagai: ${user.email}`;
+                loadDashboardData();
+                loadResellers();
+                loadProducts();
+                loadResellerOrders();
+                loadTopupConfirmations();
+                loadTestimonials();
+            } else {
+                window.location.href = 'loginreseller.html';
+            }
+        });
 
-        // Event Listeners Navigasi
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const sectionId = link.getAttribute('href');
-                showSection(sectionId);
-            });
-        });
+        // Event Listeners Navigasi
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sectionId = link.getAttribute('href');
+                showSection(sectionId);
+            });
+        });
 
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            auth.signOut();
-        });
+        // Toggle Sidebar
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('content');
+        const sidebarToggleMobile = document.getElementById('sidebar-toggle-mobile');
 
-        // Dashboard Data
-        const loadDashboardData = async () => {
-            const resellerCount = (await dbFS.collection('resellers').get()).size;
-            const orderCount = (await dbFS.collection('pesananReseller').get()).size;
-            totalReseller.textContent = resellerCount;
-            totalOrders.textContent = orderCount;
-        };
+        sidebarToggleMobile.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('expanded');
+        });
 
-        // Manajemen Reseller
-        const loadResellers = async () => {
-            resellerList.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            const snapshot = await dbFS.collection('resellers').get();
-            resellerList.innerHTML = '';
-            snapshot.forEach(doc => {
-                const reseller = doc.data();
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${reseller.email}</td>
-                    <td>${doc.id}</td>
-                    <td>${formatRupiah(reseller.saldo || 0)}</td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteReseller('${doc.id}')">Hapus</button></td>
-                `;
-                resellerList.appendChild(row);
-            });
-        };
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut();
+        });
 
-        addResellerBtn.addEventListener('click', async () => {
-            const email = document.getElementById('new-reseller-email').value;
-            const password = document.getElementById('new-reseller-password').value;
-            if (!email || !password) {
-                alert('Email dan password harus diisi!');
-                return;
-            }
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                await dbFS.collection('resellers').doc(userCredential.user.uid).set({
-                    email: email,
-                    saldo: 0,
-                    created_at: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                alert('Reseller berhasil ditambahkan!');
-                loadResellers();
-            } catch (error) {
-                console.error("Error menambah reseller: ", error);
-                alert('Gagal menambah reseller: ' + error.message);
-            }
-        });
+        // Dashboard Data
+        const loadDashboardData = async () => {
+            const resellerCount = (await dbFS.collection('resellers').get()).size;
+            const orderCount = (await dbFS.collection('pesananReseller').get()).size;
+            totalReseller.textContent = resellerCount;
+            totalOrders.textContent = orderCount;
+        };
 
-        const deleteReseller = async (uid) => {
-            if (confirm('Apakah Anda yakin ingin menghapus reseller ini?')) {
-                try {
-                    await dbFS.collection('resellers').doc(uid).delete();
-                    alert('Reseller berhasil dihapus.');
-                    loadResellers();
-                } catch (error) {
-                    console.error("Error menghapus reseller:", error);
-                    alert("Gagal menghapus reseller: " + error.message);
-                }
-            }
-        };
+        // Manajemen Reseller
+        const loadResellers = async () => {
+            resellerList.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
+            const snapshot = await dbFS.collection('resellers').get();
+            resellerList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const reseller = doc.data();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${reseller.email}</td>
+                    <td>${doc.id}</td>
+                    <td>${formatRupiah(reseller.saldo || 0)}</td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteReseller('${doc.id}')">Hapus</button></td>
+                `;
+                resellerList.appendChild(row);
+            });
+        };
 
-        // Manajemen Produk (Menggunakan Firestore)
-        const loadProducts = async () => {
-            productList.innerHTML = '<tr><td colspan="5">Memuat...</td></tr>';
-            const snapshot = await dbFS.collection('produk').get();
-            productList.innerHTML = '';
-            snapshot.forEach(doc => {
-                const produk = doc.data();
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${produk.kategori || '-'}</td>
-                    <td>${produk.nama_produk || '-'}</td>
-                    <td>${formatRupiah(produk.harga_reseller || 0)}</td>
-                    <td>${produk.stok || 0}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm me-2" onclick="editProduct('${doc.id}')">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Hapus</button>
-                    </td>
-                `;
-                productList.appendChild(row);
-            });
-        };
+        addResellerBtn.addEventListener('click', async () => {
+            const email = document.getElementById('new-reseller-email').value;
+            const password = document.getElementById('new-reseller-password').value;
+            if (!email || !password) {
+                alert('Email dan password harus diisi!');
+                return;
+            }
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await dbFS.collection('resellers').doc(userCredential.user.uid).set({
+                    email: email,
+                    saldo: 0,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert('Reseller berhasil ditambahkan!');
+                loadResellers();
+            } catch (error) {
+                console.error("Error menambah reseller: ", error);
+                alert('Gagal menambah reseller: ' + error.message);
+            }
+        });
 
-        const saveProduct = async (e) => {
-            e.preventDefault();
-            const id = productId.value;
-            const data = {
-                kategori: productCategory.value.trim(),
-                nama_produk: productName.value.trim(),
-                harga: parseInt(productPrice.value, 10),
-                harga_reseller: parseInt(productResellerPrice.value, 10),
-                deskripsi: productDesc.value.trim(),
-                stok: parseInt(productStock.value, 10)
-            };
+        const deleteReseller = async (uid) => {
+            if (confirm('Apakah Anda yakin ingin menghapus reseller ini?')) {
+                try {
+                    await dbFS.collection('resellers').doc(uid).delete();
+                    alert('Reseller berhasil dihapus.');
+                    loadResellers();
+                } catch (error) {
+                    console.error("Error menghapus reseller:", error);
+                    alert("Gagal menghapus reseller: " + error.message);
+                }
+            }
+        };
 
-            try {
-                if (id) {
-                    // Update produk yang sudah ada
-                    await dbFS.collection('produk').doc(id).update(data);
-                    alert('Produk berhasil diupdate!');
-                } else {
-                    // Tambah produk baru
-                    await dbFS.collection('produk').add(data);
-                    alert('Produk berhasil ditambahkan!');
-                }
-                productForm.reset();
-                productId.value = '';
-                loadProducts();
-            } catch (error) {
-                console.error("Error saat menyimpan produk:", error);
-                alert("Gagal menyimpan produk: " + error.message);
-            }
-        };
-        
-        productForm.addEventListener('submit', saveProduct);
-        
-        const editProduct = async (id) => {
-            const doc = await dbFS.collection('produk').doc(id).get();
-            if (doc.exists) {
-                const data = doc.data();
-                productId.value = id;
-                productCategory.value = data.kategori || '';
-                productName.value = data.nama_produk || '';
-                productPrice.value = data.harga || 0;
-                productResellerPrice.value = data.harga_reseller || 0;
-                productDesc.value = data.deskripsi || '';
-                productStock.value = data.stok || 0;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        };
+        // Manajemen Produk (Menggunakan Firestore)
+        const loadProducts = async () => {
+            productList.innerHTML = '<tr><td colspan="5">Memuat...</td></tr>';
+            const snapshot = await dbFS.collection('produk').get();
+            productList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const produk = doc.data();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${produk.kategori || '-'}</td>
+                    <td>${produk.nama_produk || '-'}</td>
+                    <td>${formatRupiah(produk.harga_reseller || 0)}</td>
+                    <td>${produk.stok || 0}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm me-2" onclick="editProduct('${doc.id}')">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Hapus</button>
+                    </td>
+                `;
+                productList.appendChild(row);
+            });
+        };
 
-        const deleteProduct = async (id) => {
-            if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-                try {
-                    await dbFS.collection('produk').doc(id).delete();
-                    alert('Produk berhasil dihapus.');
-                    loadProducts();
-                } catch (error) {
-                    console.error("Error menghapus produk:", error);
-                    alert("Gagal menghapus produk: " + error.message);
-                }
-            }
-        };
+        const saveProduct = async (e) => {
+            e.preventDefault();
+            const id = productId.value;
+            const data = {
+                kategori: productCategory.value.trim(),
+                nama_produk: productName.value.trim(),
+                harga: parseInt(productPrice.value, 10),
+                harga_reseller: parseInt(productResellerPrice.value, 10),
+                deskripsi: productDesc.value.trim(),
+                stok: parseInt(productStock.value, 10)
+            };
 
-        clearFormBtn.addEventListener('click', () => {
-            productForm.reset();
-            productId.value = '';
-        });
+            try {
+                if (id) {
+                    // Update produk yang sudah ada
+                    await dbFS.collection('produk').doc(id).update(data);
+                    alert('Produk berhasil diupdate!');
+                } else {
+                    // Tambah produk baru
+                    await dbFS.collection('produk').add(data);
+                    alert('Produk berhasil ditambahkan!');
+                }
+                productForm.reset();
+                productId.value = '';
+                loadProducts();
+            } catch (error) {
+                console.error("Error saat menyimpan produk:", error);
+                alert("Gagal menyimpan produk: " + error.message);
+            }
+        };
+        
+        productForm.addEventListener('submit', saveProduct);
+        
+        const editProduct = async (id) => {
+            const doc = await dbFS.collection('produk').doc(id).get();
+            if (doc.exists) {
+                const data = doc.data();
+                productId.value = id;
+                productCategory.value = data.kategori || '';
+                productName.value = data.nama_produk || '';
+                productPrice.value = data.harga || 0;
+                productResellerPrice.value = data.harga_reseller || 0;
+                productDesc.value = data.deskripsi || '';
+                productStock.value = data.stok || 0;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
 
-        // Manajemen Pesanan (Menggunakan Firestore)
-        const loadResellerOrders = async () => {
-            orderList.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
-            const snapshot = await dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get();
-            orderList.innerHTML = '';
-            snapshot.forEach(doc => {
-                const order = doc.data();
-                const row = document.createElement('tr');
-                const statusClass = (order.status === 'Selesai') ? 'success' : 'danger';
-                row.innerHTML = `
-                    <td>${order.id || '-'}</td>
-                    <td>${formatTimestamp(order.waktu)}</td>
-                    <td>${order.reseller_email || '-'}</td>
-                    <td>${order.nama_pelanggan || '-'}</td>
-                    <td>${order.produk || '-'}</td>
-                    <td>${formatRupiah(order.harga_beli || 0)}</td>
-                    <td><span class="badge bg-${statusClass}">${order.status}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="changeOrderStatus('${doc.id}')">Ubah Status</button>
-                    </td>
-                `;
-                orderList.appendChild(row);
-            });
-        };
+        const deleteProduct = async (id) => {
+            if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+                try {
+                    await dbFS.collection('produk').doc(id).delete();
+                    alert('Produk berhasil dihapus.');
+                    loadProducts();
+                } catch (error) {
+                    console.error("Error menghapus produk:", error);
+                    alert("Gagal menghapus produk: " + error.message);
+                }
+            }
+        };
 
-        const changeOrderStatus = async (id) => {
-            const newStatus = prompt("Masukkan status baru (Cth: Selesai, Diproses):");
-            if (newStatus) {
-                try {
-                    await dbFS.collection('pesananReseller').doc(id).update({ status: newStatus });
-                    alert('Status pesanan berhasil diupdate!');
-                    loadResellerOrders();
-                } catch (error) {
-                    console.error("Gagal update status pesanan:", error);
-                    alert("Gagal update status pesanan: " + error.message);
-                }
-            }
-        };
+        clearFormBtn.addEventListener('click', () => {
+            productForm.reset();
+            productId.value = '';
+        });
 
-        // Manajemen Top Up
-        const loadTopupConfirmations = async () => {
-            topupList.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            const snapshot = await dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').get();
-            topupList.innerHTML = '';
-            snapshot.forEach(doc => {
-                const konfirmasi = doc.data();
-                if (konfirmasi.status === 'pending') {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${konfirmasi.id}</td>
-                        <td>${formatTimestamp(konfirmasi.created_at)}</td>
-                        <td>${konfirmasi.reseller_email}</td>
-                        <td>${formatRupiah(konfirmasi.nominal)}</td>
-                        <td>${konfirmasi.metode_pembayaran}</td>
-                        <td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a></td>
-                        <td>
-                            <button class="btn btn-sm btn-success me-2" onclick="approveTopup('${doc.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal})">Setujui</button>
-                            <button class="btn btn-sm btn-danger" onclick="rejectTopup('${doc.id}')">Tolak</button>
-                        </td>
-                    `;
-                    topupList.appendChild(row);
-                }
-            });
-        };
+        // Manajemen Pesanan (Menggunakan Firestore)
+        const loadResellerOrders = async () => {
+            orderList.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
+            const snapshot = await dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get();
+            orderList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const order = doc.data();
+                const statusClass = (order.status === 'Selesai') ? 'success' : 'danger';
+                row.innerHTML = `
+                    <td>${order.id || '-'}</td>
+                    <td>${formatTimestamp(order.waktu)}</td>
+                    <td>${order.reseller_email || '-'}</td>
+                    <td>${order.nama_pelanggan || '-'}</td>
+                    <td>${order.produk || '-'}</td>
+                    <td>${formatRupiah(order.harga_beli || 0)}</td>
+                    <td><span class="badge bg-${statusClass}">${order.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="changeOrderStatus('${doc.id}')">Ubah Status</button>
+                    </td>
+                `;
+                orderList.appendChild(row);
+            });
+        };
 
-        const approveTopup = async (id, resellerUid, nominal) => {
-            if (confirm('Apakah Anda yakin ingin menyetujui top up ini?')) {
-                const resellerDocRef = dbFS.collection('resellers').doc(resellerUid);
-                const konfirmasiDocRef = dbFS.collection('konfirmasiTopup').doc(id);
-                try {
-                    await dbFS.runTransaction(async (transaction) => {
-                        const resellerDoc = await transaction.get(resellerDocRef);
-                        if (!resellerDoc.exists) {
-                            throw new Error("Reseller tidak ditemukan!");
-                        }
-                        const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
-                        transaction.update(resellerDocRef, { saldo: newSaldo });
-                        transaction.update(konfirmasiDocRef, { status: 'approved' });
-                    });
-                    alert('Top up berhasil disetujui. Saldo reseller telah ditambahkan.');
-                    loadTopupConfirmations();
-                    loadDashboardData();
-                    loadResellers();
-                } catch (e) {
-                    console.error("Gagal memproses top up:", e);
-                    alert("Gagal memproses top up: " + e.message);
-                }
-            }
-        };
+        const changeOrderStatus = async (id) => {
+            const newStatus = prompt("Masukkan status baru (Cth: Selesai, Diproses):");
+            if (newStatus) {
+                try {
+                    await dbFS.collection('pesananReseller').doc(id).update({ status: newStatus });
+                    alert('Status pesanan berhasil diupdate!');
+                    loadResellerOrders();
+                } catch (error) {
+                    console.error("Gagal update status pesanan:", error);
+                    alert("Gagal update status pesanan: " + error.message);
+                }
+            }
+        };
 
-        const rejectTopup = async (id) => {
-            if (confirm('Apakah Anda yakin ingin menolak top up ini?')) {
-                try {
-                    await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'rejected' });
-                    alert('Top up berhasil ditolak.');
-                    loadTopupConfirmations();
-                } catch (error) {
-                    console.error("Gagal menolak top up:", error);
-                    alert("Gagal menolak top up: " + error.message);
-                }
-            }
-        };
+        // Manajemen Top Up
+        const loadTopupConfirmations = async () => {
+            topupList.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
+            const snapshot = await dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').get();
+            topupList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const konfirmasi = doc.data();
+                if (konfirmasi.status === 'pending') {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${konfirmasi.id}</td>
+                        <td>${formatTimestamp(konfirmasi.created_at)}</td>
+                        <td>${konfirmasi.reseller_email}</td>
+                        <td>${formatRupiah(konfirmasi.nominal)}</td>
+                        <td>${konfirmasi.metode_pembayaran}</td>
+                        <td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a></td>
+                        <td>
+                            <button class="btn btn-sm btn-success me-2" onclick="approveTopup('${doc.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal})">Setujui</button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectTopup('${doc.id}')">Tolak</button>
+                        </td>
+                    `;
+                    topupList.appendChild(row);
+                }
+            });
+        };
 
-        // Manajemen Testimoni
-        const loadTestimonials = async () => {
-            testimonialList.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            const snapshot = await dbFS.collection('testimoni').orderBy('waktu', 'desc').get();
-            testimonialList.innerHTML = '';
-            snapshot.forEach(doc => {
-                const testi = doc.data();
-                const statusClass = (testi.status === 'approved') ? 'success' : (testi.status === 'pending' ? 'warning' : 'danger');
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${doc.id}</td>
-                    <td>${testi.nama}</td>
-                    <td>${testi.pesan}</td>
-                    <td><span class="badge bg-${statusClass}">${testi.status}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-success me-2" onclick="approveTestimonial('${doc.id}')">Setujui</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteTestimonial('${doc.id}')">Hapus</button>
-                    </td>
-                `;
-                testimonialList.appendChild(row);
-            });
-        };
+        const approveTopup = async (id, resellerUid, nominal) => {
+            if (confirm('Apakah Anda yakin ingin menyetujui top up ini?')) {
+                const resellerDocRef = dbFS.collection('resellers').doc(resellerUid);
+                const konfirmasiDocRef = dbFS.collection('konfirmasiTopup').doc(id);
+                try {
+                    await dbFS.runTransaction(async (transaction) => {
+                        const resellerDoc = await transaction.get(resellerDocRef);
+                        if (!resellerDoc.exists) {
+                            throw new Error("Reseller tidak ditemukan!");
+                        }
+                        const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
+                        transaction.update(resellerDocRef, { saldo: newSaldo });
+                        transaction.update(konfirmasiDocRef, { status: 'approved' });
+                    });
+                    alert('Top up berhasil disetujui. Saldo reseller telah ditambahkan.');
+                    loadTopupConfirmations();
+                    loadDashboardData();
+                    loadResellers();
+                } catch (e) {
+                    console.error("Gagal memproses top up:", e);
+                    alert("Gagal memproses top up: " + e.message);
+                }
+            }
+        };
 
-        const approveTestimonial = async (id) => {
-            if (confirm('Apakah Anda yakin ingin menyetujui testimoni ini?')) {
-                try {
-                    await dbFS.collection('testimoni').doc(id).update({ status: 'approved' });
-                    alert('Testimoni berhasil disetujui!');
-                    loadTestimonials();
-                } catch (error) {
-                    console.error("Gagal menyetujui testimoni:", error);
-                    alert("Gagal menyetujui testimoni: " + error.message);
-                }
-            }
-        };
+        const rejectTopup = async (id) => {
+            if (confirm('Apakah Anda yakin ingin menolak top up ini?')) {
+                try {
+                    await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'rejected' });
+                    alert('Top up berhasil ditolak.');
+                    loadTopupConfirmations();
+                } catch (error) {
+                    console.error("Gagal menolak top up:", error);
+                    alert("Gagal menolak top up: " + error.message);
+                }
+            }
+        };
 
-        const deleteTestimonial = async (id) => {
-            if (confirm('Apakah Anda yakin ingin menghapus testimoni ini?')) {
-                try {
-                    await dbFS.collection('testimoni').doc(id).delete();
-                    alert('Testimoni berhasil dihapus.');
-                    loadTestimonials();
-                } catch (error) {
-                    console.error("Gagal menghapus testimoni:", error);
-                    alert("Gagal menghapus testimoni: " + error.message);
-                }
-            }
-        };
-        
-        // Mode Gelap
-        const darkModeSwitch = document.getElementById('darkModeSwitch');
-        darkModeSwitch.addEventListener('change', () => {
-            document.body.setAttribute('data-theme', darkModeSwitch.checked ? 'dark' : 'light');
-        });
-        
-    </script>
+        // Manajemen Testimoni
+        const loadTestimonials = async () => {
+            testimonialList.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
+            const snapshot = await dbFS.collection('testimoni').orderBy('waktu', 'desc').get();
+            testimonialList.innerHTML = '';
+            snapshot.forEach(doc => {
+                const testi = doc.data();
+                const statusClass = (testi.status === 'approved') ? 'success' : (testi.status === 'pending' ? 'warning' : 'danger');
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${doc.id}</td>
+                    <td>${testi.nama}</td>
+                    <td>${testi.pesan}</td>
+                    <td><span class="badge bg-${statusClass}">${testi.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success me-2" onclick="approveTestimonial('${doc.id}')">Setujui</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTestimonial('${doc.id}')">Hapus</button>
+                    </td>
+                `;
+                testimonialList.appendChild(row);
+            });
+        };
+
+        const approveTestimonial = async (id) => {
+            if (confirm('Apakah Anda yakin ingin menyetujui testimoni ini?')) {
+                try {
+                    await dbFS.collection('testimoni').doc(id).update({ status: 'approved' });
+                    alert('Testimoni berhasil disetujui!');
+                    loadTestimonials();
+                } catch (error) {
+                    console.error("Gagal menyetujui testimoni:", error);
+                    alert("Gagal menyetujui testimoni: " + error.message);
+                }
+            }
+        };
+
+        const deleteTestimonial = async (id) => {
+            if (confirm('Apakah Anda yakin ingin menghapus testimoni ini?')) {
+                try {
+                    await dbFS.collection('testimoni').doc(id).delete();
+                    alert('Testimoni berhasil dihapus.');
+                    loadTestimonials();
+                } catch (error) {
+                    console.error("Gagal menghapus testimoni:", error);
+                    alert("Gagal menghapus testimoni: " + error.message);
+                }
+            }
+        };
+        
+        // Mode Gelap
+        const darkModeSwitch = document.getElementById('darkModeSwitch');
+        darkModeSwitch.addEventListener('change', () => {
+            document.body.setAttribute('data-theme', darkModeSwitch.checked ? 'dark' : 'light');
+        });
+        
+    </script>
 </body>
 </html>
