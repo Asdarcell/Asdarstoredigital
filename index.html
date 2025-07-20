@@ -173,9 +173,9 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script>
-    // --- SCRIPT LENGKAP TANPA PERUBAHAN FUNGSI INTI ---
     AOS.init({ duration: 800, once: true, offset: 50 });
 
     const firebaseConfig = {
@@ -185,13 +185,12 @@
       projectId: "asdarstoredigitalll-d89c4",
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const dbFS = firebase.firestore();
+    const dbRT = firebase.database();
     
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonShareTerpakai = false;
-    let currentProductRef = null;
-    let testimonialInterval;
     const POTONGAN_DISKON_SHARE = 5000;
 
     const submitBtn = document.getElementById('submitBtn');
@@ -231,7 +230,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // PERUBAHAN JS: Menghapus logika tema
       loadInitialData();
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
@@ -240,57 +238,50 @@
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
+    // Perubahan: Mengambil kategori dari Firestore
     function loadInitialData() {
-        db.ref('produk').once('value').then(snapshot => {
-            const data = snapshot.val() || {};
+        dbFS.collection('produk').get().then(snapshot => {
+            const categories = new Set();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.kategori) {
+                    categories.add(data.kategori);
+                }
+            });
             kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-            for (const kategori in data) {
+            categories.forEach(kategori => {
                 kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-            }
+            });
         });
         loadAndRenderFaq();
         loadApprovedTestimonials();
     }
 
+    // Perubahan: Mengambil produk berdasarkan kategori dari Firestore
     function handleCategoryChange() {
         resetFormState();
         const kategori = kategoriSelect.value;
         if (!kategori) return;
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-        db.ref(`produk/${kategori}`).once('value').then(snapshot => {
-            const data = snapshot.val() || {};
-            const sortedVarian = Object.keys(data).sort((a, b) => (data[a].urutan || 0) - (data[b].urutan || 0));
-            sortedVarian.forEach(nama => {
-                produkSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+        dbFS.collection('produk').where('kategori', '==', kategori).get().then(snapshot => {
+            const products = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                products.push({ id: doc.id, ...data });
+            });
+            products.sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
+            products.forEach(prod => {
+                produkSelect.innerHTML += `<option value="${prod.id}">${prod.nama_produk}</option>`;
             });
         });
     }
 
-    function resetFormState() {
-        if (currentProductRef) {
-            currentProductRef.off();
-            currentProductRef = null;
-        }
-        produkTerpilihData = null;
-        promoProdukTerpakai = false;
-        diskonShareTerpakai = false;
-        document.getElementById('claim-button').disabled = false;
-        document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
-        document.getElementById('claim-discount-section').style.display = 'none';
-        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Pilih Produk Dahulu';
-        document.getElementById('product-promo-container').innerHTML = '';
-        hideNotification();
-    }
-
+    // Perubahan: Mengambil detail produk dari Firestore dan menggunakan harga umum
     function handleProductSelection() {
-        const kategori = kategoriSelect.value;
-        const produk = produkSelect.value;
+        const produkId = produkSelect.value;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        if (currentProductRef) currentProductRef.off();
-        if (!produk) {
+        if (!produkId) {
             resetFormState();
             return;
         }
@@ -298,13 +289,12 @@
         submitBtn.disabled = true;
         submitBtn.textContent = '...';
         document.getElementById('product-promo-container').innerHTML = '';
-        currentProductRef = db.ref(`produk/${kategori}/${produk}`);
-        currentProductRef.on('value', snapshot => {
-            if (!snapshot.exists()) {
+        dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
+            if (!doc.exists) {
                 infoProduk.innerHTML = 'Produk tidak ditemukan.';
                 return;
             }
-            produkTerpilihData = snapshot.val();
+            produkTerpilihData = { id: doc.id, ...doc.data() };
             updateTotalHarga();
             checkDiskonShare();
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
@@ -324,7 +314,7 @@
 
     function updateTotalHarga() {
         if (!produkTerpilihData) return;
-        let hargaAwal = produkTerpilihData.harga;
+        let hargaAwal = produkTerpilihData.harga_umum;
         let hargaFinal = hargaAwal;
         let deskripsiHarga = `<b>Harga:</b> ${formatRupiah(hargaAwal)}`;
         if (promoProdukTerpakai && produkTerpilihData.promo) {
@@ -335,9 +325,10 @@
             hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
         }
-        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.cara || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
+        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
 
+    // Perubahan: Menggunakan Firestore Transaction untuk memesan
     async function handleOrderSubmit(e) {
         e.preventDefault();
         hideNotification();
@@ -345,74 +336,125 @@
         const nama = document.getElementById('nama').value.trim();
         const nomor = document.getElementById('nomor').value.trim();
         const waAktifInput = document.getElementById('waAktif');
-        if (!nama || !nomor || !waAktifInput.checkValidity()) {
+        if (!nama || !nomor || !waAktifInput.checkValidity() || !produkTerpilihData) {
             showNotification("Harap lengkapi semua data dengan benar!");
             return;
         }
         const waAktif = normalizePhone(waAktifInput.value.trim());
         const kategori = kategoriSelect.value;
-        const produk = produkSelect.value;
+        const produkId = produkSelect.value;
         submitBtn.disabled = true;
         submitBtn.textContent = 'Memproses...';
+
         try {
-            const produkRef = db.ref(`produk/${kategori}/${produk}`);
-            let hargaAwal, hargaFinal, promoDigunakan = null;
-            const transactionResult = await produkRef.transaction(dataProduk => {
-                if (dataProduk && dataProduk.stok > 0) {
-                    dataProduk.stok--;
-                    hargaAwal = dataProduk.harga;
-                    hargaFinal = hargaAwal;
-                    if (promoProdukTerpakai && dataProduk.promo) {
-                        let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (dataProduk.promo.nilai / 100);
-                        hargaFinal = Math.max(0, hargaAwal - potongan);
-                        promoDigunakan = dataProduk.promo;
-                    } else if (diskonShareTerpakai) {
-                        hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
-                    }
-                    return dataProduk;
+            let hargaAwal = produkTerpilihData.harga_umum;
+            let hargaFinal = hargaAwal;
+            let promoDigunakan = null;
+
+            if (promoProdukTerpakai && produkTerpilihData.promo) {
+                let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
+                hargaFinal = Math.max(0, hargaAwal - potongan);
+                promoDigunakan = produkTerpilihData.promo;
+            } else if (diskonShareTerpakai) {
+                hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
+            }
+
+            const produkDocRef = dbFS.collection('produk').doc(produkId);
+            let pesananBerhasil = false;
+            
+            // Menggunakan Firestore Transaction
+            await dbFS.runTransaction(async (transaction) => {
+                const updatedProdukDoc = await transaction.get(produkDocRef);
+                const currentStok = updatedProdukDoc.data().stok || 0;
+
+                if (currentStok <= 0) {
+                    throw new Error("Stok produk habis.");
                 }
-                return;
+
+                const newStok = currentStok - 1;
+                transaction.update(produkDocRef, { stok: newStok });
+                pesananBerhasil = true;
             });
-            if (!transactionResult.committed) {
-                 showNotification("Maaf, stok produk ini baru saja habis. Silakan pilih produk lain.");
-                 submitBtn.textContent = 'Stok Habis';
-                 submitBtn.disabled = true;
-                 return;
+            
+            if (pesananBerhasil) {
+                if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
+
+                const id = "P" + Date.now();
+                await dbFS.collection('pesananUmum').doc(id).set({
+                    id, nama, nomor, wa_aktif: waAktif, kategori,
+                    produk: produkTerpilihData.nama_produk,
+                    waktu: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'Belum Bayar',
+                    harga_final: hargaFinal,
+                    promo_digunakan: promoDigunakan,
+                    diskon_share: diskonShareTerpakai
+                });
+                
+                const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
+                let paymentHtml = '<div class="payment-methods-list">';
+                paymentSnapshot.forEach(doc => {
+                    const detail = doc.data();
+                    paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
+                });
+                paymentHtml += '</div>';
+
+                hasilDiv.style.display = 'block';
+                hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2"><a class='qr-btn upload' href="upload.html?id=${id}">📤 Upload Bukti</a><a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a></div>`;
+                document.getElementById('formPesanan').reset();
+                window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
             }
-            if (diskonShareTerpakai) await db.ref('hakDiskon/' + waAktif).remove();
-            const id = "P" + Date.now();
-            await db.ref('pesanan/' + id).set({
-                nama, nomor, wa_aktif: waAktif, kategori, produk, 
-                waktu: new Date().toISOString(), status: 'Belum Bayar',
-                harga_asli: hargaAwal, harga_final: hargaFinal,
-                promo_digunakan: promoDigunakan,
-                diskon_share: diskonShareTerpakai
-            });
-            const paymentSnapshot = await db.ref('infoPembayaran').once('value');
-            const paymentData = paymentSnapshot.val() || {};
-            let paymentHtml = '<div class="payment-methods-list">';
-            for (const [metode, detail] of Object.entries(paymentData)) {
-                 paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
-            }
-            paymentHtml += '</div>';
-            hasilDiv.style.display = 'block';
-            hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2"><a class='qr-btn upload' href="upload.html?id=${id}">📤 Upload Bukti</a><a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a></div>`;
-            document.getElementById('formPesanan').reset();
-            resetFormState();
-            window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' }); 
         } catch (error) {
             console.error("Error saat memesan:", error);
-            showNotification("Terjadi kesalahan. Silakan coba lagi.");
+            showNotification("Terjadi kesalahan: " + error.message, 'error');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Pesan Sekarang';
         }
+    }
+
+    function resetFormState() {
+        produkTerpilihData = null;
+        promoProdukTerpakai = false;
+        diskonShareTerpakai = false;
+        document.getElementById('claim-button').disabled = false;
+        document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
+        document.getElementById('claim-discount-section').style.display = 'none';
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Pilih Produk Dahulu';
+        document.getElementById('product-promo-container').innerHTML = '';
+        hideNotification();
+    }
+
+    function loadAndRenderFaq() {
+        const faqContainer = document.getElementById('faq-container');
+        dbRT.ref('faq').once('value').then(snap => {
+            faqContainer.innerHTML = '';
+            if (!snap.exists()) {
+                faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
+                return;
+            }
+            const faqData = snap.val();
+            if (Array.isArray(faqData)) {
+                faqData.forEach(itemData => {
+                    const item = document.createElement('div');
+                    item.className = 'faq-item';
+                    item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
+                    faqContainer.appendChild(item);
+                });
+            }
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
+            });
+        }).catch(err => {
+            console.error("Gagal memuat FAQ:", err);
+        });
     }
 
     function loadApprovedTestimonials() {
         const container = document.getElementById('testimoniContainer');
         const allTestimonials = [];
         let currentIndex = 0;
-        db.ref('testimonials').orderByChild('status').equalTo('disetujui').once('value', snap => {
+        dbRT.ref('testimonials').orderByChild('status').equalTo('disetujui').once('value', snap => {
             container.innerHTML = '';
             if (!snap.exists()) {
                 container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`;
@@ -450,7 +492,7 @@
             return;
         }
         try {
-            await db.ref('testimonials').push({
+            await dbRT.ref('testimonials').push({
                 nama,
                 isi: pesan,
                 status: 'pending',
@@ -466,31 +508,6 @@
             statusEl.textContent = 'Gagal mengirim testimoni.';
             statusEl.style.color = 'var(--danger)';
         }
-    }
-
-    function loadAndRenderFaq() {
-        const faqContainer = document.getElementById('faq-container');
-        db.ref('faq').once('value').then(snap => {
-            faqContainer.innerHTML = '';
-            if (!snap.exists()) {
-                faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
-                return;
-            }
-            const faqData = snap.val();
-            if (Array.isArray(faqData)) {
-                faqData.forEach(itemData => {
-                    const item = document.createElement('div');
-                    item.className = 'faq-item';
-                    item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
-                    faqContainer.appendChild(item);
-                });
-            }
-            document.querySelectorAll('.faq-question').forEach(item => {
-                item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
-            });
-        }).catch(err => {
-            console.error("Gagal memuat FAQ:", err);
-        });
     }
     
     window.cekStatus = () => {
@@ -513,7 +530,7 @@
         const nomorWA = normalizePhone(waInput.value);
         if (waInput.checkValidity() && nomorWA.length > 10) {
             try {
-                const snapshot = await db.ref('hakDiskon/' + nomorWA).once('value');
+                const snapshot = await dbRT.ref('hakDiskon/' + nomorWA).once('value');
                 claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
             } catch (error) {
                 console.error("Error checking discount:", error);
