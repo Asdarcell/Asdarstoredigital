@@ -47,11 +47,10 @@
         .status-selesai { background-color: #28a745; color: white; }
         .status-ditolak { background-color: #dc3545; color: white; }
         .status-belum-bayar { background-color: #007bff; color: white; }
+        .badge-info { background-color: #17a2b8; color: white; }
         .btn-sm { padding: 5px 10px; font-size: 0.8em; }
         .logout-btn { position: absolute; top: 20px; right: 20px; }
         .img-proof { max-width: 100%; height: auto; display: block; margin-top: 10px; }
-        .badge-info { background-color: #17a2b8; color: white; }
-        .badge-warning { background-color: #ffc107; color: black; }
     </style>
 </head>
 <body data-theme="dark">
@@ -67,6 +66,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link" id="testimonials-tab" data-bs-toggle="tab" data-bs-target="#testimonials" type="button" role="tab">Testimoni</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq" type="button" role="tab">FAQ</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Pembayaran</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="banners-tab" data-bs-toggle="tab" data-bs-target="#banners" type="button" role="tab">Banner</button></li>
             </ul>
         </header>
 
@@ -74,7 +74,7 @@
             <div class="tab-pane fade show active" id="products" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Produk</h2>
-                    <table id="products-table">
+                    <table id="products-table" class="table table-striped">
                         <thead>
                             <tr><th>Nama Produk</th><th>Kategori</th><th>Harga Umum</th><th>Harga Reseller</th><th>Stok</th><th>Aksi</th></tr>
                         </thead>
@@ -108,7 +108,7 @@
             <div class="tab-pane fade" id="resellers" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Reseller</h2>
-                    <table id="resellers-table">
+                    <table id="resellers-table" class="table table-striped">
                         <thead>
                             <tr><th>Email</th><th>Saldo</th><th>Aksi</th></tr>
                         </thead>
@@ -120,7 +120,7 @@
             <div class="tab-pane fade" id="topup" role="tabpanel">
                 <div class="section">
                     <h2>Konfirmasi Top Up Masuk</h2>
-                    <table id="topup-table">
+                    <table id="topup-table" class="table table-striped">
                         <thead>
                             <tr><th>ID</th><th>Email Reseller</th><th>Nominal</th><th>Bukti</th><th>Status</th><th>Aksi</th></tr>
                         </thead>
@@ -137,11 +137,11 @@
                         <option value="umum">Pesanan Pembeli Biasa</option>
                         <option value="reseller">Pesanan Reseller</option>
                     </select>
-                    <table id="orders-table">
+                    <table id="orders-table" class="table table-striped">
                         <thead>
                             <tr><th>ID</th><th>Produk</th><th>Pelanggan</th><th>Harga</th><th>Status</th><th>Aksi</th></tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody id="orders-table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -149,7 +149,7 @@
             <div class="tab-pane fade" id="testimonials" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Testimoni</h2>
-                    <table id="testimonials-table">
+                    <table id="testimonials-table" class="table table-striped">
                         <thead>
                             <tr><th>Nama</th><th>Pesan</th><th>Status</th><th>Aksi</th></tr>
                         </thead>
@@ -178,7 +178,7 @@
                     </form>
                     <hr>
                     <h3>Daftar FAQ</h3>
-                    <table id="faq-table">
+                    <table id="faq-table" class="table table-striped">
                         <thead>
                             <tr><th>Pertanyaan</th><th>Jawaban</th><th>Aksi</th></tr>
                         </thead>
@@ -199,12 +199,34 @@
                     </form>
                     <hr>
                     <h3>Daftar Info Pembayaran</h3>
-                    <table id="payments-table">
+                    <table id="payments-table" class="table table-striped">
                         <thead>
                             <tr><th>Metode</th><th>Nomor</th><th>A.N</th><th>Aksi</th></tr>
                         </thead>
                         <tbody></tbody>
                     </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="banners" role="tabpanel">
+                <div class="section">
+                    <h2>Daftar Banner</h2>
+                    <table id="banners-table" class="table table-striped">
+                        <thead>
+                            <tr><th>Urutan</th><th>URL Gambar</th><th>Tautan</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <hr>
+                    <h2>Tambah/Edit Banner</h2>
+                    <form id="banner-form">
+                        <input type="hidden" id="bannerId" />
+                        <div class="mb-3"><label for="banner_url">URL Gambar</label><input type="text" id="banner_url" class="form-control" required></div>
+                        <div class="mb-3"><label for="banner_link">Tautan (opsional)</label><input type="text" id="banner_link" class="form-control"></div>
+                        <div class="mb-3"><label for="banner_urutan">Urutan Tampilan</label><input type="number" id="banner_urutan" class="form-control" value="0"></div>
+                        <button type="submit" class="btn btn-primary w-100">Simpan Banner</button>
+                        <button type="button" id="cancel-banner-edit-btn" class="btn btn-secondary w-100 mt-2" style="display:none;">Batal Edit</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -228,7 +250,6 @@
         // ==========================================================
         //  FUNGSI DAN PENGATURAN UMUM
         // ==========================================================
-
         const firebaseConfig = {
           apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -293,6 +314,7 @@
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
+            loadBanners();
         });
 
         document.getElementById('products-tab').addEventListener('click', loadProducts);
@@ -302,7 +324,7 @@
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-        document.getElementById('order-filter').addEventListener('change', loadOrders);
+        document.getElementById('banners-tab').addEventListener('click', loadBanners);
 
 
         // =================================== PRODUK (Firestore) ===================================
@@ -436,7 +458,6 @@
             }
         }
 
-
         // =================================== RESELLER (Firestore) ===================================
         const resellersTableBody = document.querySelector('#resellers-table tbody');
 
@@ -478,7 +499,6 @@
                 showToast("Input tidak valid.", 'warning');
             }
         }
-
 
         // =================================== TOP UP (Firestore) ===================================
         const topupTableBody = document.querySelector('#topup-table tbody');
@@ -552,104 +572,66 @@
             }
         }
 
-
         // =================================== PESANAN (Firestore) ===================================
-        const ordersTableBody = document.querySelector('#orders-table tbody');
+        const ordersTableBody = document.querySelector('#orders-table-body');
+        const orderFilter = document.getElementById('order-filter');
+        let allOrdersData = [];
 
         function loadOrders() {
-            const filter = document.getElementById('order-filter').value;
             ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
             
-            if (filter === 'all') {
-                loadCombinedOrders();
-                return;
-            }
-
-            let query;
-            if (filter === 'umum') {
-                query = dbFS.collection('pesananUmum');
-            } else if (filter === 'reseller') {
-                query = dbFS.collection('pesananReseller');
-            }
-
-            query.orderBy('waktu', 'desc').onSnapshot(snapshot => {
-                ordersTableBody.innerHTML = '';
-                if (snapshot.empty) {
-                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan untuk kategori ini.</td></tr>`;
-                    return;
-                }
-                snapshot.forEach(doc => {
-                    const order = { id: doc.id, ...doc.data() };
-                    const isResellerOrder = order.reseller_uid ? true : false;
-                    const row = ordersTableBody.insertRow();
-                    row.innerHTML = `
-                        <td>${order.id}</td>
-                        <td>${order.produk}</td>
-                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
-                        <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
-                        <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
-                        <td>
-                            ${!isResellerOrder ? `
-                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
-                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
-                        </td>
-                    `;
-                });
-            });
-        }
-        
-        function loadCombinedOrders() {
-            const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc').limit(25);
-            const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc').limit(25);
+            const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc');
+            const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc');
 
             Promise.all([umumRef.get(), resellerRef.get()]).then(([umumSnap, resellerSnap]) => {
-                const combinedOrders = [];
+                let combinedOrders = [];
                 umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
                 resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
                 
-                combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+                allOrdersData = combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
                 
-                ordersTableBody.innerHTML = '';
-                if (combinedOrders.length === 0) {
-                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan.</td></tr>`;
-                    return;
-                }
-                
-                combinedOrders.forEach(order => {
-                    const isResellerOrder = order.type === 'reseller';
-                    const row = ordersTableBody.insertRow();
-                    row.innerHTML = `
-                        <td>${order.id}</td>
-                        <td>${order.produk}</td>
-                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
-                        <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
-                        <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
-                        <td>
-                            ${!isResellerOrder ? `
-                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
-                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
-                        </td>
-                    `;
-                });
+                renderOrders(allOrdersData);
             }).catch(error => {
                 ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
             });
         }
-
-        async function updateOrderStatus(collection, orderId, newStatus, button) {
-            const confirmation = confirm(`Yakin ingin mengubah status pesanan ${orderId} menjadi "${newStatus}"?`);
-            if (confirmation) {
-                setButtonLoading(button, true);
-                try {
-                    await dbFS.collection(collection).doc(orderId).update({ status: newStatus });
-                    showToast('Status pesanan berhasil diubah!');
-                } catch (error) {
-                    showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
-                } finally {
-                    setButtonLoading(button, false);
-                }
+        
+        function renderOrders(orders) {
+            const filterValue = orderFilter.value;
+            const filteredOrders = orders.filter(order => {
+                if (filterValue === 'all') return true;
+                return order.type === filterValue;
+            });
+            
+            ordersTableBody.innerHTML = '';
+            if (filteredOrders.length === 0) {
+                ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan untuk kategori ini.</td></tr>`;
+                return;
             }
+            
+            filteredOrders.forEach(order => {
+                const isResellerOrder = order.type === 'reseller';
+                const row = ordersTableBody.insertRow();
+                let statusClass = 'status-belum-bayar';
+                if (order.status) {
+                    statusClass = `status-${order.status.toLowerCase().replace(' ', '-')}`;
+                    if (order.status === 'Selesai') statusClass = 'status-selesai';
+                    if (order.status === 'Diproses') statusClass = 'badge-info';
+                    if (order.status === 'Dibatalkan' || order.status === 'Ditolak') statusClass = 'status-ditolak';
+                }
+                
+                row.innerHTML = `
+                    <td><code>${order.id}</code></td>
+                    <td>${order.produk}</td>
+                    <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama_pelanggan || order.nama_reseller || order.nama}</td>
+                    <td>${formatRupiah(isResellerOrder ? order.harga_beli : order.harga_final)}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td><a href="detail-pesanan.html?id=${order.id}" class="btn btn-sm btn-primary">Kelola</a></td>
+                `;
+            });
         }
+        
+        orderFilter.addEventListener('change', () => renderOrders(allOrdersData));
 
 
         // =================================== TESTIMONI (Realtime Database) ===================================
@@ -937,6 +919,93 @@
                     showToast('Gagal menghapus: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
+                }
+            }
+        }
+        
+        // =================================== BANNER (Firestore) ===================================
+        const bannerForm = document.getElementById('banner-form');
+        const bannersTableBody = document.querySelector('#banners-table tbody');
+        const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
+        let currentBannerId = null;
+
+        function loadBanners() {
+            bannersTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
+            dbFS.collection('banners').orderBy('urutan').get().then(snapshot => {
+                bannersTableBody.innerHTML = '';
+                if (snapshot.empty) {
+                    bannersTableBody.innerHTML = '<tr><td colspan="4">Belum ada banner.</td></tr>';
+                }
+                snapshot.forEach(doc => {
+                    const banner = { id: doc.id, ...doc.data() };
+                    const row = bannersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${banner.urutan}</td>
+                        <td><a href="${banner.url}" target="_blank">Lihat Gambar</a></td>
+                        <td>${banner.link || '-'}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editBanner('${banner.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteBanner('${banner.id}')">Hapus</button>
+                        </td>
+                    `;
+                });
+            }).catch(error => {
+                bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat banner: ${error.message}</td></tr>`;
+            });
+        }
+
+        bannerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bannerData = {
+                url: document.getElementById('banner_url').value,
+                link: document.getElementById('banner_link').value,
+                urutan: parseInt(document.getElementById('banner_urutan').value) || 0,
+            };
+            
+            try {
+                if (currentBannerId) {
+                    await dbFS.collection('banners').doc(currentBannerId).update(bannerData);
+                    showToast('Banner berhasil diperbarui!');
+                } else {
+                    await dbFS.collection('banners').add(bannerData);
+                    showToast('Banner berhasil ditambahkan!');
+                }
+                bannerForm.reset();
+                cancelBannerEditBtn.style.display = 'none';
+                currentBannerId = null;
+                loadBanners();
+            } catch (error) {
+                showToast('Gagal menyimpan banner: ' + error.message, 'danger');
+            }
+        });
+
+        cancelBannerEditBtn.addEventListener('click', () => {
+            bannerForm.reset();
+            cancelBannerEditBtn.style.display = 'none';
+            currentBannerId = null;
+        });
+
+        async function editBanner(id) {
+            const doc = await dbFS.collection('banners').doc(id).get();
+            if (doc.exists) {
+                const banner = doc.data();
+                currentBannerId = id;
+                document.getElementById('banner_url').value = banner.url;
+                document.getElementById('banner_link').value = banner.link;
+                document.getElementById('banner_urutan').value = banner.urutan;
+                cancelBannerEditBtn.style.display = 'block';
+                window.scrollTo({ top: document.getElementById('banners-tab').offsetTop, behavior: 'smooth' });
+            }
+        }
+
+        async function deleteBanner(id) {
+            if (confirm('Yakin ingin menghapus banner ini?')) {
+                try {
+                    await dbFS.collection('banners').doc(id).delete();
+                    loadBanners();
+                    showToast('Banner berhasil dihapus!');
+                } catch (error) {
+                    showToast('Gagal menghapus banner: ' + error.message, 'danger');
                 }
             }
         }
