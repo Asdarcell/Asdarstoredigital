@@ -58,7 +58,6 @@
         h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
         .balance-info { text-align: center; font-size: 1.5rem; font-weight: bold; }
         .balance-label { font-size: 1rem; color: var(--muted-text); }
-        .topup-btn { background-color: #2ecc71; margin-top: 10px; }
         .testimonial-bubble { background-color: var(--card); color: var(--text); padding: 12px 18px; border-radius: 20px; max-width: 85%; align-self: flex-start; box-shadow: 0 4px 8px rgba(0,0,0,0.07); opacity: 0; animation: slideInUp 0.6s ease-out forwards; border: 1px solid var(--border); }
         .testimonial-header { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
         .testimonial-header .fa-user-circle { font-size: 1.2em; color: var(--primary); }
@@ -75,20 +74,18 @@
         .notification { padding: 10px; margin-top: 10px; border-radius: 8px; font-weight: 600; display: none; }
         .notification.success { background-color: #d4edda; color: #155724; }
         .notification.error { background-color: #f8d7da; color: #721c24; }
-        .notification.info { background-color: #d1ecf1; color: #0c5460; }
     </style>
 </head>
 <body data-theme="dark">
     <header id="header">
         <h1>Reseller Dashboard</h1>
-        <button id="logout-btn" class="btn btn-sm btn-danger">Logout</button>
+        <button id="back-to-index-btn" class="btn btn-sm btn-secondary">Kembali ke Index</button>
     </header>
 
     <main id="main-content">
         <div data-aos="fade-up" class="section-container">
             <p class="balance-label">Saldo Anda</p>
             <div id="balance-display" class="balance-info">Rp0</div>
-            <a href="topup.html" class="btn btn-sm topup-btn">Top Up Saldo</a>
         </div>
         <div data-aos="fade-up" class="section-container">
             <form id="formPesanan">
@@ -191,10 +188,9 @@
             }
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.href = "loginreseller.html";
-            });
+        // --- Perbaikan: Tombol kembali ke index
+        document.getElementById('back-to-index-btn').addEventListener('click', () => {
+            window.location.href = "index.html";
         });
         
         document.addEventListener('DOMContentLoaded', () => {
@@ -288,7 +284,6 @@
             produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
         }
 
-        // --- PERBAIKAN: Sistem Pesanan yang lebih aman dengan Transaction ---
         async function handleOrderSubmit(e) {
             e.preventDefault();
             hideNotification();
@@ -365,7 +360,6 @@
             }
         }
         
-        // --- FUNGSI BARU: Cek Status Pesanan Reseller ---
         function cekStatus() {
             const idCek = document.getElementById('idCek').value.trim();
             const statusResultDiv = document.getElementById('statusResult');
@@ -409,7 +403,6 @@
             });
         }
 
-        // --- TESTIMONI & FAQ (Konsisten menggunakan Firestore) ---
         function loadApprovedTestimonials() {
             dbFS.collection('testimoni').where('status', '==', 'disetujui').get().then(snapshot => {
                 if (snapshot.empty) {
