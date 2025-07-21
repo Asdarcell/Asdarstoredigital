@@ -60,6 +60,13 @@
     .status-detail-item strong {
         color: var(--primary);
     }
+    .payment-proof img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-top: 10px;
+        box-shadow: 0 2px 6px var(--shadow);
+    }
   </style>
 </head>
 
@@ -129,6 +136,7 @@
         let statusBadgeClass = '';
         let statusText = '';
         let additionalInfo = '';
+        let paymentProofHTML = '';
 
         switch (data.status) {
             case 'Menunggu Pembayaran':
@@ -155,6 +163,18 @@
             default:
                 statusBadgeClass = 'pending';
                 statusText = data.status;
+        }
+
+        if (data.bukti_pembayaran_url) {
+            paymentProofHTML = `
+                <div class="status-detail-item payment-proof">
+                    <strong>Bukti Pembayaran:</strong>
+                    <br>
+                    <a href="${data.bukti_pembayaran_url}" target="_blank">
+                        <img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran">
+                    </a>
+                </div>
+            `;
         }
 
         let customerDetails = `
@@ -192,6 +212,7 @@
             <div class="status-detail-item">
                 <strong>Waktu Pemesanan:</strong> ${new Date(data.waktu.toDate()).toLocaleString()}
             </div>
+            ${paymentProofHTML}
             ${additionalInfo}
         `;
     }
