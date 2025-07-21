@@ -98,6 +98,13 @@
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
     .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
     .faq-item.active .faq-question::after { transform: rotate(180deg); }
+    .notification {
+        padding: 15px; margin-bottom: 15px; border-radius: 8px;
+        font-weight: 600; display: none; text-align: center;
+    }
+    .notification.info { background-color: #d1ecf1; color: #0c5460; }
+    .notification.success { background-color: #d4edda; color: #155724; }
+    .notification.error { background-color: #f8d7da; color: #721c24; }
   </style>
 </head>
 
@@ -199,6 +206,7 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
     const formNotification = document.getElementById('formNotification');
+    let testimonialInterval = null;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
@@ -238,7 +246,6 @@
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
     
-    // Perubahan: Mengambil kategori dari Firestore
     function loadInitialData() {
         dbFS.collection('produk').get().then(snapshot => {
             const categories = new Set();
@@ -257,7 +264,6 @@
         loadApprovedTestimonials();
     }
 
-    // Perubahan: Mengambil produk berdasarkan kategori dari Firestore
     function handleCategoryChange() {
         resetFormState();
         const kategori = kategoriSelect.value;
@@ -276,7 +282,6 @@
         });
     }
 
-    // Perubahan: Mengambil detail produk dari Firestore dan menggunakan harga umum
     function handleProductSelection() {
         const produkId = produkSelect.value;
         promoProdukTerpakai = false;
@@ -328,7 +333,6 @@
         infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
 
-    // Perubahan: Menggunakan Firestore Transaction untuk memesan
     async function handleOrderSubmit(e) {
         e.preventDefault();
         hideNotification();
@@ -358,51 +362,38 @@
             } else if (diskonShareTerpakai) {
                 hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             }
-
-            const produkDocRef = dbFS.collection('produk').doc(produkId);
-            let pesananBerhasil = false;
             
-            // Menggunakan Firestore Transaction
-            await dbFS.runTransaction(async (transaction) => {
-                const updatedProdukDoc = await transaction.get(produkDocRef);
-                const currentStok = updatedProdukDoc.data().stok || 0;
-
-                if (currentStok <= 0) {
-                    throw new Error("Stok produk habis.");
-                }
-
-                const newStok = currentStok - 1;
-                transaction.update(produkDocRef, { stok: newStok });
-                pesananBerhasil = true;
+            const id = "P" + Date.now();
+            await dbFS.collection('pesananUmum').doc(id).set({
+                id,
+                nama_pelanggan: nama,
+                nomor_pelanggan: nomor,
+                wa_aktif: waAktif,
+                kategori,
+                produk: produkTerpilihData.nama_produk,
+                waktu: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'Menunggu Pembayaran',
+                harga_final: hargaFinal,
+                promo_digunakan: promoDigunakan,
+                diskon_share: diskonShareTerpakai
             });
             
-            if (pesananBerhasil) {
-                if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
+            if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
 
-                const id = "P" + Date.now();
-                await dbFS.collection('pesananUmum').doc(id).set({
-                    id, nama, nomor, wa_aktif: waAktif, kategori,
-                    produk: produkTerpilihData.nama_produk,
-                    waktu: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'Belum Bayar',
-                    harga_final: hargaFinal,
-                    promo_digunakan: promoDigunakan,
-                    diskon_share: diskonShareTerpakai
-                });
-                
-                const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
-                let paymentHtml = '<div class="payment-methods-list">';
-                paymentSnapshot.forEach(doc => {
-                    const detail = doc.data();
-                    paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
-                });
-                paymentHtml += '</div>';
+            const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
+            let paymentHtml = '<div class="payment-methods-list">';
+            paymentSnapshot.forEach(doc => {
+                const detail = doc.data();
+                paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
+            });
+            paymentHtml += '</div>';
 
-                hasilDiv.style.display = 'block';
-                hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2"><a class='qr-btn upload' href="upload.html?id=${id}">📤 Upload Bukti</a><a class='qr-btn status' href="status.html?id=${id}">📄 Cek Status</a></div>`;
-                document.getElementById('formPesanan').reset();
-                window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
-            }
+            hasilDiv.style.display = 'block';
+            hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
+            document.getElementById('formPesanan').reset();
+            resetFormState();
+            window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
+
         } catch (error) {
             console.error("Error saat memesan:", error);
             showNotification("Terjadi kesalahan: " + error.message, 'error');
