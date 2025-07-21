@@ -5,189 +5,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cek Status Pesanan</title>
     <link rel="icon" href="favicon.png" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root {
-            --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
-            --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
-            --success: #28a745; --danger: #e74c3c;
-            --muted-text: #6c757d;
-        }
-        [data-theme="dark"] {
-            --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
-            --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
-            --muted-text: #8a93a2;
-        }
-        body {
-            font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
-            transition: background-color 0.3s ease, color 0.3s ease; margin: 0; line-height: 1.6;
-        }
-        header {
-            position: sticky; top: 0; background: var(--card); padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); z-index: 999; transition: box-shadow 0.3s ease;
-        }
-        header h1 { margin: 0; font-size: 24px; color: var(--primary); }
-        main { max-width: 700px; margin: 20px auto; padding: 0 20px; }
-        label { font-weight: 600; margin-top: 15px; display: block; }
-        input, select, textarea {
-            width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px;
-            border-radius: 8px; border: 1px solid var(--border); background-color: var(--card); color: var(--text);
-        }
-        button {
-            width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px;
-            border: none; background: var(--primary); color: white; cursor: pointer;
-            font-weight: bold; font-size: 16px; transition: all 0.2s ease;
-        }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-        .info {
-            background: var(--card); padding: 15px; margin-top: 1rem;
-            border-left: 5px solid var(--primary); border-radius: 8px; box-shadow: 0 2px 8px var(--shadow);
-        }
-        .section-container {
-            background: var(--card); padding: 25px; border-radius: 12px;
-            box-shadow: 0 4px 12px var(--shadow); margin-top: 20px;
-        }
-        hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
-        h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
-        .status-badge {
-            display: inline-block; padding: 5px 10px; border-radius: 15px; font-weight: bold;
-            font-size: 0.9em; margin-top: 10px;
-        }
-        .status-badge.pending { background-color: #f39c12; color: white; }
-        .status-badge.success { background-color: #28a745; color: white; }
-        .status-badge.selesai { background-color: #28a745; color: white; }
-        .status-badge.batal { background-color: #e74c3c; color: white; }
-        .detail-item { margin-bottom: 10px; }
-        .detail-item strong { display: inline-block; width: 120px; }
+        :root { --bg-body: #f7f9fc; --bg-card: #ffffff; --text-primary: #212529; --text-secondary: #6c757d; --color-brand: #007bff; --color-brand-hover: #0056b3; --border-color: #e0e0e0; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); --success-color: #198754; }
+        [data-theme="dark"] { --bg-body: #1a202c; --bg-card: #2d3748; --text-primary: #e2e8f0; --text-secondary: #a0aec0; --color-brand: #4fd1c5; --color-brand-hover: #38b2ac; --border-color: #4a5568; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); --success-color: #2d8a6e; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-body); color: var(--text-primary); }
+        main { max-width: 600px; margin: auto; width: 100%; padding: 1.5rem; }
+        .section-card { background-color: var(--bg-card); border-radius: 12px; box-shadow: var(--shadow-light); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .section-card h2 { font-size: 1.6rem; font-weight: 600; color: var(--color-brand); margin-bottom: 1.5rem; text-align: center; }
+        .order-detail p { margin-bottom: 0.75rem; word-break: break-word; }
+        .order-detail p strong { color: var(--color-brand); font-weight: 600; min-width: 120px; display: inline-block; }
+        .btn { padding: 0.75rem 1.25rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary { background-color: var(--color-brand); color: white; }
+        .btn-primary:hover { background-color: var(--color-brand-hover); }
+        .btn-gray { background-color: #6c757d; color: white; }
+        .timeline { display: flex; justify-content: space-between; margin: 2rem 0; position: relative; }
+        .timeline::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 4px; background-color: var(--border-color); transform: translateY(-50%); z-index: 1; }
+        .timeline-progress { position: absolute; top: 50%; left: 0; height: 4px; background-color: var(--color-brand); transform: translateY(-50%); z-index: 2; transition: width 0.5s ease; }
+        .timeline-item { position: relative; z-index: 3; text-align: center; width: 80px; }
+        .timeline-dot { width: 24px; height: 24px; border-radius: 50%; background-color: var(--border-color); border: 4px solid var(--bg-card); margin: 0 auto 0.5rem auto; transition: background-color 0.5s ease; }
+        .timeline-item.active .timeline-dot { background-color: var(--color-brand); }
+        .timeline-label { font-size: 0.8rem; font-weight: 500; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--color-brand); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 2rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .placeholder { text-align: center; padding: 2rem; border: 2px dashed var(--border-color); border-radius: 8px; }
     </style>
 </head>
-<body data-theme="dark">
-    <header id="header">
-        <h1>Cek Status</h1>
-        <a href="index.html" style="text-decoration: none; color: var(--primary);">
-            <i class="fas fa-home"></i> Beranda
-        </a>
-    </header>
+<body data-theme="light">
+    <main>
+        <div class="section-card">
+            <button class="btn btn-gray mb-6" onclick="window.location.href='./'"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <div id="order-status-container">
+                <div class="placeholder"><p class="text-text-secondary">Masukkan ID Pesanan di bawah untuk melihat status.</p></div>
+            </div>
+        </div>
 
-    <main id="main-content">
-        <div data-aos="fade-up" class="section-container">
-            <h2>Cek Status Pesanan</h2>
-            <form onsubmit="event.preventDefault(); cekStatus();">
-                <label for="idInput">Masukkan ID Pesanan</label>
-                <input type="text" id="idInput" placeholder="Contoh: B12345 atau R12345" required />
-                <button type="submit">Cek Status</button>
-            </form>
-            <div id="statusResult" class="mt-4" style="display: none;"></div>
+        <div id="promo-section" class="section-card text-center" style="display: none; border: 2px dashed var(--success-color);">
+            <h2 class="!text-xl !mb-2">🎉 Pesanan Selesai! 🎉</h2>
+            <p class="font-semibold mt-3">Mau Diskon Rp 5.000 di Pesanan Berikutnya?</p>
+            <p class="text-sm text-text-secondary mt-1">Cukup bagikan promo di bawah ini ke 2 grup WhatsApp, lalu kirim screenshot-nya ke WA Admin.</p>
+            <button class="btn btn-primary w-full mt-4" onclick="bagikanPromo()">
+                <i class="fab fa-whatsapp"></i> Bagikan Promo Sekarang
+            </button>
+            <p class="text-sm mt-4">Kirim bukti screenshot ke Admin:</p>
+            <a id="admin-wa-link" href="#" target="_blank" class="font-bold" style="color: var(--color-brand);">Chat Admin untuk Verifikasi</a>
+        </div>
+
+        <div class="section-card">
+            <h2 class="!text-xl !mb-4">Cari Pesanan Lain</h2>
+            <div class="flex gap-2">
+                <input type="text" id="searchKeyword" placeholder="Masukkan ID Pesanan atau No. WA" class="w-full p-2 border rounded-lg bg-transparent"/>
+                <button class="btn btn-primary" onclick="handleSearch()"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="searchResults" class="mt-4"></div>
         </div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        AOS.init({ duration: 800, once: true, offset: 50 });
-
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-          projectId: "asdarstoredigitalll-d89c4",
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            projectId: "asdarstoredigitalll-d89c4"
         };
         firebase.initializeApp(firebaseConfig);
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database();
+        const ADMIN_WA_NUMBER = "6281803004607";
 
-        const idInput = document.getElementById('idInput');
-        const statusResultDiv = document.getElementById('statusResult');
+        const orderStatusContainer = document.getElementById('order-status-container');
+        const searchInput = document.getElementById('searchKeyword');
+        const searchResultsDiv = document.getElementById('searchResults');
+        const promoSection = document.getElementById('promo-section');
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
-
-        const getQueryParams = () => {
-            const params = {};
-            window.location.search.substring(1).split("&").forEach(param => {
-                const parts = param.split("=");
-                if (parts[0]) {
-                    params[parts[0]] = parts[1] ? decodeURIComponent(parts[1]) : '';
-                }
-            });
-            return params;
+        const normalizePhone = (num) => {
+            if (!num) return '';
+            let n = String(num).replace(/[^0-9]/g, '');
+            if (n.startsWith('0')) n = '62' + n.slice(1);
+            return n;
         };
-        
-        const showResult = (data) => {
-            let statusClass = data.status.toLowerCase().replace(' ', '-');
-            let harga = data.harga || data.harga_beli;
-            const statusHtml = `<span class="status-badge ${statusClass}">${data.status}</span>`;
+        const statusLevels = { 'Belum Bayar': 0, 'Sudah Bayar': 1, 'Diproses': 2, 'Selesai': 3, 'Dibatalkan': -1 };
+
+        function bagikanPromo() {
+            const pesanPromo = "Wah, belanja di Asdar Store Digital pelayanannya cepat dan aman! Produknya juga lengkap. Recommended banget! 👍\n\nYuk cek juga tokonya di:\nhttps://asdarcell.github.io/Asdarstoredigital/";
+            const linkWA = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanPromo)}`;
+            window.open(linkWA, '_blank');
+        }
+
+        function renderOrderStatus(order) {
+            const level = statusLevels[order.status] ?? -1;
+            const timelineWidth = level >= 0 ? (level / 3) * 100 : 0;
+            const isCancelled = level === -1;
+            const date = order.waktu && order.waktu.toDate ? order.waktu.toDate().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Tidak tersedia';
             
-            statusResultDiv.innerHTML = `
-                <div class="info">
-                    <h5 class="mb-3">Detail Pesanan: <strong>${data.id}</strong></h5>
-                    <div class="detail-item"><strong>Nama:</strong> ${data.nama_pelanggan || data.nama_pembeli || '-'}</div>
-                    <div class="detail-item"><strong>Nomor:</strong> ${data.nomor_pelanggan || '-'}</div>
-                    <div class="detail-item"><strong>Produk:</strong> ${data.produk || '-'}</div>
-                    <div class="detail-item"><strong>Harga:</strong> ${formatRupiah(harga)}</div>
-                    <div class="detail-item"><strong>Waktu:</strong> ${new Date(data.waktu).toLocaleString()}</div>
-                    <div class="detail-item"><strong>Status:</strong> ${statusHtml}</div>
+            orderStatusContainer.innerHTML = `
+                <h2 class="!text-xl !text-center !mb-4">Detail Pesanan #${order.id || 'N/A'}</h2>
+                ${isCancelled ? `<div class="text-center p-4 rounded-lg bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"><p class="font-bold">Pesanan Dibatalkan</p></div>` : `
+                    <div class="timeline">
+                        ${Object.keys(statusLevels).filter(s => statusLevels[s] >= 0).map((status, i) => `
+                            <div class="timeline-item ${level >= i ? 'active' : ''}">
+                                <div class="timeline-dot"></div><div class="timeline-label">${status.split(' ')[0]}</div>
+                            </div>`).join('')}
+                        <div class="timeline-progress" style="width: ${timelineWidth}%;"></div>
+                    </div>`}
+                <div class="order-detail mt-8">
+                    <p><strong>Status:</strong> <span class="font-bold">${order.status || 'N/A'}</span></p>
+                    <p><strong>Produk:</strong> ${order.produk || 'N/A'}</p>
+                    <p><strong>Harga:</strong> ${formatRupiah(order.harga_final)}</p>
+                    <p><strong>Waktu Pesan:</strong> ${date}</p>
+                    ${order.buktiAdmin ? `<p><strong>Bukti dari Admin:</strong><br><img src="${order.buktiAdmin}" class="max-w-full rounded-lg mt-2 shadow-lg" /></p>` : ''}
                 </div>
             `;
-            statusResultDiv.style.display = 'block';
-            window.scrollTo({ top: statusResultDiv.offsetTop - 80, behavior: 'smooth' });
-        };
-        
-        const showError = (message) => {
-            statusResultDiv.innerHTML = `<div class="info" style="border-left-color: var(--danger); color: var(--danger);"><strong><i class="fas fa-exclamation-circle me-2"></i>Error:</strong> ${message}</div>`;
-            statusResultDiv.style.display = 'block';
-            window.scrollTo({ top: statusResultDiv.offsetTop - 80, behavior: 'smooth' });
-        };
 
-        const cekStatus = async () => {
-            const id = idInput.value.trim();
-            if (!id) {
-                showError("Masukkan ID pesanan terlebih dahulu.");
-                return;
+            if (order.status === 'Selesai' && order.diskon_share !== true) {
+                const adminWaLink = document.getElementById('admin-wa-link');
+                adminWaLink.href = `https://wa.me/${ADMIN_WA_NUMBER}?text=Halo%20Admin,%20ini%20bukti%20screenshot%20share%20promo%20saya%20untuk%20pesanan%20ID%20${order.id}.`;
+                promoSection.style.display = 'block';
+            } else {
+                promoSection.style.display = 'none';
             }
-            
-            showError("Mencari pesanan...");
+        }
 
-            let orderData = null;
+        function renderNotFound() {
+            orderStatusContainer.innerHTML = `<div class="placeholder"><p class="text-red-500">Pesanan tidak ditemukan.</p></div>`;
+        }
+
+        function listenToOrderStatus(orderId) {
+            orderStatusContainer.innerHTML = `<div class="spinner"></div>`;
+            dbFS.collection('pesananUmum').doc(orderId).onSnapshot(doc => {
+                if (doc.exists) {
+                    const orderData = doc.data();
+                    orderData.id = doc.id;
+                    renderOrderStatus(orderData);
+                } else {
+                    renderNotFound();
+                }
+            }, error => {
+                console.error("Listen Error:", error);
+                renderNotFound();
+            });
+        }
+
+        window.handleSearch = async () => {
+            const keyword = searchInput.value.trim();
+            if (!keyword) return;
+            searchResultsDiv.innerHTML = `<div class="spinner !w-6 !h-6 mx-auto"></div>`;
+
             try {
-                if (id.startsWith('B')) {
-                    // Cari di Realtime Database untuk pesanan Pembeli
-                    const snapshot = await dbRT.ref('pesananBuyer/' + id).once('value');
-                    if (snapshot.exists()) {
-                        orderData = snapshot.val();
+                const normalizedKeyword = normalizePhone(keyword);
+                let query = dbFS.collection('pesananUmum');
+                
+                // Firestore tidak mendukung pencarian parsial, jadi kita ambil semua
+                const snapshot = await query.get();
+                const foundOrders = [];
+
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    order.id = doc.id;
+                    const normalizedWa = normalizePhone(order.wa_aktif);
+
+                    if (order.id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedWa && normalizedWa === normalizedKeyword)) {
+                        foundOrders.push(order);
                     }
-                } else if (id.startsWith('R')) {
-                    // Cari di Firestore untuk pesanan Reseller
-                    const doc = await dbFS.collection('pesananReseller').doc(id).get();
-                    if (doc.exists) {
-                        orderData = doc.data();
-                        orderData.waktu = orderData.waktu.toDate().toISOString();
-                    }
+                });
+                
+                if (foundOrders.length > 0) {
+                    searchResultsDiv.innerHTML = `<p class="font-semibold mb-2">${foundOrders.length} pesanan ditemukan:</p>` +
+                    foundOrders.sort((a,b) => b.waktu.toDate() - a.waktu.toDate()).map(order => `
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2 flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">${order.produk}</p>
+                                <p class="text-sm text-text-secondary">ID: ${order.id}</p>
+                            </div>
+                            <button class="btn btn-primary !p-2 !text-sm" onclick="viewOrderDetail('${order.id}')">Lihat</button>
+                        </div>`).join('');
+                } else {
+                    searchResultsDiv.innerHTML = '<p class="text-center text-sm text-text-secondary mt-2">Tidak ada pesanan yang cocok.</p>';
                 }
             } catch (error) {
-                console.error("Error saat mencari pesanan:", error);
-                showError("Gagal mencari pesanan. Coba lagi nanti.");
-                return;
-            }
-
-            if (orderData) {
-                showResult(orderData);
-            } else {
-                showError("ID pesanan tidak ditemukan.");
+                console.error("Search Error:", error);
+                searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Gagal mencari pesanan.</p>';
             }
         };
+        
+        window.viewOrderDetail = (orderId) => {
+            const url = new URL(window.location);
+            url.searchParams.set('id', orderId);
+            window.history.pushState({}, '', url);
+            listenToOrderStatus(orderId);
+            searchInput.value = orderId;
+            searchResultsDiv.innerHTML = '';
+        };
 
-        // Cek ID dari URL saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            const params = getQueryParams();
-            if (params.id) {
-                idInput.value = params.id;
-                cekStatus();
+            searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleSearch(); });
+            const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
+            if (orderIdFromUrl) {
+                searchInput.value = orderIdFromUrl;
+                listenToOrderStatus(orderIdFromUrl);
             }
         });
     </script>
