@@ -258,8 +258,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const dbRT = firebase.database(); // Realtime Database untuk data UMUM
-        const dbFS = firebase.firestore(); // Firestore untuk data RESELLER
+        const dbRT = firebase.database(); // Realtime Database untuk pesanan UMUM
+        const dbFS = firebase.firestore(); // Firestore untuk semua data lainnya
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -327,7 +327,7 @@
         document.getElementById('banners-tab').addEventListener('click', loadBanners);
 
 
-        // =================================== PRODUK (Realtime DB) ===================================
+        // =================================== PRODUK (Firestore) ===================================
         const productForm = document.getElementById('product-form');
         const productsTableBody = document.querySelector('#products-table tbody');
         const promoCheckbox = document.getElementById('promo-checkbox');
@@ -348,16 +348,14 @@
         
         function loadProducts() {
             productsTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            dbRT.ref('produk').orderByChild('urutan').on('value', snapshot => {
+            dbFS.collection('produk').orderBy('urutan').onSnapshot(snapshot => {
                 productsTableBody.innerHTML = '';
-                if (!snapshot.exists()) {
+                if (snapshot.empty) {
                     productsTableBody.innerHTML = `<tr><td colspan="6">Belum ada produk.</td></tr>`;
                     return;
                 }
-                const products = Object.entries(snapshot.val() || {}).map(([key, val]) => ({ id: key, ...val }));
-                products.sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
-
-                products.forEach(product => {
+                snapshot.forEach(doc => {
+                    const product = doc.data();
                     const row = productsTableBody.insertRow();
                     row.innerHTML = `
                         <td>${product.nama_produk}</td>
@@ -366,8 +364,8 @@
                         <td>${formatRupiah(product.harga_reseller)}</td>
                         <td>${product.stok}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editProduct('${product.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editProduct('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Hapus</button>
                         </td>
                     `;
                 });
@@ -397,10 +395,10 @@
 
             try {
                 if (currentProductId) {
-                    await dbRT.ref('produk/' + currentProductId).update(productData);
+                    await dbFS.collection('produk').doc(currentProductId).update(productData);
                     showToast('Produk berhasil diperbarui!');
                 } else {
-                    await dbRT.ref('produk').push(productData);
+                    await dbFS.collection('produk').add(productData);
                     showToast('Produk berhasil ditambahkan!');
                 }
                 productForm.reset();
@@ -424,8 +422,8 @@
         });
 
         async function editProduct(id) {
-            const snapshot = await dbRT.ref('produk/' + id).once('value');
-            const product = snapshot.val();
+            const doc = await dbFS.collection('produk').doc(id).get();
+            const product = doc.data();
             if (product) {
                 currentProductId = id;
                 document.getElementById('nama_produk').value = product.nama_produk;
@@ -452,7 +450,7 @@
         async function deleteProduct(id) {
             if (confirm('Yakin ingin menghapus produk ini?')) {
                 try {
-                    await dbRT.ref('produk/' + id).remove();
+                    await dbFS.collection('produk').doc(id).delete();
                     showToast('Produk berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus produk: ' + error.message, 'danger');
@@ -652,7 +650,7 @@
         orderFilter.addEventListener('change', () => renderOrders(allOrdersData));
 
 
-        // =================================== TESTIMONI (Realtime DB) ===================================
+        // =================================== TESTIMONI (Firestore) ===================================
         const testimonialsTableBody = document.querySelector('#testimonials-table tbody');
         const testimonialForm = document.getElementById('testimonial-form');
         const testimonialFormBtn = testimonialForm.querySelector('button[type="submit"]');
@@ -662,13 +660,14 @@
 
         function loadTestimonials() {
             testimonialsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbRT.ref('testimonials').on('value', snapshot => {
+            dbFS.collection('testimonials').onSnapshot(snapshot => {
                 testimonialsTableBody.innerHTML = '';
-                if (!snapshot.exists()) {
+                if (snapshot.empty) {
                     testimonialsTableBody.innerHTML = '<tr><td colspan="4">Belum ada testimoni.</td></tr>';
+                    return;
                 }
-                snapshot.forEach(childSnap => {
-                    const testi = { id: childSnap.key, ...childSnap.val() };
+                snapshot.forEach(doc => {
+                    const testi = doc.data();
                     const row = testimonialsTableBody.insertRow();
                     const statusClass = testi.status.replace(' ', '-');
                     const isApproved = testi.status === 'disetujui';
@@ -678,10 +677,10 @@
                         <td><span class="status-badge status-${statusClass}">${testi.status}</span></td>
                         <td>
                             ${!isApproved ?
-                                `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${testi.id}', this)">Setujui</button>` :
+                                `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${doc.id}', this)">Setujui</button>` :
                                 `<button class="btn btn-sm btn-secondary" disabled>Disetujui</button>`}
-                            <button class="btn btn-warning btn-sm" onclick="editTestimonial('${testi.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteTestimonial('${testi.id}', this)">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editTestimonial('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTestimonial('${doc.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
@@ -696,7 +695,7 @@
             const data = { nama, isi, status: 'pending' };
 
             if (currentTestimonialId) {
-                dbRT.ref('testimonials/' + currentTestimonialId).update(data).then(() => {
+                dbFS.collection('testimonials').doc(currentTestimonialId).update(data).then(() => {
                     showToast('Testimoni berhasil diperbarui!');
                     testimonialForm.reset();
                     currentTestimonialId = null;
@@ -707,7 +706,7 @@
                     setButtonLoading(testimonialFormBtn, false);
                 });
             } else {
-                dbRT.ref('testimonials').push(data).then(() => {
+                dbFS.collection('testimonials').add(data).then(() => {
                     showToast('Testimoni berhasil ditambahkan!');
                     testimonialForm.reset();
                 }).catch(error => {
@@ -724,23 +723,22 @@
             cancelTestimonialEditBtn.style.display = 'none';
         });
 
-        function editTestimonial(id) {
-            dbRT.ref('testimonials/' + id).once('value').then(snapshot => {
-                const item = snapshot.val();
-                if (item) {
-                    document.getElementById('testimonial-nama').value = item.nama;
-                    document.getElementById('testimonial-isi').value = item.isi;
-                    currentTestimonialId = id;
-                    cancelTestimonialEditBtn.style.display = 'block';
-                    window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' });
-                }
-            });
+        async function editTestimonial(id) {
+            const doc = await dbFS.collection('testimonials').doc(id).get();
+            const item = doc.data();
+            if (item) {
+                document.getElementById('testimonial-nama').value = item.nama;
+                document.getElementById('testimonial-isi').value = item.isi;
+                currentTestimonialId = id;
+                cancelTestimonialEditBtn.style.display = 'block';
+                window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' });
+            }
         }
         
         async function approveTestimonial(id, button) {
             setButtonLoading(button, true);
             try {
-                await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' });
+                await dbFS.collection('testimonials').doc(id).update({ status: 'disetujui' });
                 showToast('Testimoni berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui testimoni: ' + error.message, 'danger');
@@ -753,7 +751,7 @@
             if (confirm('Yakin ingin menghapus testimoni ini?')) {
                 setButtonLoading(button, true);
                 try {
-                    await dbRT.ref('testimonials/' + id).remove();
+                    await dbFS.collection('testimonials').doc(id).delete();
                     showToast('Testimoni berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus testimoni: ' + error.message, 'danger');
@@ -764,7 +762,7 @@
         }
 
 
-        // =================================== FAQ (Realtime DB) ===================================
+        // =================================== FAQ (Firestore) ===================================
         const faqForm = document.getElementById('faq-form');
         const faqTableBody = document.querySelector('#faq-table tbody');
         const faqFormBtn = faqForm.querySelector('button[type="submit"]');
@@ -773,22 +771,21 @@
 
         function loadFaq() {
             faqTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
-            dbRT.ref('faq').on('value', snapshot => {
+            dbFS.collection('faq').onSnapshot(snapshot => {
                 faqTableBody.innerHTML = '';
-                const faqData = snapshot.val();
-                if (!faqData) {
+                if (snapshot.empty) {
                     faqTableBody.innerHTML = '<tr><td colspan="3">Belum ada FAQ.</td></tr>';
                     return;
                 }
-                Object.keys(faqData).forEach((key) => {
-                    const item = faqData[key];
+                snapshot.forEach(doc => {
+                    const item = doc.data();
                     const row = faqTableBody.insertRow();
                     row.innerHTML = `
                         <td>${item.q}</td>
                         <td>${item.a}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editFaq('${key}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteFaq('${key}', this)">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editFaq('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteFaq('${doc.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
@@ -803,7 +800,7 @@
             const data = { q, a };
 
             if (currentFaqId) {
-                dbRT.ref('faq/' + currentFaqId).update(data).then(() => {
+                dbFS.collection('faq').doc(currentFaqId).update(data).then(() => {
                     showToast('FAQ berhasil diperbarui!');
                     faqForm.reset();
                     currentFaqId = null;
@@ -813,7 +810,7 @@
                     setButtonLoading(faqFormBtn, false);
                 });
             } else {
-                dbRT.ref('faq').push(data).then(() => {
+                dbFS.collection('faq').add(data).then(() => {
                     showToast('FAQ berhasil ditambahkan!');
                     faqForm.reset();
                 }).catch(error => {
@@ -824,22 +821,21 @@
             }
         });
         
-        function editFaq(id) {
-            dbRT.ref('faq/' + id).once('value').then(snapshot => {
-                const item = snapshot.val();
-                if (item) {
-                    document.getElementById('faq_q').value = item.q;
-                    document.getElementById('faq_a').value = item.a;
-                    currentFaqId = id;
-                }
-            });
+        async function editFaq(id) {
+            const doc = await dbFS.collection('faq').doc(id).get();
+            const item = doc.data();
+            if (item) {
+                document.getElementById('faq_q').value = item.q;
+                document.getElementById('faq_a').value = item.a;
+                currentFaqId = id;
+            }
         }
         
         async function deleteFaq(id, button) {
             if (confirm('Yakin ingin menghapus FAQ ini?')) {
                 setButtonLoading(button, true);
                 try {
-                    await dbRT.ref('faq/' + id).remove();
+                    await dbFS.collection('faq').doc(id).delete();
                     showToast('FAQ berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus FAQ: ' + error.message, 'danger');
@@ -850,7 +846,7 @@
         }
 
 
-        // =================================== PEMBAYARAN (Realtime DB) ===================================
+        // =================================== PEMBAYARAN (Firestore) ===================================
         const paymentForm = document.getElementById('payment-form');
         const paymentsTableBody = document.querySelector('#payments-table tbody');
         const paymentFormBtn = paymentForm.querySelector('button[type="submit"]');
@@ -859,21 +855,21 @@
 
         function loadPaymentMethods() {
             paymentsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbRT.ref('infoPembayaran').on('value', snapshot => {
+            dbFS.collection('infoPembayaran').onSnapshot(snapshot => {
                 paymentsTableBody.innerHTML = '';
-                if (!snapshot.exists()) {
+                if (snapshot.empty) {
                     paymentsTableBody.innerHTML = '<tr><td colspan="4">Belum ada info pembayaran.</td></tr>';
                 }
-                snapshot.forEach(childSnap => {
-                    const payment = { id: childSnap.key, ...childSnap.val() };
+                snapshot.forEach(doc => {
+                    const payment = doc.data();
                     const row = paymentsTableBody.insertRow();
                     row.innerHTML = `
                         <td>${payment.metode}</td>
                         <td>${payment.nomor}</td>
                         <td>${payment.atas_nama}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editPayment('${payment.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deletePayment('${payment.id}', this)">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editPayment('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deletePayment('${doc.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
@@ -889,9 +885,9 @@
                 atas_nama: document.getElementById('payment_an').value,
             };
 
-            const ref = dbRT.ref('infoPembayaran');
+            const ref = dbFS.collection('infoPembayaran');
             if (currentPaymentId) {
-                ref.child(currentPaymentId).update(data).then(() => {
+                ref.doc(currentPaymentId).update(data).then(() => {
                     showToast('Info pembayaran berhasil diperbarui!');
                     paymentForm.reset();
                     currentPaymentId = null;
@@ -901,7 +897,7 @@
                     setButtonLoading(paymentFormBtn, false);
                 });
             } else {
-                ref.push(data).then(() => {
+                ref.add(data).then(() => {
                     showToast('Info pembayaran berhasil ditambahkan!');
                     paymentForm.reset();
                 }).catch(error => {
@@ -912,23 +908,22 @@
             }
         });
         
-        function editPayment(id) {
-            dbRT.ref('infoPembayaran/' + id).once('value').then(snapshot => {
-                const payment = snapshot.val();
-                if (payment) {
-                    document.getElementById('payment_metode').value = payment.metode;
-                    document.getElementById('payment_nomor').value = payment.nomor;
-                    document.getElementById('payment_an').value = payment.atas_nama;
-                    currentPaymentId = id;
-                }
-            });
+        async function editPayment(id) {
+            const doc = await dbFS.collection('infoPembayaran').doc(id).get();
+            const payment = doc.data();
+            if (payment) {
+                document.getElementById('payment_metode').value = payment.metode;
+                document.getElementById('payment_nomor').value = payment.nomor;
+                document.getElementById('payment_an').value = payment.atas_nama;
+                currentPaymentId = id;
+            }
         }
         
         async function deletePayment(id, button) {
             if (confirm('Yakin ingin menghapus info pembayaran ini?')) {
                 setButtonLoading(button, true);
                 try {
-                    await dbRT.ref('infoPembayaran/' + id).remove();
+                    await dbFS.collection('infoPembayaran').doc(id).delete();
                     showToast('Info pembayaran berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus: ' + error.message, 'danger');
@@ -938,7 +933,7 @@
             }
         }
         
-        // =================================== BANNER (Realtime DB) ===================================
+        // =================================== BANNER (Firestore) ===================================
         const bannerForm = document.getElementById('banner-form');
         const bannersTableBody = document.querySelector('#banners-table tbody');
         const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
@@ -946,24 +941,22 @@
 
         function loadBanners() {
             bannersTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbRT.ref('banners').orderByChild('urutan').on('value', snapshot => {
+            dbFS.collection('banners').orderBy('urutan').onSnapshot(snapshot => {
                 bannersTableBody.innerHTML = '';
-                if (!snapshot.exists()) {
+                if (snapshot.empty) {
                     bannersTableBody.innerHTML = '<tr><td colspan="4">Belum ada banner.</td></tr>';
                     return;
                 }
-                const banners = Object.entries(snapshot.val() || {}).map(([key, val]) => ({ id: key, ...val }));
-                banners.sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
-
-                banners.forEach(banner => {
+                snapshot.forEach(doc => {
+                    const banner = doc.data();
                     const row = bannersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${banner.urutan}</td>
                         <td><a href="${banner.url}" target="_blank">Lihat Gambar</a></td>
                         <td>${banner.link || '-'}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editBanner('${banner.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteBanner('${banner.id}')">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editBanner('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteBanner('${doc.id}')">Hapus</button>
                         </td>
                     `;
                 });
@@ -980,10 +973,10 @@
             
             try {
                 if (currentBannerId) {
-                    await dbRT.ref('banners/' + currentBannerId).update(bannerData);
+                    await dbFS.collection('banners').doc(currentBannerId).update(bannerData);
                     showToast('Banner berhasil diperbarui!');
                 } else {
-                    await dbRT.ref('banners').push(bannerData);
+                    await dbFS.collection('banners').add(bannerData);
                     showToast('Banner berhasil ditambahkan!');
                 }
                 bannerForm.reset();
@@ -1001,8 +994,8 @@
         });
 
         async function editBanner(id) {
-            const snapshot = await dbRT.ref('banners/' + id).once('value');
-            const banner = snapshot.val();
+            const doc = await dbFS.collection('banners').doc(id).get();
+            const banner = doc.data();
             if (banner) {
                 currentBannerId = id;
                 document.getElementById('banner_url').value = banner.url;
@@ -1016,7 +1009,7 @@
         async function deleteBanner(id) {
             if (confirm('Yakin ingin menghapus banner ini?')) {
                 try {
-                    await dbRT.ref('banners/' + id).remove();
+                    await dbFS.collection('banners').doc(id).delete();
                     showToast('Banner berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus banner: ' + error.message, 'danger');
