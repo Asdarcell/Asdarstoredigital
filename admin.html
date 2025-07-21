@@ -33,6 +33,7 @@
         .modal-content { background-color: var(--card); color: var(--text); }
         .modal-header { border-bottom: 1px solid var(--border); }
         .modal-footer { border-top: 1px solid var(--border); }
+        .bukti-img { max-width: 100%; height: auto; display: block; margin: 10px auto; }
     </style>
 </head>
 <body>
@@ -50,6 +51,7 @@
                     <li class="nav-item"><button class="nav-link" id="testimonials-tab" data-bs-toggle="tab" data-bs-target="#testimonials-pane" type="button" role="tab">Testimoni</button></li>
                     <li class="nav-item"><button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq-pane" type="button" role="tab">FAQ</button></li>
                     <li class="nav-item"><button class="nav-link" id="resellers-tab" data-bs-toggle="tab" data-bs-target="#resellers-pane" type="button" role="tab">Reseller</button></li>
+                    <li class="nav-item"><button class="nav-link" id="topup-tab" data-bs-toggle="tab" data-bs-target="#topup-pane" type="button" role="tab">Top Up</button></li>
                 </ul>
             </div>
             <div class="card-body">
@@ -114,6 +116,15 @@
                             <table class="table table-striped">
                                 <thead><tr><th>Nama</th><th>Email</th><th>Saldo</th><th>Aksi</th></tr></thead>
                                 <tbody id="resellers-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="topup-pane" role="tabpanel">
+                        <h3>Manajemen Top Up</h3>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead><tr><th>Reseller</th><th>Nominal</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr></thead>
+                                <tbody id="topup-table"></tbody>
                             </table>
                         </div>
                     </div>
@@ -194,6 +205,18 @@
         </div>
     </div>
 
+    <div class="modal fade" id="topupDetailModal" tabindex="-1" aria-labelledby="topupDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title" id="topupDetailModalLabel">Detail Top Up</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div id="topup-details-content"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -210,13 +233,12 @@
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
         const dbRT = firebase.database();
-
         const IMGBB_API_KEY = '4bb65566f2b6bad0aef16ac5ae6b2fbc';
 
         auth.onAuthStateChanged(user => {
             if (user) {
                 if (user.email !== 'admin@gmail.com') {
-                    window.location.href = "loginadmin.html"; // Redirect jika bukan admin
+                    window.location.href = "loginadmin.html";
                 }
                 loadAllData();
             } else {
@@ -235,6 +257,7 @@
             loadTestimonials();
             loadFaq();
             loadResellers();
+            loadTopUpRequests();
         }
 
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
@@ -243,12 +266,11 @@
             return date.toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
         };
         const getStatusBadge = (status) => {
-            if (status.includes('Selesai')) return 'completed';
-            if (status.includes('Batal')) return 'cancelled';
+            if (status.includes('Selesai') || status.includes('disetujui')) return 'completed';
+            if (status.includes('Batal') || status.includes('ditolak')) return 'cancelled';
             return 'pending';
         };
 
-        // --- MANAJEMEN PESANAN ---
         function loadUmumOrders() {
             dbRT.ref('pesananUmumRT').on('value', snapshot => {
                 const orders = snapshot.val() || {};
@@ -402,9 +424,6 @@
             }
         });
 
-        // --- MANAJEMEN PRODUK, TESTIMONI, FAQ, RESELLER (Firestore) ---
-        
-        // Produk
         function loadProducts() {
             dbFS.collection('produk').orderBy('urutan').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('products-table');
@@ -487,7 +506,6 @@
             document.getElementById('promo-nilai-group').style.display = e.target.value ? 'block' : 'none';
         });
 
-        // Testimoni
         function loadTestimonials() {
             dbFS.collection('testimoni').orderBy('waktu', 'desc').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('testimonials-table');
@@ -520,7 +538,6 @@
             }
         });
 
-        // FAQ
         function loadFaq() {
             dbFS.collection('faq').orderBy('urutan').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('faq-table');
@@ -577,7 +594,6 @@
             bootstrap.Modal.getInstance(document.getElementById('faqModal')).hide();
         });
 
-        // Reseller
         function loadResellers() {
             dbFS.collection('resellers').onSnapshot(snapshot => {
                 const tableBody = document.getElementById('resellers-table');
@@ -616,6 +632,70 @@
             });
             alert('Saldo berhasil ditambahkan!');
             bootstrap.Modal.getInstance(document.getElementById('balanceModal')).hide();
+        });
+        
+        function loadTopUpRequests() {
+            dbFS.collection('depositRequests').orderBy('waktu', 'desc').onSnapshot(snapshot => {
+                const tableBody = document.getElementById('topup-table');
+                tableBody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const req = doc.data();
+                    const row = tableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${req.reseller_email}</td>
+                        <td>${formatRupiah(req.nominal)}</td>
+                        <td><span class="status-badge ${getStatusBadge(req.status)}">${req.status}</span></td>
+                        <td>
+                            ${req.bukti_url ? `<a href="${req.bukti_url}" target="_blank">Lihat Bukti</a>` : 'Tidak ada'}
+                        </td>
+                        <td>
+                            ${req.status === 'pending' ? `<button class="btn btn-success btn-sm approve-topup-btn" data-id="${doc.id}" data-uid="${req.reseller_uid}" data-nominal="${req.nominal}">Setujui</button>` : ''}
+                            <button class="btn btn-danger btn-sm delete-topup-btn" data-id="${doc.id}">Hapus</button>
+                        </td>
+                    `;
+                });
+            });
+        }
+
+        document.getElementById('topup-table').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('approve-topup-btn')) {
+                const btn = e.target;
+                const id = btn.dataset.id;
+                const uid = btn.dataset.uid;
+                const nominal = parseInt(btn.dataset.nominal);
+
+                const konfirmasi = confirm(`Setujui top up sebesar ${formatRupiah(nominal)} untuk reseller ${uid}?`);
+                if (!konfirmasi) return;
+
+                const depositRef = dbFS.collection('depositRequests').doc(id);
+                const resellerRef = dbFS.collection('resellers').doc(uid);
+
+                await dbFS.runTransaction(async (transaction) => {
+                    const depositDoc = await transaction.get(depositRef);
+                    const resellerDoc = await transaction.get(resellerRef);
+
+                    if (!depositDoc.exists || !resellerDoc.exists) {
+                        throw new Error("Dokumen tidak ditemukan.");
+                    }
+
+                    if (depositDoc.data().status !== 'pending') {
+                        throw new Error("Permintaan top up sudah diproses.");
+                    }
+
+                    const newBalance = (resellerDoc.data().saldo || 0) + nominal;
+                    transaction.update(resellerRef, { saldo: newBalance });
+                    transaction.update(depositRef, { status: 'disetujui' });
+                });
+
+                alert("Top up berhasil disetujui!");
+
+            } else if (e.target.classList.contains('delete-topup-btn')) {
+                const id = e.target.dataset.id;
+                if (confirm('Yakin ingin menghapus permintaan top up ini?')) {
+                    await dbFS.collection('depositRequests').doc(id).delete();
+                    alert('Permintaan top up berhasil dihapus.');
+                }
+            }
         });
     </script>
 </body>
