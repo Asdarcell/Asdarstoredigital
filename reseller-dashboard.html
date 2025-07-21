@@ -105,7 +105,7 @@
             padding: 0;
         }
         .claim-promo-card {
-            background-color: #e8f5e9; /* Light green background */
+            background-color: #e8f5e9;
             border-left: 5px solid var(--success);
             padding: 15px;
             border-radius: 8px;
@@ -113,7 +113,7 @@
         }
         .claim-promo-card p {
             margin: 0;
-            color: #155724; /* Dark green text */
+            color: #155724;
         }
         .testimonial-bubble { background-color: var(--card); color: var(--text); padding: 12px 18px; border-radius: 20px; max-width: 85%; align-self: flex-start; box-shadow: 0 4px 8px rgba(0,0,0,0.07); opacity: 0; animation: slideInUp 0.6s ease-out forwards; border: 1px solid var(--border); }
         .testimonial-header { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
@@ -232,8 +232,17 @@
             <form onsubmit="event.preventDefault(); cekStatus();">
                 <label for="idCek">Masukkan ID Pesanan</label>
                 <input type="text" id="idCek" placeholder="Cth: P16789..." required />
-                <button type="submit">Cek Status</button>
+                <button type="submit" id="btnCekStatus">Cek Status</button>
             </form>
+            <div id="hasilCekStatus"></div>
+        </div>
+        
+        <hr>
+        <div data-aos="fade-up" class="section-container">
+            <h2>Riwayat Pesanan Terakhir</h2>
+            <div id="order-history-container">
+                <p>Memuat riwayat pesanan...</p>
+            </div>
         </div>
     </main>
 
@@ -259,11 +268,10 @@
         let produkTerpilihData = null;
         let promoProdukTerpakai = false;
         let diskonShareTerpakai = false;
-        let currentProductRef = null;
-        let testimonialInterval;
         const POTONGAN_DISKON_SHARE = 5000;
         
         let loggedInReseller = null;
+        let saldoReseller = 0;
 
         const submitBtn = document.getElementById('submitBtn');
         const kategoriSelect = document.getElementById('kategori');
@@ -273,6 +281,7 @@
         const formNotification = document.getElementById('formNotification');
         const saldoDisplay = document.getElementById('saldo-display');
         const logoutBtn = document.getElementById('logout-btn');
+        const testimonialInterval = null;
 
         logoutBtn.addEventListener('click', () => {
             auth.signOut().then(() => {
@@ -290,6 +299,17 @@
           if (n.startsWith('62')) return n;
           return num;
         };
+        
+        function setButtonLoading(button, isLoading, originalText) {
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+        
         const showNotification = (message, type = 'error') => {
             formNotification.textContent = message;
             formNotification.className = `notification ${type}`;
@@ -386,8 +406,7 @@
                 return;
             }
 
-            submitBtnTopup.disabled = true;
-            submitBtnTopup.textContent = 'Mengirim...';
+            setButtonLoading(submitBtnTopup, true, 'Kirim Bukti Sekarang');
             showStatusTopup('Sedang mengunggah bukti dan mengirim konfirmasi, mohon tunggu...', 'info');
 
             try {
@@ -410,14 +429,14 @@
                 confirmationForm.reset();
                 nominalButtons.forEach(b => b.classList.remove('selected'));
                 selectedNominal = null;
-                submitBtnTopup.disabled = true;
-                submitBtnTopup.textContent = 'Pilih Nominal Dahulu';
 
             } catch (error) {
                 console.error("Error saat mengirim konfirmasi:", error);
                 showStatusTopup('Gagal mengirim konfirmasi. ' + error.message, 'error');
-                submitBtnTopup.disabled = false;
-                submitBtnTopup.textContent = 'Kirim Bukti Sekarang';
+            } finally {
+                setButtonLoading(submitBtnTopup, false, 'Kirim Bukti Sekarang');
+                submitBtnTopup.disabled = true;
+                submitBtnTopup.textContent = 'Pilih Nominal Dahulu';
             }
         });
 
@@ -465,6 +484,7 @@
               loadInitialData();
               listenToResellerBalance(user.uid);
               loadPaymentMethods();
+              loadOrderHistory(user.uid);
             }
           });
           kategoriSelect.addEventListener('change', handleCategoryChange);
@@ -478,9 +498,10 @@
             dbFS.collection('resellers').doc(uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
-                    const saldo = data.saldo || 0;
-                    saldoDisplay.textContent = `Saldo: ${formatRupiah(saldo)}`;
+                    saldoReseller = data.saldo || 0;
+                    saldoDisplay.textContent = `Saldo: ${formatRupiah(saldoReseller)}`;
                 } else {
+                    saldoReseller = 0;
                     saldoDisplay.textContent = `Saldo: Rp0`;
                 }
             }, err => {
@@ -559,7 +580,7 @@
                 }
             });
         }
-
+        
         function updateTotalHarga() {
             if (!produkTerpilihData) return;
             let hargaAwal = produkTerpilihData.harga_reseller;
@@ -592,8 +613,7 @@
             const kategori = kategoriSelect.value;
             const produkId = produkSelect.value;
             
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Memproses...';
+            setButtonLoading(submitBtn, true, submitBtn.textContent);
             
             try {
                 let hargaAwal = produkTerpilihData.harga_reseller;
@@ -725,7 +745,7 @@
                 });
                 allTestimonials.reverse();
                 if (testimonialInterval) clearInterval(testimonialInterval);
-                testimonialInterval = setInterval(() => {
+                const testimonialInterval = setInterval(() => {
                     if (allTestimonials.length === 0) return;
                     if (container.children.length > 6) {
                         container.firstChild.remove();
@@ -809,6 +829,40 @@
             document.getElementById('claim-button').disabled = true;
             document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
         };
+
+        function loadOrderHistory(uid) {
+            const container = document.getElementById('order-history-container');
+            container.innerHTML = '<p>Memuat riwayat pesanan...</p>';
+            
+            dbFS.collection('pesananReseller')
+                .where('reseller_uid', '==', uid)
+                .orderBy('waktu', 'desc')
+                .limit(10)
+                .onSnapshot(snapshot => {
+                    container.innerHTML = '';
+                    if (snapshot.empty) {
+                        container.innerHTML = '<p>Anda belum memiliki riwayat pesanan.</p>';
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const order = doc.data();
+                        const waktu = order.waktu ? new Date(order.waktu.toDate()).toLocaleString() : 'N/A';
+                        const orderDiv = document.createElement('div');
+                        orderDiv.className = 'info mb-3';
+                        orderDiv.innerHTML = `
+                            <p><b>ID Pesanan:</b> ${order.id}</p>
+                            <p><b>Status:</b> ${order.status}</p>
+                            <p><b>Produk:</b> ${order.produk}</p>
+                            <p><b>Harga:</b> ${formatRupiah(order.harga_final)}</p>
+                            <p><b>Waktu:</b> ${waktu}</p>
+                        `;
+                        container.appendChild(orderDiv);
+                    });
+                }, err => {
+                    console.error("Gagal memuat riwayat pesanan:", err);
+                    container.innerHTML = '<p class="text-danger">Gagal memuat riwayat pesanan.</p>';
+                });
+        }
     </script>
 </body>
-                      </html>
+</html>
