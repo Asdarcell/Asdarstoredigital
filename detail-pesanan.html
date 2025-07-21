@@ -51,6 +51,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 <script>
     // Konfigurasi Firebase Anda
@@ -62,43 +63,39 @@
       storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
     };
     firebase.initializeApp(firebaseConfig);
-    const dbFS = firebase.firestore();
+    const dbRT = firebase.database(); // Mengubah dari dbFS ke dbRT
     const storage = firebase.storage();
 
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
     
-    // Simpan data pesanan saat dimuat
     let currentOrderDoc;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    // Fungsi utama untuk memuat detail pesanan berdasarkan ID dari URL
+    // Fungsi utama untuk memuat detail pesanan dari Realtime Database
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
+        const orderType = urlParams.get('type'); // Tambahkan ini untuk membedakan
 
-        if (!orderId) {
-            loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>';
+        if (!orderId || !orderType) {
+            loadingMessage.innerHTML = '<h2>ID atau Tipe Pesanan tidak ditemukan.</h2>';
             return;
         }
 
         try {
-            // Periksa di kedua koleksi (pesanan umum dan reseller)
-            let doc = await dbFS.collection('pesananUmum').doc(orderId).get();
-            if (!doc.exists) {
-                doc = await dbFS.collection('pesananReseller').doc(orderId).get();
-            }
-
-            if (!doc.exists) {
+            const ref = dbRT.ref(`${orderType === 'umum' ? 'pesananUmum' : 'pesananReseller'}/${orderId}`);
+            const snapshot = await ref.once('value');
+            
+            if (!snapshot.exists()) {
                 loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>';
                 return;
             }
 
-            currentOrderDoc = doc;
-            const data = doc.data();
+            currentOrderDoc = { id: snapshot.key, ref: ref, data: snapshot.val() };
             loadingMessage.style.display = 'none';
-            renderOrderDetails(doc.id, data);
+            renderOrderDetails(currentOrderDoc.id, currentOrderDoc.data);
         } catch (error) {
             console.error("Error loading order details:", error);
             loadingMessage.innerHTML = '<h2>Terjadi kesalahan saat memuat data.</h2>';
@@ -110,7 +107,8 @@
         let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
         
         const customerInfo = data.nama_reseller ? `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan}` : `<strong>Pelanggan:</strong> ${data.nama_pelanggan}`;
-        const price = formatRupiah(data.harga_final || data.harga_beli);
+        const price = formatRupiah(data.harga_final || data.harga_beli || data.harga_akhir);
+        const waktu = new Date(data.waktu).toLocaleString();
 
         orderDetailsRow.innerHTML = `
             <div class="col-md-6 mb-4">
@@ -120,11 +118,12 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
                         <li class="list-group-item">${customerInfo}</li>
-                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}</li>
+                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> <a href="https://wa.me/${data.nomor}" target="_blank">${data.nomor}</a></li>
+                        <li class="list-group-item"><strong>Nomor WA Aktif:</strong> <a href="https://wa.me/${data.wa_aktif}" target="_blank">${data.wa_aktif}</a></li>
                         <li class="list-group-item"><strong>Produk:</strong> ${data.produk}</li>
                         <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
                         <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status}</span></li>
-                        <li class="list-group-item"><strong>Waktu:</strong> ${data.waktu ? new Date(data.waktu.toDate()).toLocaleString() : 'N/A'}</li>
+                        <li class="list-group-item"><strong>Waktu:</strong> ${waktu}</li>
                     </ul>
                 </div>
             </div>
@@ -184,7 +183,7 @@
         try {
             await currentOrderDoc.ref.update({
                 status: newStatus,
-                waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp()
+                waktu_perubahan_status: new Date().toISOString()
             });
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
             location.reload(); 
@@ -213,7 +212,7 @@
 
             await currentOrderDoc.ref.update({
                 bukti_pengiriman_url: downloadURL,
-                waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
+                waktu_pengiriman_bukti: new Date().toISOString()
             });
 
             alert("Bukti pengiriman berhasil diunggah dan disimpan!");
@@ -231,7 +230,7 @@
         }
 
         try {
-            await currentOrderDoc.ref.delete();
+            await currentOrderDoc.ref.remove();
             alert("Pesanan berhasil dihapus.");
             window.location.href = 'admin.html';
         } catch (error) {
@@ -244,11 +243,14 @@
     function generateWhatsappMessage() {
         if (!currentOrderDoc) return;
         const orderId = currentOrderDoc.id;
-        const orderData = currentOrderDoc.data();
+        const orderData = currentOrderDoc.data;
         
-        const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
+        const namaPelanggan = orderData.nama_pelanggan || orderData.nama;
         const produk = orderData.produk;
         const status = orderData.status;
+
+        // Gunakan nomor WA aktif
+        const whatsappNumber = orderData.wa_aktif;
 
         // Buat link ke halaman status pesanan
         const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
@@ -266,7 +268,7 @@ ${statusLink}
 
 Terima kasih atas pesanannya!`;
         
-        const whatsappUrl = `https://wa.me/${orderData.nomor_pelanggan}?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
 
