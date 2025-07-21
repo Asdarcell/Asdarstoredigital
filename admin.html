@@ -310,7 +310,7 @@
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
-            loadOrders();
+            loadOrders(); // Perubahan ada di sini
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
@@ -572,7 +572,7 @@
             }
         }
 
-        // =================================== PESANAN (Firestore) ===================================
+        // =================================== PESANAN (SUDAH DIUBAH KE REALTIME DATABASE) ===================================
         const ordersTableBody = document.querySelector('#orders-table-body');
         const orderFilter = document.getElementById('order-filter');
         let allOrdersData = [];
@@ -580,15 +580,20 @@
         function loadOrders() {
             ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
             
-            const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc');
-            const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc');
+            const umumRef = dbRT.ref('pesananUmum');
+            const resellerRef = dbRT.ref('pesananReseller');
 
-            Promise.all([umumRef.get(), resellerRef.get()]).then(([umumSnap, resellerSnap]) => {
+            Promise.all([umumRef.once('value'), resellerRef.once('value')]).then(([umumSnap, resellerSnap]) => {
                 let combinedOrders = [];
-                umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
-                resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                umumSnap.forEach(childSnap => combinedOrders.push({ id: childSnap.key, ...childSnap.val(), type: 'umum' }));
+                resellerSnap.forEach(childSnap => combinedOrders.push({ id: childSnap.key, ...childSnap.val(), type: 'reseller' }));
                 
-                allOrdersData = combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+                // Urutkan berdasarkan waktu
+                allOrdersData = combinedOrders.sort((a, b) => {
+                    const timeA = new Date(a.waktu);
+                    const timeB = new Date(b.waktu);
+                    return timeB - timeA;
+                });
                 
                 renderOrders(allOrdersData);
             }).catch(error => {
@@ -624,9 +629,9 @@
                     <td><code>${order.id}</code></td>
                     <td>${order.produk}</td>
                     <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama_pelanggan || order.nama_reseller || order.nama}</td>
-                    <td>${formatRupiah(isResellerOrder ? order.harga_beli : order.harga_final)}</td>
+                    <td>${formatRupiah(order.harga_akhir || 0)}</td>
                     <td><span class="status-badge ${statusClass}">${order.status}</span></td>
-                    <td><a href="detail-pesanan.html?id=${order.id}" class="btn btn-sm btn-primary">Kelola</a></td>
+                    <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a></td>
                 `;
             });
         }
