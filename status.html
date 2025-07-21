@@ -1,220 +1,200 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Status Pesanan</title>
-    <link rel="icon" href="favicon.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root { --bg-body: #f7f9fc; --bg-card: #ffffff; --text-primary: #212529; --text-secondary: #6c757d; --color-brand: #007bff; --color-brand-hover: #0056b3; --border-color: #e0e0e0; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08); --success-color: #198754; }
-        [data-theme="dark"] { --bg-body: #1a202c; --bg-card: #2d3748; --text-primary: #e2e8f0; --text-secondary: #a0aec0; --color-brand: #4fd1c5; --color-brand-hover: #38b2ac; --border-color: #4a5568; --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.4); --success-color: #2d8a6e; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-body); color: var(--text-primary); }
-        main { max-width: 600px; margin: auto; width: 100%; padding: 1.5rem; }
-        .section-card { background-color: var(--bg-card); border-radius: 12px; box-shadow: var(--shadow-light); padding: 1.5rem; margin-bottom: 1.5rem; }
-        .section-card h2 { font-size: 1.6rem; font-weight: 600; color: var(--color-brand); margin-bottom: 1.5rem; text-align: center; }
-        .order-detail p { margin-bottom: 0.75rem; word-break: break-word; }
-        .order-detail p strong { color: var(--color-brand); font-weight: 600; min-width: 120px; display: inline-block; }
-        .btn { padding: 0.75rem 1.25rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .btn-primary { background-color: var(--color-brand); color: white; }
-        .btn-primary:hover { background-color: var(--color-brand-hover); }
-        .btn-gray { background-color: #6c757d; color: white; }
-        .timeline { display: flex; justify-content: space-between; margin: 2rem 0; position: relative; }
-        .timeline::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 4px; background-color: var(--border-color); transform: translateY(-50%); z-index: 1; }
-        .timeline-progress { position: absolute; top: 50%; left: 0; height: 4px; background-color: var(--color-brand); transform: translateY(-50%); z-index: 2; transition: width 0.5s ease; }
-        .timeline-item { position: relative; z-index: 3; text-align: center; width: 80px; }
-        .timeline-dot { width: 24px; height: 24px; border-radius: 50%; background-color: var(--border-color); border: 4px solid var(--bg-card); margin: 0 auto 0.5rem auto; transition: background-color 0.5s ease; }
-        .timeline-item.active .timeline-dot { background-color: var(--color-brand); }
-        .timeline-label { font-size: 0.8rem; font-weight: 500; }
-        .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--color-brand); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 2rem auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .placeholder { text-align: center; padding: 2rem; border: 2px dashed var(--border-color); border-radius: 8px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cek Status Pesanan</title>
+  <link rel="icon" href="favicon.png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
+      --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
+      --success: #28a745; --danger: #e74c3c;
+      --info: #0c5460; --warning: #856404;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
+      --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+      --info: #d1ecf1; --warning: #ffeeba;
+    }
+    body {
+      font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
+      transition: background-color 0.3s ease, color 0.3s ease; margin: 0; line-height: 1.6;
+    }
+    header {
+      position: sticky; top: 0; background: var(--card); padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); z-index: 999;
+    }
+    header h1 { margin: 0; font-size: 24px; color: var(--primary); }
+    main { max-width: 700px; margin: 20px auto; padding: 0 20px; }
+    .section-container {
+      background: var(--card); padding: 25px; border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow); margin-top: 20px;
+      text-align: center;
+    }
+    .status-badge {
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: 600;
+      color: white;
+      display: inline-block;
+      margin-top: 15px;
+    }
+    .status-badge.pending { background-color: #f0ad4e; }
+    .status-badge.processing { background-color: #3498db; }
+    .status-badge.completed { background-color: #28a745; }
+    .status-badge.cancelled { background-color: #e74c3c; }
+    .status-detail-item {
+        background-color: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        text-align: left;
+    }
+    .status-detail-item strong {
+        color: var(--primary);
+    }
+  </style>
 </head>
-<body data-theme="light">
-    <main>
-        <div class="section-card">
-            <button class="btn btn-gray mb-6" onclick="window.location.href='./'"><i class="fas fa-arrow-left"></i> Kembali</button>
-            <div id="order-status-container">
-                <div class="placeholder"><p class="text-text-secondary">Masukkan ID Pesanan di bawah untuk melihat status.</p></div>
+
+<body data-theme="dark">
+  <header>
+    <h1>Cek Status Pesanan</h1>
+  </header>
+
+  <main>
+    <div data-aos="fade-up" class="section-container">
+      <div id="status-content">
+        <p>Memuat status pesanan...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init({ duration: 800, once: true, offset: 50 });
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const dbFS = firebase.firestore();
+
+    const statusContent = document.getElementById('status-content');
+
+    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+    async function getStatus() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+
+        if (!orderId) {
+            statusContent.innerHTML = '<h2>ID Pesanan Tidak Ditemukan.</h2><p>Harap kembali ke halaman utama dan cek status menggunakan ID pesanan yang benar.</p>';
+            return;
+        }
+
+        let doc;
+        let isResellerOrder = false;
+
+        // Cek ID pesanan reseller
+        if (orderId.startsWith('PR')) {
+            doc = await dbFS.collection('pesananReseller').doc(orderId).get();
+            isResellerOrder = doc.exists;
+        }
+
+        // Jika bukan pesanan reseller, coba cari di pesanan umum
+        if (!isResellerOrder) {
+            doc = await dbFS.collection('pesananUmum').doc(orderId).get();
+        }
+
+        if (!doc.exists) {
+            statusContent.innerHTML = '<h2><i class="fas fa-exclamation-triangle text-danger"></i> Pesanan Tidak Ditemukan.</h2><p>ID pesanan yang Anda masukkan tidak valid.</p>';
+            return;
+        }
+
+        const data = doc.data();
+        let statusBadgeClass = '';
+        let statusText = '';
+        let additionalInfo = '';
+
+        switch (data.status) {
+            case 'Menunggu Pembayaran':
+            case 'Menunggu Verifikasi':
+                statusBadgeClass = 'pending';
+                statusText = data.status;
+                additionalInfo = `<p>Status pesanan Anda sedang menunggu verifikasi atau pembayaran. Untuk pesanan umum, silakan <a href="upload.html?id=${orderId}">unggah bukti pembayaran</a>.</p>`;
+                break;
+            case 'Diproses':
+                statusBadgeClass = 'processing';
+                statusText = 'Diproses';
+                additionalInfo = '<p>Pesanan Anda sedang diproses. Mohon tunggu notifikasi selanjutnya.</p>';
+                break;
+            case 'Selesai':
+                statusBadgeClass = 'completed';
+                statusText = 'Selesai';
+                additionalInfo = '<p>Pesanan Anda telah selesai dan berhasil dikirimkan. Terima kasih sudah berbelanja!</p>';
+                break;
+            case 'Dibatalkan':
+                statusBadgeClass = 'cancelled';
+                statusText = 'Dibatalkan';
+                additionalInfo = '<p>Pesanan Anda telah dibatalkan.</p>';
+                break;
+            default:
+                statusBadgeClass = 'pending';
+                statusText = data.status;
+        }
+
+        let customerDetails = `
+            <div class="status-detail-item">
+                <strong>Pelanggan:</strong> ${data.nama_pelanggan}
             </div>
-        </div>
+            <div class="status-detail-item">
+                <strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}
+            </div>`;
 
-        <div id="promo-section" class="section-card text-center" style="display: none; border: 2px dashed var(--success-color);">
-            <h2 class="!text-xl !mb-2">🎉 Pesanan Selesai! 🎉</h2>
-            <p class="font-semibold mt-3">Mau Diskon Rp 5.000 di Pesanan Berikutnya?</p>
-            <p class="text-sm text-text-secondary mt-1">Cukup bagikan promo di bawah ini ke 2 grup WhatsApp, lalu kirim screenshot-nya ke WA Admin.</p>
-            <button class="btn btn-primary w-full mt-4" onclick="bagikanPromo()">
-                <i class="fab fa-whatsapp"></i> Bagikan Promo Sekarang
-            </button>
-            <p class="text-sm mt-4">Kirim bukti screenshot ke Admin:</p>
-            <a id="admin-wa-link" href="#" target="_blank" class="font-bold" style="color: var(--color-brand);">Chat Admin untuk Verifikasi</a>
-        </div>
-
-        <div class="section-card">
-            <h2 class="!text-xl !mb-4">Cari Pesanan Lain</h2>
-            <div class="flex gap-2">
-                <input type="text" id="searchKeyword" placeholder="Masukkan ID Pesanan atau No. WA" class="w-full p-2 border rounded-lg bg-transparent"/>
-                <button class="btn btn-primary" onclick="handleSearch()"><i class="fas fa-search"></i></button>
+        if (isResellerOrder) {
+            customerDetails = `
+            <div class="status-detail-item">
+                <strong>Reseller:</strong> ${data.nama_reseller}
             </div>
-            <div id="searchResults" class="mt-4"></div>
-        </div>
-    </main>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script>
-        // --- Config ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-            projectId: "asdarstoredigitalll-d89c4",
-            storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app",
-            messagingSenderId: "220670500351",
-            appId: "1:220670500351:web:5737ae5958a6f5a67d5bca",
-            measurementId: "G-CMRW37J19G"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        // [BARU] Nomor WA Admin untuk verifikasi promo
-        const ADMIN_WA_NUMBER = "6281803004607";
-
-        // --- DOM Elements ---
-        const orderStatusContainer = document.getElementById('order-status-container');
-        const searchInput = document.getElementById('searchKeyword');
-        const searchResultsDiv = document.getElementById('searchResults');
-        // [BARU] Elemen Promo
-        const promoSection = document.getElementById('promo-section');
-
-        // --- Helpers ---
-        const formatRupiah = (angka) => angka ? parseFloat(angka).toLocaleString('id-ID') : '0';
-        const normalizePhone = (num) => {
-            if (!num) return '';
-            let n = String(num).replace(/[^0-9]/g, '');
-            if (n.startsWith('0')) n = '62' + n.slice(1);
-            return n;
-        };
-        const statusLevels = { 'Belum Bayar': 0, 'Sudah Bayar': 1, 'Diproses': 2, 'Selesai': 3, 'Dibatalkan': -1 };
-
-        // [BARU] Fungsi untuk membagikan promo
-        function bagikanPromo() {
-            const pesanPromo = "Wah, belanja di Asdar Store Digital pelayanannya cepat dan aman! Produknya juga lengkap. Recommended banget! 👍\n\nYuk cek juga tokonya di:\nhttps://asdarcell.github.io/Asdarstoredigital/";
-            const linkWA = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanPromo)}`;
-            window.open(linkWA, '_blank');
+            <div class="status-detail-item">
+                <strong>Pelanggan:</strong> ${data.nama_pelanggan}
+            </div>
+            <div class="status-detail-item">
+                <strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}
+            </div>`;
         }
 
-        // --- Display Logic ---
-        function renderOrderStatus(order) {
-            const level = statusLevels[order.status] ?? -1;
-            const timelineWidth = level >= 0 ? (level / 3) * 100 : 0;
-            const isCancelled = level === -1;
-            const date = order.waktu ? new Date(order.waktu).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Tidak tersedia';
-            
-            orderStatusContainer.innerHTML = `
-                <h2 class="!text-xl !text-center !mb-4">Detail Pesanan #${order.id || 'N/A'}</h2>
-                ${isCancelled ? `<div class="text-center p-4 rounded-lg bg-red-100 text-red-700"><p class="font-bold">Pesanan Dibatalkan</p></div>` : `
-                    <div class="timeline">
-                        ${Object.keys(statusLevels).filter(s => statusLevels[s] >= 0).map((status, i) => `
-                            <div class="timeline-item ${level >= i ? 'active' : ''}">
-                                <div class="timeline-dot"></div><div class="timeline-label">${status.split(' ')[0]}</div>
-                            </div>`).join('')}
-                        <div class="timeline-progress" style="width: ${timelineWidth}%;"></div>
-                    </div>`}
-                <div class="order-detail mt-8">
-                    <p><strong>Status:</strong> <span class="font-bold">${order.status || 'N/A'}</span></p>
-                    <p><strong>Produk:</strong> ${order.produk || 'N/A'}</p>
-                    <p><strong>Harga:</strong> Rp${formatRupiah(order.harga)}</p>
-                    <p><strong>Waktu Pesan:</strong> ${date}</p>
-                    ${order.buktiAdmin ? `<p><strong>Bukti dari Admin:</strong><br><img src="${order.buktiAdmin}" class="max-w-full rounded-lg mt-2 shadow-lg" /></p>` : ''}
-                </div>
-            `;
+        statusContent.innerHTML = `
+            <h2>Status Pesanan</h2>
+            <p><strong>ID Pesanan:</strong> <code>${orderId}</code></p>
+            <span class="status-badge ${statusBadgeClass}">${statusText}</span>
+            <div class="status-detail-item">
+                <strong>Produk:</strong> ${data.produk}
+            </div>
+            <div class="status-detail-item">
+                <strong>Harga:</strong> ${formatRupiah(isResellerOrder ? data.harga_beli : data.harga_final)}
+            </div>
+            ${customerDetails}
+            <div class="status-detail-item">
+                <strong>Waktu Pemesanan:</strong> ${new Date(data.waktu.toDate()).toLocaleString()}
+            </div>
+            ${additionalInfo}
+        `;
+    }
 
-            // [BARU] Logika untuk menampilkan promo jika pesanan selesai
-            if (order.status === 'Selesai') {
-                const adminWaLink = document.getElementById('admin-wa-link');
-                adminWaLink.href = `https://wa.me/${ADMIN_WA_NUMBER}?text=Halo%20Admin,%20ini%20bukti%20screenshot%20share%20promo%20saya%20untuk%20pesanan%20ID%20${order.id}.`;
-                promoSection.style.display = 'block';
-            } else {
-                promoSection.style.display = 'none';
-            }
-        }
-        function renderNotFound() { orderStatusContainer.innerHTML = `<div class="placeholder"><p class="text-red-500">Pesanan tidak ditemukan.</p></div>`; }
-
-        // --- Data Logic ---
-        function listenToOrderStatus(orderId) {
-            orderStatusContainer.innerHTML = `<div class="spinner"></div>`;
-            db.ref(`pesanan/${orderId}`).on('value', snapshot => {
-                if (snapshot.exists()) {
-                    const orderData = snapshot.val();
-                    orderData.id = orderId; // Pastikan ID selalu ada di objek
-                    renderOrderStatus(orderData);
-                } else {
-                    renderNotFound();
-                }
-            }, error => {
-                console.error("Listen Error:", error);
-                renderNotFound();
-            });
-        }
-
-        window.handleSearch = async () => {
-            const keyword = searchInput.value.trim();
-            if (!keyword) return;
-            searchResultsDiv.innerHTML = `<div class="spinner !w-6 !h-6 mx-auto"></div>`;
-
-            try {
-                const snapshot = await db.ref('pesanan').once('value');
-                const allOrders = snapshot.val() || {};
-                const foundOrders = [];
-                const normalizedKeyword = normalizePhone(keyword);
-
-                for (const id in allOrders) {
-                    const order = allOrders[id];
-                    order.id = id; // Tambahkan ID ke objek pesanan
-                    if (id.toLowerCase().includes(keyword.toLowerCase()) || (normalizedKeyword && normalizePhone(order.wa_aktif) === normalizedKeyword)) {
-                        foundOrders.push(order);
-                    }
-                }
-                
-                if (foundOrders.length > 0) {
-                    searchResultsDiv.innerHTML = `<p class="font-semibold mb-2">${foundOrders.length} pesanan ditemukan:</p>` +
-                    foundOrders.sort((a,b) => new Date(b.waktu) - new Date(a.waktu)).map(order => `
-                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2 flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold">${order.produk}</p>
-                                <p class="text-sm text-text-secondary">ID: ${order.id}</p>
-                            </div>
-                            <button class="btn btn-primary !p-2 !text-sm" onclick="viewOrderDetail('${order.id}')">Lihat</button>
-                        </div>`).join('');
-                } else {
-                    searchResultsDiv.innerHTML = '<p class="text-center text-sm text-text-secondary mt-2">Tidak ada pesanan yang cocok.</p>';
-                }
-            } catch (error) {
-                searchResultsDiv.innerHTML = '<p class="text-center text-red-500">Gagal mencari pesanan.</p>';
-            }
-        };
-        
-        window.viewOrderDetail = (orderId) => {
-            const url = new URL(window.location);
-            url.searchParams.set('id', orderId);
-            window.history.pushState({}, '', url);
-            listenToOrderStatus(orderId);
-            searchInput.value = orderId;
-            searchResultsDiv.innerHTML = '';
-        };
-
-        // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleSearch(); });
-            const orderIdFromUrl = new URLSearchParams(window.location.search).get('id');
-            if (orderIdFromUrl) {
-                searchInput.value = orderIdFromUrl;
-                listenToOrderStatus(orderIdFromUrl);
-            }
-        });
-    </script>
+    document.addEventListener('DOMContentLoaded', getStatus);
+  </script>
 </body>
 </html>
