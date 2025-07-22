@@ -285,7 +285,7 @@
         // ==========================================================
 
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda yang sebenarnya
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
           databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
           projectId: "asdarstoredigitalll-d89c4",
@@ -340,6 +340,24 @@
                 button.innerHTML = button.dataset.originalText || button.textContent;
             }
         }
+
+        // Fungsi untuk membersihkan dan memformat nomor telepon menjadi format internasional (62xxx)
+        function cleanPhoneNumber(phone) {
+            if (!phone) return '';
+            let cleaned = String(phone).replace(/\D/g, ''); // Hapus semua non-digit dan pastikan string
+            if (cleaned.startsWith('0')) {
+                cleaned = '62' + cleaned.substring(1); // Ganti 0 dengan 62
+            } else if (cleaned.startsWith('+62')) {
+                cleaned = cleaned.substring(1); // Hapus '+'
+            }
+            // Jika sudah 62 atau format lain yang valid, biarkan saja.
+            // Jika masih belum 62 dan cukup panjang, asumsikan itu nomor lokal yang perlu 62
+            else if (!cleaned.startsWith('62') && cleaned.length >= 8) {
+                 cleaned = '62' + cleaned; 
+            }
+            return cleaned;
+        }
+
 
         // ====================================== TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
@@ -616,17 +634,6 @@
         // =================================== PESANAN (Firestore & Realtime Database) ===================================
         const ordersTableBody = document.querySelector('#orders-table tbody');
         
-        function cleanPhoneNumber(phone) {
-            if (!phone) return '';
-            let cleaned = String(phone).replace(/\D/g, ''); // Hapus semua non-digit dan pastikan string
-            if (cleaned.startsWith('0')) {
-                cleaned = '62' + cleaned.substring(1); // Ganti 0 dengan 62
-            } else if (!cleaned.startsWith('62') && cleaned.length >= 8) { // Tambahkan 62 jika belum ada dan panjang cukup
-                 cleaned = '62' + cleaned; 
-            }
-            return cleaned;
-        }
-
         async function loadOrders() {
             const filter = document.getElementById('order-filter').value;
             ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
@@ -653,11 +660,21 @@
 
                 // --- Load Pesanan Realtime Database (node: 'pesanan') ---
                 if (filter === 'all' || filter === 'rtdb') { 
+                    // Menggunakan on('value') untuk mendapatkan data Realtime DB terbaru
                     const rtdbSnapshot = await dbRT.ref('pesanan').orderByChild('waktu').limitToLast(50).once('value');
                     rtdbSnapshot.forEach(childSnap => {
                         const orderRTDB = childSnap.val();
-                        // RTDB 'waktu' biasanya UNIX timestamp (milliseconds)
-                        const waktuConverted = orderRTDB.waktu ? firebase.firestore.Timestamp.fromMillis(orderRTDB.waktu) : null;
+                        
+                        // Parse waktu dari string ke Date object, lalu ke Firestore Timestamp
+                        let waktuConverted = null;
+                        if (orderRTDB.waktu) {
+                            try {
+                                // Contoh format waktu: "2025-07-18T16:23:15.847Z"
+                                waktuConverted = firebase.firestore.Timestamp.fromDate(new Date(orderRTDB.waktu));
+                            } catch (e) {
+                                console.error("Error parsing RTDB timestamp:", orderRTDB.waktu, e);
+                            }
+                        }
 
                         combinedOrders.push({
                             id: childSnap.key,
@@ -665,9 +682,9 @@
                             waktu: waktuConverted,
                             collection: 'pesananRTDB', // Menggunakan 'pesananRTDB' sebagai penanda
                             type: 'umum', // Asumsi jenis pesanan di RTDB
-                            // Sesuaikan nama field untuk nomor HP dan ID Game
+                            // Sesuaikan nama field untuk nomor HP dan ID Game berdasarkan struktur RTDB
                             nomor_hp: orderRTDB.nomor || orderRTDB.no_hp || orderRTDB.customer_phone || '', 
-                            id_game: orderRTDB.id_game || orderRTDB.id || orderRTDB.username_game || '', // Cek 'id' juga
+                            id_game: orderRTDB.id || orderRTDB.id_game || orderRTDB.username_game || '', // Prioritaskan 'id' untuk RTDB
                             wa_aktif: orderRTDB.wa_aktif || false
                         });
                     });
@@ -690,7 +707,6 @@
                     const isResellerOrder = order.type === 'reseller';
                     let customerPhone = '';
                     let customerName = order.nama || order.nama_pelanggan || '';
-                    let idGame = order.id_game || order.username_game || order.id || ''; // Untuk RTDB, mungkin 'id'
                     let orderStatus = order.status || 'pending';
 
                     // Dapatkan nomor HP yang benar
@@ -746,7 +762,7 @@
             if (confirm(`Yakin ingin mengubah status WA menjadi "${statusText}" untuk pesanan ${orderId}?`)) {
                 setButtonLoading(button, true);
                 try {
-                    if (collection === 'pesananRTDB') { // Perhatikan nama koleksi di sini
+                    if (collection === 'pesananRTDB') { 
                         await dbRT.ref('pesanan').child(orderId).update({ wa_aktif: newWaStatus });
                     } else {
                         await dbFS.collection(collection).doc(orderId).update({ wa_aktif: newWaStatus });
@@ -865,7 +881,7 @@
                 try {
                     await dbRT.ref('testimonials/' + id).remove();
                     showToast('Testimoni berhasil dihapus!');
-                } <%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-224655.jpg-a6d6a853-5404-4c38-85d7-19d142feead9","fileName":"Screenshot_20250721-224655.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-225633.jpg-6cf26a00-67a2-465b-ac79-7237006be3cb","fileName":"Screenshot_20250721-225633.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-225915.jpg-a3c26eb4-27ff-4c02-8351-af295f307a0d","fileName":"Screenshot_20250721-225915.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screen_Recording_20250722_093410.mp4","fileName":"Screen_Recording_20250722_093410.mp4"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-095805.jpg-e26fdad3-b672-4d5f-a4c2-975f45922b41","fileName":"Screenshot_20250722-095805.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-111331.jpg-0a4ead72-beeb-499a-9c13-2e7fb9213280","fileName":"Screenshot_20250722-111331.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-115210.jpg-352eee0d-093f-43b6-8c7c-dba7013e9e99","fileName":"Screenshot_20250722-115210.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-115138.jpg-48370c3d-16a7-4776-9369-157717eaa19d","fileName":"Screenshot_20250722-115138.jpg"} %>catch (error) {
+                } catch (error) {
                     showToast('Gagal menghapus testimoni: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
@@ -1148,4 +1164,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
