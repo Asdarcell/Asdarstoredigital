@@ -269,17 +269,31 @@
     }
 
     function generateWhatsappMessage() {
-        if (!currentOrderDoc) return;
-        const orderId = currentOrderDoc.id;
-        const orderData = currentOrderDoc.data();
-        
-        const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
-        const produk = orderData.produk;
-        const status = document.querySelector('.status-badge').textContent; // Ambil status terbaru dari UI
+    // --- FUNGSI KIRIM WA VERSI FINAL (SUDAH DIPERBAIKI) ---
 
-        const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
-        
-        const message = `Halo ${namaPelanggan},
+function generateWhatsappMessage() {
+    if (!currentOrderDoc) return;
+    const orderId = currentOrderDoc.id;
+    const orderData = currentOrderDoc.data();
+    
+    // --- PERUBAHAN DI SINI ---
+    // Mengambil nomor WA menggunakan nama kolom yang benar dari database Anda.
+    // Kita wajib pakai kurung siku ['...'] karena nama kolomnya ada spasi.
+    const nomorTujuanWA = orderData['no whatsap aktif'] || orderData.nomor_pelanggan;
+
+    // Peringatan jika tidak ada nomor sama sekali
+    if (!nomorTujuanWA) {
+        alert("Nomor HP atau Nomor WhatsApp tidak ditemukan untuk pesanan ini.");
+        return;
+    }
+
+    const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
+    const produk = orderData.produk;
+    const status = document.querySelector('.status-badge').textContent;
+
+    const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
+    
+    const message = `Halo ${namaPelanggan},
 Pesananmu dengan ID ${orderId} sudah ${status}.
 
 Detail Pesanan:
@@ -290,10 +304,10 @@ Lihat status terbaru dan bukti pengiriman di:
 ${statusLink}
 
 Terima kasih atas pesanannya!`;
-        
-        const whatsappUrl = `https://wa.me/${orderData.nomor_pelanggan}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    }
+    
+    const whatsappUrl = `https://wa.me/${nomorTujuanWA}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
 
     document.addEventListener('DOMContentLoaded', loadOrderDetails);
 </script>
