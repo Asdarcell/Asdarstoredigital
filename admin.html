@@ -33,14 +33,15 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky; top: 0; z-index: 1000;
         }
-        header h1 { margin: 0; font-size: 24px; }
-        /* Logout button removed as no login */
-        .logout-btn { display: none; } /* Hide the logout button */
+        header h1 { margin: 0; font-size: 24px; flex-grow: 1; }
+        /* Logout button is hidden as per requirement of no login */
+        .logout-btn { display: none; } 
 
         .container-fluid {
             flex: 1;
             display: flex;
             padding: 20px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
         .sidebar {
             width: 250px;
@@ -52,7 +53,8 @@
             position: sticky;
             top: 80px; /* Adjust based on header height */
             height: calc(100vh - 100px); /* Fill remaining viewport height */
-            overflow-y: auto;
+            overflow-y: auto; /* Enable scrolling for long sidebars */
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
         }
         .sidebar button {
             display: block;
@@ -79,6 +81,7 @@
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 4px 15px var(--shadow);
+            min-width: 300px; /* Minimum width for content to prevent extreme squeezing */
         }
         h2 { color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
         label { font-weight: 600; margin-top: 15px; display: block; }
@@ -95,7 +98,7 @@
         button[type="submit"]:disabled, .btn-primary:disabled { background-color: #bdc3c7; cursor: not-allowed; }
 
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .data-table th, .data-table td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: middle; }
+        .data-table th, .data-table td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: middle; white-space: nowrap; /* Prevent text wrapping in table headers/cells */ }
         .data-table th { background-color: var(--bg); font-weight: 600; }
         .data-table tr:nth-child(even) { background-color: var(--bg); }
         .data-table tr:hover { background-color: rgba(var(--primary), 0.1); }
@@ -150,6 +153,119 @@
         }
         .info ul li:last-child {
             border-bottom: none;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .container-fluid {
+                flex-direction: column; /* Stack sidebar and content vertically */
+            }
+            .sidebar {
+                width: 100%; /* Full width sidebar */
+                margin-right: 0;
+                margin-bottom: 20px;
+                position: static; /* Remove sticky on mobile for better scrolling */
+                height: auto; /* Auto height for mobile sidebar */
+            }
+            .content {
+                width: 100%; /* Full width content */
+            }
+            .flex-container {
+                flex-direction: column; /* Stack flex items vertically */
+            }
+            /* Make table scrollable horizontally */
+            .content-section .data-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
+            .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr {
+                display: block; /* Make table elements block for better mobile responsiveness */
+            }
+            .data-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px; /* Hide table headers visually but keep for accessibility */
+            }
+            .data-table tr {
+                border: 1px solid var(--border);
+                margin-bottom: 10px;
+            }
+            .data-table td {
+                border: none;
+                border-bottom: 1px solid var(--border);
+                position: relative;
+                padding-left: 50%; /* Space for pseudo-element label */
+                text-align: right;
+            }
+            .data-table td:before {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label); /* Use data-label for mobile headers */
+                font-weight: bold;
+                text-align: left;
+            }
+            /* Specific data labels for each table */
+            #productList td:nth-of-type(1):before { content: "Nama Produk"; }
+            #productList td:nth-of-type(2):before { content: "Kategori"; }
+            #productList td:nth-of-type(3):before { content: "Harga Umum"; }
+            #productList td:nth-of-type(4):before { content: "Harga Reseller"; }
+            #productList td:nth-of-type(5):before { content: "Stok"; }
+            #productList td:nth-of-type(6):before { content: "Promo"; }
+            #productList td:nth-of-type(7):before { content: "Urutan"; }
+            #productList td:nth-of-type(8):before { content: "Aksi"; }
+
+            #topupRequestList td:nth-of-type(1):before { content: "ID"; }
+            #topupRequestList td:nth-of-type(2):before { content: "Reseller Email"; }
+            #topupRequestList td:nth-of-type(3):before { content: "Nominal"; }
+            #topupRequestList td:nth-of-type(4):before { content: "Metode"; }
+            #topupRequestList td:nth-of-type(5):before { content: "Pengirim"; }
+            #topupRequestList td:nth-of-type(6):before { content: "Bukti"; }
+            #topupRequestList td:nth-of-type(7):before { content: "Waktu"; }
+            #topupRequestList td:nth-of-type(8):before { content: "Status"; }
+            #topupRequestList td:nth-of-type(9):before { content: "Aksi"; }
+
+            #generalOrderList td:nth-of-type(1):before { content: "ID Pesanan"; }
+            #generalOrderList td:nth-of-type(2):before { content: "Pelanggan"; }
+            #generalOrderList td:nth-of-type(3):before { content: "No. HP/ID"; }
+            #generalOrderList td:nth-of-type(4):before { content: "Produk"; }
+            #generalOrderList td:nth-of-type(5):before { content: "Harga Final"; }
+            #generalOrderList td:nth-of-type(6):before { content: "Waktu"; }
+            #generalOrderList td:nth-of-type(7):before { content: "Status"; }
+            #generalOrderList td:nth-of-type(8):before { content: "Aksi"; }
+
+            #resellerOrderList td:nth-of-type(1):before { content: "ID Pesanan"; }
+            #resellerOrderList td:nth-of-type(2):before { content: "Reseller Email"; }
+            #resellerOrderList td:nth-of-type(3):before { content: "Pelanggan"; }
+            #resellerOrderList td:nth-of-type(4):before { content: "No. HP/ID"; }
+            #resellerOrderList td:nth-of-type(5):before { content: "Produk"; }
+            #resellerOrderList td:nth-of-type(6):before { content: "Harga Beli"; }
+            #resellerOrderList td:nth-of-type(7):before { content: "Harga Jual"; }
+            #resellerOrderList td:nth-of-type(8):before { content: "Waktu"; }
+            #resellerOrderList td:nth-of-type(9):before { content: "Status"; }
+            #resellerOrderList td:nth-of-type(10):before { content: "Aksi"; }
+
+            #activeDiscountList td:nth-of-type(1):before { content: "Nomor WA"; }
+            #activeDiscountList td:nth-of-type(2):before { content: "Aksi"; }
+
+            #testimonialList td:nth-of-type(1):before { content: "Nama"; }
+            #testimonialList td:nth-of-type(2):before { content: "Isi Testimoni"; }
+            #testimonialList td:nth-of-type(3):before { content: "Status"; }
+            #testimonialList td:nth-of-type(4):before { content: "Waktu Kirim"; }
+            #testimonialList td:nth-of-type(5):before { content: "Aksi"; }
+            
+            #faqList td:nth-of-type(1):before { content: "Pertanyaan"; }
+            #faqList td:nth-of-type(2):before { content: "Jawaban"; }
+            #faqList td:nth-of-type(3):before { content: "Aksi"; }
+
+            #paymentInfoList td:nth-of-type(1):before { content: "Metode"; }
+            #paymentInfoList td:nth-of-type(2):before { content: "Nomor"; }
+            #paymentInfoList td:nth-of-type(3):before { content: "Atas Nama"; }
+            #paymentInfoList td:nth-of-type(4):before { content: "Aksi"; }
         }
     </style>
 </head>
@@ -488,19 +604,16 @@
         AOS.init({ duration: 800, once: true, offset: 50 });
 
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
+          apiKey: "YOUR_FIREBASE_API_KEY", // <--- GANTI DENGAN API KEY ANDA YANG SEBENARNYA
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
           databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
           projectId: "asdarstoredigitalll-d89c4",
           storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
-        // const auth = firebase.auth(); // Auth is not used
         const dbFS = firebase.firestore();
         const dbRT = firebase.database();
         const storage = firebase.storage();
-
-        // No ADMIN_UID check needed anymore
 
         // DOM Elements
         const navBtns = document.querySelectorAll('.nav-btn');
@@ -536,6 +649,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
             setupListeners();
+            // Automatically activate the first section (Dashboard) on load
+            document.querySelector('.nav-btn.active').click();
         });
 
         // --- NAVIGATION ---
@@ -599,8 +714,13 @@
             document.getElementById('discount-form').addEventListener('submit', handleAddDiscountRight);
 
             // Testimonial Management (Realtime Listener for 'pending' testimonials)
+            // This will reload all testimonials, which might be heavy for many
+            // Consider optimizing if performance becomes an issue
             dbRT.ref('testimonials').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
-                loadAllTestimonials(); // Reload all to show status changes
+                // Only reload if the testimonial section is currently active to save resources
+                if (document.getElementById('testimonial-management-section').classList.contains('active')) {
+                    loadAllTestimonials(); 
+                }
             });
 
             // FAQ Management
@@ -622,19 +742,24 @@
                 document.getElementById('pendingGeneralOrders').textContent = snapshot.size;
             });
 
-            // Initial load for the active dashboard section
-            loadDashboardData();
+            // Initial load for the active dashboard section (already handled by .click() above)
         }
 
         // --- DASHBOARD FUNCTIONS ---
         async function loadDashboardData() {
             try {
+                // Total Produk (already real-time via listener in setupListeners)
+                // Pending Topups (already real-time via listener in setupListeners)
+                // Pending General Orders (already real-time via listener in setupListeners)
+
                 // Top Products (based on general orders)
                 const generalOrdersSnapshot = await dbFS.collection('pesananUmum').get();
                 const productCounts = {};
                 generalOrdersSnapshot.forEach(doc => {
                     const product = doc.data().produk;
-                    productCounts[product] = (productCounts[product] || 0) + 1;
+                    if (product) { // Ensure product name exists
+                        productCounts[product] = (productCounts[product] || 0) + 1;
+                    }
                 });
                 const sortedProducts = Object.entries(productCounts).sort(([,a],[,b]) => b - a).slice(0, 5);
                 const topProductsList = document.getElementById('topProductsList');
@@ -662,7 +787,7 @@
 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                showNotification('dashboard-notification', 'Gagal memuat data dashboard.', 'error');
+                showNotification('dashboard-section .notification', 'Gagal memuat data dashboard.', 'error');
             }
         }
 
@@ -683,14 +808,14 @@
                     const promoText = product.promo ? `${product.promo.jenis === 'nominal' ? 'Rp' : ''}${product.promo.nilai}${product.promo.jenis === 'percentage' ? '%' : ''} ${product.promo.jenis}` : '-';
                     productList.innerHTML += `
                         <tr>
-                            <td>${product.nama_produk}</td>
-                            <td>${product.kategori}</td>
-                            <td>${formatRupiah(product.harga_umum)}</td>
-                            <td>${formatRupiah(product.harga_reseller)}</td>
-                            <td>${product.stok}</td>
-                            <td>${promoText}</td>
-                            <td>${product.urutan || 0}</td>
-                            <td class="action-buttons">
+                            <td data-label="Nama Produk">${product.nama_produk || 'N/A'}</td>
+                            <td data-label="Kategori">${product.kategori || 'N/A'}</td>
+                            <td data-label="Harga Umum">${formatRupiah(product.harga_umum)}</td>
+                            <td data-label="Harga Reseller">${formatRupiah(product.harga_reseller)}</td>
+                            <td data-label="Stok">${product.stok || 0}</td>
+                            <td data-label="Promo">${promoText}</td>
+                            <td data-label="Urutan">${product.urutan || 0}</td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <button class="btn btn-warning" onclick="editProduct('${doc.id}')"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-danger" onclick="deleteProduct('${doc.id}')"><i class="fas fa-trash"></i></button>
                             </td>
@@ -846,15 +971,15 @@
 
                     topupRequestList.innerHTML += `
                         <tr>
-                            <td>${req.id}</td>
-                            <td>${req.reseller_email}</td>
-                            <td>${formatRupiah(req.nominal)}</td>
-                            <td>${req.metode_pembayaran}</td>
-                            <td>${req.nama_pengirim}</td>
-                            <td><a href="${req.bukti_url}" target="_blank" class="btn btn-info btn-sm"><i class="fas fa-image"></i> Lihat Bukti</a></td>
-                            <td>${time}</td>
-                            <td><span class="badge ${statusBadgeClass}">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</span></td>
-                            <td class="action-buttons">
+                            <td data-label="ID">${req.id || 'N/A'}</td>
+                            <td data-label="Reseller Email">${req.reseller_email || 'N/A'}</td>
+                            <td data-label="Nominal">${formatRupiah(req.nominal)}</td>
+                            <td data-label="Metode">${req.metode_pembayaran || 'N/A'}</td>
+                            <td data-label="Pengirim">${req.nama_pengirim || 'N/A'}</td>
+                            <td data-label="Bukti">${req.bukti_url ? `<a href="${req.bukti_url}" target="_blank" class="btn btn-info btn-sm"><i class="fas fa-image"></i> Lihat Bukti</a>` : 'N/A'}</td>
+                            <td data-label="Waktu">${time}</td>
+                            <td data-label="Status"><span class="badge ${statusBadgeClass}">${req.status ? req.status.charAt(0).toUpperCase() + req.status.slice(1) : 'N/A'}</span></td>
+                            <td data-label="Aksi" class="action-buttons">
                                 ${req.status === 'pending' ? `
                                     <button class="btn btn-success" onclick="approveTopup('${doc.id}', ${req.nominal}, '${req.reseller_uid}')"><i class="fas fa-check"></i> Setujui</button>
                                     <button class="btn btn-danger" onclick="rejectTopup('${doc.id}')"><i class="fas fa-times"></i> Tolak</button>
@@ -941,14 +1066,14 @@
 
                     generalOrderList.innerHTML += `
                         <tr>
-                            <td><a href="detailpesanan.html?id=${doc.id}&type=umum" target="_blank">${order.id}</a></td>
-                            <td>${order.nama_pelanggan}</td>
-                            <td>${order.nomor_pelanggan}</td>
-                            <td>${order.produk}</td>
-                            <td>${formatRupiah(order.harga_final)}</td>
-                            <td>${time}</td>
-                            <td><span class="badge ${statusBadgeClass}">${order.status}</span></td>
-                            <td class="action-buttons">
+                            <td data-label="ID Pesanan"><a href="detailpesanan.html?id=${doc.id}&type=umum" target="_blank">${order.id || 'N/A'}</a></td>
+                            <td data-label="Pelanggan">${order.nama_pelanggan || 'N/A'}</td>
+                            <td data-label="No. HP/ID">${order.nomor_pelanggan || 'N/A'}</td>
+                            <td data-label="Produk">${order.produk || 'N/A'}</td>
+                            <td data-label="Harga Final">${formatRupiah(order.harga_final)}</td>
+                            <td data-label="Waktu">${time}</td>
+                            <td data-label="Status"><span class="badge ${statusBadgeClass}">${order.status || 'N/A'}</span></td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <a href="detailpesanan.html?id=${doc.id}&type=umum" class="btn btn-info btn-sm"><i class="fas fa-eye"></i> Detail</a>
                             </td>
                         </tr>
@@ -977,20 +1102,19 @@
                     const time = order.waktu ? new Date(order.waktu.toDate()).toLocaleString() : 'N/A';
                     let statusBadgeClass = '';
                     if (order.status === 'Selesai') statusBadgeClass = 'bg-success';
-                    // Reseller orders are usually 'Selesai' directly as they pay by balance
                     
                     resellerOrderList.innerHTML += `
                         <tr>
-                            <td><a href="detailpesanan.html?id=${doc.id}&type=reseller" target="_blank">${order.id}</a></td>
-                            <td>${order.reseller_email}</td>
-                            <td>${order.nama_pelanggan}</td>
-                            <td>${order.nomor_pelanggan}</td>
-                            <td>${order.produk}</td>
-                            <td>${formatRupiah(order.harga_beli)}</td>
-                            <td>${formatRupiah(order.harga_jual)}</td>
-                            <td>${time}</td>
-                            <td><span class="badge ${statusBadgeClass}">${order.status}</span></td>
-                            <td class="action-buttons">
+                            <td data-label="ID Pesanan"><a href="detailpesanan.html?id=${doc.id}&type=reseller" target="_blank">${order.id || 'N/A'}</a></td>
+                            <td data-label="Reseller Email">${order.reseller_email || 'N/A'}</td>
+                            <td data-label="Pelanggan">${order.nama_pelanggan || 'N/A'}</td>
+                            <td data-label="No. HP/ID">${order.nomor_pelanggan || 'N/A'}</td>
+                            <td data-label="Produk">${order.produk || 'N/A'}</td>
+                            <td data-label="Harga Beli">${formatRupiah(order.harga_beli)}</td>
+                            <td data-label="Harga Jual">${formatRupiah(order.harga_jual)}</td>
+                            <td data-label="Waktu">${time}</td>
+                            <td data-label="Status"><span class="badge ${statusBadgeClass}">${order.status || 'N/A'}</span></td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <a href="detailpesanan.html?id=${doc.id}&type=reseller" class="btn btn-info btn-sm"><i class="fas fa-eye"></i> Detail</a>
                             </td>
                         </tr>
@@ -1017,8 +1141,14 @@
             confirmBtn.textContent = 'Memproses...';
 
             try {
-                await dbRT.ref('hakDiskon/' + phoneNumber).set(true);
-                showNotification('discount-notification', `Hak diskon berhasil diberikan kepada ${phoneNumber}!`, 'success');
+                // Check if already exists
+                const snapshot = await dbRT.ref('hakDiskon/' + phoneNumber).get();
+                if (snapshot.exists() && snapshot.val() === true) {
+                    showNotification('discount-notification', `Nomor ${phoneNumber} sudah memiliki hak diskon.`, 'info');
+                } else {
+                    await dbRT.ref('hakDiskon/' + phoneNumber).set(true);
+                    showNotification('discount-notification', `Hak diskon berhasil diberikan kepada ${phoneNumber}!`, 'success');
+                }
                 document.getElementById('discount-form').reset();
                 loadActiveDiscounts();
             } catch (error) {
@@ -1044,8 +1174,8 @@
                 Object.keys(discounts).forEach(phone => {
                     activeDiscountList.innerHTML += `
                         <tr>
-                            <td>${phone}</td>
-                            <td class="action-buttons">
+                            <td data-label="Nomor WA">${phone}</td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <button class="btn btn-danger" onclick="revokeDiscountRight('${phone}')"><i class="fas fa-ban"></i> Cabut</button>
                             </td>
                         </tr>
@@ -1083,7 +1213,9 @@
                     return;
                 }
                 const testimonials = snapshot.val();
-                Object.keys(testimonials).reverse().forEach(key => { // Reverse to show latest first
+                const sortedKeys = Object.keys(testimonials).sort((a, b) => testimonials[b].createdAt - testimonials[a].createdAt); // Sort latest first
+
+                sortedKeys.forEach(key => {
                     const testi = testimonials[key];
                     let statusBadgeClass = '';
                     if (testi.status === 'pending') statusBadgeClass = 'bg-warning text-dark';
@@ -1094,11 +1226,11 @@
 
                     testimonialList.innerHTML += `
                         <tr>
-                            <td>${testi.nama || 'Anonim'}</td>
-                            <td>${testi.isi}</td>
-                            <td><span class="badge ${statusBadgeClass}">${testi.status.charAt(0).toUpperCase() + testi.status.slice(1)}</span></td>
-                            <td>${time}</td>
-                            <td class="action-buttons">
+                            <td data-label="Nama">${testi.nama || 'Anonim'}</td>
+                            <td data-label="Isi Testimoni">${testi.isi || 'N/A'}</td>
+                            <td data-label="Status"><span class="badge ${statusBadgeClass}">${testi.status ? testi.status.charAt(0).toUpperCase() + testi.status.slice(1) : 'N/A'}</span></td>
+                            <td data-label="Waktu Kirim">${time}</td>
+                            <td data-label="Aksi" class="action-buttons">
                                 ${testi.status !== 'disetujui' ? `<button class="btn btn-success" onclick="approveTestimonial('${key}')"><i class="fas fa-check"></i> Setujui</button>` : ''}
                                 ${testi.status !== 'ditolak' ? `<button class="btn btn-danger" onclick="rejectTestimonial('${key}')"><i class="fas fa-times"></i> Tolak</button>` : ''}
                                 <button class="btn btn-secondary" onclick="deleteTestimonial('${key}')"><i class="fas fa-trash"></i> Hapus</button>
@@ -1168,9 +1300,9 @@
                     const faq = faqs[key];
                     faqList.innerHTML += `
                         <tr>
-                            <td>${faq.q}</td>
-                            <td>${faq.a}</td>
-                            <td class="action-buttons">
+                            <td data-label="Pertanyaan">${faq.q || 'N/A'}</td>
+                            <td data-label="Jawaban">${faq.a || 'N/A'}</td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <button class="btn btn-warning" onclick="editFaq('${key}')"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-danger" onclick="deleteFaq('${key}')"><i class="fas fa-trash"></i></button>
                             </td>
@@ -1267,10 +1399,10 @@
                     const info = doc.data();
                     paymentInfoList.innerHTML += `
                         <tr>
-                            <td>${info.metode}</td>
-                            <td>${info.nomor}</td>
-                            <td>${info.atas_nama}</td>
-                            <td class="action-buttons">
+                            <td data-label="Metode">${info.metode || 'N/A'}</td>
+                            <td data-label="Nomor">${info.nomor || 'N/A'}</td>
+                            <td data-label="Atas Nama">${info.atas_nama || 'N/A'}</td>
+                            <td data-label="Aksi" class="action-buttons">
                                 <button class="btn btn-warning" onclick="editPaymentInfo('${doc.id}')"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-danger" onclick="deletePaymentInfo('${doc.id}')"><i class="fas fa-trash"></i></button>
                             </td>
@@ -1362,4 +1494,4 @@
 
     </script>
 </body>
-</html>
+                                                             </html>
