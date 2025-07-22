@@ -3,342 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Pesanan</title>
+    <title>Detail Pesanan - Admin</title>
     <link rel="icon" href="favicon.png" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
         :root {
-            --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
-            --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
-            --success: #28a745; --danger: #e74c3c;
-            --info: #0c5460; --warning: #856404;
+            --bg: #f2f4f8; --text: #34495e; --primary: #2980b9;
+            --card: #ffffff; --border: #e0e0e0; --shadow: rgba(0, 0, 0, 0.08);
+            --success: #27ae60; --danger: #e74c3c; --warning: #f39c12;
+            --info: #3498db; --secondary-text: #7f8c8d;
         }
         [data-theme="dark"] {
-            --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
-            --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+            --bg: #2c3e50; --text: #ecf0f1; --primary: #3498db;
+            --card: #34495e; --border: #4a627d; --shadow: rgba(0, 0, 0, 0.2);
+            --success: #2ecc71; --danger: #e74c3c; --warning: #f1c40f;
+            --info: #3498db; --secondary-text: #bdc3c7;
         }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; }
-        .container { margin-top: 30px; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
-        .list-group-item { background: transparent; border-color: var(--border); color: var(--text); }
-        .status-badge { padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.8rem; }
-        .status-pending, .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
-        .status-diproses { background-color: #17a2b8; color: white; }
-        .status-selesai { background-color: #28a745; color: white; }
-        .status-dibatalkan, .status-ditolak { background-color: #e74c3c; color: white; }
-        .status-belum-bayar { background-color: #007bff; color: white; }
-        .img-proof { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
-        .btn-status { margin-right: 10px; }
+        body {
+            font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease; margin: 0; line-height: 1.6;
+        }
+        header {
+            background: var(--primary); color: white; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        header h1 { margin: 0; font-size: 24px; }
+        .back-btn { background: none; border: none; color: white; font-weight: 600; cursor: pointer; padding: 8px 15px; border-radius: 5px; transition: background-color 0.3s ease; }
+        .back-btn:hover { background-color: rgba(255,255,255,0.2); }
+
+        main { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        .section-container {
+            background: var(--card); padding: 25px; border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow); margin-top: 20px;
+        }
+        h2 { color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .order-detail-info p { margin-bottom: 8px; font-size: 1.05em; }
+        .order-detail-info strong { color: var(--primary); }
+        .bukti-transfer-img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 15px; border: 1px solid var(--border); }
+
+        .notification {
+            padding: 15px; margin-bottom: 15px; border-radius: 8px;
+            font-weight: 600; display: none; text-align: center;
+        }
+        .notification.info { background-color: #d1ecf1; color: #0c5460; }
+        .notification.success { background-color: #d4edda; color: #155724; }
+        .notification.error { background-color: #f8d7da; color: #721c24; }
+
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: 600; margin-top: 15px; display: block; }
+        select {
+            width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px;
+            border-radius: 8px; border: 1px solid var(--border); background-color: var(--bg); color: var(--text);
+        }
+        button {
+            padding: 10px 20px; border-radius: 8px; border: none;
+            background: var(--primary); color: white; cursor: pointer;
+            font-weight: bold; font-size: 16px; transition: all 0.2s ease;
+        }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
     </style>
 </head>
 <body data-theme="dark">
+    <header>
+        <button onclick="window.history.back()" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </button>
+        <h1>Detail Pesanan</h1>
+        <span></span>
+    </header>
 
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Kelola Pesanan</h2>
-        <a href="admin.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
-    </div>
+    <main>
+        <div class="section-container" data-aos="fade-up">
+            <h2 id="order-type-title">Detail Pesanan</h2>
+            <div id="order-detail-notification" class="notification"></div>
+            <div id="order-details-content">
+                <p>Memuat detail pesanan...</p>
+            </div>
+            
+            <div id="bukti-transfer-section" style="display: none;">
+                <h3 class="mt-4">Bukti Transfer</h3>
+                <div class="text-center">
+                    <img id="bukti-transfer-img" src="" alt="Bukti Transfer" class="bukti-transfer-img">
+                </div>
+            </div>
 
-    <div class="row" id="order-details-row">
-        <div class="col-md-12 text-center" id="loading-message">
-            <p>Memuat detail pesanan...</p>
+            <div id="admin-actions" class="mt-4" style="display: none;">
+                <h3>Aksi Admin</h3>
+                <div class="form-group">
+                    <label for="orderStatus">Ubah Status Pesanan:</label>
+                    <select id="orderStatus">
+                        <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
+                        <option value="Menunggu Diproses">Menunggu Diproses</option>
+                        <option value="Selesai">Selesai</option>
+                        <option value="Dibatalkan">Dibatalkan</option>
+                    </select>
+                </div>
+                <button id="updateStatusBtn" class="btn btn-primary w-100">Update Status</button>
+            </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script>
-    // Konfigurasi Firebase Anda
-    const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-      projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const dbFS = firebase.firestore();
-    const dbRT = firebase.database();
-    const storage = firebase.storage();
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 800, once: true, offset: 50 });
 
-    const orderDetailsRow = document.getElementById('order-details-row');
-    const loadingMessage = document.getElementById('loading-message');
-    
-    let currentOrderRef;
-    let currentOrderData;
-    let currentOrderType;
+        const firebaseConfig = {
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
+          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // Tidak digunakan langsung di sini, tapi untuk konsistensi
+          projectId: "asdarstoredigitalll-d89c4",
+          storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Penting untuk bukti transfer
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const dbFS = firebase.firestore();
 
-    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        const ADMIN_UID = "YOUR_ADMIN_UID_HERE"; // <--- GANTI INI DENGAN UID ADMIN YANG SESUNGGUHNYA
 
-    async function loadOrderDetails() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('id');
-        const orderType = urlParams.get('type');
+        const orderDetailsContent = document.getElementById('order-details-content');
+        const orderDetailNotification = document.getElementById('order-detail-notification');
+        const buktiTransferSection = document.getElementById('bukti-transfer-section');
+        const buktiTransferImg = document.getElementById('bukti-transfer-img');
+        const adminActionsSection = document.getElementById('admin-actions');
+        const orderStatusSelect = document.getElementById('orderStatus');
+        const updateStatusBtn = document.getElementById('updateStatusBtn');
 
-        if (!orderId || !orderType) {
-            loadingMessage.innerHTML = '<h2>ID Pesanan atau Tipe Pesanan tidak ditemukan.</h2>';
-            return;
-        }
+        const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-        currentOrderType = orderType;
-
-        try {
-            let data = null;
-            if (orderType === 'firestore') {
-                const doc = await dbFS.collection('pesananReseller').doc(orderId).get();
-                if (doc.exists) {
-                    currentOrderRef = dbFS.collection('pesananReseller').doc(orderId);
-                    data = doc.data();
-                    if (data.waktu && typeof data.waktu.toDate === 'function') {
-                        data.waktu = data.waktu.toDate();
-                    }
-                }
-            } else if (orderType === 'realtime') {
-                const snapshot = await dbRT.ref('pesanan').child(orderId).once('value');
-                if (snapshot.exists()) {
-                    currentOrderRef = dbRT.ref('pesanan').child(orderId);
-                    data = snapshot.val();
-                    if (data.waktu && typeof data.waktu === 'string') {
-                        data.waktu = new Date(data.waktu);
-                    }
-                }
+        const showNotification = (message, type = 'error', duration = 3000) => {
+            orderDetailNotification.textContent = message;
+            orderDetailNotification.className = `notification ${type}`;
+            orderDetailNotification.style.display = 'block';
+            if (duration) {
+                setTimeout(() => {
+                    orderDetailNotification.style.display = 'none';
+                }, duration);
             }
+        };
 
-            if (!data) {
-                loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>';
+        // --- AUTHENTICATION CHECK FOR ADMIN ---
+        auth.onAuthStateChanged(user => {
+            if (!user || user.uid !== ADMIN_UID) {
+                alert("Anda tidak memiliki akses ke halaman ini.");
+                window.location.href = 'login.html'; // Redirect to login if not admin
+            } else {
+                loadOrderDetails();
+            }
+        });
+
+        async function loadOrderDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            const orderType = urlParams.get('type'); // 'umum' or 'reseller'
+
+            if (!orderId || (!orderType || (orderType !== 'umum' && orderType !== 'reseller'))) {
+                orderDetailsContent.innerHTML = '<p class="text-danger">ID Pesanan atau Tipe Pesanan tidak valid.</p>';
                 return;
             }
 
-            currentOrderData = data;
-            loadingMessage.style.display = 'none';
-            renderOrderDetails(orderId, data);
-        } catch (error) {
-            console.error("Error loading order details:", error);
-            loadingMessage.innerHTML = '<h2>Terjadi kesalahan saat memuat data.</h2>';
-        }
-    }
+            let collectionName = '';
+            let isGeneralOrder = false;
 
-    function renderOrderDetails(orderId, data) {
-        let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
-        
-        let customerInfoHtml = '';
-        let contactInfoHtml = '';
-        let hargaPesanan = 0;
+            if (orderType === 'umum') {
+                collectionName = 'pesananUmum';
+                isGeneralOrder = true;
+                document.getElementById('order-type-title').textContent = 'Detail Pesanan Umum';
+            } else if (orderType === 'reseller') {
+                collectionName = 'pesananReseller';
+                document.getElementById('order-type-title').textContent = 'Detail Pesanan Reseller';
+                // Reseller orders don't have status changes from admin, they are fulfilled by balance
+                adminActionsSection.style.display = 'none'; 
+            }
 
-        if (currentOrderType === 'realtime') {
-            customerInfoHtml = `<strong>Pelanggan:</strong> ${data.nama || 'N/A'}`;
-            contactInfoHtml = `
-                <li class="list-group-item"><strong>Nomor HP (Tujuan):</strong> ${data.nomor_hp || 'N/A'}</li>
-                <li class="list-group-item"><strong>WA Aktif (Notifikasi):</strong> ${data.wa_aktif || 'N/A'}</li>
-                <li class="list-group-item"><strong>ID Game:</strong> ${data.id_game || 'N/A'}</li>
-            `;
-            hargaPesanan = data.harga || 0;
-        } else {
-            customerInfoHtml = data.nama_reseller ? 
-                                `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan || 'N/A'}` : 
-                                `<strong>Pelanggan:</strong> ${data.nama_pelanggan || 'N/A'}`;
-            contactInfoHtml = `
-                <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}</li>
+            try {
+                const docRef = dbFS.collection(collectionName).doc(orderId);
+                const doc = await docRef.get();
+
+                if (!doc.exists) {
+                    orderDetailsContent.innerHTML = '<p class="text-danger">Pesanan tidak ditemukan.</p>';
+                    return;
+                }
+
+                const order = doc.data();
+                const waktu = order.waktu ? new Date(order.waktu.toDate()).toLocaleString() : 'N/A';
+                const promoText = order.promo_digunakan ? `${order.promo_digunakan.jenis === 'nominal' ? 'Potongan Rp' : 'Diskon '}${order.promo_digunakan.nilai}${order.promo_digunakan.jenis === 'percentage' ? '%' : ''}` : 'Tidak Ada';
+                const diskonShareText = order.diskon_share ? `Ya (Potongan ${formatRupiah(5000)})` : 'Tidak';
+
+                let detailsHtml = `
+                    <div class="order-detail-info">
+                        <p><strong>ID Pesanan:</strong> ${order.id}</p>
+                        <p><strong>Status:</strong> <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span></p>
+                        <p><strong>Waktu Pesan:</strong> ${waktu}</p>
+                        <hr>
+                        <h4>Info Pelanggan</h4>
+                        <p><strong>Nama Pelanggan:</strong> ${order.nama_pelanggan}</p>
+                        <p><strong>Nomor HP / ID Game:</strong> ${order.nomor_pelanggan}</p>
+                        <p><strong>Nomor WhatsApp Aktif:</strong> ${order.wa_aktif}</p>
+                        <hr>
+                        <h4>Detail Produk</h4>
+                        <p><strong>Kategori:</strong> ${order.kategori}</p>
+                        <p><strong>Produk:</strong> ${order.produk}</p>
+                        <p><strong>Harga Final:</strong> ${formatRupiah(order.harga_final || order.harga_beli)}</p>
+                        <p><strong>Promo Digunakan:</strong> ${promoText}</p>
+                        <p><strong>Diskon Share:</strong> ${diskonShareText}</p>
                 `;
-            hargaPesanan = data.harga_final || data.harga_beli || 0;
-        }
-        
-        const price = formatRupiah(hargaPesanan);
 
-        orderDetailsRow.innerHTML = `
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 h-100">
-                    <h4 class="card-title">Detail Pesanan</h4>
-                    <hr>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
-                        <li class="list-group-item">${customerInfoHtml}</li>
-                        ${contactInfoHtml}
-                        <li class="list-group-item"><strong>Produk:</strong> ${data.produk || data.nama_produk || 'N/A'}</li>
-                        <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
-                        <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status}</span></li>
-                        <li class="list-group-item"><strong>Waktu:</strong> ${data.waktu ? data.waktu.toLocaleString() : 'N/A'}</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 h-100">
-                    <h4 class="card-title">Aksi Admin</h4>
-                    <hr>
-                    <div class="mb-3">
-                        <p class="mb-2"><strong>Ubah Status:</strong></p>
-                        <button class="btn btn-warning btn-sm btn-status" onclick="updateStatus('Menunggu Verifikasi')">Verifikasi</button>
-                        <button class="btn btn-primary btn-sm btn-status" onclick="updateStatus('Diproses')">Diproses</button>
-                        <button class="btn btn-success btn-sm btn-status" onclick="updateStatus('Selesai')">Selesai</button>
-                        <button class="btn btn-danger btn-sm btn-status" onclick="updateStatus('Dibatalkan')">Dibatalkan</button>
-                        <button class="btn btn-info btn-sm btn-status" onclick="generateWhatsappMessage()">Kirim WA</button>
-                    </div>
+                if (orderType === 'reseller') {
+                    detailsHtml += `
+                        <hr>
+                        <h4>Info Reseller</h4>
+                        <p><strong>Reseller UID:</strong> ${order.reseller_uid}</p>
+                        <p><strong>Reseller Email:</strong> ${order.reseller_email}</p>
+                        <p><strong>Harga Beli (Reseller):</strong> ${formatRupiah(order.harga_beli)}</p>
+                        <p><strong>Harga Jual (ke Pelanggan):</strong> ${formatRupiah(order.harga_jual)}</p>
+                    `;
+                }
+                detailsHtml += `</div>`;
 
-                    <div class="mb-3">
-                        <p class="mb-2"><strong>Unggah Bukti Pengiriman:</strong></p>
-                        <input type="file" class="form-control" id="buktiPengirimanFile">
-                        <button class="btn btn-info btn-sm mt-2" onclick="uploadAdminProof()">Unggah & Simpan</button>
-                    </div>
+                orderDetailsContent.innerHTML = detailsHtml;
 
-                    <div class="mt-4">
-                        <p class="mb-2"><strong>Hapus Pesanan:</strong></p>
-                        <button class="btn btn-danger btn-sm" onclick="deleteOrder()">Hapus Pesanan</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 h-100">
-                    <h4 class="card-title">Bukti Pembayaran (Pelanggan)</h4>
-                    <hr>
-                    <div id="bukti-pembayaran-container">
-                        ${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img id="bukti-pembayaran-img" src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pembayaran diunggah.</p>`}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 h-100">
-                    <h4 class="card-title">Bukti Pengiriman (Admin)</h4>
-                    <hr>
-                    <div id="bukti-pengiriman-container">
-                        ${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img id="bukti-pengiriman-img" src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pengiriman dari admin.</p>`}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+                // For general orders, display proof of transfer and enable admin actions
+                if (isGeneralOrder) {
+                    if (order.bukti_url) {
+                        buktiTransferImg.src = order.bukti_url;
+                        buktiTransferSection.style.display = 'block';
+                    } else {
+                        buktiTransferSection.style.display = 'none';
+                        orderDetailsContent.innerHTML += '<p class="text-info mt-3">Pelanggan belum mengunggah bukti transfer.</p>';
+                    }
 
-    async function updateStatus(newStatus) {
-        if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) {
-            return;
-        }
+                    // Populate status select and show admin actions
+                    orderStatusSelect.value = order.status;
+                    adminActionsSection.style.display = 'block';
 
-        try {
-            if (currentOrderType === 'firestore') {
-                await currentOrderRef.update({
-                    status: newStatus,
-                    waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else if (currentOrderType === 'realtime') {
-                await currentOrderRef.update({
-                    status: newStatus,
-                    waktu_perubahan_status: new Date().toISOString()
-                });
+                    // Add listener for status update
+                    updateStatusBtn.onclick = () => updateOrderStatus(orderId, docRef);
+                }
+
+            } catch (error) {
+                console.error("Error loading order details:", error);
+                orderDetailsContent.innerHTML = `<p class="text-danger">Gagal memuat detail pesanan: ${error.message}</p>`;
             }
-            alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
-            location.reload(); 
-        } catch (error) {
-            console.error("Error updating status:", error);
-            alert("Gagal mengubah status. Silakan coba lagi.");
-        }
-    }
-
-    async function uploadAdminProof() {
-        const fileInput = document.getElementById('buktiPengirimanFile');
-        const file = fileInput.files[0];
-
-        if (!file) {
-            alert("Pilih file gambar untuk diunggah.");
-            return;
         }
 
-        const orderId = currentOrderRef.id || currentOrderRef.key;
-        const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}`);
-        
-        try {
-            const uploadTask = await storageRef.put(file);
-            const downloadURL = await uploadTask.ref.getDownloadURL();
+        async function updateOrderStatus(orderId, orderDocRef) {
+            const newStatus = orderStatusSelect.value;
+            updateStatusBtn.disabled = true;
+            updateStatusBtn.textContent = 'Mengupdate...';
+            showNotification('order-detail-notification', 'Sedang mengupdate status...', 'info', 0); // No auto-hide
 
-            if (currentOrderType === 'firestore') {
-                await currentOrderRef.update({
-                    bukti_pengiriman_url: downloadURL,
-                    waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else if (currentOrderType === 'realtime') {
-                await currentOrderRef.update({
-                    bukti_pengiriman_url: downloadURL,
-                    waktu_pengiriman_bukti: new Date().toISOString()
-                });
+            try {
+                await orderDocRef.update({ status: newStatus });
+                showNotification('order-detail-notification', 'Status pesanan berhasil diupdate!', 'success');
+                // Update the badge text/class dynamically
+                document.querySelector('.order-detail-info .badge').textContent = newStatus;
+                document.querySelector('.order-detail-info .badge').className = `badge ${getStatusBadgeClass(newStatus)}`;
+            } catch (error) {
+                console.error("Error updating order status:", error);
+                showNotification('order-detail-notification', 'Gagal mengupdate status: ' + error.message, 'error');
+            } finally {
+                updateStatusBtn.disabled = false;
+                updateStatusBtn.textContent = 'Update Status';
+                setTimeout(() => hideNotification('order-detail-notification'), 3000); // Hide after 3 seconds
             }
-
-            alert("Bukti pengiriman berhasil diunggah dan disimpan!");
-            location.reload(); 
-        } catch (error) {
-            console.error("Error uploading proof:", error);
-            alert("Gagal mengunggah bukti pengiriman. Silakan coba lagi.");
-        }
-    }
-
-    async function deleteOrder() {
-        if (!confirm("PERINGATAN: Apakah Anda yakin ingin menghapus pesanan ini secara permanen? Aksi ini tidak bisa dibatalkan.")) {
-            return;
         }
 
-        try {
-            if (currentOrderType === 'firestore') {
-                await currentOrderRef.delete();
-            } else if (currentOrderType === 'realtime') {
-                await currentOrderRef.remove();
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'Menunggu Pembayaran': return 'bg-warning text-dark';
+                case 'Menunggu Diproses': return 'bg-info';
+                case 'Selesai': return 'bg-success';
+                case 'Dibatalkan': return 'bg-danger';
+                default: return 'bg-secondary';
             }
-            alert("Pesanan berhasil dihapus.");
-            window.location.href = 'admin.html';
-        } catch (error) {
-            console.error("Error deleting order:", error);
-            alert("Gagal menghapus pesanan. Silakan coba lagi.");
         }
-    }
-
-    function generateWhatsappMessage() {
-        if (!currentOrderData) return;
-        const orderId = currentOrderRef.id || currentOrderRef.key;
-        
-        const namaPelanggan = currentOrderType === 'realtime' ? currentOrderData.nama : (currentOrderData.nama_pelanggan || currentOrderData.nama_reseller);
-        const produk = currentOrderType === 'realtime' ? currentOrderData.nama_produk : currentOrderData.produk;
-        const status = currentOrderData.status;
-        
-        let whatsappTargetNumber = '';
-        if (currentOrderType === 'realtime') {
-            whatsappTargetNumber = currentOrderData.wa_aktif;
-        } else {
-            // Untuk pesanan reseller (Firestore):
-            // Jika ada field WA aktif khusus untuk pelanggan reseller (misal 'wa_aktif_pelanggan'), gunakan itu.
-            // Contoh: whatsappTargetNumber = currentOrderData.wa_aktif_pelanggan;
-            // Jika tidak ada, fallback ke nomor_pelanggan atau tentukan logika lain (misal: notifikasi ke reseller)
-            whatsappTargetNumber = currentOrderData.nomor_pelanggan; // Fallback ke nomor_pelanggan untuk saat ini
-        }
-
-        if (!whatsappTargetNumber || whatsappTargetNumber === 'N/A') {
-            alert("Nomor WhatsApp aktif pelanggan tidak ditemukan untuk pesanan ini.");
-            return;
-        }
-
-        const statusLink = `${window.location.origin}/status.html?id=${orderId}&type=${currentOrderType}`;
-        
-        const message = `Halo ${namaPelanggan},
-Pesananmu dengan ID ${orderId} sudah ${status}.
-
-Detail Pesanan:
-- Produk: ${produk}
-- Status: ${status}
-
-Lihat status terbaru dan bukti pengiriman di:
-${statusLink}
-
-Terima kasih atas pesanannya!`;
-        
-        const cleanWhatsappNumber = whatsappTargetNumber.replace(/\D/g, '');
-        const whatsappUrl = `https://wa.me/${cleanWhatsappNumber}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    }
-
-    document.addEventListener('DOMContentLoaded', loadOrderDetails);
-</script>
-
+    </script>
 </body>
 </html>
