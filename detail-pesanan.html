@@ -1,1 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Pesanan</title>
+    <link rel="icon" href="favicon.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
+            --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
+            --success: #28a745; --danger: #e74c3c;
+            --info: #0c5460; --warning: #856404;
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
+            --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; }
+        .container { margin-top: 30px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
+        .list-group-item { background: transparent; border-color: var(--border); color: var(--text); }
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.8rem; }
+        .status-pending, .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
+        .status-diproses { background-color: #3498db; color: white; }
+        .status-selesai { background-color: #28a745; color: white; }
+        .status-dibatalkan, .status-ditolak { background-color: #e74c3c; color: white; }
+        .status-belum-bayar { background-color: #007bff; color: white; }
+        .img-proof { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
+        .btn-status { margin-right: 10px; }
+    </style>
+</head>
+<body data-theme="dark">
 
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Kelola Pesanan</h2>
+        <a href="admin.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
+    </div>
+
+    <div class="row" id="order-details-row">
+        <div class="col-md-12 text-center" id="loading-message">
+            <p>Memuat detail pesanan...</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<script>
+    // Konfigurasi Firebase Anda
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+      databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+      projectId: "asdarstoredigitalll-d89c4",
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const dbFS = firebase.firestore();
+    const storage = firebase.storage();
+
+    const orderDetailsRow = document.getElementById('order-details-row');
+    const loadingMessage = document.getElementById('loading-message');
+    
+    // Simpan data pesanan saat dimuat
+    let currentOrderDoc;
+
+    const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+    // Fungsi utama untuk memuat detail pesanan berdasarkan ID dari URL
+    async function loadOrderDetails() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+
+        if (!orderId) {
+            loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>';
+            return;
+        }
+
+        try {
+            // Periksa di kedua koleksi (pesanan umum dan reseller)
+            let doc = await dbFS.collection('pesananUmum').doc(orderId).get();
+            if (!doc.exists) {
+                doc = await dbFS.collection('pesananReseller').doc(orderId).get();
+            }
+
+            if (!doc.exists) {
+                loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>';
+                return;
+            }
+
+            currentOrderDoc = doc;
+            const data = doc.data();
+            loadingMessage.style.display = 'none';
+            renderOrderDetails(doc.id, data);
+        } catch (error) {
+            console.error("Error loading order details:", error);
+            loadingMessage.innerHTML = '<h2>Terjadi kesalahan saat memuat data.</h2>';
+        }
+    }
+
+    // Fungsi untuk menampilkan detail pesanan
+    function renderOrderDetails(orderId, data) {
+        let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
+        
+        const customerInfo = data.nama_reseller ? `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan}` : `<strong>Pelanggan:</strong> ${data.nama_pelanggan}`;
+        const price = formatRupiah(data.harga_final || data.harga_beli);
+
+        orderDetailsRow.innerHTML = `
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h4 class="card-title">Detail Pesanan</h4>
+                    <hr>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
+                        <li class="list-group-item">${customerInfo}</li>
+                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}</li>
+                        <li class="list-group-item"><strong>Produk:</strong> ${data.produk}</li>
+                        <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
+                        <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status}</span></li>
+                        <li class="list-group-item"><strong>Waktu:</strong> ${data.waktu ? new Date(data.waktu.toDate()).toLocaleString() : 'N/A'}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h4 class="card-title">Aksi Admin</h4>
+                    <hr>
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Ubah Status:</strong></p>
+                        <button class="btn btn-warning btn-sm btn-status" onclick="updateStatus('Menunggu Verifikasi')">Verifikasi</button>
+                        <button class="btn btn-primary btn-sm btn-status" onclick="updateStatus('Diproses')">Diproses</button>
+                        <button class="btn btn-success btn-sm btn-status" onclick="updateStatus('Selesai')">Selesai</button>
+                        <button class="btn btn-danger btn-sm btn-status" onclick="updateStatus('Dibatalkan')">Dibatalkan</button>
+                        <button class="btn btn-info btn-sm btn-status" onclick="generateWhatsappMessage()">Kirim WA</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Unggah Bukti Pengiriman:</strong></p>
+                        <input type="file" class="form-control" id="buktiPengirimanFile">
+                        <button class="btn btn-info btn-sm mt-2" onclick="uploadAdminProof()">Unggah & Simpan</button>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="mb-2"><strong>Hapus Pesanan:</strong></p>
+                        <button class="btn btn-danger btn-sm" onclick="deleteOrder()">Hapus Pesanan</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h4 class="card-title">Bukti Pembayaran (Pelanggan)</h4>
+                    <hr>
+                    <div id="bukti-pembayaran-container">
+                        ${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img id="bukti-pembayaran-img" src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pembayaran diunggah.</p>`}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h4 class="card-title">Bukti Pengiriman (Admin)</h4>
+                    <hr>
+                    <div id="bukti-pengiriman-container">
+                        ${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img id="bukti-pengiriman-img" src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pengiriman dari admin.</p>`}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Fungsi untuk mengubah status pesanan
+    async function updateStatus(newStatus) {
+        if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) {
+            return;
+        }
+
+        try {
+            await currentOrderDoc.ref.update({
+                status: newStatus,
+                waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
+            location.reload(); 
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Gagal mengubah status. Silakan coba lagi.");
+        }
+    }
+
+    // Fungsi untuk mengunggah bukti pengiriman dari admin
+    async function uploadAdminProof() {
+        const fileInput = document.getElementById('buktiPengirimanFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert("Pilih file gambar untuk diunggah.");
+            return;
+        }
+
+        const orderId = currentOrderDoc.id;
+        const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}`);
+        
+        try {
+            const uploadTask = await storageRef.put(file);
+            const downloadURL = await uploadTask.ref.getDownloadURL();
+
+            await currentOrderDoc.ref.update({
+                bukti_pengiriman_url: downloadURL,
+                waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            alert("Bukti pengiriman berhasil diunggah dan disimpan!");
+            location.reload(); 
+        } catch (error) {
+            console.error("Error uploading proof:", error);
+            alert("Gagal mengunggah bukti pengiriman. Silakan coba lagi.");
+        }
+    }
+
+    // Fungsi untuk menghapus pesanan
+    async function deleteOrder() {
+        if (!confirm("PERINGATAN: Apakah Anda yakin ingin menghapus pesanan ini secara permanen? Aksi ini tidak bisa dibatalkan.")) {
+            return;
+        }
+
+        try {
+            await currentOrderDoc.ref.delete();
+            alert("Pesanan berhasil dihapus.");
+            window.location.href = 'admin.html';
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            alert("Gagal menghapus pesanan. Silakan coba lagi.");
+        }
+    }
+
+    // Fungsi untuk membuat dan membuka pesan WhatsApp
+    function generateWhatsappMessage() {
+        if (!currentOrderDoc) return;
+        const orderId = currentOrderDoc.id;
+        const orderData = currentOrderDoc.data();
+        
+        const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
+        const produk = orderData.produk;
+        const status = orderData.status;
+
+        // Buat link ke halaman status pesanan
+        const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
+        
+        // Pesan WhatsApp yang akan dikirim
+        const message = `Halo ${namaPelanggan},
+Pesananmu dengan ID ${orderId} sudah ${status}.
+
+Detail Pesanan:
+- Produk: ${produk}
+- Status: ${status}
+
+Lihat status terbaru dan bukti pengiriman di:
+${statusLink}
+
+Terima kasih atas pesanannya!`;
+        
+        const whatsappUrl = `https://wa.me/${orderData.nomor_pelanggan}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrderDetails);
+</script>
+
+</body>
+</html>
