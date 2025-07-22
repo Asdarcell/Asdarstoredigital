@@ -446,11 +446,13 @@
 
     function cleanPhoneNumber(phone) {
         if (!phone) return '';
-        let cleaned = phone.toString().replace(/\D/g, '');
+        let cleaned = phone.toString().replace(/\D/g, ''); // Hapus semua karakter non-digit
+        // Jika dimulai dengan 08, ganti jadi 628
         if (cleaned.startsWith('08')) {
             cleaned = '62' + cleaned.substring(1);
         }
-        if (!cleaned.startsWith('62')) {
+        // Pastikan dimulai dengan 62, jika tidak tambahkan
+        if (cleaned.length > 0 && !cleaned.startsWith('62')) {
             cleaned = '62' + cleaned;
         }
         return cleaned;
@@ -478,14 +480,15 @@
                     allOrders.push({
                         id: doc.id,
                         collectionType: 'pesananUmum',
-                        customer_name: data.nama_pelanggan,
-                        customer_phone: data.nomor_pelanggan, // atau data.nomor_hp
-                        game_id: data.id_game, // atau data.id
-                        product_name: data.produk,
-                        price: data.harga_final || data.harga_beli,
-                        status: data.status,
+                        // Fleksibilitas membaca field
+                        customer_name: data.nama_pelanggan || 'N/A',
+                        customer_phone: data.nomor_pelanggan || data.nomor_hp || data.nomor || 'N/A',
+                        game_id: data.id_game || data.id || data.username_game || 'N/A',
+                        product_name: data.produk || data.product_name || 'N/A',
+                        price: data.harga_final || data.harga_beli || data.price || 0,
+                        status: data.status || 'Belum Bayar',
                         waktu: data.waktu ? data.waktu.toDate() : null,
-                        wa_aktif: data.wa_aktif
+                        wa_aktif: data.wa_aktif === true // Pastikan boolean
                     });
                 });
             }
@@ -498,15 +501,16 @@
                     allOrders.push({
                         id: doc.id,
                         collectionType: 'pesananReseller',
-                        customer_name: data.nama_pelanggan || data.nama_reseller, // Bisa nama reseller atau nama pelanggan dari reseller
-                        customer_phone: data.nomor_pelanggan, // atau data.nomor_hp
-                        game_id: data.id_game, // atau data.id
-                        product_name: data.produk,
-                        price: data.harga_final || data.harga_beli,
-                        status: data.status,
+                        // Fleksibilitas membaca field
+                        customer_name: data.nama_pelanggan || data.nama_reseller || 'N/A', 
+                        customer_phone: data.nomor_pelanggan || data.nomor_hp || data.nomor || 'N/A',
+                        game_id: data.id_game || data.id || data.username_game || 'N/A',
+                        product_name: data.produk || data.product_name || 'N/A',
+                        price: data.harga_final || data.harga_beli || data.price || 0,
+                        status: data.status || 'Belum Bayar',
                         waktu: data.waktu ? data.waktu.toDate() : null,
                         isResellerOrder: true,
-                        wa_aktif: data.wa_aktif
+                        wa_aktif: data.wa_aktif === true // Pastikan boolean
                     });
                 });
             }
@@ -516,29 +520,26 @@
                 const rtdbSnapshot = await dbRT.ref('pesanan').orderByChild('waktu').once('value');
                 rtdbSnapshot.forEach(childSnapshot => {
                     const data = childSnapshot.val();
-                    // Convert RTDB timestamp string to Date object
                     let waktuDate = null;
-                    if (data.waktu && typeof data.waktu === 'string') {
-                        // Coba parse sebagai ISO string atau format lain
+                    if (data.waktu) {
                         try {
-                            waktuDate = new Date(data.waktu);
-                            if (isNaN(waktuDate.getTime())) waktuDate = null; // Pastikan valid date
+                            waktuDate = new Date(data.waktu); // RTDB bisa string ISO atau timestamp number
+                            if (isNaN(waktuDate.getTime())) waktuDate = null; 
                         } catch (e) { waktuDate = null; }
-                    } else if (data.waktu && typeof data.waktu === 'number') {
-                        waktuDate = new Date(data.waktu);
                     }
                     
                     allOrders.push({
                         id: childSnapshot.key,
                         collectionType: 'pesananRTDB',
-                        customer_name: data.nama_pelanggan || data.nama || 'N/A', // Fleksibel
-                        customer_phone: data.nomor_hp || data.nomor || 'N/A', // Fleksibel
-                        game_id: data.id_game || data.id || 'N/A', // Fleksibel
+                        // Fleksibilitas membaca field untuk RTDB
+                        customer_name: data.nama_pelanggan || data.nama || 'N/A', 
+                        customer_phone: data.nomor_hp || data.nomor || 'N/A', 
+                        game_id: data.id_game || data.id || data.username_game || 'N/A', 
                         product_name: data.produk || data.item || 'N/A',
                         price: data.harga || 0,
                         status: data.status || 'Belum Bayar',
                         waktu: waktuDate,
-                        wa_aktif: data.wa_aktif // Ambil status WA aktif
+                        wa_aktif: data.wa_aktif === true // Pastikan boolean
                     });
                 });
             }
@@ -565,11 +566,13 @@
         let statusClass = `status-${(order.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
         const displayTime = order.waktu ? order.waktu.toLocaleString() : 'N/A';
         const displayPrice = formatRupiah(order.price);
+        
+        // Pastikan nilai default 'N/A' jika data tidak ada
         const displayCustomerName = order.customer_name || 'N/A';
+        const rawPhoneNumber = order.customer_phone || 'N/A';
+        const cleanedPhone = cleanPhoneNumber(rawPhoneNumber); // Selalu bersihkan untuk link WA
         const displayGameId = order.game_id || 'N/A';
         const displayProduct = order.product_name || 'N/A';
-        const rawPhoneNumber = order.customer_phone || '';
-        const cleanedPhone = cleanPhoneNumber(rawPhoneNumber);
         
         const waActive = order.wa_aktif === true;
         const waActiveDotClass = waActive ? 'active' : 'inactive';
