@@ -158,6 +158,7 @@
                         <option value="all">Semua Pesanan</option>
                         <option value="umum">Pesanan Pembeli Biasa</option>
                         <option value="reseller">Pesanan Reseller</option>
+                        <option value="rtdb">Pesanan Lama (RTDB)</option>
                     </select>
                     <table id="orders-table">
                         <thead>
@@ -615,16 +616,13 @@
         // =================================== PESANAN (Firestore & Realtime Database) ===================================
         const ordersTableBody = document.querySelector('#orders-table tbody');
         
-        // Data cache untuk menyimpan detail pesanan yang sudah dimuat (opsional, bisa dihapus jika tidak diperlukan)
-        const orderCache = {}; 
-
         function cleanPhoneNumber(phone) {
             if (!phone) return '';
-            let cleaned = phone.replace(/\D/g, ''); // Hapus semua non-digit
+            let cleaned = String(phone).replace(/\D/g, ''); // Hapus semua non-digit dan pastikan string
             if (cleaned.startsWith('0')) {
                 cleaned = '62' + cleaned.substring(1); // Ganti 0 dengan 62
-            } else if (!cleaned.startsWith('62')) {
-                 cleaned = '62' + cleaned; // Tambahkan 62 jika belum ada
+            } else if (!cleaned.startsWith('62') && cleaned.length >= 8) { // Tambahkan 62 jika belum ada dan panjang cukup
+                 cleaned = '62' + cleaned; 
             }
             return cleaned;
         }
@@ -653,24 +651,23 @@
                     resellerSnapFS.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), collection: 'pesananReseller', type: 'reseller' }));
                 }
 
-                // --- Load Pesanan Realtime Database (Jika ada dan relevan) ---
-                // Asumsi: 'pesananLama' adalah koleksi di Realtime DB yang berisi pesanan lama
-                // Jika tidak ada di Realtime DB, Anda bisa menghapus bagian ini.
-                if (filter === 'all' || filter === 'umum') { // Asumsi pesanan lama di RTDB adalah pesanan umum
-                    const rtdbSnapshot = await dbRT.ref('pesananLama').orderByChild('waktu').limitToLast(50).once('value');
+                // --- Load Pesanan Realtime Database (node: 'pesanan') ---
+                if (filter === 'all' || filter === 'rtdb') { 
+                    const rtdbSnapshot = await dbRT.ref('pesanan').orderByChild('waktu').limitToLast(50).once('value');
                     rtdbSnapshot.forEach(childSnap => {
                         const orderRTDB = childSnap.val();
-                        const waktuConverted = orderRTDB.waktu ? (typeof orderRTDB.waktu === 'number' ? new firebase.firestore.Timestamp(orderRTDB.waktu / 1000, 0) : firebase.firestore.Timestamp.fromDate(new Date(orderRTDB.waktu))) : null;
+                        // RTDB 'waktu' biasanya UNIX timestamp (milliseconds)
+                        const waktuConverted = orderRTDB.waktu ? firebase.firestore.Timestamp.fromMillis(orderRTDB.waktu) : null;
 
                         combinedOrders.push({
                             id: childSnap.key,
                             ...orderRTDB,
                             waktu: waktuConverted,
-                            collection: 'pesananLamaRTDB', // Menandai dari RTDB
-                            type: 'umum', // Asumsi jenis pesanan
-                            // Sesuaikan nama field untuk nomor HP dan ID Game jika berbeda di RTDB
+                            collection: 'pesananRTDB', // Menggunakan 'pesananRTDB' sebagai penanda
+                            type: 'umum', // Asumsi jenis pesanan di RTDB
+                            // Sesuaikan nama field untuk nomor HP dan ID Game
                             nomor_hp: orderRTDB.nomor || orderRTDB.no_hp || orderRTDB.customer_phone || '', 
-                            id_game: orderRTDB.id_game || orderRTDB.username || orderRTDB.username_game || '',
+                            id_game: orderRTDB.id_game || orderRTDB.id || orderRTDB.username_game || '', // Cek 'id' juga
                             wa_aktif: orderRTDB.wa_aktif || false
                         });
                     });
@@ -692,8 +689,9 @@
                 combinedOrders.forEach(order => {
                     const isResellerOrder = order.type === 'reseller';
                     let customerPhone = '';
-                    let customerName = order.nama || order.nama_pelanggan;
-                    let idGame = order.id_game || order.username_game || ''; 
+                    let customerName = order.nama || order.nama_pelanggan || '';
+                    let idGame = order.id_game || order.username_game || order.id || ''; // Untuk RTDB, mungkin 'id'
+                    let orderStatus = order.status || 'pending';
 
                     // Dapatkan nomor HP yang benar
                     if (isResellerOrder && resellerData[order.reseller_uid]) {
@@ -705,24 +703,19 @@
                     const cleanedPhone = cleanPhoneNumber(customerPhone);
                     const waStatus = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
                     const waClass = order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive';
-
-                    // Tambahkan order ke cache jika diperlukan, atau langsung gunakan
-                    orderCache[order.id] = { 
-                        ...order, 
-                        customerPhone: cleanedPhone, 
-                        idGame: idGame 
-                    };
+                    
+                    const orderOriginBadge = order.collection === 'pesananRTDB' ? `<span class="badge bg-danger">RTDB</span>` : (isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`);
 
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${order.id}</td>
                         <td>${order.produk || 'N/A'}</td>
-                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName || 'N/A'}</td>
+                        <td>${orderOriginBadge} ${customerName || 'N/A'}</td>
                         <td>
                             ${cleanedPhone ? `<a href="https://wa.me/${cleanedPhone}" target="_blank">${cleanedPhone}</a>` : 'N/A'}
                         </td>
                         <td>${formatRupiah(order.harga_final || order.harga_beli || 0)}</td>
-                        <td><span class="status-badge status-${(order.status || 'pending').toLowerCase().replace(' ', '-')}">${order.status || 'Pending'}</span></td>
+                        <td><span class="status-badge status-${orderStatus.toLowerCase().replace(' ', '-')}">${orderStatus}</span></td>
                         <td>
                             ${cleanedPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${order.collection}', '${order.id}', ${order.wa_aktif || false}, this)">
                                 <i class="fab fa-whatsapp"></i> ${waStatus}
@@ -753,8 +746,8 @@
             if (confirm(`Yakin ingin mengubah status WA menjadi "${statusText}" untuk pesanan ${orderId}?`)) {
                 setButtonLoading(button, true);
                 try {
-                    if (collection === 'pesananLamaRTDB') {
-                        await dbRT.ref('pesananLama').child(orderId).update({ wa_aktif: newWaStatus });
+                    if (collection === 'pesananRTDB') { // Perhatikan nama koleksi di sini
+                        await dbRT.ref('pesanan').child(orderId).update({ wa_aktif: newWaStatus });
                     } else {
                         await dbFS.collection(collection).doc(orderId).update({ wa_aktif: newWaStatus });
                     }
@@ -872,7 +865,7 @@
                 try {
                     await dbRT.ref('testimonials/' + id).remove();
                     showToast('Testimoni berhasil dihapus!');
-                } catch (error) {
+                } <%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-224655.jpg-a6d6a853-5404-4c38-85d7-19d142feead9","fileName":"Screenshot_20250721-224655.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-225633.jpg-6cf26a00-67a2-465b-ac79-7237006be3cb","fileName":"Screenshot_20250721-225633.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250721-225915.jpg-a3c26eb4-27ff-4c02-8351-af295f307a0d","fileName":"Screenshot_20250721-225915.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screen_Recording_20250722_093410.mp4","fileName":"Screen_Recording_20250722_093410.mp4"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-095805.jpg-e26fdad3-b672-4d5f-a4c2-975f45922b41","fileName":"Screenshot_20250722-095805.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-111331.jpg-0a4ead72-beeb-499a-9c13-2e7fb9213280","fileName":"Screenshot_20250722-111331.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-115210.jpg-352eee0d-093f-43b6-8c7c-dba7013e9e99","fileName":"Screenshot_20250722-115210.jpg"} %><%- /tools/getFile {"contentFetchId":"uploaded:Screenshot_20250722-115138.jpg-48370c3d-16a7-4776-9369-157717eaa19d","fileName":"Screenshot_20250722-115138.jpg"} %>catch (error) {
                     showToast('Gagal menghapus testimoni: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
@@ -947,7 +940,7 @@
                 if (item) {
                     document.getElementById('faq_q').value = item.q;
                     document.getElementById('faq_a').value = item.a;
-                    currentFaqId = id;
+                    currentFagId = id;
                 }
             });
         }
