@@ -301,12 +301,17 @@
                 button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
             } else {
                 button.disabled = false;
-                button.innerHTML = button.dataset.originalText;
+                button.innerHTML = button.dataset.originalText; // Pastikan data-originalText sudah disimpan
             }
         }
 
         // ====================================== TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Simpan teks asli tombol agar bisa dikembalikan setelah loading
+            document.querySelectorAll('button[type="submit"]').forEach(button => {
+                button.dataset.originalText = button.innerHTML;
+            });
+
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
@@ -337,7 +342,6 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const productFormBtn = productForm.querySelector('button[type="submit"]');
         let currentProductId = null;
-        productFormBtn.dataset.originalText = productFormBtn.innerHTML;
 
         promoCheckbox.addEventListener('change', () => {
             promoOptions.style.display = promoCheckbox.checked ? 'block' : 'none';
@@ -358,17 +362,21 @@
                     const product = doc.data();
                     const row = productsTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${product.nama_produk}</td>
-                        <td>${product.kategori}</td>
+                        <td>${product.nama_produk || 'N/A'}</td>
+                        <td>${product.kategori || 'N/A'}</td>
                         <td>${formatRupiah(product.harga_umum)}</td>
                         <td>${formatRupiah(product.harga_reseller)}</td>
-                        <td>${product.stok}</td>
+                        <td>${product.stok || 0}</td>
                         <td>
                             <button class="btn btn-warning btn-sm" onclick="editProduct('${doc.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Hapus</button>
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading products:", error);
+                productsTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat produk: ${error.message}</td></tr>`;
+                showToast('Gagal memuat produk. Cek console log.', 'danger');
             });
         }
 
@@ -408,6 +416,7 @@
                 promoOptions.style.display = 'none';
             } catch (error) {
                 showToast('Gagal menyimpan produk: ' + error.message, 'danger');
+                console.error("Error saving product:", error);
             } finally {
                 setButtonLoading(productFormBtn, false);
             }
@@ -422,28 +431,36 @@
         });
 
         async function editProduct(id) {
-            const doc = await dbFS.collection('produk').doc(id).get();
-            const product = doc.data();
-            if (product) {
-                currentProductId = id;
-                document.getElementById('nama_produk').value = product.nama_produk;
-                document.getElementById('kategori').value = product.kategori;
-                document.getElementById('deskripsi').value = product.deskripsi;
-                document.getElementById('harga_umum').value = product.harga_umum;
-                document.getElementById('harga_reseller').value = product.harga_reseller;
-                document.getElementById('stok').value = product.stok;
-                document.getElementById('urutan').value = product.urutan || 0;
-                if (product.promo) {
-                    promoCheckbox.checked = true;
-                    promoOptions.style.display = 'block';
-                    promoJenis.value = product.promo.jenis;
-                    promoNilai.value = product.promo.nilai;
+            try {
+                const doc = await dbFS.collection('produk').doc(id).get();
+                const product = doc.data();
+                if (product) {
+                    currentProductId = id;
+                    document.getElementById('nama_produk').value = product.nama_produk || '';
+                    document.getElementById('kategori').value = product.kategori || '';
+                    document.getElementById('deskripsi').value = product.deskripsi || '';
+                    document.getElementById('harga_umum').value = product.harga_umum || 0;
+                    document.getElementById('harga_reseller').value = product.harga_reseller || 0;
+                    document.getElementById('stok').value = product.stok || 0;
+                    document.getElementById('urutan').value = product.urutan || 0;
+                    if (product.promo) {
+                        promoCheckbox.checked = true;
+                        promoOptions.style.display = 'block';
+                        promoJenis.value = product.promo.jenis;
+                        promoNilai.value = product.promo.nilai;
+                    } else {
+                        promoCheckbox.checked = false;
+                        promoOptions.style.display = 'none';
+                        promoNilai.value = ''; // Clear promo value if not active
+                    }
+                    cancelEditBtn.style.display = 'block';
+                    window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
                 } else {
-                    promoCheckbox.checked = false;
-                    promoOptions.style.display = 'none';
+                    showToast('Produk tidak ditemukan.', 'warning');
                 }
-                cancelEditBtn.style.display = 'block';
-                window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
+            } catch (error) {
+                showToast('Gagal memuat data produk untuk diedit: ' + error.message, 'danger');
+                console.error("Error editing product:", error);
             }
         }
         
@@ -454,6 +471,7 @@
                     showToast('Produk berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus produk: ' + error.message, 'danger');
+                    console.error("Error deleting product:", error);
                 }
             }
         }
@@ -473,31 +491,39 @@
                     const reseller = doc.data();
                     const row = resellersTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${reseller.email}</td>
+                        <td>${reseller.email || 'N/A'}</td>
                         <td>${formatRupiah(reseller.saldo || 0)}</td>
                         <td>
                             <button class="btn btn-primary btn-sm" onclick="addSaldo('${doc.id}', ${reseller.saldo || 0}, this)">Tambah Saldo</button>
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading resellers:", error);
+                resellersTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat reseller: ${error.message}</td></tr>`;
+                showToast('Gagal memuat reseller. Cek console log.', 'danger');
             });
         }
         
         async function addSaldo(resellerId, currentSaldo, button) {
-            const nominal = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
-            if (nominal && !isNaN(nominal) && parseInt(nominal) > 0) {
+            const nominalInput = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
+            if (nominalInput === null) return; // User cancelled
+            const nominal = parseInt(nominalInput);
+
+            if (!isNaN(nominal) && nominal > 0) {
                 setButtonLoading(button, true);
-                const newSaldo = currentSaldo + parseInt(nominal);
+                const newSaldo = currentSaldo + nominal;
                 try {
                     await dbFS.collection('resellers').doc(resellerId).update({ saldo: newSaldo });
                     showToast(`Saldo berhasil ditambahkan menjadi ${formatRupiah(newSaldo)}`);
                 } catch (error) {
                     showToast('Gagal menambah saldo: ' + error.message, 'danger');
+                    console.error("Error adding saldo:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
-            } else if (nominal !== null) {
-                showToast("Input tidak valid.", 'warning');
+            } else {
+                showToast("Input nominal tidak valid.", 'warning');
             }
         }
 
@@ -515,12 +541,14 @@
                 snapshot.forEach(doc => {
                     const konfirmasi = doc.data();
                     const row = topupTableBody.insertRow();
+                    const statusText = konfirmasi.status || 'Belum Ada Status';
+                    const statusClass = statusText.toLowerCase().replace(' ', '-');
                     row.innerHTML = `
                         <td>${doc.id}</td>
-                        <td>${konfirmasi.reseller_email}</td>
+                        <td>${konfirmasi.reseller_email || 'N/A'}</td>
                         <td>${formatRupiah(konfirmasi.nominal)}</td>
-                        <td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a></td>
-                        <td><span class="status-badge status-${konfirmasi.status.replace(' ', '-')}">${konfirmasi.status}</span></td>
+                        <td>${konfirmasi.bukti_url ? `<a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a>` : 'Tidak Ada Bukti'}</td>
+                        <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
                         <td>
                             ${konfirmasi.status === 'pending' ?
                                 `<button class="btn btn-success btn-sm" onclick="approveTopup('${doc.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, this)">Setujui</button>
@@ -529,6 +557,10 @@
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading top-up confirmations:", error);
+                topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat top up: ${error.message}</td></tr>`;
+                showToast('Gagal memuat top up. Cek console log.', 'danger');
             });
         }
         
@@ -542,8 +574,11 @@
                     const resellerDoc = await transaction.get(resellerRef);
                     const konfirmasiDoc = await transaction.get(konfirmasiRef);
 
-                    if (!resellerDoc.exists || !konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
-                        throw new Error("Dokumen tidak ditemukan atau status sudah berubah.");
+                    if (!resellerDoc.exists) {
+                        throw new Error("Dokumen reseller tidak ditemukan.");
+                    }
+                    if (!konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
+                        throw new Error("Dokumen konfirmasi top up tidak ditemukan atau status sudah berubah.");
                     }
 
                     const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
@@ -554,6 +589,7 @@
                 showToast('Top up berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui top up: ' + error.message, 'danger');
+                console.error("Error approving top-up:", error);
             } finally {
                 setButtonLoading(button, false);
             }
@@ -567,6 +603,7 @@
                     showToast('Top up berhasil ditolak.');
                 } catch (error) {
                     showToast('Gagal menolak top up: ' + error.message, 'danger');
+                    console.error("Error rejecting top-up:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -584,31 +621,60 @@
             const umumPromise = new Promise((resolve, reject) => {
                 dbRT.ref('pesananUmum').once('value').then(snapshot => {
                     const orders = [];
-                    snapshot.forEach(childSnap => orders.push({ id: childSnap.key, ...childSnap.val(), type: 'umum', created_at: childSnap.val().waktu }));
+                    snapshot.forEach(childSnap => {
+                        const orderData = childSnap.val();
+                        // Fallback for 'waktu' if it's missing or named differently
+                        orders.push({ 
+                            id: childSnap.key, 
+                            ...orderData, 
+                            type: 'umum', 
+                            created_at: orderData.waktu || orderData.timestamp || '' 
+                        });
+                    });
                     resolve(orders);
-                }).catch(reject);
+                }).catch(error => {
+                    console.error("Error loading pesananUmum from Realtime DB:", error);
+                    // showToast('Gagal memuat pesanan umum. Cek console log.', 'danger'); // Only show combined error
+                    reject(new Error("RTDB: " + error.message)); // Propagate error
+                });
             });
 
             const resellerPromise = new Promise((resolve, reject) => {
                 dbFS.collection('pesananReseller').get().then(snapshot => {
                     const orders = [];
-                    snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data(), type: 'reseller', created_at: doc.data().waktu }));
+                    snapshot.forEach(doc => {
+                        const orderData = doc.data();
+                        // Fallback for 'waktu' if it's missing or named differently
+                        orders.push({ 
+                            id: doc.id, 
+                            ...orderData, 
+                            type: 'reseller', 
+                            created_at: orderData.waktu || orderData.timestamp || '' 
+                        });
+                    });
                     resolve(orders);
-                }).catch(reject);
+                }).catch(error => {
+                    console.error("Error loading pesananReseller from Firestore:", error);
+                    // showToast('Gagal memuat pesanan reseller. Cek console log.', 'danger'); // Only show combined error
+                    reject(new Error("Firestore: " + error.message)); // Propagate error
+                });
             });
 
             Promise.all([umumPromise, resellerPromise]).then(([umumOrders, resellerOrders]) => {
                 allOrdersData = [...umumOrders, ...resellerOrders];
                 
                 allOrdersData.sort((a, b) => {
-                    const timeA = new Date(a.created_at);
-                    const timeB = new Date(b.created_at);
+                    // Convert to Date objects for robust comparison, using 0 for invalid dates
+                    const timeA = new Date(a.created_at || 0); 
+                    const timeB = new Date(b.created_at || 0);
                     return timeB - timeA;
                 });
                 
                 renderOrders(allOrdersData);
             }).catch(error => {
-                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
+                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat semua pesanan. Mohon periksa konsol browser.<br>Error: ${error.message}</td></tr>`;
+                console.error("Error combining or rendering orders:", error);
+                showToast('Gagal memuat pesanan. Cek konsol browser untuk detail.', 'danger');
             });
         }
         
@@ -627,21 +693,31 @@
             
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
-                const row = ordersTableBody.insertRow();
-                let statusClass = 'status-belum-bayar';
-                if (order.status) {
-                    statusClass = `status-${order.status.toLowerCase().replace(' ', '-')}`;
-                    if (order.status === 'Selesai') statusClass = 'status-selesai';
-                    if (order.status === 'Diproses') statusClass = 'badge-info';
-                    if (order.status === 'Dibatalkan' || order.status === 'Ditolak') statusClass = 'status-ditolak';
+                const actualStatus = order.status || 'Belum Ada Status'; // Default text if status is missing
+                let statusClass = 'status-belum-bayar'; // Default CSS class
+
+                // Check and apply specific status classes if status exists
+                if (order.status) { 
+                    const lowerCaseStatus = order.status.toLowerCase();
+                    if (lowerCaseStatus.includes('pending')) statusClass = 'status-pending';
+                    else if (lowerCaseStatus.includes('disetujui')) statusClass = 'status-disetujui';
+                    else if (lowerCaseStatus.includes('selesai')) statusClass = 'status-selesai';
+                    else if (lowerCaseStatus.includes('diproses')) statusClass = 'badge-info';
+                    else if (lowerCaseStatus.includes('dibatalkan') || lowerCaseStatus.includes('ditolak')) statusClass = 'status-ditolak';
+                    else statusClass = `status-${lowerCaseStatus.replace(' ', '-')}`; // Fallback for other statuses
                 }
                 
+                const customerName = order.nama_pelanggan || order.nama_reseller || order.nama || 'Nama Tidak Ditemukan';
+                const productName = order.produk || 'Produk Tidak Ditemukan';
+                const finalPrice = formatRupiah(order.harga_akhir || 0);
+
+                const row = ordersTableBody.insertRow();
                 row.innerHTML = `
-                    <td><code>${order.id}</code></td>
-                    <td>${order.produk}</td>
-                    <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama_pelanggan || order.nama_reseller || order.nama}</td>
-                    <td>${formatRupiah(order.harga_akhir || 0)}</td>
-                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td><code>${order.id || 'N/A'}</code></td>
+                    <td>${productName}</td>
+                    <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName}</td>
+                    <td>${finalPrice}</td>
+                    <td><span class="status-badge ${statusClass}">${actualStatus}</span></td>
                     <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a></td>
                 `;
             });
@@ -656,7 +732,6 @@
         const testimonialFormBtn = testimonialForm.querySelector('button[type="submit"]');
         const cancelTestimonialEditBtn = document.getElementById('cancel-testimonial-edit-btn');
         let currentTestimonialId = null;
-        testimonialFormBtn.dataset.originalText = testimonialFormBtn.innerHTML;
 
         function loadTestimonials() {
             testimonialsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
@@ -669,12 +744,14 @@
                 snapshot.forEach(doc => {
                     const testi = doc.data();
                     const row = testimonialsTableBody.insertRow();
-                    const statusClass = testi.status.replace(' ', '-');
-                    const isApproved = testi.status === 'disetujui';
+                    const statusText = testi.status || 'pending'; // Default to 'pending' if status not set
+                    const statusClass = statusText.toLowerCase().replace(' ', '-');
+                    const isApproved = statusText === 'disetujui';
+
                     row.innerHTML = `
-                        <td>${testi.nama}</td>
-                        <td>${testi.isi}</td>
-                        <td><span class="status-badge status-${statusClass}">${testi.status}</span></td>
+                        <td>${testi.nama || 'Anonim'}</td>
+                        <td>${testi.isi || ''}</td>
+                        <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
                         <td>
                             ${!isApproved ?
                                 `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${doc.id}', this)">Setujui</button>` :
@@ -684,36 +761,36 @@
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading testimonials:", error);
+                testimonialsTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat testimoni: ${error.message}</td></tr>`;
+                showToast('Gagal memuat testimoni. Cek console log.', 'danger');
             });
         }
 
-        testimonialForm.addEventListener('submit', (e) => {
+        testimonialForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setButtonLoading(testimonialFormBtn, true);
             const nama = document.getElementById('testimonial-nama').value;
             const isi = document.getElementById('testimonial-isi').value;
             const data = { nama, isi, status: 'pending' };
 
-            if (currentTestimonialId) {
-                dbFS.collection('testimonials').doc(currentTestimonialId).update(data).then(() => {
+            try {
+                if (currentTestimonialId) {
+                    await dbFS.collection('testimonials').doc(currentTestimonialId).update(data);
                     showToast('Testimoni berhasil diperbarui!');
-                    testimonialForm.reset();
-                    currentTestimonialId = null;
-                    cancelTestimonialEditBtn.style.display = 'none';
-                }).catch(error => {
-                    showToast('Gagal memperbarui testimoni: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(testimonialFormBtn, false);
-                });
-            } else {
-                dbFS.collection('testimonials').add(data).then(() => {
+                } else {
+                    await dbFS.collection('testimonials').add(data);
                     showToast('Testimoni berhasil ditambahkan!');
-                    testimonialForm.reset();
-                }).catch(error => {
-                    showToast('Gagal menambahkan testimoni: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(testimonialFormBtn, false);
-                });
+                }
+                testimonialForm.reset();
+                currentTestimonialId = null;
+                cancelTestimonialEditBtn.style.display = 'none';
+            } catch (error) {
+                showToast('Gagal menyimpan testimoni: ' + error.message, 'danger');
+                console.error("Error saving testimonial:", error);
+            } finally {
+                setButtonLoading(testimonialFormBtn, false);
             }
         });
         
@@ -724,14 +801,21 @@
         });
 
         async function editTestimonial(id) {
-            const doc = await dbFS.collection('testimonials').doc(id).get();
-            const item = doc.data();
-            if (item) {
-                document.getElementById('testimonial-nama').value = item.nama;
-                document.getElementById('testimonial-isi').value = item.isi;
-                currentTestimonialId = id;
-                cancelTestimonialEditBtn.style.display = 'block';
-                window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' });
+            try {
+                const doc = await dbFS.collection('testimonials').doc(id).get();
+                const item = doc.data();
+                if (item) {
+                    document.getElementById('testimonial-nama').value = item.nama || '';
+                    document.getElementById('testimonial-isi').value = item.isi || '';
+                    currentTestimonialId = id;
+                    cancelTestimonialEditBtn.style.display = 'block';
+                    window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' });
+                } else {
+                    showToast('Testimoni tidak ditemukan.', 'warning');
+                }
+            } catch (error) {
+                showToast('Gagal memuat data testimoni untuk diedit: ' + error.message, 'danger');
+                console.error("Error editing testimonial:", error);
             }
         }
         
@@ -742,6 +826,7 @@
                 showToast('Testimoni berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui testimoni: ' + error.message, 'danger');
+                console.error("Error approving testimonial:", error);
             } finally {
                 setButtonLoading(button, false);
             }
@@ -755,6 +840,7 @@
                     showToast('Testimoni berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus testimoni: ' + error.message, 'danger');
+                    console.error("Error deleting testimonial:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -767,7 +853,6 @@
         const faqTableBody = document.querySelector('#faq-table tbody');
         const faqFormBtn = faqForm.querySelector('button[type="submit"]');
         let currentFaqId = null;
-        faqFormBtn.dataset.originalText = faqFormBtn.innerHTML;
 
         function loadFaq() {
             faqTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
@@ -781,53 +866,60 @@
                     const item = doc.data();
                     const row = faqTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${item.q}</td>
-                        <td>${item.a}</td>
+                        <td>${item.q || 'N/A'}</td>
+                        <td>${item.a || ''}</td>
                         <td>
                             <button class="btn btn-warning btn-sm" onclick="editFaq('${doc.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteFaq('${doc.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading FAQ:", error);
+                faqTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat FAQ: ${error.message}</td></tr>`;
+                showToast('Gagal memuat FAQ. Cek console log.', 'danger');
             });
         }
         
-        faqForm.addEventListener('submit', (e) => {
+        faqForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setButtonLoading(faqFormBtn, true);
             const q = document.getElementById('faq_q').value;
             const a = document.getElementById('faq_a').value;
             const data = { q, a };
 
-            if (currentFaqId) {
-                dbFS.collection('faq').doc(currentFaqId).update(data).then(() => {
+            try {
+                if (currentFaqId) {
+                    await dbFS.collection('faq').doc(currentFaqId).update(data);
                     showToast('FAQ berhasil diperbarui!');
-                    faqForm.reset();
-                    currentFaqId = null;
-                }).catch(error => {
-                    showToast('Gagal memperbarui FAQ: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(faqFormBtn, false);
-                });
-            } else {
-                dbFS.collection('faq').add(data).then(() => {
+                } else {
+                    await dbFS.collection('faq').add(data);
                     showToast('FAQ berhasil ditambahkan!');
-                    faqForm.reset();
-                }).catch(error => {
-                    showToast('Gagal menambahkan FAQ: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(faqFormBtn, false);
-                });
+                }
+                faqForm.reset();
+                currentFaqId = null;
+            } catch (error) {
+                showToast('Gagal menyimpan FAQ: ' + error.message, 'danger');
+                console.error("Error saving FAQ:", error);
+            } finally {
+                setButtonLoading(faqFormBtn, false);
             }
         });
         
         async function editFaq(id) {
-            const doc = await dbFS.collection('faq').doc(id).get();
-            const item = doc.data();
-            if (item) {
-                document.getElementById('faq_q').value = item.q;
-                document.getElementById('faq_a').value = item.a;
-                currentFaqId = id;
+            try {
+                const doc = await dbFS.collection('faq').doc(id).get();
+                const item = doc.data();
+                if (item) {
+                    document.getElementById('faq_q').value = item.q || '';
+                    document.getElementById('faq_a').value = item.a || '';
+                    currentFaqId = id;
+                } else {
+                    showToast('FAQ tidak ditemukan.', 'warning');
+                }
+            } catch (error) {
+                showToast('Gagal memuat data FAQ untuk diedit: ' + error.message, 'danger');
+                console.error("Error editing FAQ:", error);
             }
         }
         
@@ -839,6 +931,7 @@
                     showToast('FAQ berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus FAQ: ' + error.message, 'danger');
+                    console.error("Error deleting FAQ:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -851,7 +944,6 @@
         const paymentsTableBody = document.querySelector('#payments-table tbody');
         const paymentFormBtn = paymentForm.querySelector('button[type="submit"]');
         let currentPaymentId = null;
-        paymentFormBtn.dataset.originalText = paymentFormBtn.innerHTML;
 
         function loadPaymentMethods() {
             paymentsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
@@ -864,19 +956,23 @@
                     const payment = doc.data();
                     const row = paymentsTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${payment.metode}</td>
-                        <td>${payment.nomor}</td>
-                        <td>${payment.atas_nama}</td>
+                        <td>${payment.metode || 'N/A'}</td>
+                        <td>${payment.nomor || 'N/A'}</td>
+                        <td>${payment.atas_nama || 'N/A'}</td>
                         <td>
                             <button class="btn btn-warning btn-sm" onclick="editPayment('${doc.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deletePayment('${doc.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading payment methods:", error);
+                paymentsTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat pembayaran: ${error.message}</td></tr>`;
+                showToast('Gagal memuat pembayaran. Cek console log.', 'danger');
             });
         }
         
-        paymentForm.addEventListener('submit', (e) => {
+        paymentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setButtonLoading(paymentFormBtn, true);
             const data = {
@@ -886,36 +982,39 @@
             };
 
             const ref = dbFS.collection('infoPembayaran');
-            if (currentPaymentId) {
-                ref.doc(currentPaymentId).update(data).then(() => {
+            try {
+                if (currentPaymentId) {
+                    await ref.doc(currentPaymentId).update(data);
                     showToast('Info pembayaran berhasil diperbarui!');
-                    paymentForm.reset();
-                    currentPaymentId = null;
-                }).catch(error => {
-                    showToast('Gagal memperbarui: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(paymentFormBtn, false);
-                });
-            } else {
-                ref.add(data).then(() => {
+                } else {
+                    await ref.add(data);
                     showToast('Info pembayaran berhasil ditambahkan!');
-                    paymentForm.reset();
-                }).catch(error => {
-                    showToast('Gagal menambahkan: ' + error.message, 'danger');
-                }).finally(() => {
-                    setButtonLoading(paymentFormBtn, false);
-                });
+                }
+                paymentForm.reset();
+                currentPaymentId = null;
+            } catch (error) {
+                showToast('Gagal menyimpan info pembayaran: ' + error.message, 'danger');
+                console.error("Error saving payment method:", error);
+            } finally {
+                setButtonLoading(paymentFormBtn, false);
             }
         });
         
         async function editPayment(id) {
-            const doc = await dbFS.collection('infoPembayaran').doc(id).get();
-            const payment = doc.data();
-            if (payment) {
-                document.getElementById('payment_metode').value = payment.metode;
-                document.getElementById('payment_nomor').value = payment.nomor;
-                document.getElementById('payment_an').value = payment.atas_nama;
-                currentPaymentId = id;
+            try {
+                const doc = await dbFS.collection('infoPembayaran').doc(id).get();
+                const payment = doc.data();
+                if (payment) {
+                    document.getElementById('payment_metode').value = payment.metode || '';
+                    document.getElementById('payment_nomor').value = payment.nomor || '';
+                    document.getElementById('payment_an').value = payment.atas_nama || '';
+                    currentPaymentId = id;
+                } else {
+                    showToast('Info pembayaran tidak ditemukan.', 'warning');
+                }
+            } catch (error) {
+                showToast('Gagal memuat data pembayaran untuk diedit: ' + error.message, 'danger');
+                console.error("Error editing payment method:", error);
             }
         }
         
@@ -926,7 +1025,8 @@
                     await dbFS.collection('infoPembayaran').doc(id).delete();
                     showToast('Info pembayaran berhasil dihapus!');
                 } catch (error) {
-                    showToast('Gagal menghapus: ' + error.message, 'danger');
+                    showToast('Gagal menghapus info pembayaran: ' + error.message, 'danger');
+                    console.error("Error deleting payment method:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -938,6 +1038,7 @@
         const bannersTableBody = document.querySelector('#banners-table tbody');
         const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
         let currentBannerId = null;
+        const bannerFormBtn = bannerForm.querySelector('button[type="submit"]'); // Define it here
 
         function loadBanners() {
             bannersTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
@@ -951,8 +1052,8 @@
                     const banner = doc.data();
                     const row = bannersTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${banner.urutan}</td>
-                        <td><a href="${banner.url}" target="_blank">Lihat Gambar</a></td>
+                        <td>${banner.urutan || 0}</td>
+                        <td>${banner.url ? `<a href="${banner.url}" target="_blank">Lihat Gambar</a>` : 'URL Tidak Ada'}</td>
                         <td>${banner.link || '-'}</td>
                         <td>
                             <button class="btn btn-warning btn-sm" onclick="editBanner('${doc.id}')">Edit</button>
@@ -960,11 +1061,16 @@
                         </td>
                     `;
                 });
+            }, error => {
+                console.error("Error loading banners:", error);
+                bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat banner: ${error.message}</td></tr>`;
+                showToast('Gagal memuat banner. Cek console log.', 'danger');
             });
         }
 
         bannerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            setButtonLoading(bannerFormBtn, true); // Use the defined bannerFormBtn
             const bannerData = {
                 url: document.getElementById('banner_url').value,
                 link: document.getElementById('banner_link').value,
@@ -984,6 +1090,9 @@
                 currentBannerId = null;
             } catch (error) {
                 showToast('Gagal menyimpan banner: ' + error.message, 'danger');
+                console.error("Error saving banner:", error);
+            } finally {
+                setButtonLoading(bannerFormBtn, false);
             }
         });
 
@@ -994,15 +1103,22 @@
         });
 
         async function editBanner(id) {
-            const doc = await dbFS.collection('banners').doc(id).get();
-            const banner = doc.data();
-            if (banner) {
-                currentBannerId = id;
-                document.getElementById('banner_url').value = banner.url;
-                document.getElementById('banner_link').value = banner.link;
-                document.getElementById('banner_urutan').value = banner.urutan;
-                cancelBannerEditBtn.style.display = 'block';
-                window.scrollTo({ top: document.getElementById('banners-tab').offsetTop, behavior: 'smooth' });
+            try {
+                const doc = await dbFS.collection('banners').doc(id).get();
+                const banner = doc.data();
+                if (banner) {
+                    currentBannerId = id;
+                    document.getElementById('banner_url').value = banner.url || '';
+                    document.getElementById('banner_link').value = banner.link || '';
+                    document.getElementById('banner_urutan').value = banner.urutan || 0;
+                    cancelBannerEditBtn.style.display = 'block';
+                    window.scrollTo({ top: document.getElementById('banners-tab').offsetTop, behavior: 'smooth' });
+                } else {
+                    showToast('Banner tidak ditemukan.', 'warning');
+                }
+            } catch (error) {
+                showToast('Gagal memuat data banner untuk diedit: ' + error.message, 'danger');
+                console.error("Error editing banner:", error);
             }
         }
 
@@ -1013,6 +1129,7 @@
                     showToast('Banner berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus banner: ' + error.message, 'danger');
+                    console.error("Error deleting banner:", error);
                 }
             }
         }
