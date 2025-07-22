@@ -351,20 +351,19 @@
                 cleaned = cleaned.substring(1); // Hapus '+'
             }
             // Jika sudah 62 atau format lain yang valid, biarkan saja.
-            // Jika masih belum 62 dan cukup panjang, asumsikan itu nomor lokal yang perlu 62
-            else if (!cleaned.startsWith('62') && cleaned.length >= 8) {
-                 cleaned = '62' + cleaned; 
+            // Jika masih belum 62 dan cukup panjang (misal 8 digit), asumsikan itu nomor lokal yang perlu 62
+            else if (!cleaned.startsWith('62') && cleaned.length >= 8) { // Cek panjang minimal untuk menghindari false positive pendek
+                 cleaned = '62' + cleaned;
             }
             return cleaned;
         }
-
 
         // ====================================== TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
-            loadOrders();
+            loadOrders(); // Initial load for orders tab
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
@@ -400,7 +399,7 @@
                 promoNilai.value = '';
             }
         });
-        
+
         function loadProducts() {
             productsTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
             dbFS.collection('produk').orderBy('urutan').get().then(snapshot => {
@@ -466,7 +465,7 @@
                 setButtonLoading(productFormBtn, false);
             }
         });
-        
+
         cancelEditBtn.addEventListener('click', () => {
             productForm.reset();
             cancelEditBtn.style.display = 'none';
@@ -500,7 +499,7 @@
                 window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
             }
         }
-        
+
         async function deleteProduct(id) {
             if (confirm('Yakin ingin menghapus produk ini?')) {
                 try {
@@ -536,7 +535,7 @@
                 resellersTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat reseller: ${error.message}</td></tr>`;
             });
         }
-        
+
         async function addSaldo(resellerId, currentSaldo, button) {
             const nominal = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
             if (nominal && !isNaN(nominal) && parseInt(nominal) > 0) {
@@ -589,21 +588,21 @@
                 console.error("Error loading konfirmasi top up: ", error);
             });
         }
-        
+
         async function approveTopup(id, resellerUid, nominal, button) {
             setButtonLoading(button, true);
             try {
                 await dbFS.runTransaction(async (transaction) => {
                     const resellerRef = dbFS.collection('resellers').doc(resellerUid);
                     const konfirmasiRef = dbFS.collection('konfirmasiTopup').doc(id);
-                    
+
                     const resellerDoc = await transaction.get(resellerRef);
                     const konfirmasiDoc = await transaction.get(konfirmasiRef);
 
                     if (!resellerDoc.exists || !konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
                         throw new Error("Dokumen tidak ditemukan atau status sudah berubah.");
                     }
-                    
+
                     const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
                     transaction.update(resellerRef, { saldo: newSaldo });
                     transaction.update(konfirmasiRef, { status: 'disetujui' });
@@ -615,7 +614,7 @@
                 setButtonLoading(button, false);
             }
         }
-        
+
         async function rejectTopup(id, button) {
             if (confirm('Yakin ingin menolak konfirmasi top up ini?')) {
                 setButtonLoading(button, true);
@@ -633,11 +632,11 @@
 
         // =================================== PESANAN (Firestore & Realtime Database) ===================================
         const ordersTableBody = document.querySelector('#orders-table tbody');
-        
+
         async function loadOrders() {
             const filter = document.getElementById('order-filter').value;
             ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
-            
+
             let combinedOrders = [];
             const resellerData = {};
 
@@ -651,25 +650,59 @@
                 // --- Load Pesanan Firestore (Umum & Reseller) ---
                 if (filter === 'all' || filter === 'umum') {
                     const umumSnap = await dbFS.collection('pesananUmum').orderBy('waktu', 'desc').limit(50).get();
-                    umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), collection: 'pesananUmum', type: 'umum' }));
+                    umumSnap.forEach(doc => {
+                        const order = doc.data();
+                        combinedOrders.push({
+                            id: doc.id,
+                            produk: order.produk,
+                            nama: order.nama || order.nama_pelanggan,
+                            nomor_hp_raw: order.nomor_hp || order.nomor || order.customer_phone,
+                            harga_final: order.harga_final || order.harga_beli,
+                            status: order.status,
+                            wa_aktif: order.wa_aktif,
+                            waktu: order.waktu,
+                            collection: 'pesananUmum',
+                            type: 'umum',
+                            id_game_raw: order.id_game || order.username_game
+                        });
+                    });
                 }
                 if (filter === 'all' || filter === 'reseller') {
                     const resellerSnapFS = await dbFS.collection('pesananReseller').orderBy('waktu', 'desc').limit(50).get();
-                    resellerSnapFS.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), collection: 'pesananReseller', type: 'reseller' }));
+                    resellerSnapFS.forEach(doc => {
+                        const order = doc.data();
+                        let resellerPhone = '';
+                        if (resellerData[order.reseller_uid]) {
+                            resellerPhone = resellerData[order.reseller_uid].nomor_hp || '';
+                        }
+                        combinedOrders.push({
+                            id: doc.id,
+                            produk: order.produk,
+                            nama: order.nama || order.nama_pelanggan,
+                            nomor_hp_raw: resellerPhone, // Nomor HP reseller
+                            harga_final: order.harga_final || order.harga_beli,
+                            status: order.status,
+                            wa_aktif: order.wa_aktif,
+                            waktu: order.waktu,
+                            collection: 'pesananReseller',
+                            type: 'reseller',
+                            id_game_raw: order.id_game || order.username_game
+                        });
+                    });
                 }
 
                 // --- Load Pesanan Realtime Database (node: 'pesanan') ---
-                if (filter === 'all' || filter === 'rtdb') { 
-                    // Menggunakan on('value') untuk mendapatkan data Realtime DB terbaru
+                if (filter === 'all' || filter === 'rtdb') {
+                    // Menggunakan once('value') untuk mendapatkan data Realtime DB
                     const rtdbSnapshot = await dbRT.ref('pesanan').orderByChild('waktu').limitToLast(50).once('value');
                     rtdbSnapshot.forEach(childSnap => {
                         const orderRTDB = childSnap.val();
-                        
-                        // Parse waktu dari string ke Date object, lalu ke Firestore Timestamp
+
+                        // Parse waktu dari string ke Firestore Timestamp
                         let waktuConverted = null;
                         if (orderRTDB.waktu) {
                             try {
-                                // Contoh format waktu: "2025-07-18T16:23:15.847Z"
+                                // RTDB 'waktu' format: "2025-07-18T16:23:15.847Z"
                                 waktuConverted = firebase.firestore.Timestamp.fromDate(new Date(orderRTDB.waktu));
                             } catch (e) {
                                 console.error("Error parsing RTDB timestamp:", orderRTDB.waktu, e);
@@ -678,14 +711,16 @@
 
                         combinedOrders.push({
                             id: childSnap.key,
-                            ...orderRTDB,
+                            produk: orderRTDB.produk || 'N/A',
+                            nama: orderRTDB.nama || 'N/A',
+                            nomor_hp_raw: orderRTDB.nomor || orderRTDB.no_hp || orderRTDB.customer_phone || '', // Prioritaskan 'nomor' untuk RTDB
+                            harga_final: orderRTDB.harga_final || orderRTDB.harga_beli || orderRTDB.harga_asli || 0,
+                            status: orderRTDB.status || 'pending',
+                            wa_aktif: orderRTDB.wa_aktif || false,
                             waktu: waktuConverted,
                             collection: 'pesananRTDB', // Menggunakan 'pesananRTDB' sebagai penanda
-                            type: 'umum', // Asumsi jenis pesanan di RTDB
-                            // Sesuaikan nama field untuk nomor HP dan ID Game berdasarkan struktur RTDB
-                            nomor_hp: orderRTDB.nomor || orderRTDB.no_hp || orderRTDB.customer_phone || '', 
-                            id_game: orderRTDB.id || orderRTDB.id_game || orderRTDB.username_game || '', // Prioritaskan 'id' untuk RTDB
-                            wa_aktif: orderRTDB.wa_aktif || false
+                            type: 'umum', // Asumsi jenis pesanan di RTDB adalah umum
+                            id_game_raw: orderRTDB.id || orderRTDB.id_game || orderRTDB.username_game || '' // Prioritaskan 'id' untuk RTDB
                         });
                     });
                 }
@@ -696,45 +731,33 @@
                     const timeB = b.waktu && typeof b.waktu.toMillis === 'function' ? b.waktu.toMillis() : 0;
                     return timeB - timeA;
                 });
-                
+
                 ordersTableBody.innerHTML = '';
                 if (combinedOrders.length === 0) {
                     ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan untuk kategori ini.</td></tr>`;
                     return;
                 }
-                
+
                 combinedOrders.forEach(order => {
-                    const isResellerOrder = order.type === 'reseller';
-                    let customerPhone = '';
-                    let customerName = order.nama || order.nama_pelanggan || '';
-                    let orderStatus = order.status || 'pending';
-
-                    // Dapatkan nomor HP yang benar
-                    if (isResellerOrder && resellerData[order.reseller_uid]) {
-                        customerPhone = resellerData[order.reseller_uid].nomor_hp || '';
-                    } else { // Pesanan umum atau pesanan lama RTDB
-                        customerPhone = order.nomor_hp || order.nomor || order.customer_phone || '';
-                    }
-
-                    const cleanedPhone = cleanPhoneNumber(customerPhone);
-                    const waStatus = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
+                    const cleanedPhone = cleanPhoneNumber(order.nomor_hp_raw);
+                    const waStatusText = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
                     const waClass = order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive';
-                    
-                    const orderOriginBadge = order.collection === 'pesananRTDB' ? `<span class="badge bg-danger">RTDB</span>` : (isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`);
+
+                    const orderOriginBadge = order.collection === 'pesananRTDB' ? `<span class="badge bg-danger">RTDB</span>` : (order.type === 'reseller' ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`);
 
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${order.id}</td>
                         <td>${order.produk || 'N/A'}</td>
-                        <td>${orderOriginBadge} ${customerName || 'N/A'}</td>
+                        <td>${orderOriginBadge} ${order.nama || 'N/A'}</td>
                         <td>
                             ${cleanedPhone ? `<a href="https://wa.me/${cleanedPhone}" target="_blank">${cleanedPhone}</a>` : 'N/A'}
                         </td>
-                        <td>${formatRupiah(order.harga_final || order.harga_beli || 0)}</td>
-                        <td><span class="status-badge status-${orderStatus.toLowerCase().replace(' ', '-')}">${orderStatus}</span></td>
+                        <td>${formatRupiah(order.harga_final || 0)}</td>
+                        <td><span class="status-badge status-${(order.status || 'pending').toLowerCase().replace(' ', '-')}">${order.status || 'Pending'}</span></td>
                         <td>
                             ${cleanedPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${order.collection}', '${order.id}', ${order.wa_aktif || false}, this)">
-                                <i class="fab fa-whatsapp"></i> ${waStatus}
+                                <i class="fab fa-whatsapp"></i> ${waStatusText}
                             </button>` : 'N/A'}
                         </td>
                         <td>
@@ -762,7 +785,7 @@
             if (confirm(`Yakin ingin mengubah status WA menjadi "${statusText}" untuk pesanan ${orderId}?`)) {
                 setButtonLoading(button, true);
                 try {
-                    if (collection === 'pesananRTDB') { 
+                    if (collection === 'pesananRTDB') {
                         await dbRT.ref('pesanan').child(orderId).update({ wa_aktif: newWaStatus });
                     } else {
                         await dbFS.collection(collection).doc(orderId).update({ wa_aktif: newWaStatus });
@@ -796,12 +819,12 @@
                 snapshot.forEach(childSnap => {
                     const testi = { id: childSnap.key, ...childSnap.val() };
                     const row = testimonialsTableBody.insertRow();
-                    const statusClass = testi.status.replace(' ', '-');
+                    const statusClass = (testi.status || 'pending').replace(' ', '-');
                     const isApproved = testi.status === 'disetujui';
                     row.innerHTML = `
                         <td>${testi.nama}</td>
                         <td>${testi.isi}</td>
-                        <td><span class="status-badge status-${statusClass}">${testi.status}</span></td>
+                        <td><span class="status-badge status-${statusClass}">${testi.status || 'pending'}</span></td>
                         <td>
                             ${!isApproved ?
                                 `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${testi.id}', this)">Setujui</button>` :
@@ -843,7 +866,7 @@
                 });
             }
         });
-        
+
         cancelTestimonialEditBtn.addEventListener('click', () => {
             testimonialForm.reset();
             currentTestimonialId = null;
@@ -862,7 +885,7 @@
                 }
             });
         }
-        
+
         async function approveTestimonial(id, button) {
             setButtonLoading(button, true);
             try {
@@ -920,7 +943,7 @@
                 });
             });
         }
-        
+
         faqForm.addEventListener('submit', (e) => {
             e.preventDefault();
             setButtonLoading(faqFormBtn, true);
@@ -949,18 +972,18 @@
                 });
             }
         });
-        
+
         function editFaq(id) {
             dbRT.ref('faq/' + id).once('value').then(snapshot => {
                 const item = snapshot.val();
                 if (item) {
                     document.getElementById('faq_q').value = item.q;
                     document.getElementById('faq_a').value = item.a;
-                    currentFagId = id;
+                    currentFaqId = id; // Perbaikan: gunakan currentFaqId
                 }
             });
         }
-        
+
         async function deleteFaq(id, button) {
             if (confirm('Yakin ingin menghapus FAQ ini?')) {
                 setButtonLoading(button, true);
@@ -1005,7 +1028,7 @@
                 });
             });
         }
-        
+
         paymentForm.addEventListener('submit', (e) => {
             e.preventDefault();
             setButtonLoading(paymentFormBtn, true);
@@ -1039,7 +1062,7 @@
                 });
             }
         });
-        
+
         function editPayment(id) {
             dbFS.collection('infoPembayaran').doc(id).get().then(doc => {
                 if (doc.exists) {
@@ -1051,7 +1074,7 @@
                 }
             });
         }
-        
+
         async function deletePayment(id, button) {
             if (confirm('Yakin ingin menghapus info pembayaran ini?')) {
                 setButtonLoading(button, true);
