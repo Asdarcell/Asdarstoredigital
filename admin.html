@@ -52,7 +52,7 @@
         .img-proof { max-width: 100%; height: auto; display: block; margin-top: 10px; }
         .badge-info { background-color: #17a2b8; color: white; }
         .badge-warning { background-color: #ffc107; color: black; }
-        /* Style baru untuk tombol WA Aktif */
+        /* Style untuk tombol WA Aktif */
         .btn-wa-active {
             background-color: #25d366; /* WhatsApp green */
             color: white;
@@ -70,6 +70,26 @@
         .btn-wa-inactive:hover {
             background-color: #5a6268;
             border-color: #5a6268;
+        }
+        /* Style untuk modal detail pesanan */
+        #orderDetailModal .modal-body {
+            padding-top: 0;
+        }
+        #orderDetailModal .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+        #orderDetailModal .list-group-item:last-child {
+            border-bottom: none;
+        }
+        #orderDetailModal .list-group-item strong {
+            color: var(--primary);
+        }
+        #orderDetailModal .modal-footer .btn {
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -163,10 +183,11 @@
                                 <th>ID</th>
                                 <th>Produk</th>
                                 <th>Pelanggan</th>
-                                <th>No. HP</th> <th>Harga</th>
+                                <th>No. HP</th>
+                                <th>Harga</th>
                                 <th>Status</th>
-                                <th>WA Aktif</th> <th>Aksi</th>
-                            </tr>
+                                <th>WA Aktif</th>
+                                <th>Aksi</th> </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -268,6 +289,45 @@
         </div>
     </div>
 
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailModalLabel">Detail Pesanan <span id="modalOrderId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>ID Pesanan:</strong> <span id="detail-id"></span></li>
+                                <li class="list-group-item"><strong>Jenis Pesanan:</strong> <span id="detail-type"></span></li>
+                                <li class="list-group-item"><strong>Nama Pelanggan:</strong> <span id="detail-customer-name"></span></li>
+                                <li class="list-group-item"><strong>No. HP:</strong> <span id="detail-customer-phone"></span></li>
+                                <li class="list-group-item"><strong>Produk:</strong> <span id="detail-product"></span></li>
+                                <li class="list-group-item"><strong>Harga:</strong> <span id="detail-price"></span></li>
+                                <li class="list-group-item"><strong>Jumlah:</strong> <span id="detail-quantity"></span></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Total Harga:</strong> <span id="detail-final-price"></span></li>
+                                <li class="list-group-item"><strong>Status:</strong> <span id="detail-status"></span></li>
+                                <li class="list-group-item"><strong>WA Aktif:</strong> <span id="detail-wa-active"></span></li>
+                                <li class="list-group-item"><strong>Waktu Pesanan:</strong> <span id="detail-time"></span></li>
+                                <li class="list-group-item"><strong>Metode Pembayaran:</strong> <span id="detail-payment-method"></span></li>
+                                <li class="list-group-item"><strong>Bukti Pembayaran:</strong> <span id="detail-payment-proof"></span></li>
+                                <li class="list-group-item"><strong>Catatan:</strong> <span id="detail-notes"></span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="modal-footer-actions">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -342,7 +402,7 @@
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
-            loadBanners(); // Memuat banner
+            loadBanners();
         });
 
         document.getElementById('products-tab').addEventListener('click', loadProducts);
@@ -352,7 +412,7 @@
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-        document.getElementById('banners-tab').addEventListener('click', loadBanners); // Event listener untuk tab banner
+        document.getElementById('banners-tab').addEventListener('click', loadBanners);
         document.getElementById('order-filter').addEventListener('change', loadOrders);
 
 
@@ -606,10 +666,14 @@
 
         // =================================== PESANAN (Firestore & Realtime Database) ===================================
         const ordersTableBody = document.querySelector('#orders-table tbody');
+        const orderDetailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+
+        // Data cache untuk menyimpan detail pesanan yang sudah dimuat, agar tidak perlu request berulang
+        const orderCache = {};
 
         function loadOrders() {
             const filter = document.getElementById('order-filter').value;
-            ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>'; // Tambah colspan karena ada kolom baru
+            ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
             
             if (filter === 'all') {
                 loadCombinedOrders();
@@ -623,14 +687,13 @@
                 query = dbFS.collection('pesananReseller');
             }
 
-            query.orderBy('waktu', 'desc').onSnapshot(async snapshot => { // Menggunakan async di callback snapshot
+            query.orderBy('waktu', 'desc').onSnapshot(async snapshot => {
                 ordersTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan untuk kategori ini.</td></tr>`;
                     return;
                 }
 
-                // Ambil data reseller untuk pesanan reseller jika diperlukan
                 const resellerData = {};
                 if (filter === 'reseller') {
                     const resellerSnap = await dbFS.collection('resellers').get();
@@ -648,12 +711,13 @@
                     let waClass = order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive';
 
                     if (isResellerOrder && resellerData[order.reseller_uid]) {
-                        customerPhone = resellerData[order.reseller_uid].nomor_hp || ''; // Ambil nomor HP dari data reseller
-                        // Asumsi status WA reseller tidak disimpan di pesanan, hanya di data reseller.
-                        // Jika Anda menyimpan status WA di pesanan reseller, sesuaikan di sini.
+                        customerPhone = resellerData[order.reseller_uid].nomor_hp || '';
                     } else if (!isResellerOrder) {
-                        customerPhone = order.nomor_hp || ''; // Ambil nomor HP dari pesanan umum
+                        customerPhone = order.nomor_hp || '';
                     }
+
+                    // Tambahkan order ke cache
+                    orderCache[order.id] = { ...order, type: isResellerOrder ? 'reseller' : 'umum', customerPhone: customerPhone };
 
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
@@ -671,14 +735,13 @@
                             </button>` : 'N/A'}
                         </td>
                         <td>
-                            ${!isResellerOrder ? `
-                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
-                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
+                            <button class="btn btn-info btn-sm" onclick="showOrderDetail('${order.id}')">Kelola</button>
                         </td>
                     `;
                 });
             }, error => {
                 ordersTableBody.innerHTML = `<tr><td colspan="8" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
+                console.error("Error loading orders: ", error);
             });
         }
         
@@ -690,7 +753,6 @@
                 const [umumSnap, resellerSnap] = await Promise.all([umumRef.get(), resellerRef.get()]);
                 const combinedOrders = [];
 
-                // Ambil data reseller terlebih dahulu untuk lookup nomor HP
                 const resellerData = {};
                 const rSnap = await dbFS.collection('resellers').get();
                 rSnap.forEach(doc => {
@@ -701,7 +763,6 @@
                 resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
                 
                 combinedOrders.sort((a, b) => {
-                    // Pastikan 'waktu' adalah objek Timestamp sebelum memanggil toMillis()
                     const timeA = a.waktu && typeof a.waktu.toMillis === 'function' ? a.waktu.toMillis() : 0;
                     const timeB = b.waktu && typeof b.waktu.toMillis === 'function' ? b.waktu.toMillis() : 0;
                     return timeB - timeA;
@@ -726,6 +787,9 @@
                         customerPhone = order.nomor_hp || '';
                     }
 
+                    // Tambahkan order ke cache
+                    orderCache[order.id] = { ...order, customerPhone: customerPhone };
+
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${order.id}</td>
@@ -742,9 +806,7 @@
                             </button>` : 'N/A'}
                         </td>
                         <td>
-                            ${!isResellerOrder ? `
-                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
-                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
+                            <button class="btn btn-info btn-sm" onclick="showOrderDetail('${order.id}')">Kelola</button>
                         </td>
                     `;
                 });
@@ -761,6 +823,8 @@
                 try {
                     await dbFS.collection(collection).doc(orderId).update({ status: newStatus });
                     showToast('Status pesanan berhasil diubah!');
+                    // Tutup modal setelah update jika berhasil
+                    orderDetailModal.hide();
                 } catch (error) {
                     showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
                 } finally {
@@ -769,7 +833,6 @@
             }
         }
 
-        // Fungsi baru untuk mengubah status WA Aktif
         async function toggleWaStatus(collection, orderId, currentWaStatus, button) {
             const newWaStatus = !currentWaStatus;
             const statusText = newWaStatus ? 'Aktif' : 'Belum Aktif';
@@ -782,9 +845,96 @@
                     showToast('Gagal mengubah status WA: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
-                    // loadOrders() akan dipanggil otomatis oleh onSnapshot, jadi tidak perlu panggil ulang di sini
+                    // Jika modal terbuka, perbarui tampilannya
+                    if (document.getElementById('modalOrderId').textContent === orderId) {
+                        showOrderDetail(orderId); // Panggil ulang untuk refresh modal
+                    }
                 }
             }
+        }
+
+        // Fungsi baru untuk menampilkan detail pesanan di modal
+        async function showOrderDetail(orderId) {
+            const order = orderCache[orderId]; // Ambil dari cache
+            if (!order) {
+                showToast('Detail pesanan tidak ditemukan di cache. Mencoba memuat ulang...', 'warning');
+                // Fallback: coba muat ulang dari database jika tidak ada di cache
+                const umumDoc = await dbFS.collection('pesananUmum').doc(orderId).get();
+                if (umumDoc.exists) {
+                    orderCache[orderId] = { id: umumDoc.id, ...umumDoc.data(), type: 'umum', customerPhone: umumDoc.data().nomor_hp || '' };
+                } else {
+                    const resellerDoc = await dbFS.collection('pesananReseller').doc(orderId).get();
+                    if (resellerDoc.exists) {
+                        const reseller = await dbFS.collection('resellers').doc(resellerDoc.data().reseller_uid).get();
+                        orderCache[orderId] = { id: resellerDoc.id, ...resellerDoc.data(), type: 'reseller', customerPhone: reseller.data()?.nomor_hp || '' };
+                    } else {
+                        showToast('Detail pesanan tidak ditemukan.', 'danger');
+                        return;
+                    }
+                }
+                order = orderCache[orderId];
+            }
+            
+            // Isi detail modal
+            document.getElementById('modalOrderId').textContent = order.id;
+            document.getElementById('detail-id').textContent = order.id;
+            document.getElementById('detail-type').textContent = order.type === 'umum' ? 'Pembeli Umum' : 'Reseller';
+            document.getElementById('detail-customer-name').textContent = order.nama || order.nama_pelanggan || 'N/A';
+            document.getElementById('detail-customer-phone').innerHTML = order.customerPhone ? `<a href="https://wa.me/${order.customerPhone.replace(/\D/g, '')}" target="_blank">${order.customerPhone}</a>` : 'N/A';
+            document.getElementById('detail-product').textContent = order.produk || 'N/A';
+            document.getElementById('detail-price').textContent = formatRupiah(order.harga_beli || 0); // Harga per item
+            document.getElementById('detail-quantity').textContent = order.jumlah || 1; // Default quantity 1 jika tidak ada
+            document.getElementById('detail-final-price').textContent = formatRupiah(order.harga_final || order.harga_beli || 0);
+            document.getElementById('detail-status').innerHTML = `<span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span>`;
+            document.getElementById('detail-wa-active').innerHTML = order.customerPhone ? `<button class="btn btn-sm ${order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive'}" onclick="toggleWaStatus('${order.type === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
+                                <i class="fab fa-whatsapp"></i> ${order.wa_aktif === true ? 'Aktif' : 'Belum Aktif'}
+                            </button>` : 'N/A';
+            document.getElementById('detail-time').textContent = order.waktu ? new Date(order.waktu.toMillis()).toLocaleString() : 'N/A';
+            document.getElementById('detail-payment-method').textContent = order.metode_pembayaran || 'N/A';
+            document.getElementById('detail-payment-proof').innerHTML = order.bukti_pembayaran_url ? `<a href="${order.bukti_pembayaran_url}" target="_blank">Lihat Bukti</a>` : 'Tidak Ada';
+            document.getElementById('detail-notes').textContent = order.catatan || 'Tidak ada catatan';
+
+            // Bersihkan dan tambahkan tombol aksi ke footer modal
+            const modalFooterActions = document.getElementById('modal-footer-actions');
+            modalFooterActions.innerHTML = ''; // Hapus tombol lama
+
+            // Hanya tampilkan tombol "Selesai" dan "Tolak" untuk pesanan umum
+            if (order.type === 'umum') {
+                if (order.status !== 'Selesai' && order.status !== 'Ditolak') {
+                    const completeButton = document.createElement('button');
+                    completeButton.className = 'btn btn-success btn-sm';
+                    completeButton.textContent = 'Selesai';
+                    completeButton.dataset.originalText = 'Selesai'; // Untuk setButtonLoading
+                    completeButton.onclick = async () => {
+                        await updateOrderStatus('pesananUmum', order.id, 'Selesai', completeButton);
+                        // Setelah update, status di modal akan diperbarui oleh refresh loadOrders()
+                        // Atau bisa juga update manual elemen di modal
+                        document.getElementById('detail-status').innerHTML = `<span class="status-badge status-selesai">Selesai</span>`;
+                        completeButton.disabled = true; // Disable tombol setelah selesai
+                        rejectButton.disabled = true; // Disable tombol tolak juga
+                    };
+                    modalFooterActions.appendChild(completeButton);
+
+                    const rejectButton = document.createElement('button');
+                    rejectButton.className = 'btn btn-danger btn-sm';
+                    rejectButton.textContent = 'Tolak';
+                    rejectButton.dataset.originalText = 'Tolak'; // Untuk setButtonLoading
+                    rejectButton.onclick = async () => {
+                        await updateOrderStatus('pesananUmum', order.id, 'Ditolak', rejectButton);
+                        document.getElementById('detail-status').innerHTML = `<span class="status-badge status-ditolak">Ditolak</span>`;
+                        rejectButton.disabled = true; // Disable tombol setelah ditolak
+                        completeButton.disabled = true; // Disable tombol selesai juga
+                    };
+                    modalFooterActions.appendChild(rejectButton);
+                } else {
+                     modalFooterActions.innerHTML += `<button class="btn btn-secondary btn-sm" disabled>Sudah ${order.status}</button>`;
+                }
+            } else {
+                modalFooterActions.innerHTML += `<button class="btn btn-secondary btn-sm" disabled>Aksi tidak tersedia untuk pesanan reseller langsung</button>`;
+            }
+
+            // Tampilkan modal
+            orderDetailModal.show();
         }
 
 
@@ -1172,7 +1322,6 @@
                 }
             }
         }
-
     </script>
 </body>
 </html>
