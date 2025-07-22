@@ -602,11 +602,11 @@
                 let realtimeOrders = [];
                 umumSnap.forEach(childSnap => {
                     const data = childSnap.val();
-                    if (data.tipe_pesanan === 'Umum') {
+                    if (data.tipe_pesanan === 'Umum') { // Pastikan field ini ada dan sesuai
                          realtimeOrders.push({
                             id: childSnap.key,
                             produk: data.nama_produk,
-                            nama_pelanggan: data.nama,
+                            nama_pelanggan: data.nama, // Untuk pesanan umum, nama pelanggan disimpan di field 'nama'
                             nomor_hp: data.nomor_hp,
                             wa_aktif: data.wa_aktif,
                             harga_final: parseInt(data.harga),
@@ -620,6 +620,9 @@
                 allOrdersData = [...firestoreOrders, ...realtimeOrders].filter(order => order.waktu !== null);
                 allOrdersData.sort((a, b) => b.waktu.getTime() - a.waktu.getTime());
                 
+                // Debugging: Log all loaded orders
+                console.log("All orders loaded:", allOrdersData);
+
                 renderOrders(allOrdersData);
             } catch (error) {
                 ordersTableBody.innerHTML = `<tr><td colspan="8" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
@@ -629,7 +632,12 @@
         
         function renderOrders(orders) {
             const filterValue = orderFilter.value;
+            // Debugging: Log filter value
+            console.log("Filter value selected:", filterValue);
+
             const filteredOrders = orders.filter(order => {
+                // Debugging: Log each order's type during filtering
+                console.log("Checking order:", order.id, "Type:", order.type, "Filter:", filterValue); 
                 if (filterValue === 'all') return true;
                 return order.type === filterValue; 
             });
@@ -654,7 +662,7 @@
                 
                 const customerName = isRealtimeOrder ? order.nama_pelanggan : (order.nama_pelanggan || order.nama_reseller);
                 const contactNumber = isRealtimeOrder ? (order.nomor_hp || 'N/A') : (order.nomor_pelanggan || 'N/A');
-                const waActive = isRealtimeOrder ? (order.wa_aktif || 'N/A') : (order.wa_aktif || 'N/A'); // Asumsi Firestore juga bisa punya wa_aktif
+                const waActive = isRealtimeOrder ? (order.wa_aktif || 'N/A') : (order.wa_aktif || 'N/A');
 
                 const price = formatRupiah(isRealtimeOrder ? order.harga_final : (order.harga_beli || order.harga_final));
 
