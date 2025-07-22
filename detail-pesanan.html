@@ -23,7 +23,7 @@
         .container { margin-top: 30px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
         .list-group-item { background: transparent; border-color: var(--border); color: var(--text); }
-        .status-badge { padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.8rem; }
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.8rem; transition: background-color 0.3s ease; }
         .status-pending, .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
         .status-diproses { background-color: #3498db; color: white; }
         .status-selesai { background-color: #28a745; color: white; }
@@ -68,12 +68,10 @@
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
     
-    // Simpan data pesanan saat dimuat
     let currentOrderDoc;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    // Fungsi utama untuk memuat detail pesanan berdasarkan ID dari URL
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
@@ -84,7 +82,6 @@
         }
 
         try {
-            // Periksa di kedua koleksi (pesanan umum dan reseller)
             let doc = await dbFS.collection('pesananUmum').doc(orderId).get();
             if (!doc.exists) {
                 doc = await dbFS.collection('pesananReseller').doc(orderId).get();
@@ -105,10 +102,8 @@
         }
     }
 
-    // Fungsi untuk menampilkan detail pesanan
     function renderOrderDetails(orderId, data) {
         let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
-        
         const customerInfo = data.nama_reseller ? `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan}` : `<strong>Pelanggan:</strong> ${data.nama_pelanggan}`;
         const price = formatRupiah(data.harga_final || data.harga_beli);
 
@@ -120,8 +115,7 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
                         <li class="list-group-item">${customerInfo}</li>
-                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}</li>
-                        <li class="list-group-item"><strong>Nomor WhatsApp Kontak:</strong> ${data.nomor_whatsapp_kontak || 'Belum Tersedia'}</li>
+                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}</li>
                         <li class="list-group-item"><strong>Produk:</strong> ${data.produk}</li>
                         <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
                         <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status}</span></li>
@@ -144,8 +138,8 @@
 
                     <div class="mb-3">
                         <p class="mb-2"><strong>Unggah Bukti Pengiriman:</strong></p>
-                        <input type="file" class="form-control" id="buktiPengirimanFile">
-                        <button class="btn btn-info btn-sm mt-2" onclick="uploadAdminProof()">Unggah & Kirim WA</button>
+                        <input type="file" class="form-control" id="buktiPengirimanFile" accept="image/*">
+                        <button class="btn btn-info btn-sm mt-2" onclick="uploadAdminProof(event)">Unggah & Simpan</button>
                     </div>
 
                     <div class="mt-4">
@@ -176,7 +170,7 @@
         `;
     }
 
-    // Fungsi untuk mengubah status pesanan
+    // --- FUNGSI UPDATE STATUS VERSI BARU (TANPA RELOAD) ---
     async function updateStatus(newStatus) {
         if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) {
             return;
@@ -187,26 +181,46 @@
                 status: newStatus,
                 waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp()
             });
+            
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
-            location.reload(); 
+
+            // 1. Temukan elemen badge status di halaman
+            const statusBadge = document.querySelector('.status-badge');
+            if (statusBadge) {
+                // 2. Perbarui teks status secara langsung
+                statusBadge.textContent = newStatus;
+                
+                // 3. Hapus kelas status lama dan tambahkan kelas baru untuk mengubah warna
+                const oldClass = statusBadge.className.split(' ').find(c => c.startsWith('status-'));
+                if (oldClass) {
+                    statusBadge.classList.remove(oldClass);
+                }
+                const newClass = `status-${newStatus.toLowerCase().replace(/ /g, '-')}`;
+                statusBadge.classList.add(newClass);
+            }
         } catch (error) {
             console.error("Error updating status:", error);
             alert("Gagal mengubah status. Silakan coba lagi.");
         }
     }
 
-    // FUNGSI INI DIUBAH: Mengunggah bukti pengiriman & Otomatis Kirim WA
-    async function uploadAdminProof() {
+    // --- FUNGSI UPLOAD BUKTI VERSI BARU (TANPA RELOAD & DENGAN FEEDBACK) ---
+    async function uploadAdminProof(event) {
         const fileInput = document.getElementById('buktiPengirimanFile');
         const file = fileInput.files[0];
+        const uploadButton = event.target; // Mengambil elemen tombol yang diklik
 
         if (!file) {
             alert("Pilih file gambar untuk diunggah.");
             return;
         }
 
+        // Menonaktifkan tombol dan mengubah teks untuk memberi feedback
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah...';
+
         const orderId = currentOrderDoc.id;
-        const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}`);
+        const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}-${file.name}`);
         
         try {
             const uploadTask = await storageRef.put(file);
@@ -217,21 +231,28 @@
                 waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            alert("Bukti pengiriman berhasil diunggah!");
+            alert("Bukti pengiriman berhasil diunggah dan disimpan!");
             
-            // Perbarui data pesanan lokal setelah upload agar generateWhatsappMessage punya URL terbaru
-            currentOrderDoc = await currentOrderDoc.ref.get(); 
-            
-            // Panggil fungsi pengiriman WhatsApp setelah bukti diunggah
-            generateWhatsappMessage(true); // true menandakan ini setelah upload bukti
-            location.reload(); // Muat ulang halaman untuk menampilkan bukti baru
+            // Perbarui UI secara langsung tanpa reload
+            const proofContainer = document.getElementById('bukti-pengiriman-container');
+            if (proofContainer) {
+                proofContainer.innerHTML = `
+                    <a href="${downloadURL}" target="_blank">
+                        <img src="${downloadURL}" alt="Bukti Pengiriman" class="img-fluid img-proof">
+                    </a>
+                `;
+            }
         } catch (error) {
             console.error("Error uploading proof:", error);
             alert("Gagal mengunggah bukti pengiriman. Silakan coba lagi.");
+        } finally {
+            // Mengembalikan tombol ke keadaan semula setelah proses selesai (baik berhasil maupun gagal)
+            uploadButton.disabled = false;
+            uploadButton.innerHTML = 'Unggah & Simpan';
+            fileInput.value = ''; // Mengosongkan input file
         }
     }
 
-    // Fungsi untuk menghapus pesanan
     async function deleteOrder() {
         if (!confirm("PERINGATAN: Apakah Anda yakin ingin menghapus pesanan ini secara permanen? Aksi ini tidak bisa dibatalkan.")) {
             return;
@@ -247,62 +268,30 @@
         }
     }
 
-    // FUNGSI INI DIUBAH: Untuk membuat dan membuka pesan WhatsApp
-    function generateWhatsappMessage(isAfterProofUpload = false) {
-        if (!currentOrderDoc) {
-            alert("Detail pesanan belum dimuat.");
-            return;
-        }
+    function generateWhatsappMessage() {
+        if (!currentOrderDoc) return;
         const orderId = currentOrderDoc.id;
         const orderData = currentOrderDoc.data();
         
-        // Ambil nomor WhatsApp dari field khusus 'nomor_whatsapp_kontak'
-        let whatsappNumber = orderData.nomor_whatsapp_kontak; 
-
-        if (!whatsappNumber) {
-            alert("Nomor WhatsApp kontak tidak ditemukan untuk pesanan ini. Pastikan field 'nomor_whatsapp_kontak' terisi di Firebase.");
-            return;
-        }
-
-        // Pastikan format nomor diawali dengan 62 (kode negara Indonesia)
-        // Ini akan mengonversi '08xxxx' menjadi '628xxxx'
-        if (whatsappNumber.startsWith('0')) {
-            whatsappNumber = '62' + whatsappNumber.substring(1);
-        } 
-        // Tambahan: jika sudah '62' atau format internasional lainnya, biarkan saja
-        else if (!whatsappNumber.startsWith('62') && !whatsappNumber.startsWith('+')) { 
-            // Ini untuk kasus jika nomor langsung diawali angka tanpa 0 atau +
-            // Misalnya 81234567890, langsung diubah jadi 6281234567890
-            whatsappNumber = '62' + whatsappNumber;
-        }
-
-        const namaPenerima = orderData.nama_reseller || orderData.nama_pelanggan;
+        const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
         const produk = orderData.produk;
-        const status = orderData.status;
-        const proofUrl = orderData.bukti_pengiriman_url; // Ambil URL bukti dari data pesanan terbaru
+        const status = document.querySelector('.status-badge').textContent; // Ambil status terbaru dari UI
 
-        // Buat link ke halaman status pesanan
         const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
         
-        let message = `Halo ${namaPenerima},
-Pesananmu dengan ID *${orderId}* sudah *${status}*.
+        const message = `Halo ${namaPelanggan},
+Pesananmu dengan ID ${orderId} sudah ${status}.
 
 Detail Pesanan:
 - Produk: ${produk}
-- Nomor HP / ID Game: ${orderData.nomor_pelanggan || 'N/A'}
-- Status: ${status}`;
+- Status: ${status}
 
-        if (proofUrl && isAfterProofUpload) { // Tambahkan bukti hanya jika diunggah dan fungsi dipanggil setelah upload
-            message += `\n- Bukti Pengiriman: ${proofUrl}`;
-        }
-
-        message += `\n
-Lihat status terbaru pesananmu di:
+Lihat status terbaru dan bukti pengiriman di:
 ${statusLink}
 
 Terima kasih atas pesanannya!`;
         
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/${orderData.nomor_pelanggan}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
 
