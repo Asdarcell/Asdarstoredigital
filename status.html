@@ -154,7 +154,7 @@
                     <button class="btn btn-success mt-2 w-100" id="sendWhatsappDoneBtn"><i class="fab fa-whatsapp"></i> Kirim Notif WA Pesanan Selesai</button>
                     <small class="form-text text-muted">Pastikan bukti selesai sudah diunggah sebelum mengirim notifikasi.</small>
                 </div>
-                
+
                 <hr>
                 <div class="d-flex justify-content-between align-items-center">
                     <button type="button" class="btn btn-warning" id="saveOrderChangesBtn">Simpan Perubahan</button>
@@ -246,9 +246,9 @@
                 cleaned = cleaned.substring(1); // Hapus '+'
             }
             // Jika sudah 62 atau format lain yang valid, biarkan saja.
-            // Jika masih belum 62 dan cukup panjang, asumsikan itu nomor lokal yang perlu 62
+            // Jika masih belum 62 dan cukup panjang (misal 8 digit), asumsikan itu nomor lokal yang perlu 62
             else if (!cleaned.startsWith('62') && cleaned.length >= 8) {
-                 cleaned = '62' + cleaned; 
+                 cleaned = '62' + cleaned;
             }
             return cleaned;
         }
@@ -331,19 +331,20 @@
                     orderDoc = await dbRT.ref('pesanan/' + orderId).once('value'); // Jalur Realtime DB: 'pesanan'
                     orderData = orderDoc.val();
                     if (!orderData) throw new Error("Pesanan tidak ditemukan di Realtime Database.");
-                    
+
                     // Parse waktu dari string ke Date object, lalu ke Firestore Timestamp
                     let waktuParsed = null;
                     if (orderData.waktu) {
                         try {
+                            // RTDB 'waktu' format: "2025-07-18T16:23:15.847Z"
                             waktuParsed = firebase.firestore.Timestamp.fromDate(new Date(orderData.waktu));
                         } catch (e) {
                             console.error("Error parsing RTDB timestamp:", orderData.waktu, e);
                         }
                     }
                     orderData.waktu = waktuParsed;
-                    
-                    customerPhone = orderData.nomor || orderData.no_hp || orderData.customer_phone || '';
+
+                    customerPhone = orderData.nomor || orderData.no_hp || orderData.customer_phone || ''; // Prioritaskan 'nomor' untuk RTDB
                     idGame = orderData.id || orderData.id_game || orderData.username_game || ''; // Prioritaskan 'id' untuk RTDB
                     wa_aktif_status = orderData.wa_aktif || false;
                     orderType = 'umum'; // Asumsi pesanan di RTDB adalah umum
@@ -363,6 +364,7 @@
                     }
                     idGame = orderData.id_game || orderData.username_game || '';
                     wa_aktif_status = orderData.wa_aktif || false;
+                    orderType = collectionName === 'pesananUmum' ? 'umum' : 'reseller'; // Set orderType based on collection
                 }
 
                 currentOrderData = { id: orderId, collection: collectionName, type: orderType, ...orderData, customerPhone: cleanPhoneNumber(customerPhone), idGame: idGame, wa_aktif: wa_aktif_status };
@@ -371,9 +373,9 @@
                 detailIdSpan.textContent = currentOrderData.id;
                 detailTypeSpan.textContent = currentOrderData.type === 'umum' ? 'Pembeli Umum' : 'Reseller';
                 detailProductSpan.textContent = currentOrderData.produk || 'N/A';
-                detailPriceSpan.textContent = formatRupiah(currentOrderData.harga_beli || 0); // Harga per item
+                detailPriceSpan.textContent = formatRupiah(currentOrderData.harga_beli || currentOrderData.harga_asli || 0); // Harga per item
                 detailQuantitySpan.textContent = currentOrderData.jumlah || 1;
-                detailFinalPriceSpan.textContent = formatRupiah(currentOrderData.harga_final || currentOrderData.harga_beli || 0);
+                detailFinalPriceSpan.textContent = formatRupiah(currentOrderData.harga_final || currentOrderData.harga_beli || currentOrderData.harga_asli || 0);
                 detailStatusSpan.innerHTML = `<span class="status-badge status-${(currentOrderData.status || 'pending').toLowerCase().replace(' ', '-')}">${currentOrderData.status || 'Pending'}</span>`;
                 detailTimeSpan.textContent = currentOrderData.waktu ? new Date(currentOrderData.waktu.toMillis()).toLocaleString() : 'N/A';
                 detailPaymentMethodSpan.textContent = currentOrderData.metode_pembayaran || 'N/A';
@@ -382,7 +384,7 @@
                 editCustomerNameInput.value = currentOrderData.nama || currentOrderData.nama_pelanggan || '';
                 editCustomerPhoneInput.value = currentOrderData.customerPhone; // Gunakan nomor HP yang sudah bersih
                 editIdGameInput.value = currentOrderData.idGame;
-                
+
                 // Link WA
                 if (currentOrderData.customerPhone) {
                     btnWaLink.onclick = () => window.open(`https://wa.me/${currentOrderData.customerPhone}`, '_blank');
@@ -423,12 +425,12 @@
 
                 // Catatan
                 editNotesTextarea.value = currentOrderData.catatan || '';
-                adminNotesTextarea.value = currentOrderData.admin_notes || ''; 
+                adminNotesTextarea.value = currentOrderData.admin_notes || '';
 
                 // Tombol Kirim WA Selesai
                 sendWhatsappDoneBtn.dataset.originalText = sendWhatsappDoneBtn.textContent;
                 // Aktifkan tombol jika ada nomor HP DAN ada bukti selesai
-                if (currentOrderData.customerPhone && currentOrderData.bukti_selesai_url) { 
+                if (currentOrderData.customerPhone && currentOrderData.bukti_selesai_url) {
                     sendWhatsappDoneBtn.disabled = false;
                 } else {
                     sendWhatsappDoneBtn.disabled = true;
@@ -455,7 +457,8 @@
             statusActionsDiv.innerHTML = ''; // Clear existing buttons
 
             // Tombol 'Selesai' dan 'Tolak' hanya untuk pesanan umum dari Firestore atau RTDB
-            if (currentOrderData.type === 'umum') { 
+            // Pesanan Reseller dikelola oleh reseller itu sendiri, bukan admin mengubah statusnya secara langsung di sini
+            if (currentOrderData.type === 'umum' || currentOrderData.collection === 'pesananRTDB') {
                 if (currentOrderData.status !== 'Selesai' && currentOrderData.status !== 'Ditolak') {
                     const completeButton = document.createElement('button');
                     completeButton.className = 'btn btn-success btn-sm ms-2';
@@ -483,7 +486,7 @@
             if (confirmation) {
                 setButtonLoading(button, true);
                 try {
-                    if (collectionName === 'pesananRTDB') { 
+                    if (collectionName === 'pesananRTDB') {
                         await dbRT.ref('pesanan').child(orderId).update({ status: newStatus });
                     } else {
                         await dbFS.collection(collectionName).doc(orderId).update({ status: newStatus });
@@ -504,7 +507,7 @@
             if (confirm(`Yakin ingin mengubah status WA menjadi "${statusText}" untuk pesanan ${orderId}?`)) {
                 setButtonLoading(button, true);
                 try {
-                    if (collectionName === 'pesananRTDB') { 
+                    if (collectionName === 'pesananRTDB') {
                         await dbRT.ref('pesanan').child(orderId).update({ wa_aktif: newWaStatus });
                     } else {
                         await dbFS.collection(collectionName).doc(orderId).update({ wa_aktif: newWaStatus });
@@ -550,7 +553,7 @@
                             bukti_selesai_url: downloadURL,
                             wa_aktif: true // Otomatis aktifkan WA saat bukti diupload
                         };
-                        if (collectionName === 'pesananRTDB') { 
+                        if (collectionName === 'pesananRTDB') {
                             await dbRT.ref('pesanan').child(orderId).update(updateData);
                         } else {
                             await dbFS.collection(collectionName).doc(orderId).update(updateData);
@@ -577,18 +580,32 @@
             const updatedData = {
                 nama: editCustomerNameInput.value,
                 nama_pelanggan: editCustomerNameInput.value, // Kompatibilitas
-                nomor_hp: cleanPhoneNumber(editCustomerPhoneInput.value), 
-                nomor: cleanPhoneNumber(editCustomerPhoneInput.value), // Kompatibilitas untuk RTDB
-                customer_phone: cleanPhoneNumber(editCustomerPhoneInput.value), // Kompatibilitas
-                id_game: editIdGameInput.value,
-                id: editIdGameInput.value, // Kompatibilitas untuk RTDB
-                username_game: editIdGameInput.value, // Kompatibilitas
-                // catatan: editNotesTextarea.value, // Catatan buyer, seharusnya readonly
                 admin_notes: adminNotesTextarea.value
             };
 
+            // Tambahkan nomor HP dan ID Game hanya jika ada perubahan pada input,
+            // atau jika data sebelumnya tidak ada (untuk menjaga field yang ada di RTDB)
+            const cleanedPhone = cleanPhoneNumber(editCustomerPhoneInput.value);
+            const idGameValue = editIdGameInput.value;
+
+            if (collectionName === 'pesananRTDB') {
+                updatedData.nomor = cleanedPhone; // Untuk RTDB, gunakan 'nomor'
+                updatedData.id = idGameValue; // Untuk RTDB, gunakan 'id'
+                // Juga update field lain yang mungkin ada untuk kompatibilitas
+                updatedData.no_hp = cleanedPhone;
+                updatedData.customer_phone = cleanedPhone;
+                updatedData.id_game = idGameValue;
+                updatedData.username_game = idGameValue;
+            } else { // Firestore
+                updatedData.nomor_hp = cleanedPhone;
+                updatedData.customer_phone = cleanedPhone; // Kompatibilitas
+                updatedData.id_game = idGameValue;
+                updatedData.username_game = idGameValue; // Kompatibilitas
+            }
+
+
             try {
-                if (collectionName === 'pesananRTDB') { 
+                if (collectionName === 'pesananRTDB') {
                     await dbRT.ref('pesanan').child(orderId).update(updatedData);
                 } else {
                     await dbFS.collection(collectionName).doc(orderId).update(updatedData);
@@ -603,10 +620,10 @@
         }
 
         function sendWhatsappOrderDone(order) {
-            const phoneNumber = cleanPhoneNumber(editCustomerPhoneInput.value); 
+            const phoneNumber = cleanPhoneNumber(editCustomerPhoneInput.value);
             const customerName = editCustomerNameInput.value || 'Pelanggan';
             const productName = order.produk || 'pesanan Anda';
-            const buktiSelesaiUrl = buktiSelesaiPreview.src || order.bukti_selesai_url; 
+            const buktiSelesaiUrl = buktiSelesaiPreview.src || order.bukti_selesai_url;
 
             if (!phoneNumber) {
                 showToast('Nomor HP pelanggan tidak ditemukan.', 'danger');
