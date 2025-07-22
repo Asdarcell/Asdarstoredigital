@@ -109,9 +109,8 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="orderFilterDropdown">
                         <li><a class="dropdown-item" href="#" data-filter="all">Semua Pesanan</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="umum">Pesanan Pembeli Biasa (Firestore)</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="umum">Pesanan Biasa (Realtime Database)</a></li>
                         <li><a class="dropdown-item" href="#" data-filter="reseller">Pesanan Reseller (Firestore)</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="rtdb">Pesanan Lama (Realtime Database)</a></li>
                     </ul>
                 </div>
             </div>
@@ -474,51 +473,8 @@
         let allOrders = [];
 
         try {
-            // Load from Firestore: pesananUmum
+            // Load from Realtime Database: pesanan (Pesanan Biasa)
             if (currentOrderFilter === 'all' || currentOrderFilter === 'umum') {
-                const umumSnapshot = await dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get();
-                umumSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    allOrders.push({
-                        id: doc.id,
-                        collectionType: 'pesananUmum',
-                        // Fleksibilitas membaca field
-                        customer_name: data.nama_pelanggan || data.customer_name || 'N/A',
-                        customer_phone: data.nomor_pelanggan || data.nomor_hp || data.nomor || data.customer_phone || 'N/A',
-                        game_id: data.id_game || data.id || data.username_game || data.game_id || 'N/A',
-                        product_name: data.produk || data.product_name || 'N/A',
-                        price: data.harga_final || data.harga_beli || data.price || 0,
-                        status: data.status || 'Belum Bayar',
-                        waktu: data.waktu ? data.waktu.toDate() : null,
-                        wa_aktif: data.wa_aktif === true // Pastikan boolean
-                    });
-                });
-            }
-
-            // Load from Firestore: pesananReseller
-            if (currentOrderFilter === 'all' || currentOrderFilter === 'reseller') {
-                const resellerSnapshot = await dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get();
-                resellerSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    allOrders.push({
-                        id: doc.id,
-                        collectionType: 'pesananReseller',
-                        // Fleksibilitas membaca field
-                        customer_name: data.nama_pelanggan || data.nama_reseller || data.customer_name || 'N/A', 
-                        customer_phone: data.nomor_pelanggan || data.nomor_hp || data.nomor || data.customer_phone || 'N/A',
-                        game_id: data.id_game || data.id || data.username_game || data.game_id || 'N/A',
-                        product_name: data.produk || data.product_name || 'N/A',
-                        price: data.harga_final || data.harga_beli || data.price || 0,
-                        status: data.status || 'Belum Bayar',
-                        waktu: data.waktu ? data.waktu.toDate() : null,
-                        isResellerOrder: true,
-                        wa_aktif: data.wa_aktif === true // Pastikan boolean
-                    });
-                });
-            }
-
-            // Load from Realtime Database: pesanan (lama)
-            if (currentOrderFilter === 'all' || currentOrderFilter === 'rtdb') {
                 const rtdbSnapshot = await dbRT.ref('pesanan').orderByChild('waktu').once('value');
                 rtdbSnapshot.forEach(childSnapshot => {
                     const data = childSnapshot.val();
@@ -532,8 +488,8 @@
                     
                     allOrders.push({
                         id: childSnapshot.key,
-                        collectionType: 'pesananRTDB',
-                        // Fleksibilitas membaca field untuk RTDB
+                        collectionType: 'pesananRTDB', // Menandai ini dari RTDB
+                        // Fleksibilitas membaca field untuk RTDB (pesanan biasa)
                         customer_name: data.nama_pelanggan || data.nama || data.customer_name || 'N/A', 
                         customer_phone: data.nomor_hp || data.nomor || data.customer_phone || 'N/A', 
                         game_id: data.id_game || data.id || data.username_game || data.game_id || 'N/A', 
@@ -541,7 +497,29 @@
                         price: data.harga || 0,
                         status: data.status || 'Belum Bayar',
                         waktu: waktuDate,
-                        wa_aktif: data.wa_aktif === true // Pastikan boolean
+                        wa_aktif: data.wa_aktif === true 
+                    });
+                });
+            }
+
+            // Load from Firestore: pesananReseller
+            if (currentOrderFilter === 'all' || currentOrderFilter === 'reseller') {
+                const resellerSnapshot = await dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get();
+                resellerSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    allOrders.push({
+                        id: doc.id,
+                        collectionType: 'pesananReseller', // Menandai ini dari Firestore Reseller
+                        // Fleksibilitas membaca field (pesanan reseller)
+                        customer_name: data.nama_pelanggan || data.nama_reseller || data.customer_name || 'N/A', 
+                        customer_phone: data.nomor_pelanggan || data.nomor_hp || data.nomor || data.customer_phone || 'N/A',
+                        game_id: data.id_game || data.id || data.username_game || data.game_id || 'N/A',
+                        product_name: data.produk || data.product_name || 'N/A',
+                        price: data.harga_final || data.harga_beli || data.price || 0,
+                        status: data.status || 'Belum Bayar',
+                        waktu: data.waktu ? data.waktu.toDate() : null,
+                        isResellerOrder: true, // Marker untuk reseller order
+                        wa_aktif: data.wa_aktif === true 
                     });
                 });
             }
@@ -625,8 +603,8 @@
         try {
             if (collectionType === 'pesananRTDB') {
                 await dbRT.ref(`pesanan/${orderId}`).update({ wa_aktif: newStatus });
-            } else { // Firestore
-                await dbFS.collection(collectionType).doc(orderId).update({ wa_aktif: newStatus });
+            } else if (collectionType === 'pesananReseller') { // Firestore Reseller
+                await dbFS.collection('pesananReseller').doc(orderId).update({ wa_aktif: newStatus });
             }
             alert(`Status WA Aktif untuk pesanan ${orderId} berhasil diubah menjadi ${newStatus ? 'Aktif' : 'Belum Aktif'}.`);
             loadOrders(); // Reload orders to update the table
@@ -1330,4 +1308,4 @@
 </script>
 
 </body>
-</html>
+    </html>
