@@ -25,7 +25,7 @@
         .list-group-item { background: transparent; border-color: var(--border); color: var(--text); }
         .status-badge { padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.8rem; }
         .status-pending, .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
-        .status-diproses { background-color: #17a2b8; color: white; } /* Mengubah warna info */
+        .status-diproses { background-color: #17a2b8; color: white; }
         .status-selesai { background-color: #28a745; color: white; }
         .status-dibatalkan, .status-ditolak { background-color: #e74c3c; color: white; }
         .status-belum-bayar { background-color: #007bff; color: white; }
@@ -52,7 +52,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> <script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
     // Konfigurasi Firebase Anda
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -63,40 +64,37 @@
     };
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
-    const dbRT = firebase.database(); // Inisialisasi Realtime Database
+    const dbRT = firebase.database();
     const storage = firebase.storage();
 
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
     
-    // Simpan data pesanan saat dimuat, termasuk referensi ke dokumen/node
     let currentOrderRef;
     let currentOrderData;
-    let currentOrderType; // Menyimpan tipe database (firestore/realtime)
+    let currentOrderType;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    // Fungsi utama untuk memuat detail pesanan berdasarkan ID dan TIPE dari URL
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        const orderType = urlParams.get('type'); // Ambil parameter 'type'
+        const orderType = urlParams.get('type');
 
         if (!orderId || !orderType) {
             loadingMessage.innerHTML = '<h2>ID Pesanan atau Tipe Pesanan tidak ditemukan.</h2>';
             return;
         }
 
-        currentOrderType = orderType; // Simpan tipe pesanan
+        currentOrderType = orderType;
 
         try {
             let data = null;
             if (orderType === 'firestore') {
-                const doc = await dbFS.collection('pesananReseller').doc(orderId).get(); // Asumsi pesanan firestore adalah reseller
+                const doc = await dbFS.collection('pesananReseller').doc(orderId).get();
                 if (doc.exists) {
                     currentOrderRef = dbFS.collection('pesananReseller').doc(orderId);
                     data = doc.data();
-                    // Firestore timestamp perlu dikonversi
                     if (data.waktu && typeof data.waktu.toDate === 'function') {
                         data.waktu = data.waktu.toDate();
                     }
@@ -106,7 +104,6 @@
                 if (snapshot.exists()) {
                     currentOrderRef = dbRT.ref('pesanan').child(orderId);
                     data = snapshot.val();
-                    // Realtime Database waktu adalah string, perlu di-parse
                     if (data.waktu && typeof data.waktu === 'string') {
                         data.waktu = new Date(data.waktu);
                     }
@@ -118,7 +115,7 @@
                 return;
             }
 
-            currentOrderData = data; // Simpan data pesanan
+            currentOrderData = data;
             loadingMessage.style.display = 'none';
             renderOrderDetails(orderId, data);
         } catch (error) {
@@ -127,7 +124,6 @@
         }
     }
 
-    // Fungsi untuk menampilkan detail pesanan
     function renderOrderDetails(orderId, data) {
         let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
         
@@ -136,23 +132,21 @@
         let hargaPesanan = 0;
 
         if (currentOrderType === 'realtime') {
-            // Data dari Realtime Database (pesanan umum)
             customerInfoHtml = `<strong>Pelanggan:</strong> ${data.nama || 'N/A'}`;
             contactInfoHtml = `
-                <li class="list-group-item"><strong>Nomor HP:</strong> ${data.nomor_hp || 'N/A'}</li>
-                <li class="list-group-item"><strong>WA Aktif:</strong> ${data.wa_aktif || 'N/A'}</li>
+                <li class="list-group-item"><strong>Nomor HP (Tujuan):</strong> ${data.nomor_hp || 'N/A'}</li>
+                <li class="list-group-item"><strong>WA Aktif (Notifikasi):</strong> ${data.wa_aktif || 'N/A'}</li>
                 <li class="list-group-item"><strong>ID Game:</strong> ${data.id_game || 'N/A'}</li>
             `;
-            hargaPesanan = data.harga || 0; // Menggunakan 'harga' dari RTDB
+            hargaPesanan = data.harga || 0;
         } else {
-            // Data dari Firestore (pesanan reseller)
             customerInfoHtml = data.nama_reseller ? 
                                 `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan || 'N/A'}` : 
                                 `<strong>Pelanggan:</strong> ${data.nama_pelanggan || 'N/A'}`;
             contactInfoHtml = `
                 <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}</li>
-            `; // Sesuaikan jika ada field WA Aktif di Firestore reseller juga
-            hargaPesanan = data.harga_final || data.harga_beli || 0; // Menggunakan harga_final/harga_beli dari Firestore
+                `;
+            hargaPesanan = data.harga_final || data.harga_beli || 0;
         }
         
         const price = formatRupiah(hargaPesanan);
@@ -220,7 +214,6 @@
         `;
     }
 
-    // Fungsi untuk mengubah status pesanan
     async function updateStatus(newStatus) {
         if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) {
             return;
@@ -235,7 +228,7 @@
             } else if (currentOrderType === 'realtime') {
                 await currentOrderRef.update({
                     status: newStatus,
-                    waktu_perubahan_status: new Date().toISOString() // Simpan sebagai string ISO untuk Realtime DB
+                    waktu_perubahan_status: new Date().toISOString()
                 });
             }
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
@@ -246,7 +239,6 @@
         }
     }
 
-    // Fungsi untuk mengunggah bukti pengiriman dari admin
     async function uploadAdminProof() {
         const fileInput = document.getElementById('buktiPengirimanFile');
         const file = fileInput.files[0];
@@ -256,7 +248,7 @@
             return;
         }
 
-        const orderId = currentOrderRef.id || currentOrderRef.key; // Menggunakan .key untuk Realtime DB
+        const orderId = currentOrderRef.id || currentOrderRef.key;
         const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}`);
         
         try {
@@ -283,7 +275,6 @@
         }
     }
 
-    // Fungsi untuk menghapus pesanan
     async function deleteOrder() {
         if (!confirm("PERINGATAN: Apakah Anda yakin ingin menghapus pesanan ini secara permanen? Aksi ini tidak bisa dibatalkan.")) {
             return;
@@ -293,7 +284,7 @@
             if (currentOrderType === 'firestore') {
                 await currentOrderRef.delete();
             } else if (currentOrderType === 'realtime') {
-                await currentOrderRef.remove(); // Menggunakan .remove() untuk Realtime DB
+                await currentOrderRef.remove();
             }
             alert("Pesanan berhasil dihapus.");
             window.location.href = 'admin.html';
@@ -303,7 +294,6 @@
         }
     }
 
-    // Fungsi untuk membuat dan membuka pesan WhatsApp
     function generateWhatsappMessage() {
         if (!currentOrderData) return;
         const orderId = currentOrderRef.id || currentOrderRef.key;
@@ -311,18 +301,25 @@
         const namaPelanggan = currentOrderType === 'realtime' ? currentOrderData.nama : (currentOrderData.nama_pelanggan || currentOrderData.nama_reseller);
         const produk = currentOrderType === 'realtime' ? currentOrderData.nama_produk : currentOrderData.produk;
         const status = currentOrderData.status;
-        const nomorPelanggan = currentOrderType === 'realtime' ? currentOrderData.nomor_hp : currentOrderData.nomor_pelanggan;
+        
+        let whatsappTargetNumber = '';
+        if (currentOrderType === 'realtime') {
+            whatsappTargetNumber = currentOrderData.wa_aktif;
+        } else {
+            // Untuk pesanan reseller (Firestore):
+            // Jika ada field WA aktif khusus untuk pelanggan reseller (misal 'wa_aktif_pelanggan'), gunakan itu.
+            // Contoh: whatsappTargetNumber = currentOrderData.wa_aktif_pelanggan;
+            // Jika tidak ada, fallback ke nomor_pelanggan atau tentukan logika lain (misal: notifikasi ke reseller)
+            whatsappTargetNumber = currentOrderData.nomor_pelanggan; // Fallback ke nomor_pelanggan untuk saat ini
+        }
 
-        if (!nomorPelanggan) {
-            alert("Nomor HP pelanggan tidak ditemukan untuk pesanan ini.");
+        if (!whatsappTargetNumber || whatsappTargetNumber === 'N/A') {
+            alert("Nomor WhatsApp aktif pelanggan tidak ditemukan untuk pesanan ini.");
             return;
         }
 
-        // Buat link ke halaman status pesanan
-        // Asumsi status.html dapat menangani orderId dan orderType yang sama
         const statusLink = `${window.location.origin}/status.html?id=${orderId}&type=${currentOrderType}`;
         
-        // Pesan WhatsApp yang akan dikirim
         const message = `Halo ${namaPelanggan},
 Pesananmu dengan ID ${orderId} sudah ${status}.
 
@@ -335,9 +332,8 @@ ${statusLink}
 
 Terima kasih atas pesanannya!`;
         
-        // Pastikan nomorPelanggan adalah string dan hanya berisi angka
-        const cleanNomorPelanggan = nomorPelanggan.replace(/\D/g, ''); // Hapus semua non-digit
-        const whatsappUrl = `https://wa.me/${cleanNomorPelanggan}?text=${encodeURIComponent(message)}`;
+        const cleanWhatsappNumber = whatsappTargetNumber.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/${cleanWhatsappNumber}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
 
