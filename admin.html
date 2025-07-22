@@ -46,8 +46,8 @@
         .status-disetujui { background-color: #28a745; color: white; }
         .status-selesai { background-color: #28a745; color: white; }
         .status-ditolak { background-color: #dc3545; color: white; }
-        .status-belum-bayar, .status-menunggu-verifikasi { background-color: #007bff; color: white; } /* Menambahkan status-menunggu-verifikasi */
-        .status-diproses { background-color: #17a2b8; color: white; } /* Mengubah badge-info menjadi status-diproses */
+        .status-belum-bayar, .status-menunggu-verifikasi { background-color: #007bff; color: white; }
+        .status-diproses { background-color: #17a2b8; color: white; }
         .btn-sm { padding: 5px 10px; font-size: 0.8em; }
         .logout-btn { position: absolute; top: 20px; right: 20px; }
         .img-proof { max-width: 100%; height: auto; display: block; margin-top: 10px; }
@@ -134,7 +134,9 @@
                     <h2>Semua Pesanan</h2>
                     <select id="order-filter" class="form-select mb-3">
                         <option value="all">Semua Pesanan</option>
-                        <option value="realtime">Pesanan Pembeli Biasa</option> <option value="firestore">Pesanan Reseller</option> </select>
+                        <option value="realtime">Pesanan Pembeli Biasa</option>
+                        <option value="firestore">Pesanan Reseller</option>
+                    </select>
                     <table id="orders-table" class="table table-striped">
                         <thead>
                             <tr><th>ID</th><th>Produk</th><th>Pelanggan</th><th>No. HP</th><th>WA Aktif?</th><th>Harga</th><th>Status</th><th>Aksi</th></tr>
@@ -244,6 +246,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
         // ==========================================================
         //  FUNGSI DAN PENGATURAN UMUM
@@ -253,13 +256,13 @@
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
           databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
           projectId: "asdarstoredigitalll-d89c4",
-          storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Menambahkan storageBucket
+          storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database(); // Realtime Database
-        const storage = firebase.storage(); // Menambahkan Storage
+        const dbRT = firebase.database();
+        const storage = firebase.storage();
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -310,7 +313,7 @@
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
-            loadOrders(); // Panggil fungsi loadOrders saat DOMContentLoaded
+            loadOrders();
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
@@ -578,7 +581,7 @@
         let allOrdersData = [];
 
         async function loadOrders() {
-            ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>'; // Menambah colspan menjadi 8
+            ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>';
 
             try {
                 // Fetch from Firestore (Reseller orders)
@@ -589,8 +592,8 @@
                     firestoreOrders.push({ 
                         id: doc.id, 
                         ...data, 
-                        type: 'firestore', // Tambahkan type untuk identifikasi
-                        waktu: data.waktu ? data.waktu.toDate() : null // Pastikan waktu adalah objek Date
+                        type: 'firestore',
+                        waktu: data.waktu ? data.waktu.toDate() : null
                     });
                 });
 
@@ -599,24 +602,21 @@
                 let realtimeOrders = [];
                 umumSnap.forEach(childSnap => {
                     const data = childSnap.val();
-                    // Pastikan order ini memang 'Umum' berdasarkan 'tipe_pesanan'
                     if (data.tipe_pesanan === 'Umum') {
                          realtimeOrders.push({
                             id: childSnap.key,
-                            produk: data.nama_produk, // Menggunakan nama_produk dari RTDB
-                            nama_pelanggan: data.nama, // Menggunakan nama dari RTDB untuk pelanggan umum
-                            nomor_hp: data.nomor_hp, // Field nomor_hp dari RTDB
-                            wa_aktif: data.wa_aktif, // Field wa_aktif dari RTDB
-                            harga_final: parseInt(data.harga), // Menggunakan harga dari RTDB
+                            produk: data.nama_produk,
+                            nama_pelanggan: data.nama,
+                            nomor_hp: data.nomor_hp,
+                            wa_aktif: data.wa_aktif,
+                            harga_final: parseInt(data.harga),
                             status: data.status,
-                            waktu: data.waktu ? new Date(data.waktu) : null, // Parse string waktu ke Date object
-                            type: 'realtime' // Tambahkan type untuk identifikasi
+                            waktu: data.waktu ? new Date(data.waktu) : null,
+                            type: 'realtime'
                         });
                     }
                 });
                 
-                // Gabungkan dan urutkan semua pesanan berdasarkan waktu (terbaru dulu)
-                // Filter out orders where 'waktu' is null to avoid errors in sorting
                 allOrdersData = [...firestoreOrders, ...realtimeOrders].filter(order => order.waktu !== null);
                 allOrdersData.sort((a, b) => b.waktu.getTime() - a.waktu.getTime());
                 
@@ -631,18 +631,16 @@
             const filterValue = orderFilter.value;
             const filteredOrders = orders.filter(order => {
                 if (filterValue === 'all') return true;
-                // Filter berdasarkan 'type' yang sudah ditambahkan
                 return order.type === filterValue; 
             });
             
             ordersTableBody.innerHTML = '';
             if (filteredOrders.length === 0) {
-                ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan untuk kategori ini.</td></tr>`; // Menambah colspan
+                ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan untuk kategori ini.</td></tr>`;
                 return;
             }
             
             filteredOrders.forEach(order => {
-                // Tentukan apakah pesanan ini dari Firestore (reseller) atau Realtime DB (umum)
                 const isRealtimeOrder = order.type === 'realtime'; 
 
                 const row = ordersTableBody.insertRow();
@@ -650,14 +648,14 @@
                 if (order.status) {
                     statusClass = `status-${order.status.toLowerCase().replace(/ /g, '-')}`;
                     if (order.status === 'Selesai') statusClass = 'status-selesai';
-                    if (order.status === 'Diproses') statusClass = 'status-diproses'; // Menggunakan status-diproses
+                    if (order.status === 'Diproses') statusClass = 'status-diproses';
                     if (order.status === 'Dibatalkan' || order.status === 'Ditolak') statusClass = 'status-ditolak';
                 }
                 
-                // Menyesuaikan tampilan berdasarkan tipe pesanan
                 const customerName = isRealtimeOrder ? order.nama_pelanggan : (order.nama_pelanggan || order.nama_reseller);
-                const contactNumber = isRealtimeOrder ? (order.nomor_hp || 'N/A') : (order.nomor_pelanggan || 'N/A'); // Asumsi Firestore punya nomor_pelanggan
+                const contactNumber = isRealtimeOrder ? (order.nomor_hp || 'N/A') : (order.nomor_pelanggan || 'N/A');
                 const waActive = isRealtimeOrder ? (order.wa_aktif || 'N/A') : (order.wa_aktif || 'N/A'); // Asumsi Firestore juga bisa punya wa_aktif
+
                 const price = formatRupiah(isRealtimeOrder ? order.harga_final : (order.harga_beli || order.harga_final));
 
                 row.innerHTML = `
