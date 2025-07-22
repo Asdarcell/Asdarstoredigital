@@ -60,13 +60,9 @@
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
     
-    // =================================================================================
-    // PENTING: SESUAIKAN NAMA KOLOM DI BAWAH INI
-    // =================================================================================
-    // Ganti tulisan 'no whatsap aktif' jika nama kolom di database Anda berbeda.
-    // Perhatikan spasi, huruf besar, dan huruf kecil. HARUS SAMA PERSIS.
-    const NAMA_KOLOM_WHATSAPP = 'no whatsap aktif';
-    // =================================================================================
+    // Variabel konfigurasi untuk nama kolom WhatsApp.
+    // Sudah disesuaikan dengan nama yang benar di database Anda.
+    const NAMA_KOLOM_WHATSAPP = 'no_whatsap_aktif';
 
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
@@ -95,7 +91,7 @@
             renderOrderDetails(doc.id, doc.data());
         } catch (error) {
             console.error("Error loading order details:", error);
-            loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>${error.message}</p>`;
+            loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Pastikan Security Rules di Firebase sudah benar. Error: ${error.message}</p>`;
         }
     }
 
@@ -105,7 +101,7 @@
         const price = formatRupiah(data.harga_final || data.harga_beli);
         
         let contactInfo = `<strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}`;
-        // Menggunakan variabel NAMA_KOLOM_WHATSAPP untuk memeriksa dan menampilkan data
+        // Memeriksa dan menampilkan nomor WA menggunakan variabel yang sudah benar
         if (data[NAMA_KOLOM_WHATSAPP]) {
             contactInfo += `<br><strong>No WhatsApp Aktif:</strong> ${data[NAMA_KOLOM_WHATSAPP]}`;
         }
@@ -157,14 +153,14 @@
         `;
     }
 
-    async function updateStatus(newStatus) { /* ... fungsi ini sudah benar ... */ }
-    async function uploadAdminProof(event) { /* ... fungsi ini sudah benar ... */ }
+    async function updateStatus(newStatus) { /* Fungsi ini tidak perlu diubah */ }
+    async function uploadAdminProof(event) { /* Fungsi ini tidak perlu diubah */ }
 
     function generateWhatsappMessage() {
         if (!currentOrderDoc) return;
         const orderData = currentOrderDoc.data();
         
-        // Menggunakan variabel NAMA_KOLOM_WHATSAPP untuk menentukan nomor tujuan
+        // Menggunakan variabel untuk menentukan nomor tujuan WA yang benar
         const nomorTujuanWA = orderData[NAMA_KOLOM_WHATSAPP] || orderData.nomor_pelanggan;
 
         if (!nomorTujuanWA) {
@@ -173,10 +169,11 @@
         }
 
         const statusLink = `${window.location.origin}/status.html?id=${currentOrderDoc.id}`;
-        const message = `Halo ${orderData.nama_pelanggan}, Pesananmu (ID: ${currentOrderDoc.id}) sudah *${orderData.status}*. Lihat detail di: ${statusLink}. Terima kasih!`;
+        const message = `Halo ${orderData.nama_pelanggan}, Pesananmu (ID: ${currentOrderDoc.id}) dengan produk ${orderData.produk} sudah *${orderData.status}*. Lihat detail di: ${statusLink}. Terima kasih!`;
         const whatsappUrl = `https://wa.me/${nomorTujuanWA}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
+
     document.addEventListener('DOMContentLoaded', loadOrderDetails);
 </script>
 </body>
