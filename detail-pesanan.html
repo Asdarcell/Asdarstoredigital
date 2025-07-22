@@ -63,22 +63,22 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 <script>
-    // Konfigurasi Firebase Anda (PASTIKAN INI SESUAI DENGAN PROYEK ANDA)
+    // Konfigurasi Firebase Anda (GANTI DENGAN DATA ASLI PROYEK ANDA)
     const firebaseConfig = {
-        apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Anda
-        authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-        databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-        projectId: "asdarstoredigitalll-d89c4",
-        storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
-        appId: "1:842211995874:web:e000000000000000000000" // Tambahkan appId jika ada
+        apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI INI
+        authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI INI
+        databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI INI
+        projectId: "asdarstoredigitalll-d89c4", // GANTI INI
+        storageBucket: "asdarstoredigitalll-d89c4.appspot.com", // GANTI INI
+        appId: "1:842211995874:web:e000000000000000000000" // GANTI INI (jika ada)
     };
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
-    const dbRT = firebase.database(); // Inisialisasi Realtime Database
+    const dbRT = firebase.database(); 
     const storage = firebase.storage();
 
     const orderDetailsRow = document.getElementById('order-details-row');
@@ -87,21 +87,18 @@
     // Simpan data pesanan saat dimuat
     let currentOrderDocRef; // Reference ke doc di Firestore atau path di RTDB
     let currentOrderData = {};
-    let orderCollectionType; // 'firestore' atau 'realtimedb'
+    let orderCollectionType; // 'pesananUmum', 'pesananReseller', atau 'pesananRTDB'
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
     // Fungsi untuk membersihkan dan memformat nomor telepon ke 62xxxxxxxx
     function cleanPhoneNumber(phone) {
         if (!phone) return '';
-        // Hapus semua karakter non-digit
         let cleaned = phone.toString().replace(/\D/g, '');
-        // Ganti 08 menjadi 628
         if (cleaned.startsWith('08')) {
             cleaned = '62' + cleaned.substring(1);
         }
-        // Pastikan dimulai dengan 62
-        if (!cleaned.startsWith('62')) {
+        if (!cleaned.startsWith('62') && cleaned.length > 0) { // Hanya tambahkan 62 jika belum ada dan ada angka
             cleaned = '62' + cleaned;
         }
         return cleaned;
@@ -111,33 +108,33 @@
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        const collection = urlParams.get('collection'); // Mengambil tipe koleksi dari URL
+        const collection = urlParams.get('collection'); 
 
         if (!orderId || !collection) {
             loadingMessage.innerHTML = '<h2>ID Pesanan atau Tipe Koleksi tidak ditemukan.</h2>';
             return;
         }
 
+        orderCollectionType = collection;
+
         try {
             if (collection === 'pesananRTDB') {
-                orderCollectionType = 'realtimedb';
                 currentOrderDocRef = dbRT.ref(`pesanan/${orderId}`);
                 const snapshot = await currentOrderDocRef.once('value');
                 if (snapshot.exists()) {
                     currentOrderData = snapshot.val();
-                    currentOrderData.id = orderId; // Tambahkan ID ke data
+                    currentOrderData.id = orderId; 
                     loadingMessage.style.display = 'none';
                     renderOrderDetails(orderId, currentOrderData);
                 } else {
                     loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan di Realtime Database.</h2>';
                 }
-            } else { // Asumsi Firestore jika bukan 'pesananRTDB'
-                orderCollectionType = 'firestore';
+            } else { 
                 currentOrderDocRef = dbFS.collection(collection).doc(orderId);
                 const doc = await currentOrderDocRef.get();
                 if (doc.exists) {
                     currentOrderData = doc.data();
-                    currentOrderData.id = orderId; // Tambahkan ID ke data
+                    currentOrderData.id = orderId; 
                     loadingMessage.style.display = 'none';
                     renderOrderDetails(orderId, currentOrderData);
                 } else {
@@ -152,15 +149,15 @@
 
     // Fungsi untuk menampilkan detail pesanan
     function renderOrderDetails(orderId, data) {
-        // Logika fleksibel untuk mendapatkan data
+        // Logika fleksibel untuk mendapatkan data dari berbagai nama field
         const customerName = data.customer_name || data.nama_pelanggan || data.nama_reseller || 'N/A';
         const customerPhoneRaw = data.customer_phone || data.nomor_hp || data.nomor || 'N/A';
-        const customerPhone = cleanPhoneNumber(customerPhoneRaw);
+        const customerPhoneCleaned = cleanPhoneNumber(customerPhoneRaw);
         const gameId = data.game_id || data.id_game || data.id || data.username_game || 'N/A';
         const productName = data.produk || data.product_name || 'N/A';
         const finalPrice = formatRupiah(data.harga_final || data.harga_beli || data.price);
         const orderStatus = data.status || 'Belum Bayar';
-        const orderTime = data.waktu ? (orderCollectionType === 'firestore' ? new Date(data.waktu.toDate()) : new Date(data.waktu)) : 'N/A'; // Handle timestamp Firestore vs RTDB string
+        const orderTime = data.waktu ? (orderCollectionType !== 'pesananRTDB' ? new Date(data.waktu.toDate()) : new Date(data.waktu)) : 'N/A'; 
 
         const waActive = data.wa_aktif === true;
         const waActiveText = waActive ? 'Aktif' : 'Belum Aktif';
@@ -176,12 +173,15 @@
                     <hr>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
-                        <li class="list-group-item">${customerInfo}</li>
+                        <li class="list-group-item">
+                            <label for="editCustomerName" class="form-label"><strong>Nama Pelanggan:</strong></label>
+                            <input type="text" class="form-control" id="editCustomerName" value="${customerName}" placeholder="Nama Pelanggan">
+                        </li>
                         <li class="list-group-item">
                             <label for="editCustomerPhone" class="form-label"><strong>No. HP (WhatsApp):</strong></label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="editCustomerPhone" value="${customerPhoneRaw}" placeholder="Nomor HP Pelanggan">
-                                <a href="https://wa.me/${customerPhone}" target="_blank" class="btn btn-success"><i class="fab fa-whatsapp"></i></a>
+                                <a href="https://wa.me/${customerPhoneCleaned}" target="_blank" class="btn btn-success" title="Chat WhatsApp"><i class="fab fa-whatsapp"></i></a>
                             </div>
                             <small class="text-muted mt-2">Nomor ini akan diformat otomatis ke 62xxxxxxxx saat disimpan.</small>
                             <div class="mt-2">
@@ -253,42 +253,45 @@
 
     // Fungsi untuk menyimpan detail yang diedit
     async function saveEditedDetails() {
+        const editedCustomerName = document.getElementById('editCustomerName').value;
         const customerPhoneInput = document.getElementById('editCustomerPhone').value;
         const editedGameId = document.getElementById('editGameId').value;
         const editedAdminNotes = document.getElementById('editAdminNotes').value;
 
-        // Bersihkan dan format nomor telepon sebelum disimpan
         const cleanedFormattedPhone = cleanPhoneNumber(customerPhoneInput);
 
         const updates = {
-            customer_phone: cleanedFormattedPhone, // Simpan sebagai customer_phone
-            game_id: editedGameId, // Simpan sebagai game_id
+            // Kita update field yang umum, atau yang paling sering digunakan
+            customer_name: editedCustomerName,
+            customer_phone: cleanedFormattedPhone, 
+            game_id: editedGameId, 
             catatan_admin: editedAdminNotes
         };
 
-        if (orderCollectionType === 'firestore') {
-            try {
+        try {
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.update(updates);
                 alert("Detail pesanan berhasil diperbarui di Firestore!");
-            } catch (error) {
-                console.error("Error updating Firestore details:", error);
-                alert("Gagal memperbarui detail di Firestore. Silakan coba lagi.");
-            }
-        } else if (orderCollectionType === 'realtimedb') {
-            try {
-                // Untuk RTDB, kita mungkin perlu sedikit lebih spesifik jika field aslinya berbeda
-                // Misal, jika field aslinya 'nomor' dan 'id', kita update itu
+            } else { // Realtime Database
+                // Untuk RTDB, kita juga mencoba update field lama yang mungkin ada
+                if (currentOrderData.hasOwnProperty('nama_pelanggan')) updates.nama_pelanggan = editedCustomerName;
+                if (currentOrderData.hasOwnProperty('nama')) updates.nama = editedCustomerName;
+
+                if (currentOrderData.hasOwnProperty('nomor_hp')) updates.nomor_hp = cleanedFormattedPhone;
                 if (currentOrderData.hasOwnProperty('nomor')) updates.nomor = cleanedFormattedPhone;
+
+                if (currentOrderData.hasOwnProperty('id_game')) updates.id_game = editedGameId;
                 if (currentOrderData.hasOwnProperty('id')) updates.id = editedGameId;
-                
+                if (currentOrderData.hasOwnProperty('username_game')) updates.username_game = editedGameId;
+
                 await currentOrderDocRef.update(updates);
                 alert("Detail pesanan berhasil diperbarui di Realtime Database!");
-            } catch (error) {
-                console.error("Error updating Realtime Database details:", error);
-                alert("Gagal memperbarui detail di Realtime Database. Silakan coba lagi.");
             }
+            location.reload(); 
+        } catch (error) {
+            console.error("Error updating details:", error);
+            alert("Gagal memperbarui detail. Silakan coba lagi.");
         }
-        location.reload(); // Reload halaman untuk melihat perubahan
     }
 
     // Fungsi untuk mengubah status pesanan
@@ -299,13 +302,13 @@
 
         const updates = {
             status: newStatus,
-            waktu_perubahan_status: (orderCollectionType === 'firestore' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
+            waktu_perubahan_status: (orderCollectionType !== 'pesananRTDB' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
         };
 
         try {
-            if (orderCollectionType === 'firestore') {
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else if (orderCollectionType === 'realtimedb') {
+            } else { // Realtime Database
                 await currentOrderDocRef.update(updates);
             }
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
@@ -326,7 +329,7 @@
             return;
         }
 
-        const orderId = currentOrderDocRef.id || currentOrderDocRef.key; // ID dari Firestore atau key dari RTDB
+        const orderId = currentOrderData.id; 
         const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}-${file.name}`);
         
         try {
@@ -335,12 +338,12 @@
 
             const updates = {
                 bukti_pengiriman_url: downloadURL,
-                waktu_pengiriman_bukti: (orderCollectionType === 'firestore' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
+                waktu_pengiriman_bukti: (orderCollectionType !== 'pesananRTDB' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
             };
 
-            if (orderCollectionType === 'firestore') {
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else if (orderCollectionType === 'realtimedb') {
+            } else { // Realtime Database
                 await currentOrderDocRef.update(updates);
             }
 
@@ -359,9 +362,9 @@
         }
 
         try {
-            if (orderCollectionType === 'firestore') {
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.delete();
-            } else if (orderCollectionType === 'realtimedb') {
+            } else { // Realtime Database
                 await currentOrderDocRef.remove();
             }
             alert("Pesanan berhasil dihapus.");
@@ -376,25 +379,35 @@
     function generateWhatsappMessage() {
         const orderData = currentOrderData;
         
+        // Ambil nomor HP dan bukti dari elemen yang sudah ada di halaman (mungkin sudah diedit)
         const customerPhone = cleanPhoneNumber(document.getElementById('editCustomerPhone').value);
         if (!customerPhone || customerPhone === '62') {
             alert("Nomor HP pelanggan belum valid. Mohon isi atau perbaiki terlebih dahulu.");
             return;
         }
 
-        const buktiPengirimanUrl = orderData.bukti_pengiriman_url;
+        const buktiPengirimanUrl = currentOrderData.bukti_pengiriman_url;
         if (!buktiPengirimanUrl) {
             alert("Bukti selesai dari admin belum diunggah. Silakan unggah terlebih dahulu.");
             return;
         }
 
-        const namaPelanggan = document.getElementById('editCustomerName') ? document.getElementById('editCustomerName').value : (orderData.customer_name || orderData.nama_pelanggan || orderData.nama_reseller || 'Pelanggan');
+        const namaPelanggan = document.getElementById('editCustomerName').value || 'Pelanggan';
         const orderId = orderData.id;
         const productName = orderData.produk || orderData.product_name || 'Produk';
         const orderStatus = orderData.status || 'Selesai';
 
+        // Tentukan nama koleksi yang tepat untuk link status
+        let statusCollectionForLink = orderCollectionType;
+        if (orderCollectionType === 'pesananUmum' || orderCollectionType === 'pesananReseller') {
+             // Biarkan saja nama koleksinya karena sudah benar
+        } else if (orderCollectionType === 'pesananRTDB') {
+             statusCollectionForLink = 'pesananRTDB'; // Gunakan nama ini untuk indikator RTDB
+        }
+
+
         // Link ke halaman status pesanan (asumsi ada halaman status.html)
-        const statusLink = `${window.location.origin}/status.html?id=${orderId}&collection=${orderCollectionType === 'firestore' ? (orderData.nama_reseller ? 'pesananReseller' : 'pesananUmum') : 'pesananRTDB'}`;
+        const statusLink = `${window.location.origin}/status.html?id=${orderId}&collection=${statusCollectionForLink}`;
         
         const message = `Halo ${namaPelanggan},
 Pesananmu dengan ID *${orderId}* sudah *${orderStatus}*!
@@ -418,8 +431,10 @@ Terima kasih atas pesanannya! 😊`;
     // Fungsi untuk mengaktifkan/menonaktifkan tombol "Kirim Notif WA Selesai"
     function checkWhatsappButtonStatus() {
         const btnKirimWaNotif = document.getElementById('btnKirimWaNotif');
-        const customerPhone = cleanPhoneNumber(currentOrderData.customer_phone || currentOrderData.nomor_hp || currentOrderData.nomor);
-        const buktiPengirimanUrl = currentOrderData.bukti_pengiriman_url;
+        // Ambil data terbaru dari DOM jika sudah diedit
+        const currentPhoneValue = document.getElementById('editCustomerPhone').value;
+        const customerPhone = cleanPhoneNumber(currentPhoneValue);
+        const buktiPengirimanUrl = currentOrderData.bukti_pengiriman_url; // Masih dari currentOrderData, akan diupdate setelah upload
 
         if (customerPhone && customerPhone !== '62' && buktiPengirimanUrl) {
             btnKirimWaNotif.disabled = false;
@@ -438,14 +453,14 @@ Terima kasih atas pesanannya! 😊`;
         };
 
         try {
-            if (orderCollectionType === 'firestore') {
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else if (orderCollectionType === 'realtimedb') {
+            } else { // Realtime Database
                 await currentOrderDocRef.update(updates);
             }
             
             alert(`Status WA Aktif berhasil diubah menjadi ${newStatus ? 'Aktif' : 'Belum Aktif'}.`);
-            location.reload(); // Reload untuk menampilkan status terbaru
+            location.reload(); 
         } catch (error) {
             console.error("Error updating WA active status:", error);
             alert("Gagal mengubah status WA Aktif. Silakan coba lagi.");
