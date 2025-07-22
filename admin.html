@@ -91,6 +91,23 @@
         #orderDetailModal .modal-footer .btn {
             margin-right: 5px;
         }
+        .modal-body-section {
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-body-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        #buktiSelesaiPreview {
+            max-width: 150px;
+            height: auto;
+            margin-top: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -187,7 +204,8 @@
                                 <th>Harga</th>
                                 <th>Status</th>
                                 <th>WA Aktif</th>
-                                <th>Aksi</th> </tr>
+                                <th>Aksi</th>
+                            </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -293,36 +311,78 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="orderDetailModalLabel">Detail Pesanan <span id="modalOrderId"></span></h5>
+                    <h5 class="modal-title" id="orderDetailModalLabel">Detail & Kelola Pesanan <span id="modalOrderId"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>ID Pesanan:</strong> <span id="detail-id"></span></li>
-                                <li class="list-group-item"><strong>Jenis Pesanan:</strong> <span id="detail-type"></span></li>
-                                <li class="list-group-item"><strong>Nama Pelanggan:</strong> <span id="detail-customer-name"></span></li>
-                                <li class="list-group-item"><strong>No. HP:</strong> <span id="detail-customer-phone"></span></li>
-                                <li class="list-group-item"><strong>Produk:</strong> <span id="detail-product"></span></li>
-                                <li class="list-group-item"><strong>Harga:</strong> <span id="detail-price"></span></li>
-                                <li class="list-group-item"><strong>Jumlah:</strong> <span id="detail-quantity"></span></li>
-                            </ul>
+                    <div class="modal-body-section">
+                        <h6>Informasi Pesanan</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>ID Pesanan:</strong> <span id="detail-id"></span></li>
+                            <li class="list-group-item"><strong>Jenis Pesanan:</strong> <span id="detail-type"></span></li>
+                            <li class="list-group-item"><strong>Produk:</strong> <span id="detail-product"></span></li>
+                            <li class="list-group-item"><strong>Harga:</strong> <span id="detail-price"></span></li>
+                            <li class="list-group-item"><strong>Jumlah:</strong> <span id="detail-quantity"></span></li>
+                            <li class="list-group-item"><strong>Total Harga:</strong> <span id="detail-final-price"></span></li>
+                            <li class="list-group-item"><strong>Status:</strong> <span id="detail-status"></span></li>
+                            <li class="list-group-item"><strong>Waktu Pesanan:</strong> <span id="detail-time"></span></li>
+                            <li class="list-group-item"><strong>Metode Pembayaran:</strong> <span id="detail-payment-method"></span></li>
+                        </ul>
+                    </div>
+
+                    <div class="modal-body-section">
+                        <h6>Informasi Pelanggan</h6>
+                        <div class="mb-3">
+                            <label for="edit-customer-name" class="form-label">Nama Pelanggan:</label>
+                            <input type="text" class="form-control" id="edit-customer-name">
                         </div>
-                        <div class="col-md-6">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>Total Harga:</strong> <span id="detail-final-price"></span></li>
-                                <li class="list-group-item"><strong>Status:</strong> <span id="detail-status"></span></li>
-                                <li class="list-group-item"><strong>WA Aktif:</strong> <span id="detail-wa-active"></span></li>
-                                <li class="list-group-item"><strong>Waktu Pesanan:</strong> <span id="detail-time"></span></li>
-                                <li class="list-group-item"><strong>Metode Pembayaran:</strong> <span id="detail-payment-method"></span></li>
-                                <li class="list-group-item"><strong>Bukti Pembayaran:</strong> <span id="detail-payment-proof"></span></li>
-                                <li class="list-group-item"><strong>Catatan:</strong> <span id="detail-notes"></span></li>
-                            </ul>
+                        <div class="mb-3">
+                            <label for="edit-customer-phone" class="form-label">No. HP (WhatsApp):</label>
+                            <div class="input-group">
+                                <input type="tel" class="form-control" id="edit-customer-phone" placeholder="Contoh: 6281234567890">
+                                <button class="btn btn-wa-active" type="button" id="btn-wa-link" title="Kirim Pesan WhatsApp"><i class="fab fa-whatsapp"></i></button>
+                            </div>
+                            <small class="form-text text-muted">Pastikan format diawali dengan 62 (tanpa +).</small>
                         </div>
+                        <div class="mb-3">
+                            <label for="edit-id-game" class="form-label">ID Game / Username:</label>
+                            <input type="text" class="form-control" id="edit-id-game">
+                        </div>
+                        <li class="list-group-item"><strong>WA Aktif Terakhir:</strong> <span id="detail-wa-active-status"></span></li>
+                        <button class="btn btn-sm mt-2" id="toggle-wa-active-btn"></button>
+                    </div>
+
+                    <div class="modal-body-section">
+                        <h6>Bukti Pembayaran (Dari Buyer)</h6>
+                        <span id="detail-payment-proof"></span>
+                        <img id="buyerPaymentProofPreview" src="" alt="Bukti Pembayaran Pembeli" class="img-fluid mt-2" style="max-width: 200px; display: none;">
+                    </div>
+
+                    <div class="modal-body-section">
+                        <h6>Bukti Pesanan Selesai (Unggah Admin)</h6>
+                        <input type="file" class="form-control mb-2" id="buktiSelesaiUpload" accept="image/*">
+                        <button class="btn btn-primary btn-sm" id="uploadBuktiSelesaiBtn">Unggah Bukti</button>
+                        <img id="buktiSelesaiPreview" src="" alt="Bukti Pesanan Selesai" class="img-fluid" style="display: none;">
+                        <span id="buktiSelesaiLink" class="d-block mt-2"></span>
+                    </div>
+
+                    <div class="modal-body-section">
+                        <h6>Catatan & Notifikasi</h6>
+                        <div class="mb-3">
+                            <label for="edit-notes" class="form-label">Catatan Pesanan:</label>
+                            <textarea class="form-control" id="edit-notes" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin-notes" class="form-label">Catatan Admin (Internal):</label>
+                            <textarea class="form-control" id="admin-notes" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-success mt-2 w-100" id="sendWhatsappDoneBtn"><i class="fab fa-whatsapp"></i> Kirim Notif WA Pesanan Selesai</button>
+                        <small class="form-text text-muted">Pastikan bukti selesai sudah diunggah sebelum mengirim notifikasi.</small>
                     </div>
                 </div>
                 <div class="modal-footer" id="modal-footer-actions">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-warning" id="saveOrderChangesBtn">Simpan Perubahan</button>
                     </div>
             </div>
         </div>
@@ -333,6 +393,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
         // ==========================================================
         //  FUNGSI DAN PENGATURAN UMUM
@@ -343,11 +404,13 @@
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
           databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
           projectId: "asdarstoredigitalll-d89c4",
+          storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Tambahkan ini
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database(); // Realtime Database juga digunakan
+        const dbRT = firebase.database();
+        const storage = firebase.storage(); // Inisialisasi Firebase Storage
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -389,7 +452,7 @@
                 button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
             } else {
                 button.disabled = false;
-                button.innerHTML = button.dataset.originalText;
+                button.innerHTML = button.dataset.originalText || button.textContent; // Gunakan dataset.originalText
             }
         }
 
@@ -670,6 +733,8 @@
 
         // Data cache untuk menyimpan detail pesanan yang sudah dimuat, agar tidak perlu request berulang
         const orderCache = {};
+        let currentOrderCollection = ''; // Untuk menyimpan koleksi saat ini (pesananUmum / pesananReseller)
+        let currentOrderId = ''; // Untuk menyimpan ID pesanan yang sedang dibuka di modal
 
         function loadOrders() {
             const filter = document.getElementById('order-filter').value;
@@ -681,10 +746,13 @@
             }
 
             let query;
+            let collectionName;
             if (filter === 'umum') {
                 query = dbFS.collection('pesananUmum');
+                collectionName = 'pesananUmum';
             } else if (filter === 'reseller') {
                 query = dbFS.collection('pesananReseller');
+                collectionName = 'pesananReseller';
             }
 
             query.orderBy('waktu', 'desc').onSnapshot(async snapshot => {
@@ -717,7 +785,7 @@
                     }
 
                     // Tambahkan order ke cache
-                    orderCache[order.id] = { ...order, type: isResellerOrder ? 'reseller' : 'umum', customerPhone: customerPhone };
+                    orderCache[order.id] = { ...order, collection: collectionName, type: isResellerOrder ? 'reseller' : 'umum', customerPhone: customerPhone };
 
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
@@ -730,7 +798,7 @@
                         <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
                         <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
                         <td>
-                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${filter === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
+                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${collectionName}', '${order.id}', ${order.wa_aktif || false}, this)">
                                 <i class="fab fa-whatsapp"></i> ${waStatus}
                             </button>` : 'N/A'}
                         </td>
@@ -759,8 +827,8 @@
                     resellerData[doc.id] = doc.data();
                 });
 
-                umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
-                resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), collection: 'pesananUmum', type: 'umum' }));
+                resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), collection: 'pesananReseller', type: 'reseller' }));
                 
                 combinedOrders.sort((a, b) => {
                     const timeA = a.waktu && typeof a.waktu.toMillis === 'function' ? a.waktu.toMillis() : 0;
@@ -801,7 +869,7 @@
                         <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
                         <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
                         <td>
-                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${order.type === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
+                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${order.collection}', '${order.id}', ${order.wa_aktif || false}, this)">
                                 <i class="fab fa-whatsapp"></i> ${waStatus}
                             </button>` : 'N/A'}
                         </td>
@@ -823,8 +891,8 @@
                 try {
                     await dbFS.collection(collection).doc(orderId).update({ status: newStatus });
                     showToast('Status pesanan berhasil diubah!');
-                    // Tutup modal setelah update jika berhasil
-                    orderDetailModal.hide();
+                    // orderDetailModal.hide(); // Jangan langsung hide, biarkan admin lihat perubahan atau tindakan lain
+                    loadOrders(); // Refresh tabel di belakang modal
                 } catch (error) {
                     showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
                 } finally {
@@ -845,28 +913,68 @@
                     showToast('Gagal mengubah status WA: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
-                    // Jika modal terbuka, perbarui tampilannya
-                    if (document.getElementById('modalOrderId').textContent === orderId) {
-                        showOrderDetail(orderId); // Panggil ulang untuk refresh modal
+                    // Refresh tampilan WA Aktif di modal jika sedang terbuka
+                    if (currentOrderId === orderId) {
+                        document.getElementById('detail-wa-active-status').textContent = newWaStatus ? 'Aktif' : 'Belum Aktif';
+                        const toggleBtn = document.getElementById('toggle-wa-active-btn');
+                        toggleBtn.className = `btn btn-sm mt-2 ${newWaStatus ? 'btn-wa-active' : 'btn-wa-inactive'}`;
+                        toggleBtn.textContent = `Atur WA sebagai ${newWaStatus ? 'Belum Aktif' : 'Aktif'}`;
                     }
+                    loadOrders(); // Refresh tabel di belakang modal
                 }
             }
         }
 
-        // Fungsi baru untuk menampilkan detail pesanan di modal
+        // --- Variabel untuk modal detail pesanan ---
+        const modalIdSpan = document.getElementById('modalOrderId');
+        const detailIdSpan = document.getElementById('detail-id');
+        const detailTypeSpan = document.getElementById('detail-type');
+        const detailProductSpan = document.getElementById('detail-product');
+        const detailPriceSpan = document.getElementById('detail-price');
+        const detailQuantitySpan = document.getElementById('detail-quantity');
+        const detailFinalPriceSpan = document.getElementById('detail-final-price');
+        const detailStatusSpan = document.getElementById('detail-status');
+        const detailTimeSpan = document.getElementById('detail-time');
+        const detailPaymentMethodSpan = document.getElementById('detail-payment-method');
+
+        const editCustomerNameInput = document.getElementById('edit-customer-name');
+        const editCustomerPhoneInput = document.getElementById('edit-customer-phone');
+        const editIdGameInput = document.getElementById('edit-id-game');
+        const btnWaLink = document.getElementById('btn-wa-link');
+        const detailWaActiveStatus = document.getElementById('detail-wa-active-status');
+        const toggleWaActiveBtn = document.getElementById('toggle-wa-active-btn');
+
+        const detailPaymentProofSpan = document.getElementById('detail-payment-proof');
+        const buyerPaymentProofPreview = document.getElementById('buyerPaymentProofPreview');
+
+        const buktiSelesaiUpload = document.getElementById('buktiSelesaiUpload');
+        const uploadBuktiSelesaiBtn = document.getElementById('uploadBuktiSelesaiBtn');
+        const buktiSelesaiPreview = document.getElementById('buktiSelesaiPreview');
+        const buktiSelesaiLink = document.getElementById('buktiSelesaiLink');
+
+        const editNotesTextarea = document.getElementById('edit-notes');
+        const adminNotesTextarea = document.getElementById('admin-notes');
+        const sendWhatsappDoneBtn = document.getElementById('sendWhatsappDoneBtn');
+        const saveOrderChangesBtn = document.getElementById('saveOrderChangesBtn');
+        const modalFooterActions = document.getElementById('modal-footer-actions');
+
+        let currentOrderData = null; // Menyimpan data pesanan yang sedang dibuka di modal
+
         async function showOrderDetail(orderId) {
-            const order = orderCache[orderId]; // Ambil dari cache
-            if (!order) {
-                showToast('Detail pesanan tidak ditemukan di cache. Mencoba memuat ulang...', 'warning');
-                // Fallback: coba muat ulang dari database jika tidak ada di cache
+            currentOrderId = orderId; // Set ID pesanan yang sedang aktif
+            let order = orderCache[orderId]; // Ambil dari cache
+
+            // Fallback: coba muat ulang dari database jika tidak ada di cache atau koleksi tidak diketahui
+            if (!order || !order.collection) {
+                showToast('Detail pesanan tidak ditemukan di cache atau koleksi tidak diketahui. Mencoba memuat ulang...', 'warning');
                 const umumDoc = await dbFS.collection('pesananUmum').doc(orderId).get();
                 if (umumDoc.exists) {
-                    orderCache[orderId] = { id: umumDoc.id, ...umumDoc.data(), type: 'umum', customerPhone: umumDoc.data().nomor_hp || '' };
+                    orderCache[orderId] = { id: umumDoc.id, ...umumDoc.data(), collection: 'pesananUmum', type: 'umum', customerPhone: umumDoc.data().nomor_hp || '' };
                 } else {
                     const resellerDoc = await dbFS.collection('pesananReseller').doc(orderId).get();
                     if (resellerDoc.exists) {
                         const reseller = await dbFS.collection('resellers').doc(resellerDoc.data().reseller_uid).get();
-                        orderCache[orderId] = { id: resellerDoc.id, ...resellerDoc.data(), type: 'reseller', customerPhone: reseller.data()?.nomor_hp || '' };
+                        orderCache[orderId] = { id: resellerDoc.id, ...resellerDoc.data(), collection: 'pesananReseller', type: 'reseller', customerPhone: reseller.data()?.nomor_hp || '' };
                     } else {
                         showToast('Detail pesanan tidak ditemukan.', 'danger');
                         return;
@@ -874,67 +982,224 @@
                 }
                 order = orderCache[orderId];
             }
+            currentOrderData = order; // Simpan data pesanan yang sedang aktif
+            currentOrderCollection = order.collection; // Simpan nama koleksi
+
+            // Isi informasi pesanan
+            modalIdSpan.textContent = order.id;
+            detailIdSpan.textContent = order.id;
+            detailTypeSpan.textContent = order.type === 'umum' ? 'Pembeli Umum' : 'Reseller';
+            detailProductSpan.textContent = order.produk || 'N/A';
+            detailPriceSpan.textContent = formatRupiah(order.harga_beli || 0); // Harga per item
+            detailQuantitySpan.textContent = order.jumlah || 1;
+            detailFinalPriceSpan.textContent = formatRupiah(order.harga_final || order.harga_beli || 0);
+            detailStatusSpan.innerHTML = `<span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span>`;
+            detailTimeSpan.textContent = order.waktu ? new Date(order.waktu.toMillis()).toLocaleString() : 'N/A';
+            detailPaymentMethodSpan.textContent = order.metode_pembayaran || 'N/A';
+
+            // Isi informasi pelanggan (bisa di-edit)
+            editCustomerNameInput.value = order.nama || order.nama_pelanggan || '';
+            editCustomerPhoneInput.value = order.customerPhone || '';
+            editIdGameInput.value = order.id_game || order.username_game || ''; // Ambil dari id_game atau username_game
             
-            // Isi detail modal
-            document.getElementById('modalOrderId').textContent = order.id;
-            document.getElementById('detail-id').textContent = order.id;
-            document.getElementById('detail-type').textContent = order.type === 'umum' ? 'Pembeli Umum' : 'Reseller';
-            document.getElementById('detail-customer-name').textContent = order.nama || order.nama_pelanggan || 'N/A';
-            document.getElementById('detail-customer-phone').innerHTML = order.customerPhone ? `<a href="https://wa.me/${order.customerPhone.replace(/\D/g, '')}" target="_blank">${order.customerPhone}</a>` : 'N/A';
-            document.getElementById('detail-product').textContent = order.produk || 'N/A';
-            document.getElementById('detail-price').textContent = formatRupiah(order.harga_beli || 0); // Harga per item
-            document.getElementById('detail-quantity').textContent = order.jumlah || 1; // Default quantity 1 jika tidak ada
-            document.getElementById('detail-final-price').textContent = formatRupiah(order.harga_final || order.harga_beli || 0);
-            document.getElementById('detail-status').innerHTML = `<span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span>`;
-            document.getElementById('detail-wa-active').innerHTML = order.customerPhone ? `<button class="btn btn-sm ${order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive'}" onclick="toggleWaStatus('${order.type === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
-                                <i class="fab fa-whatsapp"></i> ${order.wa_aktif === true ? 'Aktif' : 'Belum Aktif'}
-                            </button>` : 'N/A';
-            document.getElementById('detail-time').textContent = order.waktu ? new Date(order.waktu.toMillis()).toLocaleString() : 'N/A';
-            document.getElementById('detail-payment-method').textContent = order.metode_pembayaran || 'N/A';
-            document.getElementById('detail-payment-proof').innerHTML = order.bukti_pembayaran_url ? `<a href="${order.bukti_pembayaran_url}" target="_blank">Lihat Bukti</a>` : 'Tidak Ada';
-            document.getElementById('detail-notes').textContent = order.catatan || 'Tidak ada catatan';
+            // Link WA
+            if (order.customerPhone) {
+                btnWaLink.onclick = () => window.open(`https://wa.me/${order.customerPhone.replace(/\D/g, '')}`, '_blank');
+                btnWaLink.classList.remove('disabled');
+            } else {
+                btnWaLink.onclick = null;
+                btnWaLink.classList.add('disabled');
+            }
+
+            // Status WA Aktif
+            detailWaActiveStatus.textContent = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
+            toggleWaActiveBtn.className = `btn btn-sm mt-2 ${order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive'}`;
+            toggleWaActiveBtn.textContent = `Atur WA sebagai ${order.wa_aktif === true ? 'Belum Aktif' : 'Aktif'}`;
+            toggleWaActiveBtn.onclick = () => toggleWaStatus(currentOrderCollection, currentOrderId, order.wa_aktif || false, toggleWaActiveBtn);
+
+            // Bukti Pembayaran Buyer
+            if (order.bukti_pembayaran_url) {
+                detailPaymentProofSpan.innerHTML = `<a href="${order.bukti_pembayaran_url}" target="_blank">Lihat Bukti Pembayaran</a>`;
+                buyerPaymentProofPreview.src = order.bukti_pembayaran_url;
+                buyerPaymentProofPreview.style.display = 'block';
+            } else {
+                detailPaymentProofSpan.textContent = 'Tidak Ada';
+                buyerPaymentProofPreview.style.display = 'none';
+                buyerPaymentProofPreview.src = '';
+            }
+
+            // Bukti Pesanan Selesai (admin upload)
+            buktiSelesaiUpload.value = ''; // Reset input file
+            if (order.bukti_selesai_url) {
+                buktiSelesaiLink.innerHTML = `<a href="${order.bukti_selesai_url}" target="_blank">Lihat Bukti Selesai</a>`;
+                buktiSelesaiPreview.src = order.bukti_selesai_url;
+                buktiSelesaiPreview.style.display = 'block';
+            } else {
+                buktiSelesaiLink.textContent = 'Belum ada bukti selesai.';
+                buktiSelesaiPreview.style.display = 'none';
+                buktiSelesaiPreview.src = '';
+            }
+
+            // Catatan
+            editNotesTextarea.value = order.catatan || '';
+            adminNotesTextarea.value = order.admin_notes || ''; // Catatan internal admin
+
+            // Tombol Kirim WA Selesai
+            sendWhatsappDoneBtn.onclick = () => sendWhatsappOrderDone(order);
+            sendWhatsappDoneBtn.dataset.originalText = sendWhatsappDoneBtn.textContent;
+            // Disable jika belum ada nomor HP atau belum ada bukti selesai
+            if (!order.customerPhone || !order.bukti_selesai_url) {
+                sendWhatsappDoneBtn.disabled = true;
+            } else {
+                sendWhatsappDoneBtn.disabled = false;
+            }
+
+            // Tombol Simpan Perubahan
+            saveOrderChangesBtn.dataset.originalText = saveOrderChangesBtn.textContent;
+            saveOrderChangesBtn.onclick = () => saveOrderChanges();
 
             // Bersihkan dan tambahkan tombol aksi ke footer modal
-            const modalFooterActions = document.getElementById('modal-footer-actions');
-            modalFooterActions.innerHTML = ''; // Hapus tombol lama
+            modalFooterActions.innerHTML = '';
+            modalFooterActions.appendChild(document.createElement('button')).outerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+            modalFooterActions.appendChild(saveOrderChangesBtn); // Tambahkan tombol simpan perubahan
 
-            // Hanya tampilkan tombol "Selesai" dan "Tolak" untuk pesanan umum
+            // Hanya tampilkan tombol "Selesai" dan "Tolak" untuk pesanan umum jika status memungkinkan
             if (order.type === 'umum') {
                 if (order.status !== 'Selesai' && order.status !== 'Ditolak') {
                     const completeButton = document.createElement('button');
                     completeButton.className = 'btn btn-success btn-sm';
                     completeButton.textContent = 'Selesai';
-                    completeButton.dataset.originalText = 'Selesai'; // Untuk setButtonLoading
+                    completeButton.dataset.originalText = 'Selesai';
                     completeButton.onclick = async () => {
-                        await updateOrderStatus('pesananUmum', order.id, 'Selesai', completeButton);
-                        // Setelah update, status di modal akan diperbarui oleh refresh loadOrders()
-                        // Atau bisa juga update manual elemen di modal
-                        document.getElementById('detail-status').innerHTML = `<span class="status-badge status-selesai">Selesai</span>`;
-                        completeButton.disabled = true; // Disable tombol setelah selesai
-                        rejectButton.disabled = true; // Disable tombol tolak juga
+                        await updateOrderStatus(currentOrderCollection, currentOrderId, 'Selesai', completeButton);
+                        // Refresh modal content after status change
+                        showOrderDetail(currentOrderId);
                     };
                     modalFooterActions.appendChild(completeButton);
 
                     const rejectButton = document.createElement('button');
                     rejectButton.className = 'btn btn-danger btn-sm';
                     rejectButton.textContent = 'Tolak';
-                    rejectButton.dataset.originalText = 'Tolak'; // Untuk setButtonLoading
+                    rejectButton.dataset.originalText = 'Tolak';
                     rejectButton.onclick = async () => {
-                        await updateOrderStatus('pesananUmum', order.id, 'Ditolak', rejectButton);
-                        document.getElementById('detail-status').innerHTML = `<span class="status-badge status-ditolak">Ditolak</span>`;
-                        rejectButton.disabled = true; // Disable tombol setelah ditolak
-                        completeButton.disabled = true; // Disable tombol selesai juga
+                        await updateOrderStatus(currentOrderCollection, currentOrderId, 'Ditolak', rejectButton);
+                        // Refresh modal content after status change
+                        showOrderDetail(currentOrderId);
                     };
                     modalFooterActions.appendChild(rejectButton);
                 } else {
                      modalFooterActions.innerHTML += `<button class="btn btn-secondary btn-sm" disabled>Sudah ${order.status}</button>`;
                 }
             } else {
-                modalFooterActions.innerHTML += `<button class="btn btn-secondary btn-sm" disabled>Aksi tidak tersedia untuk pesanan reseller langsung</button>`;
+                modalFooterActions.innerHTML += `<button class="btn btn-secondary btn-sm" disabled>Aksi Status tidak tersedia untuk pesanan reseller langsung</button>`;
             }
 
             // Tampilkan modal
             orderDetailModal.show();
+        }
+
+        // Fungsi untuk mengunggah bukti selesai
+        uploadBuktiSelesaiBtn.addEventListener('click', async () => {
+            if (!currentOrderId || !currentOrderCollection) {
+                showToast('Pilih pesanan terlebih dahulu.', 'warning');
+                return;
+            }
+            const file = buktiSelesaiUpload.files[0];
+            if (!file) {
+                showToast('Pilih file gambar untuk diunggah.', 'warning');
+                return;
+            }
+
+            setButtonLoading(uploadBuktiSelesaiBtn, true);
+            const storageRef = storage.ref(`bukti_selesai/${currentOrderId}_${Date.now()}_${file.name}`);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    uploadBuktiSelesaiBtn.innerHTML = `Unggah (${Math.round(progress)}%)`;
+                },
+                (error) => {
+                    showToast('Gagal mengunggah bukti: ' + error.message, 'danger');
+                    setButtonLoading(uploadBuktiSelesaiBtn, false);
+                },
+                async () => {
+                    try {
+                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                        await dbFS.collection(currentOrderCollection).doc(currentOrderId).update({
+                            bukti_selesai_url: downloadURL,
+                            wa_aktif: true // Otomatis aktifkan WA saat bukti diupload
+                        });
+                        showToast('Bukti selesai berhasil diunggah!');
+                        // Refresh modal untuk menampilkan URL baru
+                        showOrderDetail(currentOrderId);
+                    } catch (error) {
+                        showToast('Gagal menyimpan URL bukti: ' + error.message, 'danger');
+                    } finally {
+                        setButtonLoading(uploadBuktiSelesaiBtn, false);
+                        uploadBuktiSelesaiBtn.innerHTML = 'Unggah Bukti';
+                    }
+                }
+            );
+        });
+
+        // Fungsi untuk menyimpan perubahan pada detail pesanan (nama, nohp, id game, catatan admin)
+        async function saveOrderChanges() {
+            if (!currentOrderId || !currentOrderCollection) {
+                showToast('Pilih pesanan terlebih dahulu.', 'warning');
+                return;
+            }
+
+            setButtonLoading(saveOrderChangesBtn, true);
+            const updatedData = {
+                nama: editCustomerNameInput.value,
+                nomor_hp: editCustomerPhoneInput.value,
+                id_game: editIdGameInput.value, // Simpan id_game
+                username_game: editIdGameInput.value, // Simpan juga sebagai username_game (kompatibilitas)
+                catatan: editNotesTextarea.value, // Catatan dari pembeli
+                admin_notes: adminNotesTextarea.value // Catatan admin
+            };
+
+            try {
+                await dbFS.collection(currentOrderCollection).doc(currentOrderId).update(updatedData);
+                showToast('Perubahan pesanan berhasil disimpan!');
+                // Update cache lokal
+                orderCache[currentOrderId] = { ...orderCache[currentOrderId], ...updatedData };
+                // Refresh modal untuk menampilkan perubahan terbaru
+                showOrderDetail(currentOrderId);
+                loadOrders(); // Refresh tabel di belakang modal
+            } catch (error) {
+                showToast('Gagal menyimpan perubahan: ' + error.message, 'danger');
+            } finally {
+                setButtonLoading(saveOrderChangesBtn, false);
+            }
+        }
+
+        // Fungsi untuk mengirim notifikasi WhatsApp
+        function sendWhatsappOrderDone(order) {
+            const phoneNumber = editCustomerPhoneInput.value.replace(/\D/g, ''); // Ambil dari input modal
+            const productName = order.produk || 'pesanan Anda';
+            const buktiSelesaiUrl = order.bukti_selesai_url || buktiSelesaiPreview.src; // Prefer yang sudah di-update di modal
+
+            if (!phoneNumber) {
+                showToast('Nomor HP pelanggan tidak ditemukan.', 'danger');
+                return;
+            }
+            if (!buktiSelesaiUrl) {
+                showToast('Silakan unggah bukti pesanan selesai terlebih dahulu.', 'warning');
+                return;
+            }
+
+            const message = encodeURIComponent(
+                `Halo ${editCustomerNameInput.value || 'Pelanggan'},\n\n` +
+                `Pesanan Anda untuk produk *${productName}* telah *Selesai* dan berhasil dikirimkan!\n\n` +
+                `Berikut adalah bukti pesanan Anda:\n${buktiSelesaiUrl}\n\n` +
+                `Terima kasih sudah berbelanja di [Nama Toko Anda]! 😊`
+            );
+
+            const whatsappLink = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${message}`;
+            window.open(whatsappLink, '_blank');
+            showToast('Tautan WhatsApp untuk notifikasi selesai telah dibuka!', 'info');
         }
 
 
@@ -1324,4 +1589,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
