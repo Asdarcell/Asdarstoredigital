@@ -230,10 +230,10 @@
         // ==========================================================
 
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-          projectId: "asdarstoredigitalll-d89c4",
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI DENGAN API KEY ANDA
+          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI DENGAN AUTH DOMAIN ANDA
+          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI DENGAN REALTIME DATABASE URL ANDA
+          projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN PROJECT ID ANDA
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -274,33 +274,31 @@
             toastBootstrap.show();
         }
 
+        // Fungsi untuk mengelola tampilan loading pada tombol
         function setButtonLoading(button, isLoading) {
-            if (isLoading) {
-                button.disabled = true;
-                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
-            } else {
-                button.disabled = false;
-                // Pastikan button.dataset.originalText sudah diset di DOMContentLoaded
-                button.innerHTML = button.dataset.originalText || 'Simpan'; // Fallback if not set
+            if (button) { // Pastikan tombol ada
+                if (isLoading) {
+                    button.disabled = true;
+                    button.dataset.originalText = button.innerHTML; // Simpan teks asli
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = button.dataset.originalText || 'Simpan'; // Kembalikan teks asli atau fallback
+                }
             }
         }
 
         // ====================================== TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Inisialisasi originalText untuk semua tombol submit
-            document.querySelectorAll('button[type="submit"]').forEach(button => {
+            // Inisialisasi originalText untuk semua tombol submit di form
+            document.querySelectorAll('form button[type="submit"]').forEach(button => {
                 button.dataset.originalText = button.innerHTML;
             });
             
-            // Inisialisasi originalText untuk tombol di tabel (jika ada)
-            // Ini perlu penanganan khusus karena tombol dibuat dinamis,
-            // atau bisa dihandle di dalam fungsi render/load masing-masing.
-            // Untuk saat ini, kita akan biarkan setButtonLoading memiliki fallback.
-
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
-            loadOrders(); // Panggil ini untuk pertama kali
+            loadOrders(); // Panggil ini untuk pertama kali saat halaman dimuat
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
@@ -336,7 +334,8 @@
         
         function loadProducts() {
             productsTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            dbFS.collection('produk').orderBy('urutan').onSnapshot(snapshot => { // Menggunakan onSnapshot untuk real-time update
+            // Menggunakan onSnapshot untuk real-time update
+            dbFS.collection('produk').orderBy('urutan').onSnapshot(snapshot => {
                 productsTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     productsTableBody.innerHTML = `<tr><td colspan="6">Belum ada produk.</td></tr>`;
@@ -452,6 +451,8 @@
         async function deleteProduct(id) {
             if (confirm('Yakin ingin menghapus produk ini?')) {
                 try {
+                    // Temporarily disable buttons in table if possible, or re-render after delete
+                    // For simplicity, we just delete and let onSnapshot refresh the table
                     await dbFS.collection('produk').doc(id).delete();
                     showToast('Produk berhasil dihapus!');
                 } catch (error) {
@@ -467,7 +468,8 @@
 
         function loadResellers() {
             resellersTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
-            dbFS.collection('resellers').onSnapshot(snapshot => { // Menggunakan onSnapshot
+            // Menggunakan onSnapshot untuk real-time update
+            dbFS.collection('resellers').onSnapshot(snapshot => {
                 resellersTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller.</td></td></tr>';
@@ -497,8 +499,7 @@
             const nominal = parseInt(nominalInput);
 
             if (!isNaN(nominal) && nominal > 0) {
-                const originalButtonText = button.innerHTML; // Simpan teks asli
-                setButtonLoading(button, true);
+                setButtonLoading(button, true); // Pastikan tombol ini memiliki dataset.originalText
                 const newSaldo = currentSaldo + nominal;
                 try {
                     await dbFS.collection('resellers').doc(resellerId).update({ saldo: newSaldo });
@@ -509,10 +510,9 @@
                     console.error("Error adding saldo:", error);
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText; // Kembalikan teks asli tombol
                 }
             } else {
-                showToast("Input nominal tidak valid.", 'warning');
+                showToast("Input nominal tidak valid. Nominal harus angka positif.", 'warning');
             }
         }
 
@@ -522,7 +522,8 @@
 
         function loadTopupConfirmations() {
             topupTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').onSnapshot(snapshot => { // Menggunakan onSnapshot
+            // Menggunakan onSnapshot untuk real-time update
+            dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').onSnapshot(snapshot => {
                 topupTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     topupTableBody.innerHTML = '<tr><td colspan="6">Belum ada konfirmasi top up.</td></tr>';
@@ -531,7 +532,7 @@
                 snapshot.forEach(doc => {
                     const konfirmasi = doc.data();
                     const row = topupTableBody.insertRow();
-                    const statusText = konfirmasi.status || 'Belum Ada Status';
+                    const statusText = konfirmasi.status || 'pending'; // Default status if missing
                     const statusClass = statusText.toLowerCase().replace(' ', '-');
                     row.innerHTML = `
                         <td>${doc.id}</td>
@@ -549,13 +550,12 @@
                 });
             }, error => {
                 console.error("Error loading top-up confirmations:", error);
-                topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat top up: ${error.message}</td></tr>`;
+                topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat konfirmasi top up: ${error.message}</td></tr>`;
                 showToast('Gagal memuat top up. Cek console log.', 'danger');
             });
         }
         
         async function approveTopup(id, resellerUid, nominal, button) {
-            const originalButtonText = button.innerHTML; // Simpan teks asli
             setButtonLoading(button, true);
             try {
                 const resellerRef = dbFS.collection('resellers').doc(resellerUid);
@@ -583,13 +583,11 @@
                 console.error("Error approving top-up:", error);
             } finally {
                 setButtonLoading(button, false);
-                button.innerHTML = originalButtonText; // Kembalikan teks asli tombol
             }
         }
         
         async function rejectTopup(id, button) {
             if (confirm('Yakin ingin menolak konfirmasi top up ini?')) {
-                const originalButtonText = button.innerHTML; // Simpan teks asli
                 setButtonLoading(button, true);
                 try {
                     await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'ditolak' });
@@ -599,7 +597,6 @@
                     console.error("Error rejecting top-up:", error);
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText; // Kembalikan teks asli tombol
                 }
             }
         }
@@ -613,6 +610,7 @@
         function loadOrders() {
             ordersTableBody.innerHTML = '<tr><td colspan="7">Memuat...</td></tr>'; // Tambah colspan untuk kolom WA Aktif
             
+            // Ambil pesanan umum dari Realtime Database
             const umumPromise = new Promise((resolve, reject) => {
                 dbRT.ref('pesananUmum').once('value').then(snapshot => {
                     const orders = [];
@@ -622,17 +620,22 @@
                             id: childSnap.key, 
                             ...orderData, 
                             type: 'umum', 
-                            created_at: orderData.waktu || orderData.timestamp || null // Gunakan null jika tidak ada
+                            // Untuk waktu, Realtime Database biasanya menyimpan sebagai string ISO atau timestamp number
+                            // Jika waktu disimpan sebagai string ISO, Date() akan mengkonversinya
+                            // Jika waktu tidak ada atau null, gunakan null atau tanggal default
+                            created_at: orderData.waktu || orderData.timestamp || null 
                         });
                     });
                     console.log("Realtime DB 'pesananUmum' data loaded:", orders); // DEBUG LOG
                     resolve(orders);
                 }).catch(error => {
                     console.error("Error loading pesananUmum from Realtime DB:", error);
-                    reject(new Error("RTDB: " + error.message)); // Propagate error
+                    // Penting: Jangan showToast di sini karena Promise.all akan menangani error secara keseluruhan
+                    reject(new Error("RTDB Error: " + error.message)); // Propagate error with source
                 });
             });
 
+            // Ambil pesanan reseller dari Firestore
             const resellerPromise = new Promise((resolve, reject) => {
                 dbFS.collection('pesananReseller').get().then(snapshot => {
                     const orders = [];
@@ -642,29 +645,34 @@
                             id: doc.id, 
                             ...orderData, 
                             type: 'reseller', 
-                            created_at: orderData.waktu || orderData.timestamp || null // Gunakan null jika tidak ada
+                            // Untuk waktu Firestore, biasanya Timestamp object.
+                            // Convert to milliseconds for consistent sorting.
+                            created_at: orderData.waktu ? orderData.waktu.toDate().toISOString() : orderData.timestamp ? orderData.timestamp.toDate().toISOString() : null
                         });
                     });
                     console.log("Firestore 'pesananReseller' data loaded:", orders); // DEBUG LOG
                     resolve(orders);
                 }).catch(error => {
                     console.error("Error loading pesananReseller from Firestore:", error);
-                    reject(new Error("Firestore: " + error.message)); // Propagate error
+                    // Penting: Jangan showToast di sini
+                    reject(new Error("Firestore Error: " + error.message)); // Propagate error with source
                 });
             });
 
             Promise.all([umumPromise, resellerPromise]).then(([umumOrders, resellerOrders]) => {
                 allOrdersData = [...umumOrders, ...resellerOrders];
                 
-                // Sortir berdasarkan created_at (terbaru di atas)
+                // Sortir semua pesanan berdasarkan waktu (terbaru di atas)
                 allOrdersData.sort((a, b) => {
-                    const timeA = a.created_at ? new Date(a.created_at) : new Date(0); 
-                    const timeB = b.created_at ? new Date(b.created_at) : new Date(0);
-                    return timeB.getTime() - timeA.getTime(); // Gunakan getTime() untuk perbandingan numerik
+                    // Pastikan created_at adalah format yang bisa dibandingkan (misal, string ISO atau timestamp number)
+                    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0; 
+                    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return timeB - timeA; // Urutkan dari terbaru ke terlama
                 });
                 
-                renderOrders(allOrdersData);
+                renderOrders(allOrdersData); // Panggil render setelah semua data dimuat dan diurutkan
             }).catch(error => {
+                // Tampilkan pesan error jika ada salah satu promise yang gagal
                 ordersTableBody.innerHTML = `<tr><td colspan="7" class="text-danger">Gagal memuat semua pesanan. Mohon periksa konsol browser.<br>Error: ${error.message}</td></tr>`;
                 console.error("Error combining or rendering orders:", error);
                 showToast('Gagal memuat pesanan. Cek konsol browser untuk detail.', 'danger');
@@ -687,45 +695,67 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const actualStatus = order.status || 'Belum Ada Status'; // Default text if status is missing
-                let statusClass = 'status-belum-bayar'; // Default CSS class
+                let statusClass = 'status-belum-bayar'; // Default CSS class, bisa diubah
 
+                // Logika penentuan kelas status
                 if (order.status) { 
                     const lowerCaseStatus = order.status.toLowerCase();
                     if (lowerCaseStatus.includes('pending')) statusClass = 'status-pending';
-                    else if (lowerCaseStatus.includes('disetujui')) statusClass = 'status-disetujui';
+                    else if (lowerCaseStatus.includes('disetujui')) statusClass = 'status-disetujui'; // Contoh: "Disetujui"
                     else if (lowerCaseStatus.includes('selesai')) statusClass = 'status-selesai';
-                    else if (lowerCaseStatus.includes('diproses')) statusClass = 'badge-info';
+                    else if (lowerCaseStatus.includes('diproses')) statusClass = 'badge-info'; // Contoh kelas Bootstrap info
                     else if (lowerCaseStatus.includes('dibatalkan') || lowerCaseStatus.includes('ditolak')) statusClass = 'status-ditolak';
-                    else statusClass = `status-${lowerCaseStatus.replace(' ', '-')}`; // Fallback for other statuses
+                    else statusClass = `status-${lowerCaseStatus.replace(' ', '-')}`; // Fallback untuk status lain
                 }
                 
                 const customerName = order.nama_pelanggan || order.nama_reseller || order.nama || 'Nama Tidak Ditemukan';
                 const productName = order.produk || 'Produk Tidak Ditemukan';
                 const finalPrice = formatRupiah(order.harga_akhir || order.harga_beli || 0); // Fleksibel untuk harga
                 
-                // Coba ambil nomor WA dari beberapa kemungkinan field
-                let phoneNumber = order.no_wa || order.telepon || order.nomor_hp || '';
-                // Hapus karakter non-digit dan pastikan diawali dengan 62
-                if (phoneNumber) {
-                    phoneNumber = phoneNumber.replace(/\D/g, ''); // Hapus semua non-digit
-                    if (phoneNumber.startsWith('0')) {
-                        phoneNumber = '62' + phoneNumber.substring(1); // Ganti 0 menjadi 62
-                    } else if (!phoneNumber.startsWith('62')) {
-                        phoneNumber = '62' + phoneNumber; // Tambahkan 62 jika tidak diawali 0 atau 62
+                // --- Logic untuk Nomor WA Aktif ---
+                let rawPhoneNumber = order.no_wa || order.telepon || order.nomor_hp || '';
+                let displayPhoneNumber = 'N/A';
+                let waLinkHtml = 'N/A';
+
+                if (rawPhoneNumber) {
+                    // Bersihkan nomor telepon: hanya angka
+                    let cleanedNumber = rawPhoneNumber.replace(/\D/g, ''); 
+
+                    // Pastikan format diawali dengan "62"
+                    if (cleanedNumber.startsWith('0')) {
+                        cleanedNumber = '62' + cleanedNumber.substring(1);
+                    } else if (!cleanedNumber.startsWith('62')) {
+                        // Jika tidak diawali 0 atau 62, asumsikan itu nomor lokal dan tambahkan 62
+                        cleanedNumber = '62' + cleanedNumber;
                     }
+                    
+                    displayPhoneNumber = rawPhoneNumber; // Tampilkan nomor asli di tabel
+                    waLinkHtml = `<a href="https://wa.me/${cleanedNumber}" target="_blank">${displayPhoneNumber}</a>`;
                 }
-                const waLink = phoneNumber ? `<a href="https://wa.me/${phoneNumber}" target="_blank">${phoneNumber}</a>` : 'N/A';
 
                 const row = ordersTableBody.insertRow();
                 row.innerHTML = `
                     <td><code>${order.id || 'N/A'}</code></td>
                     <td>${productName}</td>
                     <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName}</td>
-                    <td>${waLink}</td> 
+                    <td>${waLinkHtml}</td> 
                     <td>${finalPrice}</td>
                     <td><span class="status-badge ${statusClass}">${actualStatus}</span></td>
-                    <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a></td>
+                    <td>
+                        <a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a>
+                    </td>
                 `;
+                // Catatan: Tombol "Selesai" dan "Tolak" sekarang ada di halaman detail pesanan
+                // Jika ingin tetap ada di sini, Anda bisa menambahkannya kembali dengan logic:
+                /*
+                 <td>
+                    <a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a>
+                    ${order.status === 'pending' || order.status === 'belum-bayar' || order.status === 'diproses' ? `
+                        <button class="btn btn-success btn-sm mt-1" onclick="updateOrderStatus('${order.type === 'umum' ? 'umum' : 'reseller'}', '${order.id}', 'Selesai', this)">Selesai</button>
+                        <button class="btn btn-danger btn-sm mt-1" onclick="updateOrderStatus('${order.type === 'umum' ? 'umum' : 'reseller'}', '${order.id}', 'Ditolak', this)">Tolak</button>
+                    ` : ''}
+                </td>
+                */
             });
         }
         
@@ -733,7 +763,6 @@
         async function updateOrderStatus(collectionType, orderId, newStatus, button) {
             const confirmation = confirm(`Yakin ingin mengubah status pesanan ${orderId} menjadi "${newStatus}"?`);
             if (confirmation) {
-                const originalButtonText = button.innerHTML;
                 setButtonLoading(button, true);
                 try {
                     if (collectionType === 'umum') {
@@ -744,12 +773,12 @@
                         await dbFS.collection('pesananReseller').doc(orderId).update({ status: newStatus });
                     }
                     showToast('Status pesanan berhasil diubah!');
+                    // loadOrders(); // Perlu memuat ulang untuk melihat perubahan, atau onSnapshot di detail pesanan akan menangani
                 } catch (error) {
                     showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
                     console.error("Error updating order status:", error);
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText;
                 }
             }
         }
@@ -768,7 +797,7 @@
                 testimonialsTableBody.innerHTML = '';
                 if (!snapshot.exists()) {
                     testimonialsTableBody.innerHTML = '<tr><td colspan="4">Belum ada testimoni.</td></tr>';
-                    return; // Penting untuk menghentikan jika kosong
+                    return; 
                 }
                 snapshot.forEach(childSnap => {
                     const testi = { id: childSnap.key, ...childSnap.val() };
@@ -848,7 +877,6 @@
         }
         
         async function approveTestimonial(id, button) {
-            const originalButtonText = button.innerHTML;
             setButtonLoading(button, true);
             try {
                 await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' });
@@ -858,13 +886,11 @@
                 console.error("Error approving testimonial:", error);
             } finally {
                 setButtonLoading(button, false);
-                button.innerHTML = originalButtonText;
             }
         }
 
         async function deleteTestimonial(id, button) {
             if (confirm('Yakin ingin menghapus testimoni ini?')) {
-                const originalButtonText = button.innerHTML;
                 setButtonLoading(button, true);
                 try {
                     await dbRT.ref('testimonials/' + id).remove();
@@ -873,7 +899,6 @@
                     showToast('Gagal menghapus testimoni: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText;
                 }
             }
         }
@@ -894,7 +919,6 @@
                     faqTableBody.innerHTML = '<tr><td colspan="3">Belum ada FAQ.</td></tr>';
                     return;
                 }
-                // Convert object to array for easier iteration if needed, but direct object iteration is fine here
                 Object.keys(faqData).forEach((key) => {
                     const item = faqData[key];
                     const row = faqTableBody.insertRow();
@@ -958,7 +982,6 @@
         
         async function deleteFaq(id, button) {
             if (confirm('Yakin ingin menghapus FAQ ini?')) {
-                const originalButtonText = button.innerHTML;
                 setButtonLoading(button, true);
                 try {
                     await dbRT.ref('faq/' + id).remove();
@@ -967,7 +990,6 @@
                     showToast('Gagal menghapus FAQ: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText;
                 }
             }
         }
@@ -981,7 +1003,8 @@
 
         function loadPaymentMethods() {
             paymentsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbFS.collection('infoPembayaran').onSnapshot(snapshot => { // Menggunakan onSnapshot
+            // Menggunakan onSnapshot untuk real-time update
+            dbFS.collection('infoPembayaran').onSnapshot(snapshot => {
                 paymentsTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     paymentsTableBody.innerHTML = '<tr><td colspan="4">Belum ada info pembayaran.</td></tr>';
@@ -1056,7 +1079,6 @@
         
         async function deletePayment(id, button) {
             if (confirm('Yakin ingin menghapus info pembayaran ini?')) {
-                const originalButtonText = button.innerHTML;
                 setButtonLoading(button, true);
                 try {
                     await dbFS.collection('infoPembayaran').doc(id).delete();
@@ -1065,10 +1087,9 @@
                     showToast('Gagal menghapus info pembayaran: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
-                    button.innerHTML = originalButtonText;
                 }
             }
         }
     </script>
 </body>
-</html>
+    </html>
