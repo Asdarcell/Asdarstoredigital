@@ -98,7 +98,7 @@
             renderOrderDetails(doc.id, data);
         } catch (error) {
             console.error("Error loading order details:", error);
-            loadingMessage.innerHTML = '<h2>Terjadi kesalahan saat memuat data.</h2>';
+            loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Penyebab paling umum adalah Security Rules di Firebase. Pastikan sudah diatur dengan benar.</p><p>Error: ${error.message}</p>`;
         }
     }
 
@@ -106,6 +106,13 @@
         let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
         const customerInfo = data.nama_reseller ? `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan}` : `<strong>Pelanggan:</strong> ${data.nama_pelanggan}`;
         const price = formatRupiah(data.harga_final || data.harga_beli);
+
+        // Menampilkan semua data kontak yang ada
+        let contactInfo = `<strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}`;
+        if (data['no whatsap aktif']) {
+            contactInfo += `<br><strong>No WhatsApp Aktif:</strong> ${data['no whatsap aktif']}`;
+        }
+
 
         orderDetailsRow.innerHTML = `
             <div class="col-md-6 mb-4">
@@ -115,7 +122,7 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
                         <li class="list-group-item">${customerInfo}</li>
-                        <li class="list-group-item"><strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan}</li>
+                        <li class="list-group-item">${contactInfo}</li>
                         <li class="list-group-item"><strong>Produk:</strong> ${data.produk}</li>
                         <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
                         <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status}</span></li>
@@ -135,26 +142,23 @@
                         <button class="btn btn-danger btn-sm btn-status" onclick="updateStatus('Dibatalkan')">Dibatalkan</button>
                         <button class="btn btn-info btn-sm btn-status" onclick="generateWhatsappMessage()">Kirim WA</button>
                     </div>
-
                     <div class="mb-3">
                         <p class="mb-2"><strong>Unggah Bukti Pengiriman:</strong></p>
                         <input type="file" class="form-control" id="buktiPengirimanFile" accept="image/*">
                         <button class="btn btn-info btn-sm mt-2" onclick="uploadAdminProof(event)">Unggah & Simpan</button>
                     </div>
-
                     <div class="mt-4">
                         <p class="mb-2"><strong>Hapus Pesanan:</strong></p>
                         <button class="btn btn-danger btn-sm" onclick="deleteOrder()">Hapus Pesanan</button>
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-6 mb-4">
                 <div class="card p-4 h-100">
                     <h4 class="card-title">Bukti Pembayaran (Pelanggan)</h4>
                     <hr>
                     <div id="bukti-pembayaran-container">
-                        ${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img id="bukti-pembayaran-img" src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pembayaran diunggah.</p>`}
+                        ${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pembayaran diunggah.</p>`}
                     </div>
                 </div>
             </div>
@@ -163,40 +167,24 @@
                     <h4 class="card-title">Bukti Pengiriman (Admin)</h4>
                     <hr>
                     <div id="bukti-pengiriman-container">
-                        ${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img id="bukti-pengiriman-img" src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pengiriman dari admin.</p>`}
+                        ${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti pengiriman dari admin.</p>`}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // --- FUNGSI UPDATE STATUS VERSI BARU (TANPA RELOAD) ---
     async function updateStatus(newStatus) {
-        if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) {
-            return;
-        }
-
+        if (!confirm(`Apakah Anda yakin ingin mengubah status pesanan ini menjadi "${newStatus}"?`)) return;
         try {
-            await currentOrderDoc.ref.update({
-                status: newStatus,
-                waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
+            await currentOrderDoc.ref.update({ status: newStatus, waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp() });
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
-
-            // 1. Temukan elemen badge status di halaman
             const statusBadge = document.querySelector('.status-badge');
             if (statusBadge) {
-                // 2. Perbarui teks status secara langsung
                 statusBadge.textContent = newStatus;
-                
-                // 3. Hapus kelas status lama dan tambahkan kelas baru untuk mengubah warna
                 const oldClass = statusBadge.className.split(' ').find(c => c.startsWith('status-'));
-                if (oldClass) {
-                    statusBadge.classList.remove(oldClass);
-                }
-                const newClass = `status-${newStatus.toLowerCase().replace(/ /g, '-')}`;
-                statusBadge.classList.add(newClass);
+                if (oldClass) statusBadge.classList.remove(oldClass);
+                statusBadge.classList.add(`status-${newStatus.toLowerCase().replace(/ /g, '-')}`);
             }
         } catch (error) {
             console.error("Error updating status:", error);
@@ -204,96 +192,66 @@
         }
     }
 
-    // --- FUNGSI UPLOAD BUKTI VERSI BARU (TANPA RELOAD & DENGAN FEEDBACK) ---
     async function uploadAdminProof(event) {
         const fileInput = document.getElementById('buktiPengirimanFile');
         const file = fileInput.files[0];
-        const uploadButton = event.target; // Mengambil elemen tombol yang diklik
-
         if (!file) {
             alert("Pilih file gambar untuk diunggah.");
             return;
         }
-
-        // Menonaktifkan tombol dan mengubah teks untuk memberi feedback
+        const uploadButton = event.target;
         uploadButton.disabled = true;
         uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah...';
-
-        const orderId = currentOrderDoc.id;
-        const storageRef = storage.ref(`bukti_pengiriman/${orderId}-${Date.now()}-${file.name}`);
-        
+        const storageRef = storage.ref(`bukti_pengiriman/${currentOrderDoc.id}-${Date.now()}-${file.name}`);
         try {
             const uploadTask = await storageRef.put(file);
             const downloadURL = await uploadTask.ref.getDownloadURL();
-
-            await currentOrderDoc.ref.update({
-                bukti_pengiriman_url: downloadURL,
-                waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            alert("Bukti pengiriman berhasil diunggah dan disimpan!");
-            
-            // Perbarui UI secara langsung tanpa reload
+            await currentOrderDoc.ref.update({ bukti_pengiriman_url: downloadURL, waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp() });
+            alert("Bukti pengiriman berhasil diunggah!");
             const proofContainer = document.getElementById('bukti-pengiriman-container');
             if (proofContainer) {
-                proofContainer.innerHTML = `
-                    <a href="${downloadURL}" target="_blank">
-                        <img src="${downloadURL}" alt="Bukti Pengiriman" class="img-fluid img-proof">
-                    </a>
-                `;
+                proofContainer.innerHTML = `<a href="${downloadURL}" target="_blank"><img src="${downloadURL}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>`;
             }
         } catch (error) {
             console.error("Error uploading proof:", error);
-            alert("Gagal mengunggah bukti pengiriman. Silakan coba lagi.");
+            alert("Gagal mengunggah bukti pengiriman.");
         } finally {
-            // Mengembalikan tombol ke keadaan semula setelah proses selesai (baik berhasil maupun gagal)
             uploadButton.disabled = false;
             uploadButton.innerHTML = 'Unggah & Simpan';
-            fileInput.value = ''; // Mengosongkan input file
+            fileInput.value = '';
         }
     }
 
     async function deleteOrder() {
-        if (!confirm("PERINGATAN: Apakah Anda yakin ingin menghapus pesanan ini secara permanen? Aksi ini tidak bisa dibatalkan.")) {
-            return;
-        }
-
+        if (!confirm("PERINGATAN: Yakin ingin menghapus pesanan ini secara permanen?")) return;
         try {
             await currentOrderDoc.ref.delete();
             alert("Pesanan berhasil dihapus.");
             window.location.href = 'admin.html';
         } catch (error) {
             console.error("Error deleting order:", error);
-            alert("Gagal menghapus pesanan. Silakan coba lagi.");
+            alert("Gagal menghapus pesanan.");
         }
     }
 
     function generateWhatsappMessage() {
-    // --- FUNGSI KIRIM WA VERSI FINAL (SUDAH DIPERBAIKI) ---
+        if (!currentOrderDoc) return;
+        const orderId = currentOrderDoc.id;
+        const orderData = currentOrderDoc.data();
+        
+        const nomorTujuanWA = orderData['no whatsap aktif'] || orderData.nomor_pelanggan;
 
-function generateWhatsappMessage() {
-    if (!currentOrderDoc) return;
-    const orderId = currentOrderDoc.id;
-    const orderData = currentOrderDoc.data();
-    
-    // --- PERUBAHAN DI SINI ---
-    // Mengambil nomor WA menggunakan nama kolom yang benar dari database Anda.
-    // Kita wajib pakai kurung siku ['...'] karena nama kolomnya ada spasi.
-    const nomorTujuanWA = orderData['no whatsap aktif'] || orderData.nomor_pelanggan;
+        if (!nomorTujuanWA) {
+            alert("Nomor WhatsApp atau Nomor HP/ID Game tidak ditemukan untuk pesanan ini.");
+            return;
+        }
 
-    // Peringatan jika tidak ada nomor sama sekali
-    if (!nomorTujuanWA) {
-        alert("Nomor HP atau Nomor WhatsApp tidak ditemukan untuk pesanan ini.");
-        return;
-    }
-
-    const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
-    const produk = orderData.produk;
-    const status = document.querySelector('.status-badge').textContent;
-
-    const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
-    
-    const message = `Halo ${namaPelanggan},
+        const namaPelanggan = orderData.nama_pelanggan || orderData.nama_reseller;
+        const produk = orderData.produk;
+        const status = document.querySelector('.status-badge').textContent;
+        const statusLink = `${window.location.origin}/status.html?id=${orderId}`;
+        
+        const message = `Halo ${namaPelanggan},
 Pesananmu dengan ID ${orderId} sudah ${status}.
 
 Detail Pesanan:
@@ -304,10 +262,10 @@ Lihat status terbaru dan bukti pengiriman di:
 ${statusLink}
 
 Terima kasih atas pesanannya!`;
-    
-    const whatsappUrl = `https://wa.me/${nomorTujuanWA}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
+        
+        const whatsappUrl = `https://wa.me/${nomorTujuanWA}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    }
 
     document.addEventListener('DOMContentLoaded', loadOrderDetails);
 </script>
