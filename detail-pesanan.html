@@ -9,15 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
-            --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
-            --success: #28a745; --danger: #e74c3c;
-        }
-        [data-theme="dark"] {
-            --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
-            --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
-        }
+        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; --danger: #e74c3c; }
+        [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
         .container { margin-top: 30px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
@@ -37,11 +30,8 @@
         <h2>Kelola Pesanan</h2>
         <a href="admin.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
     </div>
-
     <div class="row" id="order-details-row">
-        <div class="col-md-12 text-center" id="loading-message">
-            <p>Memuat detail pesanan...</p>
-        </div>
+        <div class="col-md-12 text-center" id="loading-message"><p>Memuat detail pesanan...</p></div>
     </div>
 </div>
 
@@ -59,9 +49,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
-    
-    // Variabel konfigurasi untuk nama kolom WhatsApp.
-    // Sudah disesuaikan dengan nama yang benar di database Anda.
+    const storage = firebase.storage();
     const NAMA_KOLOM_WHATSAPP = 'no_whatsap_aktif';
 
     const orderDetailsRow = document.getElementById('order-details-row');
@@ -73,39 +61,28 @@
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        if (!orderId) {
-            loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>';
-            return;
-        }
+        if (!orderId) { loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>'; return; }
         try {
             let doc = await dbFS.collection('pesananUmum').doc(orderId).get();
-            if (!doc.exists) {
-                doc = await dbFS.collection('pesananReseller').doc(orderId).get();
-            }
-            if (!doc.exists) {
-                loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>';
-                return;
-            }
+            if (!doc.exists) doc = await dbFS.collection('pesananReseller').doc(orderId).get();
+            if (!doc.exists) { loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>'; return; }
             currentOrderDoc = doc;
             loadingMessage.style.display = 'none';
             renderOrderDetails(doc.id, doc.data());
         } catch (error) {
             console.error("Error loading order details:", error);
-            loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Pastikan Security Rules di Firebase sudah benar. Error: ${error.message}</p>`;
+            loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Error: ${error.message}</p>`;
         }
     }
 
     function renderOrderDetails(orderId, data) {
-        let statusClass = `status-${(data.status || 'Belum Bayar').toLowerCase().replace(/ /g, '-')}`;
+        let statusClass = `status-${(data.status || '').toLowerCase().replace(/ /g, '-')}`;
         const customerInfo = data.nama_reseller ? `<strong>Reseller:</strong> ${data.nama_reseller}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan}` : `<strong>Pelanggan:</strong> ${data.nama_pelanggan}`;
         const price = formatRupiah(data.harga_final || data.harga_beli);
-        
         let contactInfo = `<strong>Nomor HP / ID Game:</strong> ${data.nomor_pelanggan || 'N/A'}`;
-        // Memeriksa dan menampilkan nomor WA menggunakan variabel yang sudah benar
         if (data[NAMA_KOLOM_WHATSAPP]) {
             contactInfo += `<br><strong>No WhatsApp Aktif:</strong> ${data[NAMA_KOLOM_WHATSAPP]}`;
         }
-
         orderDetailsRow.innerHTML = `
             <div class="col-md-8 mb-4">
                 <div class="card p-4 h-100">
@@ -137,7 +114,7 @@
             <div class="col-md-6 mb-4">
                 <div class="card p-4">
                     <h4 class="card-title">Bukti Pembayaran (Pelanggan)</h4><hr>
-                    ${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti.</p>`}
+                    <div id="bukti-pembayaran-container">${data.bukti_pembayaran_url ? `<a href="${data.bukti_pembayaran_url}" target="_blank"><img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti.</p>`}</div>
                 </div>
             </div>
              <div class="col-md-6 mb-4">
@@ -145,29 +122,59 @@
                     <h4 class="card-title">Bukti Pengiriman (Admin)</h4><hr>
                      <input type="file" class="form-control form-control-sm mb-2" id="buktiPengirimanFile" accept="image/*">
                      <button class="btn btn-info btn-sm" onclick="uploadAdminProof(event)">Unggah Bukti</button>
-                    <div id="bukti-pengiriman-container" class="mt-2">
-                        ${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti.</p>`}
-                    </div>
+                    <div id="bukti-pengiriman-container" class="mt-2">${data.bukti_pengiriman_url ? `<a href="${data.bukti_pengiriman_url}" target="_blank"><img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>` : `<p>Belum ada bukti.</p>`}</div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 
-    async function updateStatus(newStatus) { /* Fungsi ini tidak perlu diubah */ }
-    async function uploadAdminProof(event) { /* Fungsi ini tidak perlu diubah */ }
+    async function updateStatus(newStatus) {
+        if (!confirm(`Yakin ingin mengubah status menjadi "${newStatus}"?`)) return;
+        try {
+            await currentOrderDoc.ref.update({ status: newStatus, waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp() });
+            alert(`Status berhasil diubah menjadi "${newStatus}"!`);
+            const statusBadge = document.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.textContent = newStatus;
+                const oldClass = statusBadge.className.split(' ').find(c => c.startsWith('status-'));
+                if (oldClass) statusBadge.classList.remove(oldClass);
+                statusBadge.classList.add(`status-${newStatus.toLowerCase().replace(/ /g, '-')}`);
+            }
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Gagal mengubah status.");
+        }
+    }
+
+    async function uploadAdminProof(event) {
+        const fileInput = document.getElementById('buktiPengirimanFile');
+        const file = fileInput.files[0];
+        if (!file) { alert("Pilih file untuk diunggah."); return; }
+        const uploadButton = event.target;
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah...';
+        const storageRef = storage.ref(`bukti_pengiriman/${currentOrderDoc.id}-${Date.now()}-${file.name}`);
+        try {
+            const uploadTask = await storageRef.put(file);
+            const downloadURL = await uploadTask.ref.getDownloadURL();
+            await currentOrderDoc.ref.update({ bukti_pengiriman_url: downloadURL, waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp() });
+            alert("Bukti pengiriman berhasil diunggah!");
+            const proofContainer = document.getElementById('bukti-pengiriman-container');
+            if (proofContainer) proofContainer.innerHTML = `<a href="${downloadURL}" target="_blank"><img src="${downloadURL}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>`;
+        } catch (error) {
+            console.error("Error uploading proof:", error);
+            alert("Gagal mengunggah bukti.");
+        } finally {
+            uploadButton.disabled = false;
+            uploadButton.innerHTML = 'Unggah Bukti';
+            fileInput.value = '';
+        }
+    }
 
     function generateWhatsappMessage() {
         if (!currentOrderDoc) return;
         const orderData = currentOrderDoc.data();
-        
-        // Menggunakan variabel untuk menentukan nomor tujuan WA yang benar
         const nomorTujuanWA = orderData[NAMA_KOLOM_WHATSAPP] || orderData.nomor_pelanggan;
-
-        if (!nomorTujuanWA) {
-            alert("Nomor WhatsApp atau Nomor HP/ID Game tidak ditemukan.");
-            return;
-        }
-
+        if (!nomorTujuanWA) { alert("Nomor WhatsApp tidak ditemukan."); return; }
         const statusLink = `${window.location.origin}/status.html?id=${currentOrderDoc.id}`;
         const message = `Halo ${orderData.nama_pelanggan}, Pesananmu (ID: ${currentOrderDoc.id}) dengan produk ${orderData.produk} sudah *${orderData.status}*. Lihat detail di: ${statusLink}. Terima kasih!`;
         const whatsappUrl = `https://wa.me/${nomorTujuanWA}?text=${encodeURIComponent(message)}`;
