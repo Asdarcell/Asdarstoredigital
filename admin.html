@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -53,6 +52,25 @@
         .img-proof { max-width: 100%; height: auto; display: block; margin-top: 10px; }
         .badge-info { background-color: #17a2b8; color: white; }
         .badge-warning { background-color: #ffc107; color: black; }
+        /* Style baru untuk tombol WA Aktif */
+        .btn-wa-active {
+            background-color: #25d366; /* WhatsApp green */
+            color: white;
+            border-color: #25d366;
+        }
+        .btn-wa-active:hover {
+            background-color: #1fad51;
+            border-color: #1fad51;
+        }
+        .btn-wa-inactive {
+            background-color: #6c757d; /* Grey */
+            color: white;
+            border-color: #6c757d;
+        }
+        .btn-wa-inactive:hover {
+            background-color: #5a6268;
+            border-color: #5a6268;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -68,6 +86,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link" id="testimonials-tab" data-bs-toggle="tab" data-bs-target="#testimonials" type="button" role="tab">Testimoni</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq" type="button" role="tab">FAQ</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Pembayaran</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="banners-tab" data-bs-toggle="tab" data-bs-target="#banners" type="button" role="tab">Banner</button></li>
             </ul>
         </header>
 
@@ -140,7 +159,14 @@
                     </select>
                     <table id="orders-table">
                         <thead>
-                            <tr><th>ID</th><th>Produk</th><th>Pelanggan</th><th>Harga</th><th>Status</th><th>Aksi</th></tr>
+                            <tr>
+                                <th>ID</th>
+                                <th>Produk</th>
+                                <th>Pelanggan</th>
+                                <th>No. HP</th> <th>Harga</th>
+                                <th>Status</th>
+                                <th>WA Aktif</th> <th>Aksi</th>
+                            </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -208,6 +234,28 @@
                     </table>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="banners" role="tabpanel">
+                <div class="section">
+                    <h2>Daftar Banner</h2>
+                    <table id="banners-table" class="table table-striped">
+                        <thead>
+                            <tr><th>Urutan</th><th>URL Gambar</th><th>Tautan</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <hr>
+                    <h2>Tambah/Edit Banner</h2>
+                    <form id="banner-form">
+                        <input type="hidden" id="bannerId" />
+                        <div class="mb-3"><label for="banner_url">URL Gambar</label><input type="text" id="banner_url" class="form-control" required></div>
+                        <div class="mb-3"><label for="banner_link">Tautan (opsional)</label><input type="text" id="banner_link" class="form-control"></div>
+                        <div class="mb-3"><label for="banner_urutan">Urutan Tampilan</label><input type="number" id="banner_urutan" class="form-control" value="0"></div>
+                        <button type="submit" class="btn btn-primary w-100">Simpan Banner</button>
+                        <button type="button" id="cancel-banner-edit-btn" class="btn btn-secondary w-100 mt-2" style="display:none;">Batal Edit</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -239,7 +287,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database();
+        const dbRT = firebase.database(); // Realtime Database juga digunakan
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -294,6 +342,7 @@
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
+            loadBanners(); // Memuat banner
         });
 
         document.getElementById('products-tab').addEventListener('click', loadProducts);
@@ -303,6 +352,7 @@
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
+        document.getElementById('banners-tab').addEventListener('click', loadBanners); // Event listener untuk tab banner
         document.getElementById('order-filter').addEventListener('change', loadOrders);
 
 
@@ -554,12 +604,12 @@
         }
 
 
-        // =================================== PESANAN (Firestore) ===================================
+        // =================================== PESANAN (Firestore & Realtime Database) ===================================
         const ordersTableBody = document.querySelector('#orders-table tbody');
 
         function loadOrders() {
             const filter = document.getElementById('order-filter').value;
-            ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
+            ordersTableBody.innerHTML = '<tr><td colspan="8">Memuat...</td></tr>'; // Tambah colspan karena ada kolom baru
             
             if (filter === 'all') {
                 loadCombinedOrders();
@@ -573,22 +623,53 @@
                 query = dbFS.collection('pesananReseller');
             }
 
-            query.orderBy('waktu', 'desc').onSnapshot(snapshot => {
+            query.orderBy('waktu', 'desc').onSnapshot(async snapshot => { // Menggunakan async di callback snapshot
                 ordersTableBody.innerHTML = '';
                 if (snapshot.empty) {
-                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan untuk kategori ini.</td></tr>`;
+                    ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan untuk kategori ini.</td></tr>`;
                     return;
                 }
+
+                // Ambil data reseller untuk pesanan reseller jika diperlukan
+                const resellerData = {};
+                if (filter === 'reseller') {
+                    const resellerSnap = await dbFS.collection('resellers').get();
+                    resellerSnap.forEach(doc => {
+                        resellerData[doc.id] = doc.data();
+                    });
+                }
+
                 snapshot.forEach(doc => {
                     const order = { id: doc.id, ...doc.data() };
                     const isResellerOrder = order.reseller_uid ? true : false;
+                    let customerPhone = '';
+                    let customerName = order.nama || order.nama_pelanggan;
+                    let waStatus = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
+                    let waClass = order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive';
+
+                    if (isResellerOrder && resellerData[order.reseller_uid]) {
+                        customerPhone = resellerData[order.reseller_uid].nomor_hp || ''; // Ambil nomor HP dari data reseller
+                        // Asumsi status WA reseller tidak disimpan di pesanan, hanya di data reseller.
+                        // Jika Anda menyimpan status WA di pesanan reseller, sesuaikan di sini.
+                    } else if (!isResellerOrder) {
+                        customerPhone = order.nomor_hp || ''; // Ambil nomor HP dari pesanan umum
+                    }
+
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${order.id}</td>
                         <td>${order.produk}</td>
-                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
+                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName}</td>
+                        <td>
+                            ${customerPhone ? `<a href="https://wa.me/${customerPhone.replace(/\D/g, '')}" target="_blank">${customerPhone}</a>` : 'N/A'}
+                        </td>
                         <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
                         <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
+                        <td>
+                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${filter === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
+                                <i class="fab fa-whatsapp"></i> ${waStatus}
+                            </button>` : 'N/A'}
+                        </td>
                         <td>
                             ${!isResellerOrder ? `
                             <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
@@ -596,35 +677,70 @@
                         </td>
                     `;
                 });
+            }, error => {
+                ordersTableBody.innerHTML = `<tr><td colspan="8" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
             });
         }
         
-        function loadCombinedOrders() {
+        async function loadCombinedOrders() {
             const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc').limit(25);
             const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc').limit(25);
 
-            Promise.all([umumRef.get(), resellerRef.get()]).then(([umumSnap, resellerSnap]) => {
+            try {
+                const [umumSnap, resellerSnap] = await Promise.all([umumRef.get(), resellerRef.get()]);
                 const combinedOrders = [];
+
+                // Ambil data reseller terlebih dahulu untuk lookup nomor HP
+                const resellerData = {};
+                const rSnap = await dbFS.collection('resellers').get();
+                rSnap.forEach(doc => {
+                    resellerData[doc.id] = doc.data();
+                });
+
                 umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
                 resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
                 
-                combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+                combinedOrders.sort((a, b) => {
+                    // Pastikan 'waktu' adalah objek Timestamp sebelum memanggil toMillis()
+                    const timeA = a.waktu && typeof a.waktu.toMillis === 'function' ? a.waktu.toMillis() : 0;
+                    const timeB = b.waktu && typeof b.waktu.toMillis === 'function' ? b.waktu.toMillis() : 0;
+                    return timeB - timeA;
+                });
                 
                 ordersTableBody.innerHTML = '';
                 if (combinedOrders.length === 0) {
-                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan.</td></tr>`;
+                    ordersTableBody.innerHTML = `<tr><td colspan="8">Belum ada pesanan.</td></tr>`;
                     return;
                 }
                 
                 combinedOrders.forEach(order => {
                     const isResellerOrder = order.type === 'reseller';
+                    let customerPhone = '';
+                    let customerName = order.nama || order.nama_pelanggan;
+                    let waStatus = order.wa_aktif === true ? 'Aktif' : 'Belum Aktif';
+                    let waClass = order.wa_aktif === true ? 'btn-wa-active' : 'btn-wa-inactive';
+
+                    if (isResellerOrder && resellerData[order.reseller_uid]) {
+                        customerPhone = resellerData[order.reseller_uid].nomor_hp || '';
+                    } else if (!isResellerOrder) {
+                        customerPhone = order.nomor_hp || '';
+                    }
+
                     const row = ordersTableBody.insertRow();
                     row.innerHTML = `
                         <td>${order.id}</td>
                         <td>${order.produk}</td>
-                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
+                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName}</td>
+                        <td>
+                            ${customerPhone ? `<a href="https://wa.me/${customerPhone.replace(/\D/g, '')}" target="_blank">${customerPhone}</a>` : 'N/A'}
+                        </td>
                         <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
                         <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
+                        <td>
+                            ${customerPhone ? `<button class="btn btn-sm ${waClass}" onclick="toggleWaStatus('${order.type === 'umum' ? 'pesananUmum' : 'pesananReseller'}', '${order.id}', ${order.wa_aktif || false}, this)">
+                                <i class="fab fa-whatsapp"></i> ${waStatus}
+                            </button>` : 'N/A'}
+                        </td>
                         <td>
                             ${!isResellerOrder ? `
                             <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
@@ -632,9 +748,10 @@
                         </td>
                     `;
                 });
-            }).catch(error => {
-                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
-            });
+            } catch (error) {
+                ordersTableBody.innerHTML = `<tr><td colspan="8" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
+                console.error("Error loading combined orders: ", error);
+            }
         }
 
         async function updateOrderStatus(collection, orderId, newStatus, button) {
@@ -648,6 +765,24 @@
                     showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
+                }
+            }
+        }
+
+        // Fungsi baru untuk mengubah status WA Aktif
+        async function toggleWaStatus(collection, orderId, currentWaStatus, button) {
+            const newWaStatus = !currentWaStatus;
+            const statusText = newWaStatus ? 'Aktif' : 'Belum Aktif';
+            if (confirm(`Yakin ingin mengubah status WA menjadi "${statusText}" untuk pesanan ${orderId}?`)) {
+                setButtonLoading(button, true);
+                try {
+                    await dbFS.collection(collection).doc(orderId).update({ wa_aktif: newWaStatus });
+                    showToast(`Status WA diubah menjadi ${statusText}!`);
+                } catch (error) {
+                    showToast('Gagal mengubah status WA: ' + error.message, 'danger');
+                } finally {
+                    setButtonLoading(button, false);
+                    // loadOrders() akan dipanggil otomatis oleh onSnapshot, jadi tidak perlu panggil ulang di sini
                 }
             }
         }
@@ -941,6 +1076,103 @@
                 }
             }
         }
+
+        // =================================== BANNER (Firestore) ===================================
+        const bannerForm = document.getElementById('banner-form');
+        const bannersTableBody = document.querySelector('#banners-table tbody');
+        const bannerFormBtn = bannerForm.querySelector('button[type="submit"]');
+        const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
+        let currentBannerId = null;
+        bannerFormBtn.dataset.originalText = bannerFormBtn.innerHTML;
+
+        function loadBanners() {
+            bannersTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
+            dbFS.collection('banners').orderBy('urutan').get().then(snapshot => {
+                bannersTableBody.innerHTML = '';
+                if (snapshot.empty) {
+                    bannersTableBody.innerHTML = '<tr><td colspan="4">Belum ada banner.</td></tr>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const banner = { id: doc.id, ...doc.data() };
+                    const row = bannersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${banner.urutan}</td>
+                        <td><a href="${banner.url_gambar}" target="_blank">Lihat Gambar</a></td>
+                        <td>${banner.link || 'Tidak ada'}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editBanner('${banner.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteBanner('${banner.id}', this)">Hapus</button>
+                        </td>
+                    `;
+                });
+            }).catch(error => {
+                bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat banner: ${error.message}</td></tr>`;
+            });
+        }
+
+        bannerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setButtonLoading(bannerFormBtn, true);
+            const data = {
+                url_gambar: document.getElementById('banner_url').value,
+                link: document.getElementById('banner_link').value || null,
+                urutan: parseInt(document.getElementById('banner_urutan').value) || 0,
+            };
+
+            try {
+                if (currentBannerId) {
+                    await dbFS.collection('banners').doc(currentBannerId).update(data);
+                    showToast('Banner berhasil diperbarui!');
+                } else {
+                    await dbFS.collection('banners').add(data);
+                    showToast('Banner berhasil ditambahkan!');
+                }
+                bannerForm.reset();
+                cancelBannerEditBtn.style.display = 'none';
+                currentBannerId = null;
+                loadBanners();
+            } catch (error) {
+                showToast('Gagal menyimpan banner: ' + error.message, 'danger');
+            } finally {
+                setButtonLoading(bannerFormBtn, false);
+            }
+        });
+
+        cancelBannerEditBtn.addEventListener('click', () => {
+            bannerForm.reset();
+            currentBannerId = null;
+            cancelBannerEditBtn.style.display = 'none';
+        });
+
+        async function editBanner(id) {
+            const doc = await dbFS.collection('banners').doc(id).get();
+            if (doc.exists) {
+                const banner = doc.data();
+                currentBannerId = id;
+                document.getElementById('banner_url').value = banner.url_gambar;
+                document.getElementById('banner_link').value = banner.link || '';
+                document.getElementById('banner_urutan').value = banner.urutan || 0;
+                cancelBannerEditBtn.style.display = 'block';
+                window.scrollTo({ top: document.getElementById('banners-tab').offsetTop, behavior: 'smooth' });
+            }
+        }
+
+        async function deleteBanner(id, button) {
+            if (confirm('Yakin ingin menghapus banner ini?')) {
+                setButtonLoading(button, true);
+                try {
+                    await dbFS.collection('banners').doc(id).delete();
+                    showToast('Banner berhasil dihapus!');
+                    loadBanners();
+                } catch (error) {
+                    showToast('Gagal menghapus banner: ' + error.message, 'danger');
+                } finally {
+                    setButtonLoading(button, false);
+                }
+            }
+        }
+
     </script>
 </body>
 </html>
