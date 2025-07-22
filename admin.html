@@ -139,9 +139,9 @@
                     </select>
                     <table id="orders-table">
                         <thead>
-                            <tr><th>ID</th><th>Produk</th><th>Pelanggan</th><th>WA Aktif</th><th>Harga</th><th>Status</th><th>Aksi</th></tr>
+                            <tr><th>ID</th><th>Produk</th><th>Pelanggan</th><th>Harga</th><th>Status</th><th>Aksi</th></tr>
                         </thead>
-                        <tbody id="orders-table-body"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -222,23 +222,23 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
         // ==========================================================
         //  FUNGSI DAN PENGATURAN UMUM
         // ==========================================================
 
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI DENGAN API KEY ANDA
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com", // GANTI DENGAN AUTH DOMAIN ANDA
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // GANTI DENGAN REALTIME DATABASE URL ANDA
-          projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN PROJECT ID ANDA
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+          projectId: "asdarstoredigitalll-d89c4",
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database(); // Realtime Database
+        const dbRT = firebase.database();
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -274,31 +274,22 @@
             toastBootstrap.show();
         }
 
-        // Fungsi untuk mengelola tampilan loading pada tombol
         function setButtonLoading(button, isLoading) {
-            if (button) { // Pastikan tombol ada
-                if (isLoading) {
-                    button.disabled = true;
-                    button.dataset.originalText = button.innerHTML; // Simpan teks asli
-                    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
-                } else {
-                    button.disabled = false;
-                    button.innerHTML = button.dataset.originalText || 'Simpan'; // Kembalikan teks asli atau fallback
-                }
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = button.dataset.originalText;
             }
         }
 
         // ====================================== TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Inisialisasi originalText untuk semua tombol submit di form
-            document.querySelectorAll('form button[type="submit"]').forEach(button => {
-                button.dataset.originalText = button.innerHTML;
-            });
-            
             loadProducts();
             loadResellers();
             loadTopupConfirmations();
-            loadOrders(); // Panggil ini untuk pertama kali saat halaman dimuat
+            loadOrders();
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
@@ -324,6 +315,7 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const productFormBtn = productForm.querySelector('button[type="submit"]');
         let currentProductId = null;
+        productFormBtn.dataset.originalText = productFormBtn.innerHTML;
 
         promoCheckbox.addEventListener('change', () => {
             promoOptions.style.display = promoCheckbox.checked ? 'block' : 'none';
@@ -334,32 +326,25 @@
         
         function loadProducts() {
             productsTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            // Menggunakan onSnapshot untuk real-time update
-            dbFS.collection('produk').orderBy('urutan').onSnapshot(snapshot => {
+            dbFS.collection('produk').orderBy('urutan').get().then(snapshot => {
                 productsTableBody.innerHTML = '';
-                if (snapshot.empty) {
-                    productsTableBody.innerHTML = `<tr><td colspan="6">Belum ada produk.</td></tr>`;
-                    return;
-                }
                 snapshot.forEach(doc => {
-                    const product = doc.data();
+                    const product = { id: doc.id, ...doc.data() };
                     const row = productsTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${product.nama_produk || 'N/A'}</td>
-                        <td>${product.kategori || 'N/A'}</td>
+                        <td>${product.nama_produk}</td>
+                        <td>${product.kategori}</td>
                         <td>${formatRupiah(product.harga_umum)}</td>
                         <td>${formatRupiah(product.harga_reseller)}</td>
-                        <td>${product.stok || 0}</td>
+                        <td>${product.stok}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editProduct('${doc.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editProduct('${product.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')">Hapus</button>
                         </td>
                     `;
                 });
-            }, error => {
-                console.error("Error loading products:", error);
+            }).catch(error => {
                 productsTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat produk: ${error.message}</td></tr>`;
-                showToast('Gagal memuat produk. Cek console log.', 'danger');
             });
         }
 
@@ -397,10 +382,9 @@
                 currentProductId = null;
                 promoCheckbox.checked = false;
                 promoOptions.style.display = 'none';
-                // loadProducts(); // onSnapshot akan menangani pembaruan secara otomatis
+                loadProducts();
             } catch (error) {
                 showToast('Gagal menyimpan produk: ' + error.message, 'danger');
-                console.error("Error saving product:", error);
             } finally {
                 setButtonLoading(productFormBtn, false);
             }
@@ -415,49 +399,39 @@
         });
 
         async function editProduct(id) {
-            try {
-                const doc = await dbFS.collection('produk').doc(id).get();
+            const doc = await dbFS.collection('produk').doc(id).get();
+            if (doc.exists) {
                 const product = doc.data();
-                if (product) {
-                    currentProductId = id;
-                    document.getElementById('nama_produk').value = product.nama_produk || '';
-                    document.getElementById('kategori').value = product.kategori || '';
-                    document.getElementById('deskripsi').value = product.deskripsi || '';
-                    document.getElementById('harga_umum').value = product.harga_umum || 0;
-                    document.getElementById('harga_reseller').value = product.harga_reseller || 0;
-                    document.getElementById('stok').value = product.stok || 0;
-                    document.getElementById('urutan').value = product.urutan || 0;
-                    if (product.promo) {
-                        promoCheckbox.checked = true;
-                        promoOptions.style.display = 'block';
-                        promoJenis.value = product.promo.jenis;
-                        promoNilai.value = product.promo.nilai;
-                    } else {
-                        promoCheckbox.checked = false;
-                        promoOptions.style.display = 'none';
-                        promoNilai.value = ''; // Clear promo value if not active
-                    }
-                    cancelEditBtn.style.display = 'block';
-                    window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
+                currentProductId = id;
+                document.getElementById('nama_produk').value = product.nama_produk;
+                document.getElementById('kategori').value = product.kategori;
+                document.getElementById('deskripsi').value = product.deskripsi;
+                document.getElementById('harga_umum').value = product.harga_umum;
+                document.getElementById('harga_reseller').value = product.harga_reseller;
+                document.getElementById('stok').value = product.stok;
+                document.getElementById('urutan').value = product.urutan || 0;
+                if (product.promo) {
+                    promoCheckbox.checked = true;
+                    promoOptions.style.display = 'block';
+                    promoJenis.value = product.promo.jenis;
+                    promoNilai.value = product.promo.nilai;
                 } else {
-                    showToast('Produk tidak ditemukan.', 'warning');
+                    promoCheckbox.checked = false;
+                    promoOptions.style.display = 'none';
                 }
-            } catch (error) {
-                showToast('Gagal memuat data produk untuk diedit: ' + error.message, 'danger');
-                console.error("Error editing product:", error);
+                cancelEditBtn.style.display = 'block';
+                window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
             }
         }
         
         async function deleteProduct(id) {
             if (confirm('Yakin ingin menghapus produk ini?')) {
                 try {
-                    // Temporarily disable buttons in table if possible, or re-render after delete
-                    // For simplicity, we just delete and let onSnapshot refresh the table
                     await dbFS.collection('produk').doc(id).delete();
+                    loadProducts();
                     showToast('Produk berhasil dihapus!');
                 } catch (error) {
                     showToast('Gagal menghapus produk: ' + error.message, 'danger');
-                    console.error("Error deleting product:", error);
                 }
             }
         }
@@ -468,51 +442,40 @@
 
         function loadResellers() {
             resellersTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
-            // Menggunakan onSnapshot untuk real-time update
-            dbFS.collection('resellers').onSnapshot(snapshot => {
+            dbFS.collection('resellers').get().then(snapshot => {
                 resellersTableBody.innerHTML = '';
-                if (snapshot.empty) {
-                    resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller.</td></td></tr>';
-                    return;
-                }
                 snapshot.forEach(doc => {
-                    const reseller = doc.data();
+                    const reseller = { id: doc.id, ...doc.data() };
                     const row = resellersTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${reseller.email || 'N/A'}</td>
+                        <td>${reseller.email}</td>
                         <td>${formatRupiah(reseller.saldo || 0)}</td>
                         <td>
-                            <button class="btn btn-primary btn-sm" onclick="addSaldo('${doc.id}', ${reseller.saldo || 0}, this)">Tambah Saldo</button>
+                            <button class="btn btn-primary btn-sm" onclick="addSaldo('${reseller.id}', ${reseller.saldo || 0}, this)">Tambah Saldo</button>
                         </td>
                     `;
                 });
-            }, error => {
-                console.error("Error loading resellers:", error);
+            }).catch(error => {
                 resellersTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat reseller: ${error.message}</td></tr>`;
-                showToast('Gagal memuat reseller. Cek console log.', 'danger');
             });
         }
         
         async function addSaldo(resellerId, currentSaldo, button) {
-            const nominalInput = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
-            if (nominalInput === null) return; // User cancelled
-            const nominal = parseInt(nominalInput);
-
-            if (!isNaN(nominal) && nominal > 0) {
-                setButtonLoading(button, true); // Pastikan tombol ini memiliki dataset.originalText
-                const newSaldo = currentSaldo + nominal;
+            const nominal = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
+            if (nominal && !isNaN(nominal) && parseInt(nominal) > 0) {
+                setButtonLoading(button, true);
+                const newSaldo = currentSaldo + parseInt(nominal);
                 try {
                     await dbFS.collection('resellers').doc(resellerId).update({ saldo: newSaldo });
                     showToast(`Saldo berhasil ditambahkan menjadi ${formatRupiah(newSaldo)}`);
-                    // loadResellers(); // onSnapshot akan otomatis memicu update
+                    loadResellers();
                 } catch (error) {
                     showToast('Gagal menambah saldo: ' + error.message, 'danger');
-                    console.error("Error adding saldo:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
-            } else {
-                showToast("Input nominal tidak valid. Nominal harus angka positif.", 'warning');
+            } else if (nominal !== null) {
+                showToast("Input tidak valid.", 'warning');
             }
         }
 
@@ -522,65 +485,54 @@
 
         function loadTopupConfirmations() {
             topupTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            // Menggunakan onSnapshot untuk real-time update
             dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').onSnapshot(snapshot => {
                 topupTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     topupTableBody.innerHTML = '<tr><td colspan="6">Belum ada konfirmasi top up.</td></tr>';
-                    return;
                 }
                 snapshot.forEach(doc => {
-                    const konfirmasi = doc.data();
+                    const konfirmasi = { id: doc.id, ...doc.data() };
                     const row = topupTableBody.insertRow();
-                    const statusText = konfirmasi.status || 'pending'; // Default status if missing
-                    const statusClass = statusText.toLowerCase().replace(' ', '-');
                     row.innerHTML = `
-                        <td>${doc.id}</td>
-                        <td>${konfirmasi.reseller_email || 'N/A'}</td>
+                        <td>${konfirmasi.id}</td>
+                        <td>${konfirmasi.reseller_email}</td>
                         <td>${formatRupiah(konfirmasi.nominal)}</td>
-                        <td>${konfirmasi.bukti_url ? `<a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a>` : 'Tidak Ada Bukti'}</td>
-                        <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
+                        <td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a><img src="${konfirmasi.bukti_url}" class="img-proof" style="display:none;"/></td>
+                        <td><span class="status-badge status-${konfirmasi.status.replace(' ', '-')}">${konfirmasi.status}</span></td>
                         <td>
                             ${konfirmasi.status === 'pending' ?
-                                `<button class="btn btn-success btn-sm" onclick="approveTopup('${doc.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, this)">Setujui</button>
-                                 <button class="btn btn-danger btn-sm" onclick="rejectTopup('${doc.id}', this)">Tolak</button>` :
+                                `<button class="btn btn-success btn-sm" onclick="approveTopup('${konfirmasi.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, this)">Setujui</button>
+                                 <button class="btn btn-danger btn-sm" onclick="rejectTopup('${konfirmasi.id}', this)">Tolak</button>` :
                                 `<button class="btn btn-sm btn-secondary" disabled>Selesai</button>`}
                         </td>
                     `;
                 });
             }, error => {
-                console.error("Error loading top-up confirmations:", error);
                 topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat konfirmasi top up: ${error.message}</td></tr>`;
-                showToast('Gagal memuat top up. Cek console log.', 'danger');
             });
         }
         
         async function approveTopup(id, resellerUid, nominal, button) {
             setButtonLoading(button, true);
             try {
-                const resellerRef = dbFS.collection('resellers').doc(resellerUid);
-                const konfirmasiRef = dbFS.collection('konfirmasiTopup').doc(id);
-
                 await dbFS.runTransaction(async (transaction) => {
+                    const resellerRef = dbFS.collection('resellers').doc(resellerUid);
+                    const konfirmasiRef = dbFS.collection('konfirmasiTopup').doc(id);
+                    
                     const resellerDoc = await transaction.get(resellerRef);
                     const konfirmasiDoc = await transaction.get(konfirmasiRef);
 
-                    if (!resellerDoc.exists) {
-                        throw new Error("Dokumen reseller tidak ditemukan.");
+                    if (!resellerDoc.exists || !konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
+                        throw new Error("Dokumen tidak ditemukan atau status sudah berubah.");
                     }
-                    if (!konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
-                        throw new Error("Dokumen konfirmasi top up tidak ditemukan atau status sudah berubah.");
-                    }
-
+                    
                     const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
                     transaction.update(resellerRef, { saldo: newSaldo });
                     transaction.update(konfirmasiRef, { status: 'disetujui' });
                 });
-                
                 showToast('Top up berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui top up: ' + error.message, 'danger');
-                console.error("Error approving top-up:", error);
             } finally {
                 setButtonLoading(button, false);
             }
@@ -594,7 +546,6 @@
                     showToast('Top up berhasil ditolak.');
                 } catch (error) {
                     showToast('Gagal menolak top up: ' + error.message, 'danger');
-                    console.error("Error rejecting top-up:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -602,181 +553,98 @@
         }
 
 
-        // =================================== PESANAN (Hybrid: Realtime & Firestore) ===================================
-        const ordersTableBody = document.querySelector('#orders-table-body');
-        const orderFilter = document.getElementById('order-filter');
-        let allOrdersData = []; // Menyimpan semua data pesanan setelah digabungkan
+        // =================================== PESANAN (Firestore) ===================================
+        const ordersTableBody = document.querySelector('#orders-table tbody');
 
         function loadOrders() {
-            ordersTableBody.innerHTML = '<tr><td colspan="7">Memuat...</td></tr>'; // Tambah colspan untuk kolom WA Aktif
+            const filter = document.getElementById('order-filter').value;
+            ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
             
-            // Ambil pesanan umum dari Realtime Database
-            const umumPromise = new Promise((resolve, reject) => {
-                dbRT.ref('pesananUmum').once('value').then(snapshot => {
-                    const orders = [];
-                    snapshot.forEach(childSnap => {
-                        const orderData = childSnap.val();
-                        orders.push({ 
-                            id: childSnap.key, 
-                            ...orderData, 
-                            type: 'umum', 
-                            // Untuk waktu, Realtime Database biasanya menyimpan sebagai string ISO atau timestamp number
-                            // Jika waktu disimpan sebagai string ISO, Date() akan mengkonversinya
-                            // Jika waktu tidak ada atau null, gunakan null atau tanggal default
-                            created_at: orderData.waktu || orderData.timestamp || null 
-                        });
-                    });
-                    console.log("Realtime DB 'pesananUmum' data loaded:", orders); // DEBUG LOG
-                    resolve(orders);
-                }).catch(error => {
-                    console.error("Error loading pesananUmum from Realtime DB:", error);
-                    // Penting: Jangan showToast di sini karena Promise.all akan menangani error secara keseluruhan
-                    reject(new Error("RTDB Error: " + error.message)); // Propagate error with source
-                });
-            });
-
-            // Ambil pesanan reseller dari Firestore
-            const resellerPromise = new Promise((resolve, reject) => {
-                dbFS.collection('pesananReseller').get().then(snapshot => {
-                    const orders = [];
-                    snapshot.forEach(doc => {
-                        const orderData = doc.data();
-                        orders.push({ 
-                            id: doc.id, 
-                            ...orderData, 
-                            type: 'reseller', 
-                            // Untuk waktu Firestore, biasanya Timestamp object.
-                            // Convert to milliseconds for consistent sorting.
-                            created_at: orderData.waktu ? orderData.waktu.toDate().toISOString() : orderData.timestamp ? orderData.timestamp.toDate().toISOString() : null
-                        });
-                    });
-                    console.log("Firestore 'pesananReseller' data loaded:", orders); // DEBUG LOG
-                    resolve(orders);
-                }).catch(error => {
-                    console.error("Error loading pesananReseller from Firestore:", error);
-                    // Penting: Jangan showToast di sini
-                    reject(new Error("Firestore Error: " + error.message)); // Propagate error with source
-                });
-            });
-
-            Promise.all([umumPromise, resellerPromise]).then(([umumOrders, resellerOrders]) => {
-                allOrdersData = [...umumOrders, ...resellerOrders];
-                
-                // Sortir semua pesanan berdasarkan waktu (terbaru di atas)
-                allOrdersData.sort((a, b) => {
-                    // Pastikan created_at adalah format yang bisa dibandingkan (misal, string ISO atau timestamp number)
-                    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0; 
-                    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-                    return timeB - timeA; // Urutkan dari terbaru ke terlama
-                });
-                
-                renderOrders(allOrdersData); // Panggil render setelah semua data dimuat dan diurutkan
-            }).catch(error => {
-                // Tampilkan pesan error jika ada salah satu promise yang gagal
-                ordersTableBody.innerHTML = `<tr><td colspan="7" class="text-danger">Gagal memuat semua pesanan. Mohon periksa konsol browser.<br>Error: ${error.message}</td></tr>`;
-                console.error("Error combining or rendering orders:", error);
-                showToast('Gagal memuat pesanan. Cek konsol browser untuk detail.', 'danger');
-            });
-        }
-        
-        function renderOrders(orders) {
-            const filterValue = orderFilter.value;
-            const filteredOrders = orders.filter(order => {
-                if (filterValue === 'all') return true;
-                return order.type === filterValue;
-            });
-            
-            ordersTableBody.innerHTML = '';
-            if (filteredOrders.length === 0) {
-                ordersTableBody.innerHTML = `<tr><td colspan="7">Belum ada pesanan untuk kategori ini.</td></tr>`;
+            if (filter === 'all') {
+                loadCombinedOrders();
                 return;
             }
-            
-            filteredOrders.forEach(order => {
-                const isResellerOrder = order.type === 'reseller';
-                const actualStatus = order.status || 'Belum Ada Status'; // Default text if status is missing
-                let statusClass = 'status-belum-bayar'; // Default CSS class, bisa diubah
 
-                // Logika penentuan kelas status
-                if (order.status) { 
-                    const lowerCaseStatus = order.status.toLowerCase();
-                    if (lowerCaseStatus.includes('pending')) statusClass = 'status-pending';
-                    else if (lowerCaseStatus.includes('disetujui')) statusClass = 'status-disetujui'; // Contoh: "Disetujui"
-                    else if (lowerCaseStatus.includes('selesai')) statusClass = 'status-selesai';
-                    else if (lowerCaseStatus.includes('diproses')) statusClass = 'badge-info'; // Contoh kelas Bootstrap info
-                    else if (lowerCaseStatus.includes('dibatalkan') || lowerCaseStatus.includes('ditolak')) statusClass = 'status-ditolak';
-                    else statusClass = `status-${lowerCaseStatus.replace(' ', '-')}`; // Fallback untuk status lain
+            let query;
+            if (filter === 'umum') {
+                query = dbFS.collection('pesananUmum');
+            } else if (filter === 'reseller') {
+                query = dbFS.collection('pesananReseller');
+            }
+
+            query.orderBy('waktu', 'desc').onSnapshot(snapshot => {
+                ordersTableBody.innerHTML = '';
+                if (snapshot.empty) {
+                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan untuk kategori ini.</td></tr>`;
+                    return;
                 }
-                
-                const customerName = order.nama_pelanggan || order.nama_reseller || order.nama || 'Nama Tidak Ditemukan';
-                const productName = order.produk || 'Produk Tidak Ditemukan';
-                const finalPrice = formatRupiah(order.harga_akhir || order.harga_beli || 0); // Fleksibel untuk harga
-                
-                // --- Logic untuk Nomor WA Aktif ---
-                let rawPhoneNumber = order.no_wa || order.telepon || order.nomor_hp || '';
-                let displayPhoneNumber = 'N/A';
-                let waLinkHtml = 'N/A';
-
-                if (rawPhoneNumber) {
-                    // Bersihkan nomor telepon: hanya angka
-                    let cleanedNumber = rawPhoneNumber.replace(/\D/g, ''); 
-
-                    // Pastikan format diawali dengan "62"
-                    if (cleanedNumber.startsWith('0')) {
-                        cleanedNumber = '62' + cleanedNumber.substring(1);
-                    } else if (!cleanedNumber.startsWith('62')) {
-                        // Jika tidak diawali 0 atau 62, asumsikan itu nomor lokal dan tambahkan 62
-                        cleanedNumber = '62' + cleanedNumber;
-                    }
-                    
-                    displayPhoneNumber = rawPhoneNumber; // Tampilkan nomor asli di tabel
-                    waLinkHtml = `<a href="https://wa.me/${cleanedNumber}" target="_blank">${displayPhoneNumber}</a>`;
-                }
-
-                const row = ordersTableBody.insertRow();
-                row.innerHTML = `
-                    <td><code>${order.id || 'N/A'}</code></td>
-                    <td>${productName}</td>
-                    <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${customerName}</td>
-                    <td>${waLinkHtml}</td> 
-                    <td>${finalPrice}</td>
-                    <td><span class="status-badge ${statusClass}">${actualStatus}</span></td>
-                    <td>
-                        <a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a>
-                    </td>
-                `;
-                // Catatan: Tombol "Selesai" dan "Tolak" sekarang ada di halaman detail pesanan
-                // Jika ingin tetap ada di sini, Anda bisa menambahkannya kembali dengan logic:
-                /*
-                 <td>
-                    <a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a>
-                    ${order.status === 'pending' || order.status === 'belum-bayar' || order.status === 'diproses' ? `
-                        <button class="btn btn-success btn-sm mt-1" onclick="updateOrderStatus('${order.type === 'umum' ? 'umum' : 'reseller'}', '${order.id}', 'Selesai', this)">Selesai</button>
-                        <button class="btn btn-danger btn-sm mt-1" onclick="updateOrderStatus('${order.type === 'umum' ? 'umum' : 'reseller'}', '${order.id}', 'Ditolak', this)">Tolak</button>
-                    ` : ''}
-                </td>
-                */
+                snapshot.forEach(doc => {
+                    const order = { id: doc.id, ...doc.data() };
+                    const isResellerOrder = order.reseller_uid ? true : false;
+                    const row = ordersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${order.id}</td>
+                        <td>${order.produk}</td>
+                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
+                        <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
+                        <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
+                        <td>
+                            ${!isResellerOrder ? `
+                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
+                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
+                        </td>
+                    `;
+                });
             });
         }
         
-        // Fungsi updateOrderStatus sekarang harus tahu koleksi apa yang diupdate
-        async function updateOrderStatus(collectionType, orderId, newStatus, button) {
+        function loadCombinedOrders() {
+            const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc').limit(25);
+            const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc').limit(25);
+
+            Promise.all([umumRef.get(), resellerRef.get()]).then(([umumSnap, resellerSnap]) => {
+                const combinedOrders = [];
+                umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
+                resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                
+                combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+                
+                ordersTableBody.innerHTML = '';
+                if (combinedOrders.length === 0) {
+                    ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan.</td></tr>`;
+                    return;
+                }
+                
+                combinedOrders.forEach(order => {
+                    const isResellerOrder = order.type === 'reseller';
+                    const row = ordersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${order.id}</td>
+                        <td>${order.produk}</td>
+                        <td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama || order.nama_pelanggan}</td>
+                        <td>${formatRupiah(order.harga_final || order.harga_beli)}</td>
+                        <td><span class="status-badge status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span></td>
+                        <td>
+                            ${!isResellerOrder ? `
+                            <button class="btn btn-success btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Selesai', this)">Selesai</button>
+                            <button class="btn btn-danger btn-sm" onclick="updateOrderStatus('pesananUmum', '${order.id}', 'Ditolak', this)">Tolak</button>` : '—'}
+                        </td>
+                    `;
+                });
+            }).catch(error => {
+                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`;
+            });
+        }
+
+        async function updateOrderStatus(collection, orderId, newStatus, button) {
             const confirmation = confirm(`Yakin ingin mengubah status pesanan ${orderId} menjadi "${newStatus}"?`);
             if (confirmation) {
                 setButtonLoading(button, true);
                 try {
-                    if (collectionType === 'umum') {
-                        // Untuk pesanan umum (dari RTDB)
-                        await dbRT.ref(`pesananUmum/${orderId}`).update({ status: newStatus });
-                    } else if (collectionType === 'reseller') {
-                        // Untuk pesanan reseller (dari Firestore)
-                        await dbFS.collection('pesananReseller').doc(orderId).update({ status: newStatus });
-                    }
+                    await dbFS.collection(collection).doc(orderId).update({ status: newStatus });
                     showToast('Status pesanan berhasil diubah!');
-                    // loadOrders(); // Perlu memuat ulang untuk melihat perubahan, atau onSnapshot di detail pesanan akan menangani
                 } catch (error) {
                     showToast('Gagal mengubah status pesanan: ' + error.message, 'danger');
-                    console.error("Error updating order status:", error);
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -790,6 +658,7 @@
         const testimonialFormBtn = testimonialForm.querySelector('button[type="submit"]');
         const cancelTestimonialEditBtn = document.getElementById('cancel-testimonial-edit-btn');
         let currentTestimonialId = null;
+        testimonialFormBtn.dataset.originalText = testimonialFormBtn.innerHTML;
 
         function loadTestimonials() {
             testimonialsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
@@ -797,18 +666,16 @@
                 testimonialsTableBody.innerHTML = '';
                 if (!snapshot.exists()) {
                     testimonialsTableBody.innerHTML = '<tr><td colspan="4">Belum ada testimoni.</td></tr>';
-                    return; 
                 }
                 snapshot.forEach(childSnap => {
                     const testi = { id: childSnap.key, ...childSnap.val() };
                     const row = testimonialsTableBody.insertRow();
-                    const statusText = testi.status || 'pending';
-                    const statusClass = statusText.toLowerCase().replace(' ', '-');
-                    const isApproved = statusText === 'disetujui';
+                    const statusClass = testi.status.replace(' ', '-');
+                    const isApproved = testi.status === 'disetujui';
                     row.innerHTML = `
-                        <td>${testi.nama || 'Anonim'}</td>
-                        <td>${testi.isi || ''}</td>
-                        <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
+                        <td>${testi.nama}</td>
+                        <td>${testi.isi}</td>
+                        <td><span class="status-badge status-${statusClass}">${testi.status}</span></td>
                         <td>
                             ${!isApproved ?
                                 `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${testi.id}', this)">Setujui</button>` :
@@ -818,36 +685,36 @@
                         </td>
                     `;
                 });
-            }, error => {
-                console.error("Error loading testimonials:", error);
-                testimonialsTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat testimoni: ${error.message}</td></tr>`;
-                showToast('Gagal memuat testimoni. Cek console log.', 'danger');
             });
         }
 
-        testimonialForm.addEventListener('submit', async (e) => {
+        testimonialForm.addEventListener('submit', (e) => {
             e.preventDefault();
             setButtonLoading(testimonialFormBtn, true);
             const nama = document.getElementById('testimonial-nama').value;
             const isi = document.getElementById('testimonial-isi').value;
             const data = { nama, isi, status: 'pending' };
 
-            try {
-                if (currentTestimonialId) {
-                    await dbRT.ref('testimonials/' + currentTestimonialId).update(data);
+            if (currentTestimonialId) {
+                dbRT.ref('testimonials/' + currentTestimonialId).update(data).then(() => {
                     showToast('Testimoni berhasil diperbarui!');
-                } else {
-                    await dbRT.ref('testimonials').push(data);
+                    testimonialForm.reset();
+                    currentTestimonialId = null;
+                    cancelTestimonialEditBtn.style.display = 'none';
+                }).catch(error => {
+                    showToast('Gagal memperbarui testimoni: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(testimonialFormBtn, false);
+                });
+            } else {
+                dbRT.ref('testimonials').push(data).then(() => {
                     showToast('Testimoni berhasil ditambahkan!');
-                }
-                testimonialForm.reset();
-                currentTestimonialId = null;
-                cancelTestimonialEditBtn.style.display = 'none';
-            } catch (error) {
-                showToast('Gagal menyimpan testimoni: ' + error.message, 'danger');
-                console.error("Error saving testimonial:", error);
-            } finally {
-                setButtonLoading(testimonialFormBtn, false);
+                    testimonialForm.reset();
+                }).catch(error => {
+                    showToast('Gagal menambahkan testimoni: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(testimonialFormBtn, false);
+                });
             }
         });
         
@@ -857,23 +724,17 @@
             cancelTestimonialEditBtn.style.display = 'none';
         });
 
-        async function editTestimonial(id) {
-            try {
-                const snapshot = await dbRT.ref('testimonials/' + id).once('value');
+        function editTestimonial(id) {
+            dbRT.ref('testimonials/' + id).once('value').then(snapshot => {
                 const item = snapshot.val();
                 if (item) {
-                    document.getElementById('testimonial-nama').value = item.nama || '';
-                    document.getElementById('testimonial-isi').value = item.isi || '';
+                    document.getElementById('testimonial-nama').value = item.nama;
+                    document.getElementById('testimonial-isi').value = item.isi;
                     currentTestimonialId = id;
                     cancelTestimonialEditBtn.style.display = 'block';
                     window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' });
-                } else {
-                    showToast('Testimoni tidak ditemukan.', 'warning');
                 }
-            } catch (error) {
-                showToast('Gagal memuat data testimoni untuk diedit: ' + error.message, 'danger');
-                console.error("Error editing testimonial:", error);
-            }
+            });
         }
         
         async function approveTestimonial(id, button) {
@@ -883,7 +744,6 @@
                 showToast('Testimoni berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui testimoni: ' + error.message, 'danger');
-                console.error("Error approving testimonial:", error);
             } finally {
                 setButtonLoading(button, false);
             }
@@ -909,6 +769,7 @@
         const faqTableBody = document.querySelector('#faq-table tbody');
         const faqFormBtn = faqForm.querySelector('button[type="submit"]');
         let currentFaqId = null;
+        faqFormBtn.dataset.originalText = faqFormBtn.innerHTML;
 
         function loadFaq() {
             faqTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
@@ -923,61 +784,55 @@
                     const item = faqData[key];
                     const row = faqTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${item.q || 'N/A'}</td>
-                        <td>${item.a || ''}</td>
+                        <td>${item.q}</td>
+                        <td>${item.a}</td>
                         <td>
                             <button class="btn btn-warning btn-sm" onclick="editFaq('${key}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteFaq('${key}', this)">Hapus</button>
                         </td>
                     `;
                 });
-            }, error => {
-                console.error("Error loading FAQ:", error);
-                faqTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat FAQ: ${error.message}</td></tr>`;
-                showToast('Gagal memuat FAQ. Cek console log.', 'danger');
             });
         }
         
-        faqForm.addEventListener('submit', async (e) => {
+        faqForm.addEventListener('submit', (e) => {
             e.preventDefault();
             setButtonLoading(faqFormBtn, true);
             const q = document.getElementById('faq_q').value;
             const a = document.getElementById('faq_a').value;
             const data = { q, a };
 
-            try {
-                if (currentFaqId) {
-                    await dbRT.ref('faq/' + currentFaqId).update(data);
+            if (currentFaqId) {
+                dbRT.ref('faq/' + currentFaqId).update(data).then(() => {
                     showToast('FAQ berhasil diperbarui!');
-                } else {
-                    await dbRT.ref('faq').push(data);
+                    faqForm.reset();
+                    currentFaqId = null;
+                }).catch(error => {
+                    showToast('Gagal memperbarui FAQ: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(faqFormBtn, false);
+                });
+            } else {
+                dbRT.ref('faq').push(data).then(() => {
                     showToast('FAQ berhasil ditambahkan!');
-                }
-                faqForm.reset();
-                currentFaqId = null;
-            } catch (error) {
-                showToast('Gagal menyimpan FAQ: ' + error.message, 'danger');
-                console.error("Error saving FAQ:", error);
-            } finally {
-                setButtonLoading(faqFormBtn, false);
+                    faqForm.reset();
+                }).catch(error => {
+                    showToast('Gagal menambahkan FAQ: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(faqFormBtn, false);
+                });
             }
         });
         
-        async function editFaq(id) {
-            try {
-                const snapshot = await dbRT.ref('faq/' + id).once('value');
+        function editFaq(id) {
+            dbRT.ref('faq/' + id).once('value').then(snapshot => {
                 const item = snapshot.val();
                 if (item) {
-                    document.getElementById('faq_q').value = item.q || '';
-                    document.getElementById('faq_a').value = item.a || '';
+                    document.getElementById('faq_q').value = item.q;
+                    document.getElementById('faq_a').value = item.a;
                     currentFaqId = id;
-                } else {
-                    showToast('FAQ tidak ditemukan.', 'warning');
                 }
-            } catch (error) {
-                showToast('Gagal memuat data FAQ untuk diedit: ' + error.message, 'danger');
-                console.error("Error editing FAQ:", error);
-            }
+            });
         }
         
         async function deleteFaq(id, button) {
@@ -1000,37 +855,32 @@
         const paymentsTableBody = document.querySelector('#payments-table tbody');
         const paymentFormBtn = paymentForm.querySelector('button[type="submit"]');
         let currentPaymentId = null;
+        paymentFormBtn.dataset.originalText = paymentFormBtn.innerHTML;
 
         function loadPaymentMethods() {
             paymentsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            // Menggunakan onSnapshot untuk real-time update
-            dbFS.collection('infoPembayaran').onSnapshot(snapshot => {
+            dbFS.collection('infoPembayaran').get().then(snapshot => {
                 paymentsTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     paymentsTableBody.innerHTML = '<tr><td colspan="4">Belum ada info pembayaran.</td></tr>';
-                    return;
                 }
                 snapshot.forEach(doc => {
-                    const payment = doc.data();
+                    const payment = { id: doc.id, ...doc.data() };
                     const row = paymentsTableBody.insertRow();
                     row.innerHTML = `
-                        <td>${payment.metode || 'N/A'}</td>
-                        <td>${payment.nomor || 'N/A'}</td>
-                        <td>${payment.atas_nama || 'N/A'}</td>
+                        <td>${payment.metode}</td>
+                        <td>${payment.nomor}</td>
+                        <td>${payment.atas_nama}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" onclick="editPayment('${doc.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deletePayment('${doc.id}', this)">Hapus</button>
+                            <button class="btn btn-warning btn-sm" onclick="editPayment('${payment.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deletePayment('${payment.id}', this)">Hapus</button>
                         </td>
                     `;
                 });
-            }, error => {
-                console.error("Error loading payment methods:", error);
-                paymentsTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat pembayaran: ${error.message}</td></tr>`;
-                showToast('Gagal memuat pembayaran. Cek console log.', 'danger');
             });
         }
         
-        paymentForm.addEventListener('submit', async (e) => {
+        paymentForm.addEventListener('submit', (e) => {
             e.preventDefault();
             setButtonLoading(paymentFormBtn, true);
             const data = {
@@ -1040,41 +890,40 @@
             };
 
             const collectionRef = dbFS.collection('infoPembayaran');
-            try {
-                if (currentPaymentId) {
-                    await collectionRef.doc(currentPaymentId).update(data);
+            if (currentPaymentId) {
+                collectionRef.doc(currentPaymentId).update(data).then(() => {
                     showToast('Info pembayaran berhasil diperbarui!');
-                } else {
-                    await collectionRef.add(data);
+                    paymentForm.reset();
+                    currentPaymentId = null;
+                    loadPaymentMethods();
+                }).catch(error => {
+                    showToast('Gagal memperbarui: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(paymentFormBtn, false);
+                });
+            } else {
+                collectionRef.add(data).then(() => {
                     showToast('Info pembayaran berhasil ditambahkan!');
-                }
-                paymentForm.reset();
-                currentPaymentId = null;
-                // loadPaymentMethods(); // onSnapshot akan menangani pembaruan otomatis
-            } catch (error) {
-                showToast('Gagal menyimpan info pembayaran: ' + error.message, 'danger');
-                console.error("Error saving payment method:", error);
-            } finally {
-                setButtonLoading(paymentFormBtn, false);
+                    paymentForm.reset();
+                    loadPaymentMethods();
+                }).catch(error => {
+                    showToast('Gagal menambahkan: ' + error.message, 'danger');
+                }).finally(() => {
+                    setButtonLoading(paymentFormBtn, false);
+                });
             }
         });
         
-        async function editPayment(id) {
-            try {
-                const doc = await dbFS.collection('infoPembayaran').doc(id).get();
-                const payment = doc.data();
-                if (payment) {
-                    document.getElementById('payment_metode').value = payment.metode || '';
-                    document.getElementById('payment_nomor').value = payment.nomor || '';
-                    document.getElementById('payment_an').value = payment.atas_nama || '';
+        function editPayment(id) {
+            dbFS.collection('infoPembayaran').doc(id).get().then(doc => {
+                if (doc.exists) {
+                    const payment = doc.data();
+                    document.getElementById('payment_metode').value = payment.metode;
+                    document.getElementById('payment_nomor').value = payment.nomor;
+                    document.getElementById('payment_an').value = payment.atas_nama;
                     currentPaymentId = id;
-                } else {
-                    showToast('Info pembayaran tidak ditemukan.', 'warning');
                 }
-            } catch (error) {
-                showToast('Gagal memuat data pembayaran untuk diedit: ' + error.message, 'danger');
-                console.error("Error editing payment method:", error);
-            }
+            });
         }
         
         async function deletePayment(id, button) {
@@ -1083,8 +932,9 @@
                 try {
                     await dbFS.collection('infoPembayaran').doc(id).delete();
                     showToast('Info pembayaran berhasil dihapus!');
+                    loadPaymentMethods();
                 } catch (error) {
-                    showToast('Gagal menghapus info pembayaran: ' + error.message, 'danger');
+                    showToast('Gagal menghapus: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
                 }
@@ -1092,4 +942,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
