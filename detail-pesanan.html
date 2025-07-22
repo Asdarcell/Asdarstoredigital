@@ -98,7 +98,7 @@
         if (cleaned.startsWith('08')) {
             cleaned = '62' + cleaned.substring(1);
         }
-        if (!cleaned.startsWith('62') && cleaned.length > 0) { // Hanya tambahkan 62 jika belum ada dan ada angka
+        if (cleaned.length > 0 && !cleaned.startsWith('62')) { // Hanya tambahkan 62 jika belum ada dan ada angka
             cleaned = '62' + cleaned;
         }
         return cleaned;
@@ -261,7 +261,7 @@
         const cleanedFormattedPhone = cleanPhoneNumber(customerPhoneInput);
 
         const updates = {
-            // Kita update field yang umum, atau yang paling sering digunakan
+            // Field standar untuk Firestore (pesananUmum, pesananReseller)
             customer_name: editedCustomerName,
             customer_phone: cleanedFormattedPhone, 
             game_id: editedGameId, 
@@ -269,22 +269,25 @@
         };
 
         try {
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore
+            if (orderCollectionType !== 'pesananRTDB') { // Firestore (pesananUmum, pesananReseller)
                 await currentOrderDocRef.update(updates);
                 alert("Detail pesanan berhasil diperbarui di Firestore!");
-            } else { // Realtime Database
-                // Untuk RTDB, kita juga mencoba update field lama yang mungkin ada
-                if (currentOrderData.hasOwnProperty('nama_pelanggan')) updates.nama_pelanggan = editedCustomerName;
-                if (currentOrderData.hasOwnProperty('nama')) updates.nama = editedCustomerName;
-
-                if (currentOrderData.hasOwnProperty('nomor_hp')) updates.nomor_hp = cleanedFormattedPhone;
-                if (currentOrderData.hasOwnProperty('nomor')) updates.nomor = cleanedFormattedPhone;
-
-                if (currentOrderData.hasOwnProperty('id_game')) updates.id_game = editedGameId;
-                if (currentOrderData.hasOwnProperty('id')) updates.id = editedGameId;
-                if (currentOrderData.hasOwnProperty('username_game')) updates.username_game = editedGameId;
-
-                await currentOrderDocRef.update(updates);
+            } else { // Realtime Database (pesanan)
+                // Untuk RTDB, kita mencoba memperbarui field asli yang mungkin berbeda namanya
+                // dan juga menambahkan field baru jika tidak ada untuk konsistensi di masa depan
+                const rtdbUpdates = {
+                    catatan_admin: editedAdminNotes,
+                    // Prioritaskan field asli jika ada, kalau tidak pakai field standar
+                    nama_pelanggan: currentOrderData.hasOwnProperty('nama_pelanggan') ? editedCustomerName : (currentOrderData.hasOwnProperty('nama') ? editedCustomerName : editedCustomerName),
+                    nomor_hp: currentOrderData.hasOwnProperty('nomor_hp') ? cleanedFormattedPhone : (currentOrderData.hasOwnProperty('nomor') ? cleanedFormattedPhone : cleanedFormattedPhone),
+                    id_game: currentOrderData.hasOwnProperty('id_game') ? editedGameId : (currentOrderData.hasOwnProperty('id') ? editedGameId : (currentOrderData.hasOwnProperty('username_game') ? editedGameId : editedGameId)),
+                    // Tambahkan juga field standar jika belum ada di RTDB untuk konsistensi
+                    customer_name: editedCustomerName,
+                    customer_phone: cleanedFormattedPhone,
+                    game_id: editedGameId
+                };
+                
+                await currentOrderDocRef.update(rtdbUpdates);
                 alert("Detail pesanan berhasil diperbarui di Realtime Database!");
             }
             location.reload(); 
@@ -362,6 +365,17 @@
         }
 
         try {
+            // Jika ada bukti pengiriman yang diunggah admin, coba hapus juga dari storage
+            if (currentOrderData.bukti_pengiriman_url) {
+                const imageRef = storage.refFromURL(currentOrderData.bukti_pengiriman_url);
+                await imageRef.delete().catch(e => console.warn("Could not delete admin proof from storage, might not exist:", e));
+            }
+            // Jika ada bukti pembayaran dari pelanggan, coba hapus juga dari storage
+            if (currentOrderData.bukti_pembayaran_url) {
+                const imageRef = storage.refFromURL(currentOrderData.bukti_pembayaran_url);
+                await imageRef.delete().catch(e => console.warn("Could not delete customer payment proof from storage, might not exist:", e));
+            }
+
             if (orderCollectionType !== 'pesananRTDB') { // Firestore
                 await currentOrderDocRef.delete();
             } else { // Realtime Database
@@ -377,10 +391,10 @@
 
     // Fungsi untuk membuat dan membuka pesan WhatsApp
     function generateWhatsappMessage() {
-        const orderData = currentOrderData;
-        
-        // Ambil nomor HP dan bukti dari elemen yang sudah ada di halaman (mungkin sudah diedit)
+        // Ambil data terbaru dari DOM yang sudah diedit
+        const namaPelanggan = document.getElementById('editCustomerName').value || 'Pelanggan';
         const customerPhone = cleanPhoneNumber(document.getElementById('editCustomerPhone').value);
+        
         if (!customerPhone || customerPhone === '62') {
             alert("Nomor HP pelanggan belum valid. Mohon isi atau perbaiki terlebih dahulu.");
             return;
@@ -392,19 +406,17 @@
             return;
         }
 
-        const namaPelanggan = document.getElementById('editCustomerName').value || 'Pelanggan';
-        const orderId = orderData.id;
-        const productName = orderData.produk || orderData.product_name || 'Produk';
-        const orderStatus = orderData.status || 'Selesai';
+        const orderId = currentOrderData.id;
+        const productName = currentOrderData.produk || currentOrderData.product_name || 'Produk';
+        const orderStatus = currentOrderData.status || 'Selesai';
 
         // Tentukan nama koleksi yang tepat untuk link status
         let statusCollectionForLink = orderCollectionType;
         if (orderCollectionType === 'pesananUmum' || orderCollectionType === 'pesananReseller') {
              // Biarkan saja nama koleksinya karena sudah benar
         } else if (orderCollectionType === 'pesananRTDB') {
-             statusCollectionForLink = 'pesananRTDB'; // Gunakan nama ini untuk indikator RTDB
+             statusCollectionForLink = 'pesananRTDB'; 
         }
-
 
         // Link ke halaman status pesanan (asumsi ada halaman status.html)
         const statusLink = `${window.location.origin}/status.html?id=${orderId}&collection=${statusCollectionForLink}`;
@@ -431,12 +443,14 @@ Terima kasih atas pesanannya! 😊`;
     // Fungsi untuk mengaktifkan/menonaktifkan tombol "Kirim Notif WA Selesai"
     function checkWhatsappButtonStatus() {
         const btnKirimWaNotif = document.getElementById('btnKirimWaNotif');
-        // Ambil data terbaru dari DOM jika sudah diedit
+        // Ambil nomor telepon dari input field, bukan hanya dari currentOrderData
         const currentPhoneValue = document.getElementById('editCustomerPhone').value;
         const customerPhone = cleanPhoneNumber(currentPhoneValue);
-        const buktiPengirimanUrl = currentOrderData.bukti_pengiriman_url; // Masih dari currentOrderData, akan diupdate setelah upload
+        
+        // Bukti pengiriman masih dari currentOrderData, karena update bukti akan reload halaman
+        const buktiPengirimanUrl = currentOrderData.bukti_pengiriman_url; 
 
-        if (customerPhone && customerPhone !== '62' && buktiPengirimanUrl) {
+        if (customerPhone && customerPhone.length > 2 && buktiPengirimanUrl) { // Minimal 62 + 1 digit
             btnKirimWaNotif.disabled = false;
         } else {
             btnKirimWaNotif.disabled = true;
