@@ -87,7 +87,7 @@
     // Simpan data pesanan saat dimuat
     let currentOrderDocRef; // Reference ke doc di Firestore atau path di RTDB
     let currentOrderData = {}; // Menyimpan data pesanan yang dimuat
-    let orderCollectionType; // 'pesananUmum', 'pesananReseller', atau 'pesananRTDB'
+    let orderCollectionType; // 'pesananRTDB' atau 'pesananReseller'
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
@@ -121,7 +121,7 @@
         console.log(`Loading order ID: ${orderId} from collection: ${collection}`); // Debugging
 
         try {
-            if (collection === 'pesananRTDB') {
+            if (collection === 'pesananRTDB') { // Pesanan Biasa (Realtime Database)
                 currentOrderDocRef = dbRT.ref(`pesanan/${orderId}`);
                 const snapshot = await currentOrderDocRef.once('value');
                 if (snapshot.exists()) {
@@ -132,8 +132,8 @@
                 } else {
                     loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan di Realtime Database.</h2>';
                 }
-            } else { // Firestore (pesananUmum or pesananReseller)
-                currentOrderDocRef = dbFS.collection(collection).doc(orderId);
+            } else if (collection === 'pesananReseller') { // Pesanan Reseller (Firestore)
+                currentOrderDocRef = dbFS.collection('pesananReseller').doc(orderId);
                 const doc = await currentOrderDocRef.get();
                 if (doc.exists) {
                     currentOrderData = doc.data();
@@ -143,6 +143,8 @@
                 } else {
                     loadingMessage.innerHTML = `<h2>Pesanan tidak ditemukan di Firestore koleksi "${collection}".</h2>`;
                 }
+            } else {
+                loadingMessage.innerHTML = `<h2>Tipe koleksi tidak dikenali: "${collection}".</h2>`;
             }
         } catch (error) {
             console.error("Error loading order details:", error);
@@ -181,7 +183,14 @@
         const waActiveText = waActive ? 'Aktif' : 'Belum Aktif';
         const waActiveDotClass = waActive ? 'active' : 'inactive';
 
-        const customerInfoDisplay = data.isResellerOrder ? `<strong>Reseller:</strong> ${data.nama_reseller || 'N/A'}<br><strong>Pelanggan:</strong> ${customerName}` : `<strong>Pelanggan:</strong> ${customerName}`;
+        // Tentukan label pelanggan berdasarkan tipe koleksi
+        let customerLabel = "Pelanggan";
+        if (orderCollectionType === 'pesananReseller') {
+            customerLabel = "Nama Pembeli (Reseller)";
+        } else { // 'pesananRTDB' (Pesanan Biasa)
+            customerLabel = "Nama Pelanggan";
+        }
+
         let statusClass = `status-${orderStatus.toLowerCase().replace(/ /g, '-')}`;
 
         orderDetailsRow.innerHTML = `
@@ -192,8 +201,8 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>ID Pesanan:</strong> <code>${orderId}</code></li>
                         <li class="list-group-item">
-                            <label for="editCustomerName" class="form-label"><strong>Nama Pelanggan:</strong></label>
-                            <input type="text" class="form-control" id="editCustomerName" value="${customerName}" placeholder="Nama Pelanggan">
+                            <label for="editCustomerName" class="form-label"><strong>${customerLabel}:</strong></label>
+                            <input type="text" class="form-control" id="editCustomerName" value="${customerName}" placeholder="${customerLabel}">
                         </li>
                         <li class="list-group-item">
                             <label for="editCustomerPhone" class="form-label"><strong>No. HP (WhatsApp):</strong></label>
@@ -284,34 +293,37 @@
             return;
         }
 
-        const updates = {
-            customer_name: editedCustomerName || 'N/A', // Set default jika kosong
-            customer_phone: cleanedFormattedPhone || 'N/A',
-            game_id: editedGameId || 'N/A',
-            catatan_admin: editedAdminNotes
-        };
-
         try {
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore (pesananUmum, pesananReseller)
+            if (orderCollectionType === 'pesananReseller') { // Firestore (pesananReseller)
+                const updates = {
+                    nama_pelanggan: editedCustomerName || 'N/A', // Nama pelanggan di reseller order
+                    nomor_pelanggan: cleanedFormattedPhone || 'N/A',
+                    id_game: editedGameId || 'N/A',
+                    catatan_admin: editedAdminNotes
+                };
                 await currentOrderDocRef.update(updates);
-                alert("Detail pesanan berhasil diperbarui di Firestore!");
-            } else { // Realtime Database (pesanan)
-                // Untuk RTDB, kita mencoba memperbarui field asli yang mungkin berbeda namanya
-                // dan juga menambahkan field baru jika tidak ada untuk konsistensi di masa depan
-                const rtdbUpdates = {
+                alert("Detail pesanan reseller berhasil diperbarui di Firestore!");
+            } else if (orderCollectionType === 'pesananRTDB') { // Realtime Database (pesanan biasa)
+                const updates = {
+                    // Untuk RTDB, kita mencoba memperbarui field asli yang mungkin berbeda namanya
+                    // dan juga menambahkan field baru jika tidak ada untuk konsistensi di masa depan
+                    nama_pelanggan: editedCustomerName || 'N/A', // Lebih spesifik untuk pesanan biasa
+                    nomor_hp: cleanedFormattedPhone || 'N/A', // Lebih spesifik untuk pesanan biasa
+                    id_game: editedGameId || 'N/A', // Lebih spesifik untuk pesanan biasa
                     catatan_admin: editedAdminNotes,
-                    // Prioritaskan field asli jika ada, kalau tidak pakai field standar
-                    nama_pelanggan: currentOrderData.hasOwnProperty('nama_pelanggan') ? editedCustomerName : (currentOrderData.hasOwnProperty('nama') ? editedCustomerName : editedCustomerName),
-                    nomor_hp: currentOrderData.hasOwnProperty('nomor_hp') ? cleanedFormattedPhone : (currentOrderData.hasOwnProperty('nomor') ? cleanedFormattedPhone : cleanedFormattedPhone),
-                    id_game: currentOrderData.hasOwnProperty('id_game') ? editedGameId : (currentOrderData.hasOwnProperty('id') ? editedGameId : (currentOrderData.hasOwnProperty('username_game') ? editedGameId : editedGameId)),
-                    // Tambahkan juga field standar jika belum ada di RTDB untuk konsistensi
-                    customer_name: editedCustomerName,
-                    customer_phone: cleanedFormattedPhone,
-                    game_id: editedGameId
+                    
+                    // Jika ada field dengan nama lain di RTDB, bisa ditambahkan di sini
+                    // Contoh:
+                    // nama: editedCustomerName, 
+                    // nomor: cleanedFormattedPhone,
+                    // id: editedGameId
                 };
                 
-                await currentOrderDocRef.update(rtdbUpdates);
-                alert("Detail pesanan berhasil diperbarui di Realtime Database!");
+                await currentOrderDocRef.update(updates);
+                alert("Detail pesanan biasa berhasil diperbarui di Realtime Database!");
+            } else {
+                alert("Tipe koleksi tidak dikenal untuk penyimpanan.");
+                return;
             }
             location.reload(); 
         } catch (error) {
@@ -334,14 +346,17 @@
 
         const updates = {
             status: newStatus,
-            waktu_perubahan_status: (orderCollectionType !== 'pesananRTDB' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
+            waktu_perubahan_status: (orderCollectionType === 'pesananReseller' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
         };
 
         try {
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore
+            if (orderCollectionType === 'pesananReseller') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else { // Realtime Database
+            } else if (orderCollectionType === 'pesananRTDB') { // Realtime Database
                 await currentOrderDocRef.update(updates);
+            } else {
+                alert("Tipe koleksi tidak dikenal untuk update status.");
+                return;
             }
             alert(`Status pesanan berhasil diubah menjadi "${newStatus}"!`);
             location.reload(); 
@@ -376,13 +391,16 @@
 
             const updates = {
                 bukti_pengiriman_url: downloadURL,
-                waktu_pengiriman_bukti: (orderCollectionType !== 'pesananRTDB' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
+                waktu_pengiriman_bukti: (orderCollectionType === 'pesananReseller' ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString())
             };
 
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore
+            if (orderCollectionType === 'pesananReseller') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else { // Realtime Database
+            } else if (orderCollectionType === 'pesananRTDB') { // Realtime Database
                 await currentOrderDocRef.update(updates);
+            } else {
+                alert("Tipe koleksi tidak dikenal untuk unggah bukti.");
+                return;
             }
 
             alert("Bukti pengiriman berhasil diunggah dan disimpan!");
@@ -417,10 +435,13 @@
                 await imageRef.delete().catch(e => console.warn("Could not delete customer payment proof from storage, might not exist:", e));
             }
 
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore
+            if (orderCollectionType === 'pesananReseller') { // Firestore
                 await currentOrderDocRef.delete();
-            } else { // Realtime Database
+            } else if (orderCollectionType === 'pesananRTDB') { // Realtime Database
                 await currentOrderDocRef.remove();
+            } else {
+                alert("Tipe koleksi tidak dikenal untuk penghapusan.");
+                return;
             }
             alert("Pesanan berhasil dihapus.");
             window.location.href = 'admin.html';
@@ -454,12 +475,14 @@
         // Ambil status pesanan yang CURRENTLY DISPLAYED (yang sudah diupdate, jika halaman sudah di-reload)
         const orderStatus = currentOrderData.status || 'Selesai';
 
-        // Tentukan nama koleksi yang tepat untuk link status
+        // Tentukan nama koleksi yang tepat untuk link status (untuk frontend, sesuaikan dengan logic frontend Anda)
         let statusCollectionForLink = orderCollectionType;
-        if (orderCollectionType === 'pesananUmum' || orderCollectionType === 'pesananReseller') {
-             // Biarkan saja nama koleksinya karena sudah benar
-        } else if (orderCollectionType === 'pesananRTDB') {
-             statusCollectionForLink = 'pesananRTDB'; 
+        // Jika di frontend Anda punya satu halaman status yang bisa handle keduanya:
+        // Anda mungkin perlu mapping collectionType ke nama yang digunakan di frontend (misal 'biasa' atau 'reseller')
+        if (orderCollectionType === 'pesananRTDB') {
+            statusCollectionForLink = 'umum'; // Asumsi frontend menggunakan 'umum' untuk RTDB
+        } else if (orderCollectionType === 'pesananReseller') {
+            statusCollectionForLink = 'reseller'; // Asumsi frontend menggunakan 'reseller' untuk Firestore Reseller
         }
 
         // Link ke halaman status pesanan (asumsi ada halaman status.html di root)
@@ -517,10 +540,13 @@ Terima kasih atas pesanannya! 😊`;
         };
 
         try {
-            if (orderCollectionType !== 'pesananRTDB') { // Firestore
+            if (orderCollectionType === 'pesananReseller') { // Firestore
                 await currentOrderDocRef.update(updates);
-            } else { // Realtime Database
+            } else if (orderCollectionType === 'pesananRTDB') { // Realtime Database
                 await currentOrderDocRef.update(updates);
+            } else {
+                alert("Tipe koleksi tidak dikenal untuk update WA aktif.");
+                return;
             }
             
             alert(`Status WA Aktif berhasil diubah menjadi ${newStatus ? 'Aktif' : 'Belum Aktif'}.`);
