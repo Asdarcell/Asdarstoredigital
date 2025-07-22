@@ -484,7 +484,7 @@
             dbFS.collection('resellers').onSnapshot(snapshot => {
                 resellersTableBody.innerHTML = '';
                 if (snapshot.empty) {
-                    resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller.</td></tr>';
+                    resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller.</td></td></tr>';
                     return;
                 }
                 snapshot.forEach(doc => {
@@ -623,18 +623,17 @@
                     const orders = [];
                     snapshot.forEach(childSnap => {
                         const orderData = childSnap.val();
-                        // Fallback for 'waktu' if it's missing or named differently
                         orders.push({ 
                             id: childSnap.key, 
                             ...orderData, 
                             type: 'umum', 
-                            created_at: orderData.waktu || orderData.timestamp || '' 
+                            created_at: orderData.waktu || orderData.timestamp || '' // Fallback for 'waktu'
                         });
                     });
+                    console.log("Realtime DB 'pesananUmum' data loaded:", orders); // DEBUG LOG
                     resolve(orders);
                 }).catch(error => {
                     console.error("Error loading pesananUmum from Realtime DB:", error);
-                    // showToast('Gagal memuat pesanan umum. Cek console log.', 'danger'); // Only show combined error
                     reject(new Error("RTDB: " + error.message)); // Propagate error
                 });
             });
@@ -644,18 +643,17 @@
                     const orders = [];
                     snapshot.forEach(doc => {
                         const orderData = doc.data();
-                        // Fallback for 'waktu' if it's missing or named differently
                         orders.push({ 
                             id: doc.id, 
                             ...orderData, 
                             type: 'reseller', 
-                            created_at: orderData.waktu || orderData.timestamp || '' 
+                            created_at: orderData.waktu || orderData.timestamp || '' // Fallback for 'waktu'
                         });
                     });
+                    console.log("Firestore 'pesananReseller' data loaded:", orders); // DEBUG LOG
                     resolve(orders);
                 }).catch(error => {
                     console.error("Error loading pesananReseller from Firestore:", error);
-                    // showToast('Gagal memuat pesanan reseller. Cek console log.', 'danger'); // Only show combined error
                     reject(new Error("Firestore: " + error.message)); // Propagate error
                 });
             });
@@ -664,7 +662,6 @@
                 allOrdersData = [...umumOrders, ...resellerOrders];
                 
                 allOrdersData.sort((a, b) => {
-                    // Convert to Date objects for robust comparison, using 0 for invalid dates
                     const timeA = new Date(a.created_at || 0); 
                     const timeB = new Date(b.created_at || 0);
                     return timeB - timeA;
@@ -696,7 +693,6 @@
                 const actualStatus = order.status || 'Belum Ada Status'; // Default text if status is missing
                 let statusClass = 'status-belum-bayar'; // Default CSS class
 
-                // Check and apply specific status classes if status exists
                 if (order.status) { 
                     const lowerCaseStatus = order.status.toLowerCase();
                     if (lowerCaseStatus.includes('pending')) statusClass = 'status-pending';
