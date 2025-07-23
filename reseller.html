@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ... (CSS Anda tetap sama) ... */
         :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; }
         [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; line-height: 1.6; padding-top: 20px; }
@@ -16,50 +17,23 @@
         .reseller-card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; margin-top: 30px; }
         .reseller-card { background-color: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 30px; width: 100%; max-width: 350px; box-shadow: 0 8px 20px var(--shadow); transition: transform 0.3s ease, border-color 0.3s ease; }
         .reseller-card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .reseller-card h3 { color: var(--primary); font-size: 1.5rem; margin-bottom: 10px; }
-        .reseller-card p { font-size: 0.9rem; color: var(--text); }
-        .benefit-list { text-align: left; margin: 20px 0; padding-left: 20px; list-style-type: '✓ '; }
-        .benefit-list li { margin-bottom: 10px; color: var(--text); }
         .btn-choose { background-color: var(--primary); color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; display: inline-block; transition: background-color 0.2s ease; border: none; cursor: pointer; }
-        .btn-choose:hover { background-color: #2980b9; color: white; }
     </style>
 </head>
 <body data-theme="dark">
     <div class="reseller-container">
         <h1>Bergabunglah dengan Kami sebagai Reseller!</h1>
         <p>Dapatkan keuntungan dengan menjual produk digital berkualitas dari Asdar Store. Kami menyediakan sistem yang mudah, cepat, dan menguntungkan.</p>
-        
-        <h2>Mengapa Menjadi Reseller Kami?</h2>
-        <ul class="benefit-list">
-            <li><i class="fas fa-percent me-2"></i>Keuntungan Besar: Dapatkan potongan harga eksklusif di setiap transaksi.</li>
-            <li><i class="fas fa-box-open me-2"></i>Produk Lengkap: Akses ke semua produk digital kami.</li>
-            <li><i class="fas fa-headset me-2"></i>Dukungan Penuh: Bantuan cepat dari tim kami jika Anda mengalami kendala.</li>
-            <li><i class="fas fa-lock me-2"></i>Sistem Otomatis: Proses transaksi yang mudah dan aman.</li>
-        </ul>
-
         <h2>Pilih Paket Reseller Anda</h2>
         <div class="reseller-card-container">
             <div class="reseller-card">
                 <h3>Reseller Paket A</h3>
                 <p>Cocok untuk Anda yang serius berbisnis dan ingin keuntungan maksimal.</p>
-                <hr>
-                <ul class="text-start benefit-list" style="padding-left: 0; list-style-type: none;">
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Keuntungan **15%** dari setiap penjualan</li>
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Harga produk termurah di kelasnya</li>
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Minimal deposit Rp 100.000</li>
-                </ul>
                 <button id="pilih-paket-a" class="btn-choose">Pilih Paket A</button>
             </div>
-
             <div class="reseller-card">
                 <h3>Reseller Paket B</h3>
                 <p>Pilihan tepat bagi pemula yang ingin memulai dengan modal kecil.</p>
-                <hr>
-                <ul class="text-start benefit-list" style="padding-left: 0; list-style-type: none;">
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Keuntungan **10%** dari setiap penjualan</li>
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Harga produk kompetitif</li>
-                    <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Minimal deposit Rp 50.000</li>
-                </ul>
                 <button id="pilih-paket-b" class="btn-choose">Pilih Paket B</button>
             </div>
         </div>
@@ -88,50 +62,45 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // FUNGSI UPGRADE YANG SUDAH SESUAI ALUR BARU
-        function upgradeToReseller(paketPilihan) {
-            const user = auth.currentUser;
+        // --- LOGIKA BARU YANG LEBIH AMAN ---
+        auth.onAuthStateChanged(user => {
+            // Kode di dalam sini HANYA akan berjalan SETELAH Firebase selesai memeriksa status login.
 
-            if (user) {
-                // ALUR JIKA PENGGUNA SUDAH LOGIN
-                const namaPaket = `Paket ${paketPilihan}`;
-                if (confirm(`Anda akan memilih ${namaPaket} dan melanjutkan ke pembayaran. Lanjutkan?`)) {
-                    
-                    const userDocRef = db.collection('users').doc(user.uid);
-                    
-                    // Update status pengguna menjadi 'menunggu_pembayaran'
-                    userDocRef.update({
-                        status_reseller: 'menunggu_pembayaran',
-                        paket_dipilih: paketPilihan
-                    })
-                    .then(() => {
-                        alert('Pilihan Anda telah disimpan. Anda akan diarahkan ke halaman pembayaran.');
-                        // Arahkan ke halaman deposit DENGAN menyertakan info paket di URL
-                        // Ganti 'deposit.html' jika nama file pembayaran Anda berbeda
-                        window.location.href = 'deposit.html?paket=' + paketPilihan;
-                    })
-                    .catch(error => {
-                        console.error("Gagal update status pengguna: ", error);
-                        alert("Terjadi kesalahan, silakan coba lagi.");
-                    });
+            function handlePackageSelection(paketPilihan) {
+                if (user) {
+                    // Jika user ADA (sudah login)
+                    const namaPaket = `Paket ${paketPilihan}`;
+                    if (confirm(`Anda akan memilih ${namaPaket} dan melanjutkan ke pembayaran. Lanjutkan?`)) {
+                        const userDocRef = db.collection('users').doc(user.uid);
+                        userDocRef.update({
+                            status_reseller: 'menunggu_pembayaran',
+                            paket_dipilih: paketPilihan
+                        })
+                        .then(() => {
+                            alert('Pilihan Anda telah disimpan. Mengalihkan ke halaman pembayaran.');
+                            window.location.href = 'deposit.html?paket=' + paketPilihan;
+                        })
+                        .catch(error => {
+                            console.error("Gagal update status pengguna: ", error);
+                            alert("Terjadi kesalahan, silakan coba lagi.");
+                        });
+                    }
+                } else {
+                    // Jika user TIDAK ADA (belum login)
+                    alert('Anda harus login terlebih dahulu untuk memilih paket.');
+                    window.location.href = 'index.html'; 
                 }
-            } else {
-                // ALUR JIKA PENGGUNA BELUM LOGIN
-                alert('Anda harus login terlebih dahulu untuk memilih paket.');
-                // Arahkan ke halaman login utama Anda
-                // Ganti 'index.html' jika nama file login Anda berbeda
-                window.location.href = 'index.html'; 
             }
-        }
 
-        // TAMBAHKAN EVENT LISTENER PADA TOMBOL
-        document.getElementById('pilih-paket-a').addEventListener('click', () => {
-            upgradeToReseller('A');
+            // Pasang event listener tombol di dalam onAuthStateChanged
+            document.getElementById('pilih-paket-a').addEventListener('click', () => {
+                handlePackageSelection('A');
+            });
+
+            document.getElementById('pilih-paket-b').addEventListener('click', () => {
+                handlePackageSelection('B');
+            });
         });
-
-        document.getElementById('pilih-paket-b').addEventListener('click', () => {
-            upgradeToReseller('B');
-});
     </script>
 </body>
 </html>
