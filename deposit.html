@@ -87,7 +87,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- API KEY IMGBB ANDA YANG BARU ---
+        // --- API KEY IMGBB ANDA ---
         const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
 
         const DEPOSIT_AMOUNTS = {
@@ -105,10 +105,8 @@
         const statusMessageEl = document.getElementById('status-message');
         const proofFileEl = document.getElementById('proof-file');
 
-        // Fungsi untuk format rupiah
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-        // Fungsi untuk menyalin teks ke clipboard
         function copyToClipboard(text, element) {
             navigator.clipboard.writeText(text).then(() => {
                 element.textContent = 'Tersalin!';
@@ -123,7 +121,6 @@
             });
         }
 
-        // Fungsi untuk mengonversi file menjadi Base64
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -131,7 +128,6 @@
             reader.onerror = error => reject(error);
         });
 
-        // Memuat data reseller dan info deposit
         async function loadDepositInfo() {
             if (!uid) {
                 depositTextEl.textContent = 'UID tidak ditemukan. Silakan kembali ke halaman pendaftaran.';
@@ -140,7 +136,6 @@
             }
 
             try {
-                // Mengambil data dari Firestore
                 const resellerDoc = await db.collection('resellers').doc(uid).get();
                 if (!resellerDoc.exists) {
                     depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
@@ -169,7 +164,7 @@
             }
         }
 
-        // Menangani pengiriman form bukti pembayaran
+        // FUNGSI PENGIRIMAN FORM YANG SUDAH DIPERBAIKI
         depositForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.disabled = true;
@@ -179,8 +174,13 @@
             const senderName = document.getElementById('sender-name').value;
             const proofFile = proofFileEl.files[0];
 
-            if (!proofFile) {
-                statusMessageEl.textContent = 'Mohon unggah file bukti pembayaran.';
+            // Ambil data paket lagi untuk mendapatkan jumlah deposit
+            const resellerDoc = await db.collection('resellers').doc(uid).get();
+            const plan = resellerDoc.data().paket;
+            const depositAmount = DEPOSIT_AMOUNTS[plan];
+
+            if (!proofFile || !depositAmount) {
+                statusMessageEl.textContent = 'Mohon unggah file bukti pembayaran dan pastikan data deposit valid.';
                 statusMessageEl.style.color = 'red';
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Kirim Bukti Pembayaran';
@@ -205,21 +205,18 @@
                 }
                 const proofLink = imgbbData.data.url;
 
-                // Simpan bukti pembayaran ke Firestore
+                // Simpan data yang benar ke Firestore
                 await db.collection('resellers').doc(uid).update({
-                    deposit_proof: {
-                        sender_name: senderName,
-                        proof_link: proofLink,
-                        submittedAt: new Date().toISOString()
-                    },
-                    status: 'pending-deposit'
+                    status: 'pending-approval',      // DIUBAH ke 'pending-approval'
+                    depositAmount: Number(depositAmount), // DITAMBAHKAN field ini
+                    depositProofURL: proofLink,       // DITAMBAHKAN field ini
+                    depositSenderName: senderName,    // DITAMBAHKAN field ini
+                    depositSubmittedAt: new Date()    // DITAMBAHKAN field ini
                 });
 
                 statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
                 statusMessageEl.style.color = 'green';
-                depositForm.reset();
-                submitBtn.textContent = 'Bukti Terkirim';
-                submitBtn.disabled = true;
+                depositForm.style.display = 'none'; // Sembunyikan form setelah berhasil
 
             } catch (error) {
                 console.error("Gagal mengirim bukti pembayaran:", error);
@@ -230,6 +227,7 @@
             }
         });
 
+        // Panggil fungsi untuk memuat info saat halaman dibuka
         loadDepositInfo();
     </script>
 </body>
