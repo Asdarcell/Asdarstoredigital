@@ -16,6 +16,8 @@
         .form-group { margin-bottom: 15px; }
         label { font-weight: 600; display: block; }
         input { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--bg); color: var(--text); }
+        input:read-only { background-color: #ecf0f1; cursor: not-allowed; }
+        [data-theme="dark"] input:read-only { background-color: #2c3e50; }
         button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; font-size: 16px; transition: all 0.2s ease; }
         button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
         #status-message { text-align: center; margin-top: 20px; font-weight: bold; }
@@ -23,22 +25,22 @@
 </head>
 <body data-theme="dark">
     <div class="form-container">
-        <h1 id="form-title">Pendaftaran Reseller</h1>
+        <h1 id="form-title">Daftar Menjadi Reseller</h1>
         <p class="text-center" id="plan-info">Memuat...</p>
         <form id="register-form">
             <div id="nama-container" class="form-group">
                 <label for="nama">Nama Lengkap</label>
-                <input type="text" id="nama" placeholder="Masukkan Nama Anda" required>
+                <input type="text" id="nama" placeholder="Nama Anda akan tampil di sini" required>
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" placeholder="contoh@email.com" required>
+                <input type="email" id="email" placeholder="Email Anda akan tampil di sini" required readonly>
             </div>
-            <div class="form-group">
+            <div id="password-container" class="form-group" style="display: none;">
                 <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Minimal 6 karakter" required minlength="6">
+                <input type="password" id="password">
             </div>
-            <button type="submit" id="submit-btn">Daftar Sekarang</button>
+            <button type="submit" id="submit-btn" disabled>Konfirmasi & Lanjut Deposit</button>
         </form>
         <p id="status-message"></p>
     </div>
@@ -47,6 +49,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
+        // ### Konfigurasi Firebase Anda ###
         const firebaseConfig = {
             apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
@@ -57,133 +60,105 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // ### Elemen Halaman ###
         const form = document.getElementById('register-form');
-        const namaContainer = document.getElementById('nama-container');
         const namaInput = document.getElementById('nama');
         const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
         const submitBtn = document.getElementById('submit-btn');
         const statusMessage = document.getElementById('status-message');
         const planInfo = document.getElementById('plan-info');
-        const formTitle = document.getElementById('form-title');
         
-        let selectedPlan = '';
-        let isLoginMode = false;
-
         const urlParams = new URLSearchParams(window.location.search);
-        selectedPlan = urlParams.get('plan');
+        const selectedPlan = urlParams.get('plan');
 
         if (selectedPlan === 'A') {
-            planInfo.innerHTML = "Anda memilih <strong>Reseller Paket A</strong> dengan keuntungan 15% dan minimal deposit Rp 100.000.";
+            planInfo.innerHTML = "Anda memilih <strong>Reseller Paket A</strong>.";
         } else if (selectedPlan === 'B') {
-            planInfo.innerHTML = "Anda memilih <strong>Reseller Paket B</strong> dengan keuntungan 10% dan minimal deposit Rp 50.000.";
+            planInfo.innerHTML = "Anda memilih <strong>Reseller Paket B</strong>.";
         } else {
-            planInfo.innerHTML = "Pilihan paket tidak valid. Silakan kembali ke halaman utama.";
-            submitBtn.disabled = true;
-        }
-        
-        function switchToLoginMode() {
-            isLoginMode = true;
-            formTitle.textContent = 'Login Reseller';
-            namaContainer.style.display = 'none';
-            submitBtn.textContent = 'Login';
-            statusMessage.textContent = 'Email ini sudah terdaftar. Silakan login.';
-            statusMessage.style.color = '#1abc9c';
-            namaInput.required = false;
+            planInfo.innerHTML = "Pilihan paket tidak valid.";
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Memproses...';
-            statusMessage.textContent = '';
-
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (isLoginMode) {
-                try {
-                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                    statusMessage.textContent = 'Login berhasil! Mengalihkan ke halaman member...';
-                    statusMessage.style.color = 'green';
-                    setTimeout(() => {
-                        window.location.href = `member-dashboard.html?uid=${userCredential.user.uid}`;
-                    }, 2000);
-                } catch (error) {
-                    statusMessage.textContent = 'Login gagal. Periksa kembali email dan password Anda.';
-                    statusMessage.style.color = 'red';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Login';
-                }
-                return;
-            }
-
-            const nama = namaInput.value.trim();
-            if (!nama || !email || !password || !selectedPlan) {
-                statusMessage.textContent = 'Harap lengkapi semua data.';
-                statusMessage.style.color = 'red';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Daftar Sekarang';
-                return;
-            }
-
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const uid = userCredential.user.uid;
-                await db.collection('resellers').doc(uid).set({
-                    nama: nama,
-                    email: email,
-                    paket: selectedPlan,
-                    status: 'pending-deposit',
-                    registeredAt: new Date().toISOString()
-                });
-                statusMessage.textContent = 'Pendaftaran berhasil! Mengalihkan ke halaman pembayaran...';
-                statusMessage.style.color = 'green';
-                setTimeout(() => {
-                    window.location.href = `deposit.html?uid=${uid}`;
-                }, 2000);
-            } catch (error) {
-                let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
+        // ### LOGIKA UTAMA: Cek Status Login Pengguna ###
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // --- PENGGUNA SUDAH LOGIN ---
+                const uid = user.uid;
                 
-                // ### INI BAGIAN UTAMA YANG BERUBAH ###
-                if (error.code === 'auth/email-already-in-use') {
-                    // Cek status user di Firestore
-                    const resellerQuery = await db.collection('resellers').where('email', '==', email).limit(1).get();
-                    
-                    if (!resellerQuery.empty) {
-                        const resellerDoc = resellerQuery.docs[0];
-                        const resellerData = resellerDoc.data();
-                        
-                        if (resellerData.status === 'pending-deposit') {
-                            // Jika status pending, langsung arahkan ke deposit
-                            statusMessage.textContent = 'Email sudah terdaftar, deposit Anda tertunda. Mengalihkan ke halaman pembayaran...';
-                            statusMessage.style.color = 'green';
-                            setTimeout(() => {
-                                window.location.href = `deposit.html?uid=${resellerDoc.id}`;
-                            }, 2500);
-                            return; // Hentikan eksekusi lebih lanjut
-                        } else {
-                            // Jika status lain (misal: active), alihkan ke mode login
-                            switchToLoginMode();
-                            submitBtn.disabled = false; // Aktifkan tombol lagi untuk login
-                        }
-                    } else {
-                        // Jika tidak ada di DB (kasus langka), alihkan ke mode login
-                        switchToLoginMode();
-                        submitBtn.disabled = false;
-                    }
+                // Cek apakah user ini sudah terdaftar sebagai reseller atau belum
+                const resellerDoc = await db.collection('resellers').doc(uid).get();
 
-                } else if (error.code === 'auth/weak-password') {
-                    statusMessage.textContent = 'Password terlalu lemah, minimal 6 karakter.';
-                    statusMessage.style.color = 'red';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Daftar Sekarang';
-                } else {
-                    statusMessage.textContent = errorMessage;
-                    statusMessage.style.color = 'red';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Daftar Sekarang';
+                if (resellerDoc.exists) {
+                    // Pengguna ini sudah terdaftar sebagai reseller
+                    form.style.display = 'none'; // Sembunyikan form
+                    planInfo.innerHTML = "Anda sudah terdaftar sebagai reseller.";
+                    statusMessage.textContent = "Tidak perlu mendaftar lagi. Silakan akses dashboard Anda.";
+                    statusMessage.style.color = 'orange';
+                    return;
                 }
+
+                // Jika belum terdaftar, lanjutkan proses pendaftaran reseller
+                statusMessage.textContent = `Selamat datang, ${user.displayName || user.email}!`;
+                statusMessage.style.color = 'green';
+
+                // Isi data pengguna dan aktifkan form
+                namaInput.value = user.displayName || '';
+                emailInput.value = user.email;
+                submitBtn.disabled = false;
+
+                // Tambahkan event listener HANYA jika pengguna sudah login
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Memproses...';
+
+                    const nama = namaInput.value.trim();
+                    if (!nama) {
+                        statusMessage.textContent = 'Nama lengkap tidak boleh kosong.';
+                        statusMessage.style.color = 'red';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Konfirmasi & Lanjut Deposit';
+                        return;
+                    }
+                    
+                    try {
+                        // Simpan data ke Firestore dengan UID yang sudah ada
+                        await db.collection('resellers').doc(uid).set({
+                            nama: nama,
+                            email: user.email,
+                            paket: selectedPlan,
+                            status: 'pending-deposit', // Status awal
+                            registeredAt: new Date().toISOString()
+                        });
+                        
+                        // Perbarui juga nama di profil Firebase Auth jika ada perubahan
+                        if (user.displayName !== nama) {
+                            await user.updateProfile({ displayName: nama });
+                        }
+
+                        statusMessage.textContent = 'Pendaftaran reseller berhasil! Mengalihkan ke halaman deposit...';
+                        statusMessage.style.color = 'green';
+
+                        setTimeout(() => {
+                            window.location.href = `deposit.html?uid=${uid}`;
+                        }, 2000);
+
+                    } catch (error) {
+                        console.error("Gagal menyimpan data reseller:", error);
+                        statusMessage.textContent = 'Gagal menyimpan pendaftaran. Coba lagi.';
+                        statusMessage.style.color = 'red';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Konfirmasi & Lanjut Deposit';
+                    }
+                });
+
+            } else {
+                // --- PENGGUNA BELUM LOGIN ---
+                planInfo.style.display = 'none';
+                statusMessage.textContent = 'Anda harus login terlebih dahulu untuk mendaftar sebagai reseller.';
+                statusMessage.style.color = 'red';
+                // Nonaktifkan semua input di dalam form
+                Array.from(form.elements).forEach(el => el.disabled = true);
             }
         });
     </script>
