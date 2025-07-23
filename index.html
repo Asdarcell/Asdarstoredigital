@@ -54,13 +54,10 @@
     hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
     h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
     
-    .reseller-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        background-color: var(--success); color: white; padding: 8px 16px;
-        border-radius: 50px; font-size: 0.9em; font-weight: 600;
-        text-decoration: none; transition: all 0.2s ease-in-out;
-    }
+    .reseller-btn { display: inline-flex; align-items: center; gap: 8px; background-color: var(--success); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.9em; font-weight: 600; text-decoration: none; transition: all 0.2s ease-in-out; }
     .reseller-btn:hover { color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .dashboard-btn { display: inline-flex; align-items: center; gap: 8px; background-color: var(--primary); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.9em; font-weight: 600; text-decoration: none; transition: all 0.2s ease-in-out; }
+    .dashboard-btn:hover { color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     
     #testimoniContainer { background: var(--bg); border-radius: 12px; padding: 15px; height: 350px; overflow-y: auto; position: relative; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; }
     .testimonial-bubble { background-color: var(--card); color: var(--text); padding: 12px 18px; border-radius: 20px; max-width: 85%; align-self: flex-start; box-shadow: 0 4px 8px rgba(0,0,0,0.07); opacity: 0; animation: slideInUp 0.6s ease-out forwards; border: 1px solid var(--border); }
@@ -98,13 +95,13 @@
 <body data-theme="dark">
   <header id="header">
     <h1>Asdar Store Digital</h1>
-    <a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Reseller</span></a>
+    <div id="user-panel">
+        <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
+    </div>
   </header>
 
   <main id="main-content">
-    
     <div id="banner-container" data-aos="fade-down"></div>
-
     <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
         <div id="formNotification" class="notification"></div>
@@ -120,13 +117,9 @@
             <button id="claim-button" type="button" onclick="gunakanDiskonShare()">✅ Ya, Gunakan Diskon</button>
         </div>
         <label for="kategori">Kategori Produk</label>
-        <select id="kategori" required>
-          <option value="">Pilih Kategori</option>
-        </select>
+        <select id="kategori" required><option value="">Pilih Kategori</option></select>
         <label for="produk">Produk</label>
-        <select id="produk" required>
-          <option value="">Pilih Produk</option>
-        </select>
+        <select id="produk" required><option value="">Pilih Produk</option></select>
         <div id="product-promo-container"></div>
         <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
         <button type="submit" id="submitBtn" disabled>Pilih Produk Dahulu</button>
@@ -166,6 +159,7 @@
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -179,14 +173,15 @@
       projectId: "asdarstoredigitalll-d89c4",
     };
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const dbFS = firebase.firestore();
     const dbRT = firebase.database();
     
+    const userPanel = document.getElementById('user-panel');
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonShareTerpakai = false;
     const POTONGAN_DISKON_SHARE = 5000;
-
     const submitBtn = document.getElementById('submitBtn');
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
@@ -232,6 +227,24 @@
       document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            const resellerRef = dbFS.collection('resellers').doc(user.uid);
+            resellerRef.get().then(doc => {
+                if (doc.exists && doc.data().status === 'active') {
+                    userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i><span>Dashboard Reseller</span></a>`;
+                } else {
+                    userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`;
+                }
+            }).catch(error => {
+                console.error("Error checking reseller status:", error);
+                userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`;
+            });
+        } else {
+            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`;
+        }
+    });
     
     function loadInitialData() {
         dbFS.collection('produk').get().then(snapshot => {
@@ -255,7 +268,6 @@
     async function loadAndDisplayBanners() {
         const bannerContainer = document.getElementById('banner-container');
         if (!bannerContainer) return;
-
         try {
             const snapshot = await dbFS.collection('banners').orderBy('urutan').get();
             if (snapshot.empty) {
@@ -363,12 +375,10 @@
         const produkId = produkSelect.value;
         submitBtn.disabled = true;
         submitBtn.textContent = 'Memproses...';
-
         try {
             let hargaAwal = produkTerpilihData.harga_umum;
             let hargaFinal = hargaAwal;
             let promoDigunakan = null;
-
             if (promoProdukTerpakai && produkTerpilihData.promo) {
                 let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
                 hargaFinal = Math.max(0, hargaAwal - potongan);
@@ -376,24 +386,9 @@
             } else if (diskonShareTerpakai) {
                 hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             }
-            
             const id = "P" + Date.now();
-            await dbFS.collection('pesananUmum').doc(id).set({
-                id,
-                nama_pelanggan: nama,
-                nomor_pelanggan: nomor,
-                no_whatsap_aktif: waAktif,
-                kategori,
-                produk: produkTerpilihData.nama_produk,
-                waktu: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'Menunggu Pembayaran',
-                harga_final: hargaFinal,
-                promo_digunakan: promoDigunakan,
-                diskon_share: diskonShareTerpakai
-            });
-            
+            await dbFS.collection('pesananUmum').doc(id).set({ id, nama_pelanggan: nama, nomor_pelanggan: nomor, no_whatsap_aktif: waAktif, kategori, produk: produkTerpilihData.nama_produk, waktu: firebase.firestore.FieldValue.serverTimestamp(), status: 'Menunggu Pembayaran', harga_final: hargaFinal, promo_digunakan: promoDigunakan, diskon_share: diskonShareTerpakai });
             if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
-
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentHtml = '<div class="payment-methods-list">';
             paymentSnapshot.forEach(doc => {
@@ -401,13 +396,11 @@
                 paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
             });
             paymentHtml += '</div>';
-
             hasilDiv.style.display = 'block';
             hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
             document.getElementById('formPesanan').reset();
             resetFormState();
             window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
-
         } catch (error) {
             console.error("Error saat memesan:", error);
             showNotification("Terjadi kesalahan: " + error.message, 'error');
@@ -438,7 +431,7 @@
                 faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
                 return;
             }
-            snap.forEach(itemSnap => { // Changed from snap.val() to snapshot iteration
+            snap.forEach(itemSnap => {
                 const itemData = itemSnap.val();
                 const item = document.createElement('div');
                 item.className = 'faq-item';
@@ -448,9 +441,7 @@
             document.querySelectorAll('.faq-question').forEach(item => {
                 item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
             });
-        }).catch(err => {
-            console.error("Gagal memuat FAQ:", err);
-        });
+        }).catch(err => { console.error("Gagal memuat FAQ:", err); });
     }
 
     function loadApprovedTestimonials() {
@@ -463,16 +454,12 @@
                 container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`;
                 return;
             }
-            snap.forEach(childSnap => {
-                allTestimonials.push(childSnap.val());
-            });
+            snap.forEach(childSnap => { allTestimonials.push(childSnap.val()); });
             allTestimonials.reverse();
             if (testimonialInterval) clearInterval(testimonialInterval);
             testimonialInterval = setInterval(() => {
                 if (allTestimonials.length === 0) return;
-                if (container.children.length > 6) {
-                    container.firstChild.remove();
-                }
+                if (container.children.length > 6) { container.firstChild.remove(); }
                 const testi = allTestimonials[currentIndex];
                 const bubble = document.createElement('div');
                 bubble.className = 'testimonial-bubble';
@@ -495,18 +482,11 @@
             return;
         }
         try {
-            await dbRT.ref('testimonials').push({
-                nama,
-                isi: pesan,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            });
+            await dbRT.ref('testimonials').push({ nama, isi: pesan, status: 'pending', createdAt: new Date().toISOString() });
             statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
             statusEl.style.color = 'var(--success)';
             e.target.reset();
-            setTimeout(() => {
-                statusEl.textContent = '';
-            }, 4000);
+            setTimeout(() => { statusEl.textContent = ''; }, 4000);
         } catch (error) {
             statusEl.textContent = 'Gagal mengirim testimoni.';
             statusEl.style.color = 'var(--danger)';
