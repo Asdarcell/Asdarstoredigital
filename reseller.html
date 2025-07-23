@@ -3,39 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pilihan Reseller - Asdar Store Digital</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Upgrade Akun Reseller</title>
     <style>
-        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); }
-        [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); padding-top: 20px; }
-        .reseller-container { max-width: 800px; margin: 0 auto; padding: 0 20px; text-align: center; }
-        .reseller-card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; margin-top: 30px; }
-        .reseller-card { background-color: var(--card); border-radius: 12px; padding: 30px; width: 100%; max-width: 350px; }
-        .btn-choose { background-color: var(--primary); color: white; padding: 12px 25px; border-radius: 8px; font-weight: 600; margin-top: 20px; display: inline-block; border: none; cursor: pointer; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
     </style>
 </head>
-<body data-theme="dark">
-    <div class="reseller-container">
-        <h1>Bergabunglah dengan Kami sebagai Reseller!</h1>
-        <p>Tingkatkan akun Anda untuk mendapatkan keuntungan lebih besar.</p>
-        
-        <h2>Pilih Paket Reseller Anda</h2>
-        <div class="reseller-card-container">
-            <div class="reseller-card">
-                <h3>Reseller Paket A</h3>
-                <p>Deposit Rp 100.000</p>
-                <button id="pilih-paket-a" class="btn-choose">Pilih Paket A</button>
-            </div>
-            <div class="reseller-card">
-                <h3>Reseller Paket B</h3>
-                <p>Deposit Rp 50.000</p>
-                <button id="pilih-paket-b" class="btn-choose">Pilih Paket B</button>
-            </div>
-        </div>
-        <p id="loading-status" style="margin-top:20px;">Memeriksa status login...</p>
+<body>
+
+    <div>
+        <h1>Pilih Paket Reseller Anda</h1>
+        <p>Anda sudah login. Silakan pilih paket untuk melanjutkan proses upgrade.</p>
+        <button id="pilih-paket-a">Pilih Paket A (Rp 100.000)</button>
+        <button id="pilih-paket-b">Pilih Paket B (Rp 50.000)</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -56,52 +35,39 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Menyembunyikan tombol saat halaman pertama kali dimuat
-        document.getElementById('pilih-paket-a').style.display = 'none';
-        document.getElementById('pilih-paket-b').style.display = 'none';
+        function handlePackageSelection(paketPilihan) {
+            // Langsung ambil pengguna yang sedang aktif
+            const user = auth.currentUser;
 
-        // Pengecekan "Pintar" yang sudah disederhanakan
-        auth.onAuthStateChanged(user => {
-            const loadingStatus = document.getElementById('loading-status');
-
-            if (user) {
-                // Pengguna sudah login. Sembunyikan pesan loading dan tampilkan tombol.
-                loadingStatus.style.display = 'none';
-                document.getElementById('pilih-paket-a').style.display = 'inline-block';
-                document.getElementById('pilih-paket-b').style.display = 'inline-block';
-
-                // Fungsi untuk menangani pilihan paket
-                const handlePackageSelection = (paketPilihan) => {
-                    const namaPaket = `Paket ${paketPilihan}`;
-                    if (confirm(`Anda akan memilih ${namaPaket} dan melanjutkan ke pembayaran. Lanjutkan?`)) {
-                        const userDocRef = db.collection('users').doc(user.uid);
-                        userDocRef.update({
-                            status_reseller: 'menunggu_pembayaran',
-                            paket_dipilih: paketPilihan
-                        })
-                        .then(() => {
-                            alert('Pilihan Anda telah disimpan. Mengalihkan ke halaman pembayaran.');
-                            window.location.href = 'deposit.html?paket=' + paketPilihan;
-                        })
-                        .catch(error => {
-                            console.error("Gagal update status: ", error);
-                            alert("Terjadi kesalahan, silakan coba lagi.");
-                        });
-                    }
-                };
-
-                // Pasang event listener HANYA jika pengguna sudah login
-                document.getElementById('pilih-paket-a').onclick = () => handlePackageSelection('A');
-                document.getElementById('pilih-paket-b').onclick = () => handlePackageSelection('B');
-
-            } else {
-                // Pengguna tidak login. Beri pesan dan arahkan ke halaman login.
-                loadingStatus.textContent = 'Anda belum login. Mengalihkan...';
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500); // Tunggu 1.5 detik sebelum mengalihkan
+            // Jika karena alasan tertentu user tidak ditemukan, arahkan ke login
+            if (!user) {
+                alert("Sesi Anda tidak ditemukan. Harap login kembali.");
+                window.location.replace('index.html');
+                return;
             }
-        });
+
+            // Lanjutkan proses jika user ditemukan
+            const namaPaket = `Paket ${paketPilihan}`;
+            if (confirm(`Anda akan memilih ${namaPaket}. Lanjutkan ke pembayaran?`)) {
+                const userDocRef = db.collection('users').doc(user.uid);
+                userDocRef.update({
+                    status_reseller: 'menunggu_pembayaran',
+                    paket_dipilih: paketPilihan
+                })
+                .then(() => {
+                    // Arahkan ke halaman deposit dengan info paket
+                    window.location.href = 'deposit.html?paket=' + paketPilihan;
+                })
+                .catch(error => {
+                    console.error("Gagal update status:", error);
+                    alert("Terjadi kesalahan. Silakan coba lagi.");
+                });
+            }
+        }
+
+        // Pasang event listener ke tombol
+        document.getElementById('pilih-paket-a').addEventListener('click', () => handlePackageSelection('A'));
+        document.getElementById('pilih-paket-b').addEventListener('click', () => handlePackageSelection('B'));
     </script>
 </body>
 </html>
