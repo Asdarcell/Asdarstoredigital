@@ -88,34 +88,39 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // FUNGSI UNTUK UPGRADE AKUN
+        // FUNGSI UPGRADE YANG SUDAH SESUAI ALUR BARU
         function upgradeToReseller(paketPilihan) {
             const user = auth.currentUser;
 
             if (user) {
+                // ALUR JIKA PENGGUNA SUDAH LOGIN
                 const namaPaket = `Paket ${paketPilihan}`;
-                const konfirmasi = confirm(`Anda akan upgrade ke Reseller ${namaPaket}. Lanjutkan?`);
-
-                if (konfirmasi) {
+                if (confirm(`Anda akan memilih ${namaPaket} dan melanjutkan ke pembayaran. Lanjutkan?`)) {
+                    
                     const userDocRef = db.collection('users').doc(user.uid);
-
-                    // Update data pengguna di Firestore
+                    
+                    // Update status pengguna menjadi 'menunggu_pembayaran'
                     userDocRef.update({
-                        peran: 'reseller',
-                        paket_reseller: paketPilihan 
+                        status_reseller: 'menunggu_pembayaran',
+                        paket_dipilih: paketPilihan
                     })
                     .then(() => {
-                        alert(`Selamat! Anda berhasil upgrade ke Reseller ${namaPaket}.`);
-                        window.location.href = 'reseller-dashboard.html'; // Arahkan ke dashboard reseller
+                        alert('Pilihan Anda telah disimpan. Anda akan diarahkan ke halaman pembayaran.');
+                        // Arahkan ke halaman deposit DENGAN menyertakan info paket di URL
+                        // Ganti 'deposit.html' jika nama file pembayaran Anda berbeda
+                        window.location.href = 'deposit.html?paket=' + paketPilihan;
                     })
-                    .catch((error) => {
-                        console.error("Gagal update peran: ", error);
-                        alert("Terjadi kesalahan saat proses upgrade. Silakan coba lagi.");
+                    .catch(error => {
+                        console.error("Gagal update status pengguna: ", error);
+                        alert("Terjadi kesalahan, silakan coba lagi.");
                     });
                 }
             } else {
-                alert("Selanjutnya lakukan deposit pembayaran.");
-                window.location.href = 'deposit.html'; // 
+                // ALUR JIKA PENGGUNA BELUM LOGIN
+                alert('Anda harus login terlebih dahulu untuk memilih paket.');
+                // Arahkan ke halaman login utama Anda
+                // Ganti 'index.html' jika nama file login Anda berbeda
+                window.location.href = 'index.html'; 
             }
         }
 
@@ -126,7 +131,7 @@
 
         document.getElementById('pilih-paket-b').addEventListener('click', () => {
             upgradeToReseller('B');
-        });
+});
     </script>
 </body>
 </html>
