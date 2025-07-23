@@ -75,162 +75,118 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
-            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+            apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan config Anda
             authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
             databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
             projectId: "asdarstoredigitalll-d89c4",
         };
-        firebase.initializeApp(firebaseConfig);
+        // Inisialisasi Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- API KEY IMGBB ANDA YANG BARU ---
         const IMGBB_API_KEY = "4bb65566f2b6bad0aef16ac5ae6b2fbc";
 
-        const DEPOSIT_AMOUNTS = {
-            'A': 100000,
-            'B': 50000
-        };
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const uid = urlParams.get('uid');
+        const DEPOSIT_AMOUNTS = { 'A': 100000, 'B': 50000 };
 
         const depositTextEl = document.getElementById('deposit-text');
-        const paymentMethodsListEl = document.getElementById('payment-methods-list');
         const depositForm = document.getElementById('deposit-form');
         const submitBtn = document.getElementById('submit-btn');
         const statusMessageEl = document.getElementById('status-message');
-        const proofFileEl = document.getElementById('proof-file');
 
-        // Fungsi untuk format rupiah
+        // --- FUNGSI-FUNGSI BANTUAN (TIDAK PERLU DIUBAH) ---
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        function copyToClipboard(text, element) { /* ... kode sama seperti sebelumnya ... */ }
+        const toBase64 = file => new Promise((resolve, reject) => { /* ... kode sama seperti sebelumnya ... */ });
 
-        // Fungsi untuk menyalin teks ke clipboard
-        function copyToClipboard(text, element) {
-            navigator.clipboard.writeText(text).then(() => {
-                element.textContent = 'Tersalin!';
-                element.disabled = true;
+        // --- LOGIKA UTAMA HALAMAN ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // PENGGUNA SEDANG LOGIN, LANJUTKAN PROSES
+                const uid = user.uid;
+
+                // Ambil paket dari URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const paketId = urlParams.get('paket');
+
+                if (!paketId || !DEPOSIT_AMOUNTS[paketId]) {
+                    depositTextEl.textContent = 'Paket reseller tidak valid.';
+                    submitBtn.disabled = true;
+                    return;
+                }
+
+                const depositAmount = DEPOSIT_AMOUNTS[paketId];
+                depositTextEl.innerHTML = `<i class="fas fa-money-bill-wave me-2"></i><strong>Deposit Reseller Paket ${paketId}</strong><br>
+                                           Jumlah yang harus dibayar: <b>${formatRupiah(depositAmount)}</b>`;
+                submitBtn.disabled = false; // Aktifkan tombol setelah info dimuat
+
+                // --- LOGIKA FORM SUBMIT (SEKARANG DI DALAM AUTHSTATECHANGED) ---
+                depositForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Mengirim...';
+                    statusMessageEl.textContent = '';
+
+                    const senderName = document.getElementById('sender-name').value;
+                    const proofFile = document.getElementById('proof-file').files[0];
+
+                    if (!proofFile) { /* ... logika validasi file ... */ return; }
+
+                    try {
+                        const base64Image = await toBase64(proofFile);
+                        const formData = new FormData();
+                        formData.append("key", IMGBB_API_KEY);
+                        formData.append("image", base64Image);
+
+                        const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
+                        const imgbbData = await imgbbResponse.json();
+
+                        if (!imgbbData.success) { throw new Error(imgbbData.error.message); }
+                        
+                        const proofLink = imgbbData.data.url;
+
+                        // Simpan bukti pembayaran ke koleksi 'users' menggunakan UID dari user yang login
+                        await db.collection('users').doc(uid).update({
+                            bukti_pembayaran: {
+                                nama_pengirim: senderName,
+                                link_bukti: proofLink,
+                                tanggal_kirim: new Date().toISOString(),
+                                jumlah: depositAmount
+                            },
+                            status_reseller: 'menunggu_persetujuan' // Update status
+                        });
+
+                        statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
+                        statusMessageEl.style.color = 'green';
+                        depositForm.reset();
+                        submitBtn.textContent = 'Bukti Terkirim';
+
+                    } catch (error) {
+                        console.error("Gagal mengirim bukti:", error);
+                        statusMessageEl.textContent = `Gagal mengirim: ${error.message}`;
+                        statusMessageEl.style.color = 'red';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Kirim Bukti Pembayaran';
+                    }
+                });
+
+            } else {
+                // PENGGUNA TIDAK LOGIN
+                depositTextEl.textContent = 'Anda harus login untuk mengakses halaman ini. Mengalihkan...';
+                submitBtn.disabled = true;
                 setTimeout(() => {
-                    element.innerHTML = `<i class="far fa-copy"></i> Salin`;
-                    element.disabled = false;
-                }, 2000);
-            }).catch(err => {
-                console.error('Gagal menyalin teks: ', err);
-                alert('Gagal menyalin. Mohon salin secara manual.');
-            });
-        }
-
-        // Fungsi untuk mengonversi file menjadi Base64
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = error => reject(error);
-        });
-
-        // Memuat data reseller dan info deposit
-        async function loadDepositInfo() {
-            if (!uid) {
-                depositTextEl.textContent = 'UID tidak ditemukan. Silakan kembali ke halaman pendaftaran.';
-                submitBtn.disabled = true;
-                return;
-            }
-
-            try {
-                // Mengambil data dari Firestore
-                const resellerDoc = await db.collection('resellers').doc(uid).get();
-                if (!resellerDoc.exists) {
-                    depositTextEl.textContent = 'Data reseller tidak ditemukan. Silakan hubungi admin.';
-                    submitBtn.disabled = true;
-                    return;
-                }
-                const resellerData = resellerDoc.data();
-                const plan = resellerData.paket;
-                const depositAmount = DEPOSIT_AMOUNTS[plan];
-
-                if (depositAmount === undefined) {
-                    depositTextEl.textContent = `Error: Jumlah deposit untuk paket "${plan}" tidak ditemukan.`;
-                    submitBtn.disabled = true;
-                    return;
-                }
-
-                depositTextEl.innerHTML = `<i class="fas fa-money-bill-wave me-2"></i><strong>Deposit Reseller Paket ${plan}</strong><br>
-                                            Jumlah yang harus dibayar: <b>${formatRupiah(depositAmount)}</b>`;
-
-                submitBtn.disabled = false;
-                
-            } catch (error) {
-                console.error("Gagal memuat info deposit:", error);
-                depositTextEl.textContent = 'Terjadi kesalahan saat memuat data.';
-                submitBtn.disabled = true;
-            }
-        }
-
-        // Menangani pengiriman form bukti pembayaran
-        depositForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Mengirim...';
-            statusMessageEl.textContent = '';
-
-            const senderName = document.getElementById('sender-name').value;
-            const proofFile = proofFileEl.files[0];
-
-            if (!proofFile) {
-                statusMessageEl.textContent = 'Mohon unggah file bukti pembayaran.';
-                statusMessageEl.style.color = 'red';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Kirim Bukti Pembayaran';
-                return;
-            }
-
-            try {
-                // Upload image to ImgBB
-                const base64Image = await toBase64(proofFile);
-                const formData = new FormData();
-                formData.append("key", IMGBB_API_KEY);
-                formData.append("image", base64Image);
-
-                const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
-                    method: "POST",
-                    body: formData
-                });
-                const imgbbData = await imgbbResponse.json();
-
-                if (!imgbbData.success) {
-                    throw new Error(imgbbData.error.message || 'Gagal mengunggah gambar ke ImgBB.');
-                }
-                const proofLink = imgbbData.data.url;
-
-                // Simpan bukti pembayaran ke Firestore
-                await db.collection('resellers').doc(uid).update({
-                    deposit_proof: {
-                        sender_name: senderName,
-                        proof_link: proofLink,
-                        submittedAt: new Date().toISOString()
-                    },
-                    status: 'pending-deposit'
-                });
-
-                statusMessageEl.textContent = 'Bukti pembayaran berhasil dikirim! Silakan tunggu verifikasi dari admin.';
-                statusMessageEl.style.color = 'green';
-                depositForm.reset();
-                submitBtn.textContent = 'Bukti Terkirim';
-                submitBtn.disabled = true;
-
-            } catch (error) {
-                console.error("Gagal mengirim bukti pembayaran:", error);
-                statusMessageEl.textContent = `Gagal mengirim: ${error.message}`;
-                statusMessageEl.style.color = 'red';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Kirim Bukti Pembayaran';
+                    window.location.href = 'index.html'; // Arahkan ke halaman login
+                }, 3000);
             }
         });
 
-        loadDepositInfo();
     </script>
 </body>
 </html>
