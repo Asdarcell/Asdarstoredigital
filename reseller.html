@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Menggunakan variabel warna dari halaman utama agar tema konsisten */
         :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; }
         [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); transition: background-color 0.3s ease, color 0.3s ease; line-height: 1.6; padding-top: 20px; }
@@ -21,7 +20,7 @@
         .reseller-card p { font-size: 0.9rem; color: var(--text); }
         .benefit-list { text-align: left; margin: 20px 0; padding-left: 20px; list-style-type: '✓ '; }
         .benefit-list li { margin-bottom: 10px; color: var(--text); }
-        .btn-choose { background-color: var(--primary); color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; display: inline-block; transition: background-color 0.2s ease; }
+        .btn-choose { background-color: var(--primary); color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; display: inline-block; transition: background-color 0.2s ease; border: none; cursor: pointer; }
         .btn-choose:hover { background-color: #2980b9; color: white; }
     </style>
 </head>
@@ -49,7 +48,7 @@
                     <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Harga produk termurah di kelasnya</li>
                     <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Minimal deposit Rp 100.000</li>
                 </ul>
-                <a href="register.html?plan=A" class="btn-choose">Pilih Paket A</a>
+                <button id="pilih-paket-a" class="btn-choose">Pilih Paket A</button>
             </div>
 
             <div class="reseller-card">
@@ -61,9 +60,73 @@
                     <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Harga produk kompetitif</li>
                     <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>Minimal deposit Rp 50.000</li>
                 </ul>
-                <a href="register.html?plan=B" class="btn-choose">Pilih Paket B</a>
+                <button id="pilih-paket-b" class="btn-choose">Pilih Paket B</button>
             </div>
         </div>
     </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // GANTI DENGAN KONFIGURASI FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "AIzaSy...", // << ISI DENGAN KUNCI API ANDA
+            authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+            databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+            projectId: "asdarstoredigitalll-d89c4",
+            storageBucket: "asdarstoredigitalll-d89c4.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        
+        // Inisialisasi Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // FUNGSI UNTUK UPGRADE AKUN
+        function upgradeToReseller(paketPilihan) {
+            const user = auth.currentUser;
+
+            if (user) {
+                const namaPaket = `Paket ${paketPilihan}`;
+                const konfirmasi = confirm(`Anda akan upgrade ke Reseller ${namaPaket}. Lanjutkan?`);
+
+                if (konfirmasi) {
+                    const userDocRef = db.collection('users').doc(user.uid);
+
+                    // Update data pengguna di Firestore
+                    userDocRef.update({
+                        peran: 'reseller',
+                        paket_reseller: paketPilihan 
+                    })
+                    .then(() => {
+                        alert(`Selamat! Anda berhasil upgrade ke Reseller ${namaPaket}.`);
+                        window.location.href = 'reseller-dashboard.html'; // Arahkan ke dashboard reseller
+                    })
+                    .catch((error) => {
+                        console.error("Gagal update peran: ", error);
+                        alert("Terjadi kesalahan saat proses upgrade. Silakan coba lagi.");
+                    });
+                }
+            } else {
+                alert("Anda harus login terlebih dahulu untuk memilih paket.");
+                window.location.href = 'login.html'; // Arahkan ke halaman login
+            }
+        }
+
+        // TAMBAHKAN EVENT LISTENER PADA TOMBOL
+        document.getElementById('pilih-paket-a').addEventListener('click', () => {
+            upgradeToReseller('A');
+        });
+
+        document.getElementById('pilih-paket-b').addEventListener('click', () => {
+            upgradeToReseller('B');
+        });
+    </script>
 </body>
 </html>
