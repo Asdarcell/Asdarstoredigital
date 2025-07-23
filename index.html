@@ -54,27 +54,14 @@
     hr { margin: 40px 0; border: 0; border-top: 1px solid var(--border); }
     h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
     
-    /* --- CSS BARU UNTUK TOMBOL RESELLER --- */
     .reseller-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background-color: var(--success);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 50px; /* Membuat bentuk pil */
-        font-size: 0.9em;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease-in-out;
+        display: inline-flex; align-items: center; gap: 8px;
+        background-color: var(--success); color: white; padding: 8px 16px;
+        border-radius: 50px; font-size: 0.9em; font-weight: 600;
+        text-decoration: none; transition: all 0.2s ease-in-out;
     }
-    .reseller-btn:hover {
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
+    .reseller-btn:hover { color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     
-    /* ... CSS lainnya tetap sama ... */
     #testimoniContainer { background: var(--bg); border-radius: 12px; padding: 15px; height: 350px; overflow-y: auto; position: relative; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; }
     .testimonial-bubble { background-color: var(--card); color: var(--text); padding: 12px 18px; border-radius: 20px; max-width: 85%; align-self: flex-start; box-shadow: 0 4px 8px rgba(0,0,0,0.07); opacity: 0; animation: slideInUp 0.6s ease-out forwards; border: 1px solid var(--border); }
     .testimonial-header { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
@@ -98,26 +85,26 @@
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-top 0.3s ease; padding-top: 0; }
     .faq-item.active .faq-answer { padding-top: 15px; max-height: 200px; }
     .faq-item.active .faq-question::after { transform: rotate(180deg); }
-    .notification {
-        padding: 15px; margin-bottom: 15px; border-radius: 8px;
-        font-weight: 600; display: none; text-align: center;
-    }
+    .notification { padding: 15px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; display: none; text-align: center; }
     .notification.info { background-color: #d1ecf1; color: #0c5460; }
     .notification.success { background-color: #d4edda; color: #155724; }
     .notification.error { background-color: #f8d7da; color: #721c24; }
+    #banner-container { width: 100%; margin-bottom: 20px; }
+    .banner-item { display: block; margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow); }
+    .banner-image { width: 100%; display: block; vertical-align: middle; }
   </style>
 </head>
 
 <body data-theme="dark">
   <header id="header">
     <h1>Asdar Store Digital</h1>
-    <a href="reseller.html" class="reseller-btn">
-      <i class="fas fa-user-tie"></i>
-      <span>Reseller</span>
-    </a>
+    <a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Reseller</span></a>
   </header>
 
   <main id="main-content">
+    
+    <div id="banner-container" data-aos="fade-down"></div>
+
     <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
         <div id="formNotification" class="notification"></div>
@@ -260,8 +247,35 @@
                 kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
             });
         });
+        loadAndDisplayBanners();
         loadAndRenderFaq();
         loadApprovedTestimonials();
+    }
+
+    async function loadAndDisplayBanners() {
+        const bannerContainer = document.getElementById('banner-container');
+        if (!bannerContainer) return;
+
+        try {
+            const snapshot = await dbFS.collection('banners').orderBy('urutan').get();
+            if (snapshot.empty) {
+                bannerContainer.style.display = 'none';
+                return;
+            }
+            let bannersHTML = '';
+            snapshot.forEach(doc => {
+                const banner = doc.data();
+                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`;
+                if (banner.link) {
+                    bannersHTML += `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>`;
+                } else {
+                    bannersHTML += `<div class="banner-item">${imgTag}</div>`;
+                }
+            });
+            bannerContainer.innerHTML = bannersHTML;
+        } catch (error) {
+            console.error("Gagal memuat banner:", error);
+        }
     }
 
     function handleCategoryChange() {
@@ -424,15 +438,13 @@
                 faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
                 return;
             }
-            const faqData = snap.val();
-            if (Array.isArray(faqData)) {
-                faqData.forEach(itemData => {
-                    const item = document.createElement('div');
-                    item.className = 'faq-item';
-                    item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
-                    faqContainer.appendChild(item);
-                });
-            }
+            snap.forEach(itemSnap => { // Changed from snap.val() to snapshot iteration
+                const itemData = itemSnap.val();
+                const item = document.createElement('div');
+                item.className = 'faq-item';
+                item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
+                faqContainer.appendChild(item);
+            });
             document.querySelectorAll('.faq-question').forEach(item => {
                 item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
             });
