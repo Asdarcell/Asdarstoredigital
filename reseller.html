@@ -6,13 +6,19 @@
     <title>Upgrade Akun Reseller</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div>
+    <div id="loading-view">
+        <h1>Memeriksa Sesi Login Anda...</h1>
+        <p>Mohon tunggu sebentar.</p>
+    </div>
+
+    <div id="reseller-view" class="hidden">
         <h1>Pilih Paket Reseller Anda</h1>
-        <p>Anda sudah login. Silakan pilih paket untuk melanjutkan proses upgrade.</p>
+        <p>Silakan pilih paket untuk melanjutkan.</p>
         <button id="pilih-paket-a">Pilih Paket A (Rp 100.000)</button>
         <button id="pilih-paket-b">Pilih Paket B (Rp 50.000)</button>
     </div>
@@ -35,11 +41,32 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        const loadingView = document.getElementById('loading-view');
+        const resellerView = document.getElementById('reseller-view');
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Status: PASTI SUDAH LOGIN
+                loadingView.classList.add('hidden');
+                resellerView.classList.remove('hidden');
+
+            } else {
+                // Status: PASTI BELUM LOGIN
+                loadingView.innerHTML = "<h1>Sesi tidak ditemukan. Anda harus login.</h1><p>Mengalihkan kembali ke halaman login...</p>";
+                setTimeout(() => {
+                    window.location.replace('index.html');
+                }, 2500);
+            }
+        });
+
         function handlePackageSelection(paketPilihan) {
-            // Langsung ambil pengguna yang sedang aktif
             const user = auth.currentUser;
-            
-            // Lanjutkan proses
+            if (!user) {
+                alert("Sesi Anda berakhir. Silakan login kembali.");
+                window.location.replace('index.html');
+                return;
+            }
+
             const namaPaket = `Paket ${paketPilihan}`;
             if (confirm(`Anda akan memilih ${namaPaket}. Lanjutkan ke pembayaran?`)) {
                 const userDocRef = db.collection('users').doc(user.uid);
@@ -48,17 +75,12 @@
                     paket_dipilih: paketPilihan
                 })
                 .then(() => {
-                    // Arahkan ke halaman deposit dengan info paket
                     window.location.href = 'deposit.html?paket=' + paketPilihan;
                 })
-                .catch(error => {
-                    console.error("Gagal update status:", error);
-                    alert("Terjadi kesalahan. Silakan coba lagi.");
-                });
+                .catch(error => console.error("Gagal update status:", error));
             }
         }
 
-        // Pasang event listener ke tombol
         document.getElementById('pilih-paket-a').addEventListener('click', () => handlePackageSelection('A'));
         document.getElementById('pilih-paket-b').addEventListener('click', () => handlePackageSelection('B'));
     </script>
