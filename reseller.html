@@ -3,28 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upgrade Akun Reseller</title>
+    <title>Daftar Minat Reseller</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; }
         .hidden { display: none; }
+        #form-pendaftaran-minat { margin-top: 30px; padding: 20px; border: 1px solid #ccc; max-width: 500px; text-align: left; margin-left: auto; margin-right: auto;}
+        #form-pendaftaran-minat input { width: 100%; padding: 8px; margin-bottom: 10px; }
+        #form-pendaftaran-minat label { font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="loading-view">
-        <h1>Memeriksa Sesi Login Anda...</h1>
-        <p>Mohon tunggu sebentar.</p>
+    <div id="promo-view">
+        <h1>Promo Reseller Menarik!</h1>
+        <p>Bergabunglah sekarang dan dapatkan keuntungan eksklusif. Silakan pilih paket yang Anda minati.</p>
+        <button id="pilih-paket-a">Pilih Paket A</button>
+        <button id="pilih-paket-b">Pilih Paket B</button>
     </div>
 
-    <div id="reseller-view" class="hidden">
-        <h1>Pilih Paket Reseller Anda</h1>
-        <p>Silakan pilih paket untuk melanjutkan.</p>
-        <button id="pilih-paket-a">Pilih Paket A (Rp 100.000)</button>
-        <button id="pilih-paket-b">Pilih Paket B (Rp 50.000)</button>
+    <div id="form-pendaftaran-minat" class="hidden">
+        <h2 id="form-title">Formulir Pendaftaran Minat</h2>
+        <p>Silakan isi data di bawah ini. Kami akan memproses permintaan Anda.</p>
+        <form id="lead-form">
+            <input type="hidden" id="paket-dipilih">
+            
+            <label for="nama-lengkap">Nama Lengkap</label>
+            <input type="text" id="nama-lengkap" required>
+            
+            <label for="email">Alamat Email (Gunakan email yang terdaftar)</label>
+            <input type="email" id="email" required>
+
+            <label for="whatsapp">Nomor WhatsApp</label>
+            <input type="tel" id="whatsapp" required>
+
+            <button type="submit" id="submit-lead">Kirim Pendaftaran</button>
+        </form>
+        <p id="status-message" style="font-weight: bold; margin-top: 15px;"></p>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
@@ -38,51 +55,55 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        const auth = firebase.auth();
         const db = firebase.firestore();
 
-        const loadingView = document.getElementById('loading-view');
-        const resellerView = document.getElementById('reseller-view');
+        const promoView = document.getElementById('promo-view');
+        const formContainer = document.getElementById('form-pendaftaran-minat');
+        const leadForm = document.getElementById('lead-form');
+        const formTitle = document.getElementById('form-title');
+        const paketDipilihInput = document.getElementById('paket-dipilih');
+        const statusMessageEl = document.getElementById('status-message');
 
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // Status: PASTI SUDAH LOGIN
-                loadingView.classList.add('hidden');
-                resellerView.classList.remove('hidden');
-
-            } else {
-                // Status: PASTI BELUM LOGIN
-                loadingView.innerHTML = "<h1>Sesi tidak ditemukan. Anda harus login.</h1><p>Mengalihkan kembali ke halaman login...</p>";
-                setTimeout(() => {
-                    window.location.replace('index.html');
-                }, 2500);
-            }
-        });
-
-        function handlePackageSelection(paketPilihan) {
-            const user = auth.currentUser;
-            if (!user) {
-                alert("Sesi Anda berakhir. Silakan login kembali.");
-                window.location.replace('index.html');
-                return;
-            }
-
-            const namaPaket = `Paket ${paketPilihan}`;
-            if (confirm(`Anda akan memilih ${namaPaket}. Lanjutkan ke pembayaran?`)) {
-                const userDocRef = db.collection('users').doc(user.uid);
-                userDocRef.update({
-                    status_reseller: 'menunggu_pembayaran',
-                    paket_dipilih: paketPilihan
-                })
-                .then(() => {
-                    window.location.href = 'deposit.html?paket=' + paketPilihan;
-                })
-                .catch(error => console.error("Gagal update status:", error));
-            }
+        function tampilkanForm(paket) {
+            promoView.classList.add('hidden');
+            formTitle.textContent = `Formulir Minat Paket ${paket}`;
+            paketDipilihInput.value = paket;
+            formContainer.classList.remove('hidden');
         }
 
-        document.getElementById('pilih-paket-a').addEventListener('click', () => handlePackageSelection('A'));
-        document.getElementById('pilih-paket-b').addEventListener('click', () => handlePackageSelection('B'));
+        document.getElementById('pilih-paket-a').addEventListener('click', () => tampilkanForm('A'));
+        document.getElementById('pilih-paket-b').addEventListener('click', () => tampilkanForm('B'));
+
+        leadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const submitButton = document.getElementById('submit-lead');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Mengirim...';
+
+            const leadData = {
+                nama: document.getElementById('nama-lengkap').value,
+                email: document.getElementById('email').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                paket_dipilih: paketDipilihInput.value,
+                status: 'baru',
+                tanggal_kirim: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection('calon_reseller').add(leadData)
+                .then(() => {
+                    formContainer.innerHTML = '<h2>Terima Kasih!</h2><p>Data pendaftaran minat Anda telah kami terima. Admin akan segera memprosesnya. Anda akan diarahkan ke halaman pembayaran.</p>';
+                    setTimeout(() => {
+                        // Arahkan ke halaman pembayaran setelah 2.5 detik
+                        window.location.href = 'deposit.html?paket=' + leadData.paket_dipilih;
+                    }, 2500);
+                })
+                .catch(error => {
+                    console.error("Gagal menyimpan data: ", error);
+                    statusMessageEl.textContent = 'Gagal mengirim data. Silakan coba lagi.';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Kirim Pendaftaran';
+                });
+        });
     </script>
 </body>
 </html>
