@@ -102,9 +102,10 @@
 
   <main id="main-content">
     <div id="banner-container" data-aos="fade-down"></div>
+    
     <div id="custom-html-container"></div>
     
-    <div data-aos="fade-up" class="section-container" id="form-section">
+    <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
         <div id="formNotification" class="notification"></div>
         <label for="nama">Nama Lengkap</label>
@@ -123,7 +124,7 @@
         <label for="produk">Produk</label>
         <select id="produk" required><option value="">Pilih Produk</option></select>
         <div id="product-promo-container"></div>
-        <div class="info" id="infoProduk" style="display:none;">Harga dan deskripsi akan muncul di sini.</div>
+        <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
         <button type="submit" id="submitBtn" disabled>Pilih Produk Dahulu</button>
       </form>
     </div>
@@ -190,7 +191,8 @@
     const infoProduk = document.getElementById('infoProduk');
     const hasilDiv = document.getElementById('hasil');
     const formNotification = document.getElementById('formNotification');
-    
+    let testimonialInterval = null;
+
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
       let n = String(num).trim().replace(/[^0-9]/g, '');
@@ -207,15 +209,21 @@
 
     function copyToClipboard(text, element) {
         navigator.clipboard.writeText(text).then(() => {
-            const originalHtml = element.innerHTML;
+            const originalHtml = `<i class="far fa-copy"></i> Salin`;
             element.innerHTML = `<i class="fas fa-check"></i> Disalin!`;
             element.disabled = true;
-            setTimeout(() => { element.innerHTML = originalHtml; element.disabled = false; }, 2000);
-        }).catch(err => { console.error('Gagal menyalin: ', err); alert('Gagal menyalin. Mohon salin secara manual.'); });
+            setTimeout(() => {
+                element.innerHTML = originalHtml;
+                element.disabled = false;
+            }, 2000);
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+            alert('Gagal menyalin. Mohon salin secara manual.');
+        });
     }
 
+    // FUNGSI UNTUK MEMUAT KODE KUSTOM DARI ADMIN PANEL
     function loadCustomCode() {
-        // Menggunakan sistem Kode Kustom LAMA (satu blok)
         dbRT.ref('customCode').once('value').then(snapshot => {
             if (snapshot.exists()) {
                 const customCode = snapshot.val();
@@ -239,7 +247,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
-      loadCustomCode();
+      loadCustomCode(); // Menjalankan fungsi pemuat kode kustom
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
@@ -249,27 +257,64 @@
 
     auth.onAuthStateChanged(user => {
         if (user) {
-            dbFS.collection('resellers').doc(user.uid).get().then(doc => {
+            const resellerRef = dbFS.collection('resellers').doc(user.uid);
+            resellerRef.get().then(doc => {
                 if (doc.exists && doc.data().status === 'active') {
                     userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i><span>Dashboard Reseller</span></a>`;
-                } else { userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`; }
-            }).catch(error => { console.error("Error checking reseller status:", error); userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`; });
-        } else { userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`; }
+                } else {
+                    userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`;
+                }
+            }).catch(error => {
+                console.error("Error checking reseller status:", error);
+                userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`;
+            });
+        } else {
+            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`;
+        }
     });
     
     function loadInitialData() {
-        dbFS.collection('produk').orderBy('urutan').get().then(snapshot => {
+        dbFS.collection('produk').get().then(snapshot => {
             const categories = new Set();
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.kategori) { categories.add(data.kategori); }
+                if (data.kategori) {
+                    categories.add(data.kategori);
+                }
             });
             kategoriSelect.innerHTML = '<option value="">Pilih Kategori</option>';
-            [...categories].sort().forEach(kategori => { kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`; });
+            categories.forEach(kategori => {
+                kategoriSelect.innerHTML += `<option value="${kategori}">${kategori}</option>`;
+            });
         });
         loadAndDisplayBanners();
         loadAndRenderFaq();
         loadApprovedTestimonials();
+    }
+
+    async function loadAndDisplayBanners() {
+        const bannerContainer = document.getElementById('banner-container');
+        if (!bannerContainer) return;
+        try {
+            const snapshot = await dbFS.collection('banners').orderBy('urutan').get();
+            if (snapshot.empty) {
+                bannerContainer.style.display = 'none';
+                return;
+            }
+            let bannersHTML = '';
+            snapshot.forEach(doc => {
+                const banner = doc.data();
+                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`;
+                if (banner.link) {
+                    bannersHTML += `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>`;
+                } else {
+                    bannersHTML += `<div class="banner-item">${imgTag}</div>`;
+                }
+            });
+            bannerContainer.innerHTML = bannersHTML;
+        } catch (error) {
+            console.error("Gagal memuat banner:", error);
+        }
     }
 
     function handleCategoryChange() {
@@ -277,9 +322,14 @@
         const kategori = kategoriSelect.value;
         if (!kategori) return;
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-        dbFS.collection('produk').where('kategori', '==', kategori).orderBy('urutan').get().then(snapshot => {
+        dbFS.collection('produk').where('kategori', '==', kategori).get().then(snapshot => {
+            const products = [];
             snapshot.forEach(doc => {
-                const prod = { id: doc.id, ...doc.data() };
+                const data = doc.data();
+                products.push({ id: doc.id, ...data });
+            });
+            products.sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
+            products.forEach(prod => {
                 produkSelect.innerHTML += `<option value="${prod.id}">${prod.nama_produk}</option>`;
             });
         });
@@ -289,27 +339,32 @@
         const produkId = produkSelect.value;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        if (!produkId) { resetFormState(); return; }
+        if (!produkId) {
+            resetFormState();
+            return;
+        }
         infoProduk.innerHTML = 'Memuat detail produk...';
-        infoProduk.style.display = 'block';
-        submitBtn.disabled = true; submitBtn.textContent = '...';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
         document.getElementById('product-promo-container').innerHTML = '';
-        
         dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
-            if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
+            if (!doc.exists) {
+                infoProduk.innerHTML = 'Produk tidak ditemukan.';
+                return;
+            }
             produkTerpilihData = { id: doc.id, ...doc.data() };
             updateTotalHarga();
             checkDiskonShare();
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
-                infoProduk.innerHTML += `<br><b style="color:var(--danger);">Stok saat ini habis.</b>`;
+                infoProduk.innerHTML += `<br><b class="text-danger">Stok saat ini habis.</b>`;
             } else {
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-                if (produkTerpilihData.promo && produkTerpilihData.promo.nilai > 0) {
+                if (produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
-                    document.getElementById('product-promo-container').innerHTML = `<div class="info mt-2"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
+                    document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
                 }
             }
         });
@@ -338,9 +393,15 @@
         const nama = document.getElementById('nama').value.trim();
         const nomor = document.getElementById('nomor').value.trim();
         const waAktifInput = document.getElementById('waAktif');
-        if (!nama || !nomor || !waAktifInput.checkValidity() || !produkTerpilihData) { showNotification("Harap lengkapi semua data dengan benar!"); return; }
+        if (!nama || !nomor || !waAktifInput.checkValidity() || !produkTerpilihData) {
+            showNotification("Harap lengkapi semua data dengan benar!");
+            return;
+        }
         const waAktif = normalizePhone(waAktifInput.value.trim());
-        submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
+        const kategori = kategoriSelect.value;
+        const produkId = produkSelect.value;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
         try {
             let hargaAwal = produkTerpilihData.harga_umum;
             let hargaFinal = hargaAwal;
@@ -353,72 +414,87 @@
                 hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
             }
             const id = "P" + Date.now();
-            await dbFS.collection('pesananUmum').doc(id).set({ id, nama_pelanggan: nama, nomor_pelanggan: nomor, no_whatsap_aktif: waAktif, kategori: produkTerpilihData.kategori, produk: produkTerpilihData.nama_produk, waktu: firebase.firestore.FieldValue.serverTimestamp(), status: 'Menunggu Pembayaran', harga_final: hargaFinal, promo_digunakan: promoDigunakan, diskon_share: diskonShareTerpakai });
+            await dbFS.collection('pesananUmum').doc(id).set({ id, nama_pelanggan: nama, nomor_pelanggan: nomor, no_whatsap_aktif: waAktif, kategori, produk: produkTerpilihData.nama_produk, waktu: firebase.firestore.FieldValue.serverTimestamp(), status: 'Menunggu Pembayaran', harga_final: hargaFinal, promo_digunakan: promoDigunakan, diskon_share: diskonShareTerpakai });
             if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
-            
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentHtml = '<div class="payment-methods-list">';
-            paymentSnapshot.forEach(doc => { const detail = doc.data(); paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button type="button" class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`; });
+            paymentSnapshot.forEach(doc => {
+                const detail = doc.data();
+                paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
+            });
             paymentHtml += '</div>';
-            
-            document.getElementById('form-section').style.display = 'none';
             hasilDiv.style.display = 'block';
-            hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div><hr style="margin: 20px 0;"><button class="btn btn-outline-light w-100" onclick="resetForNewOrder()"><i class="fas fa-plus-circle me-2"></i>Buat Pesanan Baru Lagi</button>`;
+            hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center text-muted mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
+            document.getElementById('formPesanan').reset();
+            resetFormState();
             window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
         } catch (error) {
             console.error("Error saat memesan:", error);
             showNotification("Terjadi kesalahan: " + error.message, 'error');
-            submitBtn.disabled = false; submitBtn.textContent = 'Pesan Sekarang';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pesan Sekarang';
         }
     }
 
     function resetFormState() {
-        document.getElementById('formPesanan').reset();
         produkTerpilihData = null;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        if(document.getElementById('claim-button')) { document.getElementById('claim-button').disabled = false; document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon"; }
+        document.getElementById('claim-button').disabled = false;
+        document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
         document.getElementById('claim-discount-section').style.display = 'none';
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
-        infoProduk.style.display = 'none';
-        submitBtn.disabled = true; submitBtn.textContent = 'Pilih Produk Dahulu';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Pilih Produk Dahulu';
         document.getElementById('product-promo-container').innerHTML = '';
         hideNotification();
-    }
-    
-    function resetForNewOrder() {
-        document.getElementById('hasil').style.display = 'none';
-        document.getElementById('form-section').style.display = 'block';
-        resetFormState();
     }
 
     function loadAndRenderFaq() {
         const faqContainer = document.getElementById('faq-container');
         dbRT.ref('faq').once('value').then(snap => {
-            if (!snap.exists()) { faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>'; return; }
             faqContainer.innerHTML = '';
+            if (!snap.exists()) {
+                faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
+                return;
+            }
             snap.forEach(itemSnap => {
                 const itemData = itemSnap.val();
-                const item = document.createElement('div'); item.className = 'faq-item';
+                const item = document.createElement('div');
+                item.className = 'faq-item';
                 item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
                 faqContainer.appendChild(item);
             });
-            document.querySelectorAll('.faq-question').forEach(item => { item.addEventListener('click', () => item.parentElement.classList.toggle('active')); });
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
+            });
         }).catch(err => { console.error("Gagal memuat FAQ:", err); });
     }
 
     function loadApprovedTestimonials() {
         const container = document.getElementById('testimoniContainer');
+        const allTestimonials = [];
+        let currentIndex = 0;
         dbRT.ref('testimonials').orderByChild('status').equalTo('disetujui').once('value', snap => {
-            if (!snap.exists()) { container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`; return; }
             container.innerHTML = '';
-            const allTestimonials = [];
+            if (!snap.exists()) {
+                container.innerHTML = `<p style="text-align:center; padding-top: 20px;">Jadilah yang pertama memberi testimoni!</p>`;
+                return;
+            }
             snap.forEach(childSnap => { allTestimonials.push(childSnap.val()); });
-            allTestimonials.reverse().forEach(testi => {
-                const bubble = document.createElement('div'); bubble.className = 'testimonial-bubble';
+            allTestimonials.reverse();
+            if (testimonialInterval) clearInterval(testimonialInterval);
+            testimonialInterval = setInterval(() => {
+                if (allTestimonials.length === 0) return;
+                if (container.children.length > 6) { container.firstChild.remove(); }
+                const testi = allTestimonials[currentIndex];
+                const bubble = document.createElement('div');
+                bubble.className = 'testimonial-bubble';
                 bubble.innerHTML = `<div class="testimonial-header"><i class="fas fa-user-circle"></i><span class="testimonial-name">${testi.nama || 'Anonim'}</span></div><div class="testimonial-body">${testi.isi || ''}</div>`;
                 container.appendChild(bubble);
-            });
+                container.scrollTop = container.scrollHeight;
+                currentIndex = (currentIndex + 1) % allTestimonials.length;
+            }, 4000);
         });
     }
 
@@ -427,13 +503,21 @@
         const nama = document.getElementById('testiNama').value.trim();
         const pesan = document.getElementById('testiPesan').value.trim();
         const statusEl = document.getElementById('testiStatus');
-        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan wajib diisi!'; statusEl.style.color = 'var(--danger)'; return; }
+        if (!nama || !pesan) {
+            statusEl.textContent = 'Nama dan pesan wajib diisi!';
+            statusEl.style.color = 'var(--danger)';
+            return;
+        }
         try {
             await dbRT.ref('testimonials').push({ nama, isi: pesan, status: 'pending', createdAt: new Date().toISOString() });
-            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.'; statusEl.style.color = 'var(--success)';
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
+            statusEl.style.color = 'var(--success)';
             e.target.reset();
             setTimeout(() => { statusEl.textContent = ''; }, 4000);
-        } catch (error) { statusEl.textContent = 'Gagal mengirim testimoni.'; statusEl.style.color = 'var(--danger)'; }
+        } catch (error) {
+            statusEl.textContent = 'Gagal mengirim testimoni.';
+            statusEl.style.color = 'var(--danger)';
+        }
     }
     
     window.cekStatus = () => {
@@ -446,7 +530,7 @@
         diskonShareTerpakai = false;
         document.getElementById('claim-discount-section').style.display = 'none';
         updateTotalHarga();
-        document.querySelector('#product-promo-container .info').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
+        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
     
     async function checkDiskonShare() {
@@ -458,8 +542,13 @@
             try {
                 const snapshot = await dbRT.ref('hakDiskon/' + nomorWA).once('value');
                 claimSection.style.display = (snapshot.exists() && snapshot.val() === true) ? 'block' : 'none';
-            } catch (error) { console.error("Error checking discount:", error); claimSection.style.display = 'none'; }
-        } else { claimSection.style.display = 'none'; }
+            } catch (error) {
+                console.error("Error checking discount:", error);
+                claimSection.style.display = 'none';
+            }
+        } else {
+            claimSection.style.display = 'none';
+        }
     }
 
     window.gunakanDiskonShare = () => {
@@ -467,24 +556,9 @@
         promoProdukTerpakai = false;
         document.getElementById('product-promo-container').innerHTML = '';
         updateTotalHarga();
-        document.getElementById('claim-button').disabled = true; document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
+        document.getElementById('claim-button').disabled = true;
+        document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
     };
-    
-    async function loadAndDisplayBanners() {
-        const bannerContainer = document.getElementById('banner-container');
-        if (!bannerContainer) return;
-        try {
-            const snapshot = await dbFS.collection('banners').orderBy('urutan').get();
-            if (snapshot.empty) { bannerContainer.style.display = 'none'; return; }
-            let bannersHTML = '';
-            snapshot.forEach(doc => {
-                const banner = doc.data();
-                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`;
-                if (banner.link) { bannersHTML += `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>`; } else { bannersHTML += `<div class="banner-item">${imgTag}</div>`; }
-            });
-            bannerContainer.innerHTML = bannersHTML;
-        } catch (error) { console.error("Gagal memuat banner:", error); }
-    }
   </script>
 </body>
 </html>
