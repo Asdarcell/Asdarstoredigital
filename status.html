@@ -17,7 +17,8 @@
     }
     [data-theme="dark"] {
       --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
-      --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
+      --card: #2c2c40; --border: #444; --shadow: rgba(0, 0,
+      0, 0.15);
     }
     body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
     header { position: sticky; top: 0; background: var(--card); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 999; }
@@ -33,6 +34,8 @@
     .status-detail-item strong { color: var(--primary); }
     .proof-image-container img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 6px var(--shadow); }
     .info-box { border-left: 4px solid var(--primary); padding: 15px; background-color: var(--bg); margin-top: 20px; border-radius: 4px; }
+    .promo-card { background-color: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: left;}
+    .promo-card a { color: var(--card); font-weight: bold;}
   </style>
 </head>
 <body data-theme="dark">
@@ -43,7 +46,10 @@
 
   <main>
     <div data-aos="fade-up" class="section-container">
-      <div id="status-content"><p>Memuat status pesanan...</p></div>
+      <div id="status-content">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Memuat status pesanan...</p>
+      </div>
     </div>
   </main>
 
@@ -65,37 +71,9 @@
     const statusContent = document.getElementById('status-content');
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    async function getStatus() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('id');
-        if (!orderId) {
-            statusContent.innerHTML = '<h2>ID Pesanan Tidak Ditemukan.</h2>';
-            return;
-        }
-
-        let doc;
-        try {
-            // Cek di kedua koleksi untuk menemukan pesanan
-            doc = await dbFS.collection('pesananUmum').doc(orderId).get();
-            if (!doc.exists) {
-                doc = await dbFS.collection('pesananReseller').doc(orderId).get();
-            }
-        } catch (error) {
-            console.error("Error fetching order:", error);
-            statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
-            return;
-        }
-
-        if (!doc.exists) {
-            statusContent.innerHTML = '<h2>Pesanan Tidak Ditemukan.</h2>';
-            return;
-        }
-
-        const data = doc.data();
+    function renderStatus(orderId, data) {
         const statusClass = (data.status || 'Menunggu Pembayaran').toLowerCase().replace(/ /g, '-');
-        let additionalInfo = '';
-
-        // --- Logika untuk menampilkan Bukti Pembayaran dari Buyer ---
+        
         let buyerProofHTML = '';
         if (data.bukti_pembayaran_url) {
             buyerProofHTML = `
@@ -104,13 +82,9 @@
                     <a href="${data.bukti_pembayaran_url}" target="_blank">
                         <img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran">
                     </a>
-                </div>
-            `;
-        } else if (data.status === 'Menunggu Pembayaran') {
-            additionalInfo = `<div class="info-box"><p>Anda belum mengunggah bukti pembayaran. Silakan <a href="upload.html?id=${orderId}">unggah bukti di sini</a>.</p></div>`;
+                </div>`;
         }
         
-        // --- KODE BARU: Logika untuk menampilkan Bukti Pengiriman dari Admin ---
         let adminProofHTML = '';
         if (data.bukti_pengiriman_url) {
             adminProofHTML = `
@@ -119,11 +93,25 @@
                     <a href="${data.bukti_pengiriman_url}" target="_blank">
                         <img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman">
                     </a>
-                </div>
-            `;
+                </div>`;
         }
 
-        // --- Menampilkan semua detail ke halaman ---
+        let additionalInfo = '';
+        if (data.status === 'Menunggu Pembayaran' && !data.bukti_pembayaran_url) {
+            additionalInfo = `<div class="info-box"><p>Anda belum mengunggah bukti pembayaran. Silakan <a href="upload.html?id=${orderId}">unggah bukti di sini</a>.</p></div>`;
+        } else if (data.status === 'Selesai' && data.no_whatsap_aktif) {
+            const pesanPromo = encodeURIComponent(`Mau dapat diskon untuk pembelian selanjutnya? Cek di sini: ${window.location.origin}`);
+            const linkWA = `https://api.whatsapp.com/send?text=${pesanPromo}`;
+            const linkUpload = `upload-diskon.html?wa=${data.no_whatsap_aktif}`;
+            additionalInfo = `
+                <div class="promo-card">
+                    <h5 class="fw-bold">🎉 DAPATKAN DISKON PEMBELIAN SELANJUTNYA!</h5>
+                    <p class="small">Bagikan info toko kami ke teman/grup WhatsApp Anda, lalu upload screenshot (SS) untuk mendapatkan potongan harga di pesanan berikutnya.</p>
+                    <a href="${linkWA}" target="_blank" class="btn btn-light w-100 mb-2">1. Bagikan via WhatsApp</a>
+                    <a href="${linkUpload}" target="_blank" class="btn btn-dark w-100">2. Upload Bukti SS Di Sini</a>
+                </div>`;
+        }
+
         statusContent.innerHTML = `
             <h2>Status Pesanan</h2>
             <p><strong>ID Pesanan:</strong> <code>${orderId}</code></p>
@@ -136,21 +124,52 @@
                 <strong>Total Bayar:</strong> ${formatRupiah(data.harga_final || data.harga_beli)}
             </div>
             <div class="status-detail-item">
-                <strong>Pelanggan:</strong> ${data.nama_pelanggan}
+                <strong>Pelanggan:</strong> ${data.nama_pelanggan || data.nama_reseller}
             </div>
             <div class="status-detail-item">
-                <strong>Waktu Pemesanan:</strong> ${new Date(data.waktu.toDate()).toLocaleString('id-ID')}
+                <strong>Waktu Pemesanan:</strong> ${data.waktu ? new Date(data.waktu.toDate()).toLocaleString('id-ID') : 'N/A'}
             </div>
             
             ${buyerProofHTML}
-
             ${adminProofHTML}
-
             ${additionalInfo}
         `;
     }
 
-    document.addEventListener('DOMContentLoaded', getStatus);
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+
+        if (!orderId) {
+            statusContent.innerHTML = '<h2>ID Pesanan Tidak Ditemukan.</h2>';
+            return;
+        }
+
+        const umumRef = dbFS.collection('pesananUmum').doc(orderId);
+        const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
+
+        // Dengarkan perubahan pada pesanan umum
+        umumRef.onSnapshot(doc => {
+            if (doc.exists) {
+                renderStatus(orderId, doc.data());
+            } else {
+                // Jika tidak ada, dengarkan perubahan pada pesanan reseller
+                resellerRef.onSnapshot(docReseller => {
+                    if (docReseller.exists) {
+                        renderStatus(orderId, docReseller.data());
+                    } else {
+                        statusContent.innerHTML = '<h2>Pesanan Tidak Ditemukan.</h2>';
+                    }
+                }, err => {
+                    console.error("Error listener reseller:", err);
+                    statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
+                });
+            }
+        }, err => {
+            console.error("Error listener umum:", err);
+            statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
+        });
+    });
   </script>
 </body>
 </html>
