@@ -34,7 +34,8 @@
             border-color: var(--primary);
         }
         .nav-tabs .nav-link { color: var(--text); }
-        .form-control, .btn { border-radius: 8px; }
+        .form-control, .btn, .form-select, textarea { border-radius: 8px; background-color: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        textarea:focus, .form-control:focus { background-color: var(--card); }
         .btn-primary { background-color: var(--primary); border-color: var(--primary); }
         .btn-success { background-color: var(--success); border-color: var(--success); }
         .btn-danger { background-color: var(--danger); border-color: var(--danger); }
@@ -43,14 +44,11 @@
         th { background-color: var(--primary); color: white; }
         .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8em; }
         .status-pending { background-color: #ffc107; color: #343a40; }
-        .status-disetujui { background-color: #28a745; color: white; }
-        .status-selesai { background-color: #28a745; color: white; }
-        .status-ditolak { background-color: #dc3545; color: white; }
-        .status-belum-bayar { background-color: #007bff; color: white; }
-        .badge-info { background-color: #17a2b8; color: white; }
+        .status-disetujui, .status-selesai { background-color: #28a745; color: white; }
+        .status-ditolak, .status-dibatalkan { background-color: #dc3545; color: white; }
+        .status-belum-bayar, .status-diproses { background-color: #007bff; color: white; }
         .btn-sm { padding: 5px 10px; font-size: 0.8em; }
         .logout-btn { position: absolute; top: 20px; right: 20px; }
-        .img-proof { max-width: 100%; height: auto; display: block; margin-top: 10px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -68,6 +66,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq" type="button" role="tab">FAQ</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Pembayaran</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="banners-tab" data-bs-toggle="tab" data-bs-target="#banners" type="button" role="tab">Banner</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="custom-code-tab" data-bs-toggle="tab" data-bs-target="#custom-code" type="button" role="tab">Kode Kustom</button></li>
             </ul>
         </header>
 
@@ -114,7 +113,7 @@
             <div class="tab-pane fade" id="verification" role="tabpanel">
                 <div class="section">
                     <h2>Verifikasi Pendaftaran Reseller</h2>
-                    <p>Daftar pengguna yang telah melakukan deposit dan menunggu persetujuan.</p>
+                    <p>Daftar pengguna yang menunggu persetujuan.</p>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead><tr><th>Email</th><th>Paket</th><th>Deposit</th><th>Bukti</th><th>Aksi</th></tr></thead>
@@ -163,7 +162,7 @@
                     </form>
                 </div>
             </div>
-
+            
             <div class="tab-pane fade" id="faq" role="tabpanel">
                 <div class="section">
                     <h2>Manajemen FAQ</h2>
@@ -202,6 +201,28 @@
                     <form id="banner-form"><input type="hidden" id="bannerId" /><div class="mb-3"><label for="banner_url">URL Gambar</label><input type="text" id="banner_url" class="form-control" required></div><div class="mb-3"><label for="banner_link">Tautan (opsional)</label><input type="text" id="banner_link" class="form-control"></div><div class="mb-3"><label for="banner_urutan">Urutan Tampilan</label><input type="number" id="banner_urutan" class="form-control" value="0"></div><button type="submit" class="btn btn-primary w-100">Simpan Banner</button><button type="button" id="cancel-banner-edit-btn" class="btn btn-secondary w-100 mt-2" style="display:none;">Batal Edit</button></form>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="custom-code" role="tabpanel">
+                <div class="section">
+                    <h2>Manajemen Kode Kustom</h2>
+                    <p>Masukkan kode di bawah ini untuk ditampilkan di halaman publik Anda. <strong>Hati-hati, kesalahan kode bisa merusak website.</strong></p>
+                    <form id="custom-code-form">
+                        <div class="mb-3">
+                            <label for="custom-html" class="form-label"><b>Custom HTML</b> (Akan dimasukkan ke dalam div khusus)</label>
+                            <textarea id="custom-html" class="form-control" rows="8" placeholder="Contoh: <h1>Diskon Spesial!</h1>"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="custom-css" class="form-label"><b>Custom CSS</b> (Akan dimasukkan ke dalam tag &lt;style&gt;)</label>
+                            <textarea id="custom-css" class="form-control" rows="8" placeholder="Contoh: .promo { color: red; }"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="custom-js" class="form-label"><b>Custom JavaScript</b> (Akan dieksekusi saat halaman dimuat)</label>
+                            <textarea id="custom-js" class="form-control" rows="8" placeholder="Contoh: alert('Selamat Datang!');"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Simpan Semua Kode</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -218,7 +239,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
         // ==========================================================
-        //  FUNGSI DAN PENGATURAN UMUM
+        //  KONFIGURASI FIREBASE DAN FUNGSI UMUM
         // ==========================================================
         const firebaseConfig = {
           apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
@@ -231,23 +252,28 @@
         const dbFS = firebase.firestore();
         const dbRT = firebase.database();
 
+        // Cek status otentikasi
         auth.onAuthStateChanged(user => { if (!user) { window.location.href = "loginadmin.html"; } });
+        // Fungsi Logout
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = "loginadmin.html"; }); });
+        
+        // Fungsi helper
         const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        
         function showToast(message, type = 'success') {
             const toastElement = document.getElementById('liveToast');
             const toastBody = toastElement.querySelector('.toast-body');
             const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastElement);
             toastElement.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-            if (type === 'success') toastElement.classList.add('bg-success');
-            else if (type === 'danger') toastElement.classList.add('bg-danger');
-            else if (type === 'warning') toastElement.classList.add('bg-warning');
-            else if (type === 'info') toastElement.classList.add('bg-info');
+            toastElement.classList.add(type === 'danger' ? 'bg-danger' : `bg-${type}`);
             toastBody.textContent = message;
             toastBootstrap.show();
         }
+
         function setButtonLoading(button, isLoading) {
+            if(!button) return;
             if (isLoading) {
+                button.dataset.originalText = button.innerHTML;
                 button.disabled = true;
                 button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
             } else {
@@ -256,7 +282,7 @@
             }
         }
 
-        // ====================================== TABS ======================================
+        // ====================================== MANAJEMEN TABS ======================================
         document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
             loadResellers();
@@ -277,25 +303,18 @@
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
         document.getElementById('banners-tab').addEventListener('click', loadBanners);
+        document.getElementById('custom-code-tab').addEventListener('click', loadCustomCode);
 
         // =================================== PRODUK (Firestore) ===================================
         const productForm = document.getElementById('product-form');
         const productsTableBody = document.querySelector('#products-table tbody');
         const promoCheckbox = document.getElementById('promo-checkbox');
         const promoOptions = document.getElementById('promo-options');
-        const promoJenis = document.getElementById('promo-jenis');
-        const promoNilai = document.getElementById('promo-nilai');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const productFormBtn = productForm.querySelector('button[type="submit"]');
         let currentProductId = null;
-        productFormBtn.dataset.originalText = productFormBtn.innerHTML;
 
-        promoCheckbox.addEventListener('change', () => {
-            promoOptions.style.display = promoCheckbox.checked ? 'block' : 'none';
-            if (!promoCheckbox.checked) {
-                promoNilai.value = '';
-            }
-        });
+        promoCheckbox.addEventListener('change', () => { promoOptions.style.display = promoCheckbox.checked ? 'block' : 'none'; });
         
         function loadProducts() {
             productsTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
@@ -320,12 +339,8 @@
                 harga_reseller: parseInt(document.getElementById('harga_reseller').value),
                 stok: parseInt(document.getElementById('stok').value),
                 urutan: parseInt(document.getElementById('urutan').value),
+                promo: promoCheckbox.checked ? { jenis: document.getElementById('promo-jenis').value, nilai: parseInt(document.getElementById('promo-nilai').value) } : null
             };
-            if (promoCheckbox.checked) {
-                productData.promo = { jenis: promoJenis.value, nilai: parseInt(promoNilai.value) };
-            } else {
-                productData.promo = null;
-            }
 
             try {
                 if (currentProductId) {
@@ -337,9 +352,8 @@
                 }
                 productForm.reset();
                 cancelEditBtn.style.display = 'none';
-                currentProductId = null;
-                promoCheckbox.checked = false;
                 promoOptions.style.display = 'none';
+                currentProductId = null;
                 loadProducts();
             } catch (error) {
                 showToast('Gagal menyimpan produk: ' + error.message, 'danger');
@@ -351,34 +365,30 @@
         cancelEditBtn.addEventListener('click', () => {
             productForm.reset();
             cancelEditBtn.style.display = 'none';
-            currentProductId = null;
-            promoCheckbox.checked = false;
             promoOptions.style.display = 'none';
+            currentProductId = null;
         });
 
         async function editProduct(id) {
             const doc = await dbFS.collection('produk').doc(id).get();
             if (doc.exists) {
-                const product = doc.data();
+                const p = doc.data();
                 currentProductId = id;
-                document.getElementById('nama_produk').value = product.nama_produk;
-                document.getElementById('kategori').value = product.kategori;
-                document.getElementById('deskripsi').value = product.deskripsi;
-                document.getElementById('harga_umum').value = product.harga_umum;
-                document.getElementById('harga_reseller').value = product.harga_reseller;
-                document.getElementById('stok').value = product.stok;
-                document.getElementById('urutan').value = product.urutan || 0;
-                if (product.promo) {
-                    promoCheckbox.checked = true;
-                    promoOptions.style.display = 'block';
-                    promoJenis.value = product.promo.jenis;
-                    promoNilai.value = product.promo.nilai;
-                } else {
-                    promoCheckbox.checked = false;
-                    promoOptions.style.display = 'none';
+                document.getElementById('nama_produk').value = p.nama_produk;
+                document.getElementById('kategori').value = p.kategori;
+                document.getElementById('deskripsi').value = p.deskripsi;
+                document.getElementById('harga_umum').value = p.harga_umum;
+                document.getElementById('harga_reseller').value = p.harga_reseller;
+                document.getElementById('stok').value = p.stok;
+                document.getElementById('urutan').value = p.urutan || 0;
+                promoCheckbox.checked = !!p.promo;
+                promoOptions.style.display = p.promo ? 'block' : 'none';
+                if (p.promo) {
+                    document.getElementById('promo-jenis').value = p.promo.jenis;
+                    document.getElementById('promo-nilai').value = p.promo.nilai;
                 }
                 cancelEditBtn.style.display = 'block';
-                window.scrollTo({ top: document.getElementById('products-tab').offsetTop, behavior: 'smooth' });
+                productForm.scrollIntoView({ behavior: 'smooth' });
             }
         }
         
@@ -394,45 +404,53 @@
             resellersTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
             dbFS.collection('resellers').where('status', '==', 'active').get().then(snapshot => {
                 resellersTableBody.innerHTML = '';
-                if (snapshot.empty) {
-                    resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller aktif.</td></tr>';
-                    return;
-                }
+                if (snapshot.empty) { resellersTableBody.innerHTML = '<tr><td colspan="3">Belum ada reseller aktif.</td></tr>'; return; }
                 snapshot.forEach(doc => {
                     const reseller = { id: doc.id, ...doc.data() };
                     const row = resellersTableBody.insertRow();
-                    row.innerHTML = `<td>${reseller.email}</td><td>${formatRupiah(reseller.saldo || 0)}</td><td><button class="btn btn-primary btn-sm" onclick="addSaldo('${reseller.id}', ${reseller.saldo || 0}, this)">Tambah Saldo</button></td>`;
+                    row.innerHTML = `<td>${reseller.email}</td><td>${formatRupiah(reseller.saldo || 0)}</td><td><button class="btn btn-primary btn-sm" onclick="addSaldo('${reseller.id}', ${reseller.saldo || 0}, this)">Tambah Saldo</button> <button class="btn btn-danger btn-sm" onclick="deleteReseller('${reseller.id}', this)">Hapus</button></td>`;
                 });
             }).catch(error => { resellersTableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat reseller: ${error.message}</td></tr>`; });
         }
+        
         async function addSaldo(resellerId, currentSaldo, button) {
             const nominal = prompt("Masukkan nominal saldo yang ingin ditambahkan:");
             if (nominal && !isNaN(nominal) && parseInt(nominal) > 0) {
                 setButtonLoading(button, true);
-                const newSaldo = currentSaldo + parseInt(nominal);
                 try {
-                    await dbFS.collection('resellers').doc(resellerId).update({ saldo: newSaldo });
-                    showToast(`Saldo berhasil ditambahkan menjadi ${formatRupiah(newSaldo)}`);
+                    await dbFS.collection('resellers').doc(resellerId).update({ saldo: currentSaldo + parseInt(nominal) });
+                    showToast('Saldo berhasil ditambahkan');
                     loadResellers();
                 } catch (error) {
                     showToast('Gagal menambah saldo: ' + error.message, 'danger');
                 } finally {
                     setButtonLoading(button, false);
                 }
-            } else if (nominal !== null) {
-                showToast("Input tidak valid.", 'warning');
+            } else if (nominal !== null) { showToast("Input tidak valid.", 'warning'); }
+        }
+
+        async function deleteReseller(resellerId, button) {
+            if (confirm('PERINGATAN: Anda akan menghapus reseller ini secara permanen. Tindakan ini tidak bisa dibatalkan. Lanjutkan?')) {
+                setButtonLoading(button, true);
+                try {
+                    await dbFS.collection('resellers').doc(resellerId).delete();
+                    showToast('Reseller berhasil dihapus permanen.');
+                    loadResellers();
+                } catch (error) {
+                    showToast('Gagal menghapus reseller: ' + error.message, 'danger');
+                } finally { setButtonLoading(button, false); }
             }
         }
 
         // =================================== VERIFIKASI RESELLER (Firestore) ===================================
         const verificationTableBody = document.getElementById('verification-table-body');
         const verificationCountBadge = document.getElementById('verification-count');
-        async function loadPendingResellers() {
+        function loadPendingResellers() {
             verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Memuat...</td></tr>`;
             dbFS.collection('resellers').where('status', '==', 'pending-approval').onSnapshot(snapshot => {
                 verificationTableBody.innerHTML = '';
                 if (snapshot.empty) {
-                    verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Tidak ada pendaftar yang menunggu persetujuan.</td></tr>`;
+                    verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Tidak ada pendaftar menunggu.</td></tr>`;
                     verificationCountBadge.style.display = 'none';
                     return;
                 }
@@ -441,18 +459,27 @@
                 snapshot.forEach(doc => {
                     const reseller = doc.data();
                     const uid = doc.id;
-                    const row = `<tr><td>${reseller.email}</td><td>Paket ${reseller.paket || 'N/A'}</td><td>${formatRupiah(reseller.depositAmount)}</td><td><a href="${reseller.depositProofURL}" target="_blank" class="btn btn-sm btn-info">Lihat Bukti</a></td><td><button class="btn btn-success btn-sm" onclick="approveReseller('${uid}', ${reseller.depositAmount})">Setujui</button> <button class="btn btn-danger btn-sm" onclick="rejectReseller('${uid}')">Tolak</button></td></tr>`;
+                    const row = `<tr><td>${reseller.email}</td><td>Paket ${reseller.paket || 'N/A'}</td><td>${formatRupiah(reseller.depositAmount)}</td><td><a href="${reseller.depositProofURL}" target="_blank" class="btn btn-sm btn-info">Lihat</a></td><td><button class="btn btn-success btn-sm" onclick="approveReseller('${uid}', ${reseller.depositAmount})">Setujui</button> <button class="btn btn-warning btn-sm" onclick="rejectReseller('${uid}')">Tolak</button> <button class="btn btn-danger btn-sm" onclick="deletePendingReseller('${uid}', this)">Hapus</button></td></tr>`;
                     verificationTableBody.innerHTML += row;
                 });
-            }, error => { verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat data verifikasi: ${error.message}</td></tr>`; console.error("Error loading pending resellers:", error); });
+            }, error => { verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat: ${error.message}</td></tr>`; });
         }
         async function approveReseller(uid, depositAmount) {
-            if (!confirm(`Setujui reseller ini dan tambahkan saldo sebesar ${formatRupiah(depositAmount)}?`)) return;
-            try { await dbFS.collection('resellers').doc(uid).update({ status: 'active', saldo: Number(depositAmount), approvedAt: new Date() }); showToast('Reseller berhasil disetujui!', 'success'); } catch (error) { showToast('Gagal menyetujui reseller.', 'danger'); console.error("Error approving reseller: ", error); }
+            if (!confirm(`Setujui reseller ini dan tambahkan saldo ${formatRupiah(depositAmount)}?`)) return;
+            try { await dbFS.collection('resellers').doc(uid).update({ status: 'active', saldo: Number(depositAmount), approvedAt: new Date() }); showToast('Reseller disetujui!', 'success'); } catch (error) { showToast('Gagal menyetujui.', 'danger'); }
         }
         async function rejectReseller(uid) {
-            if (!confirm('Yakin ingin menolak pendaftaran reseller ini?')) return;
-            try { await dbFS.collection('resellers').doc(uid).update({ status: 'rejected', rejectionReason: 'Ditolak oleh admin', rejectedAt: new Date() }); showToast('Pendaftaran reseller ditolak.', 'warning'); } catch (error) { showToast('Gagal menolak reseller.', 'danger'); console.error("Error rejecting reseller: ", error); }
+            if (!confirm('Yakin menolak pendaftaran ini?')) return;
+            try { await dbFS.collection('resellers').doc(uid).update({ status: 'rejected', rejectionReason: 'Ditolak admin', rejectedAt: new Date() }); showToast('Pendaftaran ditolak.', 'warning'); } catch (error) { showToast('Gagal menolak.', 'danger');}
+        }
+        async function deletePendingReseller(uid, button) {
+            if (confirm('Yakin ingin menghapus permintaan verifikasi ini secara permanen?')) {
+                setButtonLoading(button, true);
+                try {
+                    await dbFS.collection('resellers').doc(uid).delete();
+                    showToast('Permintaan verifikasi dihapus.');
+                } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+            }
         }
         
         // =================================== TOP UP (Firestore) ===================================
@@ -461,51 +488,43 @@
             topupTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
             dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').onSnapshot(snapshot => {
                 topupTableBody.innerHTML = '';
-                if (snapshot.empty) {
-                    topupTableBody.innerHTML = '<tr><td colspan="6">Belum ada konfirmasi top up.</td></tr>';
-                }
+                if (snapshot.empty) { topupTableBody.innerHTML = '<tr><td colspan="6">Belum ada konfirmasi top up.</td></tr>'; }
                 snapshot.forEach(doc => {
                     const konfirmasi = { id: doc.id, ...doc.data() };
                     const row = topupTableBody.insertRow();
-                    row.innerHTML = `<td>${konfirmasi.id}</td><td>${konfirmasi.reseller_email}</td><td>${formatRupiah(konfirmasi.nominal)}</td><td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat Bukti</a><img src="${konfirmasi.bukti_url}" class="img-proof" style="display:none;"/></td><td><span class="status-badge status-${konfirmasi.status.replace(' ', '-')}">${konfirmasi.status}</span></td><td>${konfirmasi.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="approveTopup('${konfirmasi.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, this)">Setujui</button> <button class="btn btn-danger btn-sm" onclick="rejectTopup('${konfirmasi.id}', this)">Tolak</button>` : `<button class="btn btn-sm btn-secondary" disabled>Selesai</button>`}</td>`;
+                    row.innerHTML = `<td><code>${konfirmasi.id.substring(0,6)}...</code></td><td>${konfirmasi.reseller_email}</td><td>${formatRupiah(konfirmasi.nominal)}</td><td><a href="${konfirmasi.bukti_url}" target="_blank">Lihat</a></td><td><span class="status-badge status-${konfirmasi.status.replace(' ', '-')}">${konfirmasi.status}</span></td><td>${konfirmasi.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="approveTopup('${konfirmasi.id}', '${konfirmasi.reseller_uid}', ${konfirmasi.nominal}, this)">Setujui</button> <button class="btn btn-danger btn-sm" onclick="rejectTopup('${konfirmasi.id}', this)">Tolak</button>` : ''} <button class="btn btn-outline-danger btn-sm ms-1" onclick="deleteTopupConfirmation('${konfirmasi.id}', this)">Hapus</button></td>`;
                 });
-            }, error => { topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat konfirmasi top up: ${error.message}</td></tr>`; });
+            }, error => { topupTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat: ${error.message}</td></tr>`; });
         }
         async function approveTopup(id, resellerUid, nominal, button) {
             setButtonLoading(button, true);
             try {
-                await dbFS.runTransaction(async (transaction) => {
+                await dbFS.runTransaction(async (t) => {
                     const resellerRef = dbFS.collection('resellers').doc(resellerUid);
                     const konfirmasiRef = dbFS.collection('konfirmasiTopup').doc(id);
-                    const resellerDoc = await transaction.get(resellerRef);
-                    const konfirmasiDoc = await transaction.get(konfirmasiRef);
-                    if (!resellerDoc.exists || !konfirmasiDoc.exists || konfirmasiDoc.data().status !== 'pending') {
-                        throw new Error("Dokumen tidak ditemukan atau status sudah berubah.");
-                    }
-                    const newSaldo = (resellerDoc.data().saldo || 0) + nominal;
-                    transaction.update(resellerRef, { saldo: newSaldo });
-                    transaction.update(konfirmasiRef, { status: 'disetujui' });
+                    const resellerDoc = await t.get(resellerRef);
+                    if (!resellerDoc.exists) throw new Error("Reseller tidak ditemukan.");
+                    t.update(resellerRef, { saldo: (resellerDoc.data().saldo || 0) + nominal });
+                    t.update(konfirmasiRef, { status: 'disetujui' });
                 });
                 showToast('Top up berhasil disetujui!');
             } catch (error) {
                 showToast('Gagal menyetujui top up: ' + error.message, 'danger');
-            } finally {
-                setButtonLoading(button, false);
-            }
+            } finally { setButtonLoading(button, false); }
         }
         async function rejectTopup(id, button) {
-            if (confirm('Yakin ingin menolak konfirmasi top up ini?')) {
+            if (confirm('Yakin menolak top up ini?')) {
                 setButtonLoading(button, true);
-                try {
-                    await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'ditolak' });
-                    showToast('Top up berhasil ditolak.');
-                } catch (error) {
-                    showToast('Gagal menolak top up: ' + error.message, 'danger');
-                } finally {
-                    setButtonLoading(button, false);
-                }
+                try { await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'ditolak' }); showToast('Top up ditolak.'); } catch (error) { showToast('Gagal menolak top up: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
             }
         }
+        async function deleteTopupConfirmation(id, button) {
+            if (confirm('Yakin ingin menghapus riwayat top up ini permanen?')) {
+                setButtonLoading(button, true);
+                try { await dbFS.collection('konfirmasiTopup').doc(id).delete(); showToast('Riwayat top up dihapus.'); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+            }
+        }
+
 
         // =================================== PESANAN (Firestore) ===================================
         const ordersTableBody = document.querySelector('#orders-table-body');
@@ -513,177 +532,148 @@
         let allOrdersData = [];
         function loadOrders() {
             ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat...</td></tr>';
-            const umumRef = dbFS.collection('pesananUmum').orderBy('waktu', 'desc');
-            const resellerRef = dbFS.collection('pesananReseller').orderBy('waktu', 'desc');
-            Promise.all([umumRef.get(), resellerRef.get()]).then(([umumSnap, resellerSnap]) => {
-                let combinedOrders = [];
-                umumSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
-                resellerSnap.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
-                allOrdersData = combinedOrders.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+            Promise.all([
+                dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(), 
+                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
+            ]).then(([umumSnap, resellerSnap]) => {
+                let combined = [];
+                umumSnap.forEach(doc => combined.push({ id: doc.id, ...doc.data(), type: 'umum' }));
+                resellerSnap.forEach(doc => combined.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                allOrdersData = combined.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
                 renderOrders(allOrdersData);
-            }).catch(error => { ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${error.message}</td></tr>`; });
+            }).catch(error => { ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat: ${error.message}</td></tr>`; });
         }
         function renderOrders(orders) {
-            const filterValue = orderFilter.value;
-            const filteredOrders = orders.filter(order => {
-                if (filterValue === 'all') return true;
-                return order.type === filterValue;
-            });
+            const filtered = orders.filter(o => orderFilter.value === 'all' || o.type === orderFilter.value);
             ordersTableBody.innerHTML = '';
-            if (filteredOrders.length === 0) {
-                ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan untuk kategori ini.</td></tr>`;
-                return;
-            }
-            filteredOrders.forEach(order => {
-                const isResellerOrder = order.type === 'reseller';
+            if (filtered.length === 0) { ordersTableBody.innerHTML = `<tr><td colspan="6">Belum ada pesanan.</td></tr>`; return; }
+            filtered.forEach(order => {
+                const isReseller = order.type === 'reseller';
+                const statusClass = `status-${(order.status || '').toLowerCase().replace(' ', '-')}`;
                 const row = ordersTableBody.insertRow();
-                let statusClass = 'status-belum-bayar';
-                if (order.status) {
-                    statusClass = `status-${order.status.toLowerCase().replace(' ', '-')}`;
-                    if (order.status === 'Selesai') statusClass = 'status-selesai';
-                    if (order.status === 'Diproses') statusClass = 'badge-info';
-                    if (order.status === 'Dibatalkan' || order.status === 'Ditolak') statusClass = 'status-ditolak';
-                }
-                row.innerHTML = `<td><code>${order.id}</code></td><td>${order.produk}</td><td>${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} ${order.nama_pelanggan || order.nama_reseller || order.nama}</td><td>${formatRupiah(isResellerOrder ? order.harga_beli : order.harga_final)}</td><td><span class="status-badge ${statusClass}">${order.status}</span></td><td><a href="detail-pesanan.html?id=${order.id}" class="btn btn-sm btn-primary">Kelola</a></td>`;
+                row.innerHTML = `<td><code>${order.id.substring(0,6)}</code></td><td>${order.produk}</td><td>${isReseller ? `<span class="badge bg-primary">R</span>` : `<span class="badge bg-secondary">U</span>`} ${order.nama_pelanggan || order.nama_reseller || order.nama}</td><td>${formatRupiah(isReseller ? order.harga_beli : order.harga_final)}</td><td><span class="status-badge ${statusClass}">${order.status}</span></td><td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a> <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button></td>`;
             });
         }
         orderFilter.addEventListener('change', () => renderOrders(allOrdersData));
+        async function deleteOrder(id, type, button) {
+            if (confirm('PERINGATAN: Menghapus riwayat pesanan dapat memengaruhi laporan. Yakin hapus permanen?')) {
+                setButtonLoading(button, true);
+                const collectionName = type === 'reseller' ? 'pesananReseller' : 'pesananUmum';
+                try {
+                    await dbFS.collection(collectionName).doc(id).delete();
+                    showToast('Pesanan berhasil dihapus.');
+                    loadOrders();
+                } catch (error) { showToast('Gagal menghapus pesanan: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+            }
+        }
 
         // =================================== TESTIMONI (Realtime Database) ===================================
         const testimonialsTableBody = document.querySelector('#testimonials-table tbody');
         const testimonialForm = document.getElementById('testimonial-form');
-        const testimonialFormBtn = testimonialForm.querySelector('button[type="submit"]');
         const cancelTestimonialEditBtn = document.getElementById('cancel-testimonial-edit-btn');
         let currentTestimonialId = null;
-        testimonialFormBtn.dataset.originalText = testimonialFormBtn.innerHTML;
         function loadTestimonials() {
             testimonialsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
             dbRT.ref('testimonials').on('value', snapshot => {
                 testimonialsTableBody.innerHTML = '';
-                if (!snapshot.exists()) {
-                    testimonialsTableBody.innerHTML = '<tr><td colspan="4">Belum ada testimoni.</td></tr>';
-                }
+                if (!snapshot.exists()) { testimonialsTableBody.innerHTML = '<tr><td colspan="4">Belum ada testimoni.</td></tr>'; }
                 snapshot.forEach(childSnap => {
                     const testi = { id: childSnap.key, ...childSnap.val() };
                     const row = testimonialsTableBody.insertRow();
-                    const statusClass = testi.status.replace(' ', '-');
-                    const isApproved = testi.status === 'disetujui';
-                    row.innerHTML = `<td>${testi.nama}</td><td>${testi.isi}</td><td><span class="status-badge status-${statusClass}">${testi.status}</span></td><td>${!isApproved ? `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${testi.id}', this)">Setujui</button>` : `<button class="btn btn-sm btn-secondary" disabled>Disetujui</button>`} <button class="btn btn-warning btn-sm" onclick="editTestimonial('${testi.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteTestimonial('${testi.id}', this)">Hapus</button></td>`;
+                    row.innerHTML = `<td>${testi.nama}</td><td>${testi.isi}</td><td><span class="status-badge status-${testi.status}">${testi.status}</span></td><td>${testi.status !== 'disetujui' ? `<button class="btn btn-success btn-sm" onclick="approveTestimonial('${testi.id}', this)">Setujui</button>` : ''} <button class="btn btn-warning btn-sm" onclick="editTestimonial('${testi.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteTestimonial('${testi.id}', this)">Hapus</button></td>`;
                 });
             });
         }
         testimonialForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            setButtonLoading(testimonialFormBtn, true);
-            const nama = document.getElementById('testimonial-nama').value;
-            const isi = document.getElementById('testimonial-isi').value;
-            const data = { nama, isi, status: 'pending' };
-            if (currentTestimonialId) {
-                dbRT.ref('testimonials/' + currentTestimonialId).update(data).then(() => { showToast('Testimoni berhasil diperbarui!'); testimonialForm.reset(); currentTestimonialId = null; cancelTestimonialEditBtn.style.display = 'none'; }).catch(error => { showToast('Gagal memperbarui testimoni: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(testimonialFormBtn, false); });
-            } else {
-                dbRT.ref('testimonials').push(data).then(() => { showToast('Testimoni berhasil ditambahkan!'); testimonialForm.reset(); }).catch(error => { showToast('Gagal menambahkan testimoni: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(testimonialFormBtn, false); });
-            }
+            const btn = e.target.querySelector('button[type="submit"]');
+            setButtonLoading(btn, true);
+            const data = { nama: document.getElementById('testimonial-nama').value, isi: document.getElementById('testimonial-isi').value, status: 'pending' };
+            const promise = currentTestimonialId ? dbRT.ref('testimonials/' + currentTestimonialId).update(data) : dbRT.ref('testimonials').push(data);
+            promise.then(() => { showToast('Testimoni disimpan!'); testimonialForm.reset(); currentTestimonialId = null; cancelTestimonialEditBtn.style.display = 'none'; }).catch(error => { showToast('Gagal menyimpan: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(btn, false); });
         });
         cancelTestimonialEditBtn.addEventListener('click', () => { testimonialForm.reset(); currentTestimonialId = null; cancelTestimonialEditBtn.style.display = 'none'; });
         function editTestimonial(id) {
-            dbRT.ref('testimonials/' + id).once('value').then(snapshot => {
-                const item = snapshot.val();
-                if (item) { document.getElementById('testimonial-nama').value = item.nama; document.getElementById('testimonial-isi').value = item.isi; currentTestimonialId = id; cancelTestimonialEditBtn.style.display = 'block'; window.scrollTo({ top: document.getElementById('testimonials-tab').offsetTop, behavior: 'smooth' }); }
-            });
+            dbRT.ref('testimonials/' + id).once('value', s => { if(s.exists()){ const item = s.val(); document.getElementById('testimonial-nama').value = item.nama; document.getElementById('testimonial-isi').value = item.isi; currentTestimonialId = id; cancelTestimonialEditBtn.style.display = 'block'; testimonialForm.scrollIntoView(); } });
         }
         async function approveTestimonial(id, button) {
             setButtonLoading(button, true);
-            try { await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' }); showToast('Testimoni berhasil disetujui!'); } catch (error) { showToast('Gagal menyetujui testimoni: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+            try { await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' }); showToast('Testimoni disetujui!'); } catch (error) { showToast('Gagal menyetujui: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
         }
         async function deleteTestimonial(id, button) {
             if (confirm('Yakin ingin menghapus testimoni ini?')) {
                 setButtonLoading(button, true);
-                try { await dbRT.ref('testimonials/' + id).remove(); showToast('Testimoni berhasil dihapus!'); } catch (error) { showToast('Gagal menghapus testimoni: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+                try { await dbRT.ref('testimonials/' + id).remove(); showToast('Testimoni dihapus!'); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
             }
         }
 
         // =================================== FAQ (Realtime Database) ===================================
         const faqForm = document.getElementById('faq-form');
         const faqTableBody = document.querySelector('#faq-table tbody');
-        const faqFormBtn = faqForm.querySelector('button[type="submit"]');
         let currentFaqId = null;
-        faqFormBtn.dataset.originalText = faqFormBtn.innerHTML;
         function loadFaq() {
             faqTableBody.innerHTML = '<tr><td colspan="3">Memuat...</td></tr>';
-            dbRT.ref('faq').on('value', snapshot => {
+            dbRT.ref('faq').on('value', s => {
                 faqTableBody.innerHTML = '';
-                const faqData = snapshot.val();
-                if (!faqData) { faqTableBody.innerHTML = '<tr><td colspan="3">Belum ada FAQ.</td></tr>'; return; }
-                Object.keys(faqData).forEach((key) => {
-                    const item = faqData[key];
+                if (!s.exists()) { faqTableBody.innerHTML = '<tr><td colspan="3">Belum ada FAQ.</td></tr>'; return; }
+                s.forEach((cs) => {
+                    const item = cs.val();
                     const row = faqTableBody.insertRow();
-                    row.innerHTML = `<td>${item.q}</td><td>${item.a}</td><td><button class="btn btn-warning btn-sm" onclick="editFaq('${key}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteFaq('${key}', this)">Hapus</button></td>`;
+                    row.innerHTML = `<td>${item.q}</td><td>${item.a}</td><td><button class="btn btn-warning btn-sm" onclick="editFaq('${cs.key}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteFaq('${cs.key}', this)">Hapus</button></td>`;
                 });
             });
         }
         faqForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            setButtonLoading(faqFormBtn, true);
-            const q = document.getElementById('faq_q').value;
-            const a = document.getElementById('faq_a').value;
-            const data = { q, a };
-            if (currentFaqId) {
-                dbRT.ref('faq/' + currentFaqId).update(data).then(() => { showToast('FAQ berhasil diperbarui!'); faqForm.reset(); currentFaqId = null; }).catch(error => { showToast('Gagal memperbarui FAQ: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(faqFormBtn, false); });
-            } else {
-                dbRT.ref('faq').push(data).then(() => { showToast('FAQ berhasil ditambahkan!'); faqForm.reset(); }).catch(error => { showToast('Gagal menambahkan FAQ: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(faqFormBtn, false); });
-            }
+            const btn = e.target.querySelector('button[type="submit"]');
+            setButtonLoading(btn, true);
+            const data = { q: document.getElementById('faq_q').value, a: document.getElementById('faq_a').value };
+            const promise = currentFaqId ? dbRT.ref('faq/' + currentFaqId).update(data) : dbRT.ref('faq').push(data);
+            promise.then(() => { showToast('FAQ disimpan!'); faqForm.reset(); currentFaqId = null; }).catch(error => { showToast('Gagal menyimpan: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(btn, false); });
         });
         function editFaq(id) {
-            dbRT.ref('faq/' + id).once('value').then(snapshot => {
-                const item = snapshot.val();
-                if (item) { document.getElementById('faq_q').value = item.q; document.getElementById('faq_a').value = item.a; currentFaqId = id; }
-            });
+            dbRT.ref('faq/' + id).once('value', s => { if(s.exists()){ const item = s.val(); document.getElementById('faq_q').value = item.q; document.getElementById('faq_a').value = item.a; currentFaqId = id; faqForm.scrollIntoView(); } });
         }
         async function deleteFaq(id, button) {
             if (confirm('Yakin ingin menghapus FAQ ini?')) {
                 setButtonLoading(button, true);
-                try { await dbRT.ref('faq/' + id).remove(); showToast('FAQ berhasil dihapus!'); } catch (error) { showToast('Gagal menghapus FAQ: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+                try { await dbRT.ref('faq/' + id).remove(); showToast('FAQ dihapus!'); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
             }
         }
 
         // =================================== PEMBAYARAN (Firestore) ===================================
         const paymentForm = document.getElementById('payment-form');
         const paymentsTableBody = document.querySelector('#payments-table tbody');
-        const paymentFormBtn = paymentForm.querySelector('button[type="submit"]');
         let currentPaymentId = null;
-        paymentFormBtn.dataset.originalText = paymentFormBtn.innerHTML;
         function loadPaymentMethods() {
             paymentsTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbFS.collection('infoPembayaran').get().then(snapshot => {
+            dbFS.collection('infoPembayaran').get().then(s => {
                 paymentsTableBody.innerHTML = '';
-                if (snapshot.empty) { paymentsTableBody.innerHTML = '<tr><td colspan="4">Belum ada info pembayaran.</td></tr>'; }
-                snapshot.forEach(doc => {
-                    const payment = { id: doc.id, ...doc.data() };
+                if (s.empty) { paymentsTableBody.innerHTML = '<tr><td colspan="4">Belum ada info pembayaran.</td></tr>'; }
+                s.forEach(doc => {
+                    const p = { id: doc.id, ...doc.data() };
                     const row = paymentsTableBody.insertRow();
-                    row.innerHTML = `<td>${payment.metode}</td><td>${payment.nomor}</td><td>${payment.atas_nama}</td><td><button class="btn btn-warning btn-sm" onclick="editPayment('${payment.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deletePayment('${payment.id}', this)">Hapus</button></td>`;
+                    row.innerHTML = `<td>${p.metode}</td><td>${p.nomor}</td><td>${p.atas_nama}</td><td><button class="btn btn-warning btn-sm" onclick="editPayment('${p.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deletePayment('${p.id}', this)">Hapus</button></td>`;
                 });
             });
         }
         paymentForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            setButtonLoading(paymentFormBtn, true);
+            const btn = e.target.querySelector('button[type="submit"]');
+            setButtonLoading(btn, true);
             const data = { metode: document.getElementById('payment_metode').value, nomor: document.getElementById('payment_nomor').value, atas_nama: document.getElementById('payment_an').value, };
-            const collectionRef = dbFS.collection('infoPembayaran');
-            if (currentPaymentId) {
-                collectionRef.doc(currentPaymentId).update(data).then(() => { showToast('Info pembayaran berhasil diperbarui!'); paymentForm.reset(); currentPaymentId = null; loadPaymentMethods(); }).catch(error => { showToast('Gagal memperbarui: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(paymentFormBtn, false); });
-            } else {
-                collectionRef.add(data).then(() => { showToast('Info pembayaran berhasil ditambahkan!'); paymentForm.reset(); loadPaymentMethods(); }).catch(error => { showToast('Gagal menambahkan: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(paymentFormBtn, false); });
-            }
+            const promise = currentPaymentId ? dbFS.collection('infoPembayaran').doc(currentPaymentId).update(data) : dbFS.collection('infoPembayaran').add(data);
+            promise.then(() => { showToast('Info pembayaran disimpan!'); paymentForm.reset(); currentPaymentId = null; loadPaymentMethods(); }).catch(error => { showToast('Gagal menyimpan: ' + error.message, 'danger'); }).finally(() => { setButtonLoading(btn, false); });
         });
         function editPayment(id) {
             dbFS.collection('infoPembayaran').doc(id).get().then(doc => {
-                if (doc.exists) { const payment = doc.data(); document.getElementById('payment_metode').value = payment.metode; document.getElementById('payment_nomor').value = payment.nomor; document.getElementById('payment_an').value = payment.atas_nama; currentPaymentId = id; }
+                if (doc.exists) { const p = doc.data(); document.getElementById('payment_metode').value = p.metode; document.getElementById('payment_nomor').value = p.nomor; document.getElementById('payment_an').value = p.atas_nama; currentPaymentId = id; paymentForm.scrollIntoView(); }
             });
         }
         async function deletePayment(id, button) {
-            if (confirm('Yakin ingin menghapus info pembayaran ini?')) {
+            if (confirm('Yakin menghapus info pembayaran ini?')) {
                 setButtonLoading(button, true);
-                try { await dbFS.collection('infoPembayaran').doc(id).delete(); showToast('Info pembayaran berhasil dihapus!'); loadPaymentMethods(); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
+                try { await dbFS.collection('infoPembayaran').doc(id).delete(); showToast('Info pembayaran dihapus!'); loadPaymentMethods(); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
             }
         }
         
@@ -694,34 +684,64 @@
         let currentBannerId = null;
         function loadBanners() {
             bannersTableBody.innerHTML = '<tr><td colspan="4">Memuat...</td></tr>';
-            dbFS.collection('banners').orderBy('urutan').get().then(snapshot => {
+            dbFS.collection('banners').orderBy('urutan').get().then(s => {
                 bannersTableBody.innerHTML = '';
-                if (snapshot.empty) { bannersTableBody.innerHTML = '<tr><td colspan="4">Belum ada banner.</td></tr>'; }
-                snapshot.forEach(doc => {
-                    const banner = { id: doc.id, ...doc.data() };
+                if (s.empty) { bannersTableBody.innerHTML = '<tr><td colspan="4">Belum ada banner.</td></tr>'; }
+                s.forEach(doc => {
+                    const b = { id: doc.id, ...doc.data() };
                     const row = bannersTableBody.insertRow();
-                    row.innerHTML = `<td>${banner.urutan}</td><td><a href="${banner.url}" target="_blank">Lihat Gambar</a></td><td>${banner.link || '-'}</td><td><button class="btn btn-warning btn-sm" onclick="editBanner('${banner.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteBanner('${banner.id}')">Hapus</button></td>`;
+                    row.innerHTML = `<td>${b.urutan}</td><td><a href="${b.url}" target="_blank">Lihat</a></td><td>${b.link || '-'}</td><td><button class="btn btn-warning btn-sm" onclick="editBanner('${b.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteBanner('${b.id}', this)">Hapus</button></td>`;
                 });
-            }).catch(error => { bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat banner: ${error.message}</td></tr>`; });
+            }).catch(error => { bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat: ${error.message}</td></tr>`; });
         }
         bannerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const bannerData = { url: document.getElementById('banner_url').value, link: document.getElementById('banner_link').value, urutan: parseInt(document.getElementById('banner_urutan').value) || 0, };
+            const btn = e.target.querySelector('button[type="submit"]');
+            setButtonLoading(btn, true);
+            const data = { url: document.getElementById('banner_url').value, link: document.getElementById('banner_link').value, urutan: parseInt(document.getElementById('banner_urutan').value) || 0, };
             try {
-                if (currentBannerId) { await dbFS.collection('banners').doc(currentBannerId).update(bannerData); showToast('Banner berhasil diperbarui!'); } else { await dbFS.collection('banners').add(bannerData); showToast('Banner berhasil ditambahkan!'); }
+                if (currentBannerId) { await dbFS.collection('banners').doc(currentBannerId).update(data); showToast('Banner diperbarui!'); } else { await dbFS.collection('banners').add(data); showToast('Banner ditambahkan!'); }
                 bannerForm.reset(); cancelBannerEditBtn.style.display = 'none'; currentBannerId = null; loadBanners();
-            } catch (error) { showToast('Gagal menyimpan banner: ' + error.message, 'danger'); }
+            } catch (error) { showToast('Gagal menyimpan: ' + error.message, 'danger'); } finally { setButtonLoading(btn, false); }
         });
         cancelBannerEditBtn.addEventListener('click', () => { bannerForm.reset(); cancelBannerEditBtn.style.display = 'none'; currentBannerId = null; });
         async function editBanner(id) {
             const doc = await dbFS.collection('banners').doc(id).get();
-            if (doc.exists) { const banner = doc.data(); currentBannerId = id; document.getElementById('banner_url').value = banner.url; document.getElementById('banner_link').value = banner.link; document.getElementById('banner_urutan').value = banner.urutan; cancelBannerEditBtn.style.display = 'block'; window.scrollTo({ top: document.getElementById('banners-tab').offsetTop, behavior: 'smooth' }); }
+            if (doc.exists) { const b = doc.data(); currentBannerId = id; document.getElementById('banner_url').value = b.url; document.getElementById('banner_link').value = b.link; document.getElementById('banner_urutan').value = b.urutan; cancelBannerEditBtn.style.display = 'block'; bannerForm.scrollIntoView(); }
         }
-        async function deleteBanner(id) {
+        async function deleteBanner(id, button) {
             if (confirm('Yakin ingin menghapus banner ini?')) {
-                try { await dbFS.collection('banners').doc(id).delete(); loadBanners(); showToast('Banner berhasil dihapus!'); } catch (error) { showToast('Gagal menghapus banner: ' + error.message, 'danger'); }
+                setButtonLoading(button, true);
+                try { await dbFS.collection('banners').doc(id).delete(); loadBanners(); showToast('Banner dihapus!'); } catch (error) { showToast('Gagal menghapus: ' + error.message, 'danger'); } finally { setButtonLoading(button, false); }
             }
         }
+
+        // =================================== KODE KUSTOM (Realtime Database) ===================================
+        const customCodeForm = document.getElementById('custom-code-form');
+        function loadCustomCode() {
+            dbRT.ref('customCode').once('value').then(s => {
+                if (s.exists()) {
+                    const data = s.val();
+                    document.getElementById('custom-html').value = data.html || '';
+                    document.getElementById('custom-css').value = data.css || '';
+                    document.getElementById('custom-js').value = data.js || '';
+                }
+            }).catch(e => { showToast('Gagal memuat kode kustom: ' + e.message, 'danger'); });
+        }
+        customCodeForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            setButtonLoading(btn, true);
+            const data = {
+                html: document.getElementById('custom-html').value,
+                css: document.getElementById('custom-css').value,
+                js: document.getElementById('custom-js').value
+            };
+            dbRT.ref('customCode').set(data)
+                .then(() => { showToast('Kode kustom berhasil disimpan!', 'success'); })
+                .catch(e => { showToast('Gagal menyimpan kode: ' + e.message, 'danger'); })
+                .finally(() => { setButtonLoading(btn, false); });
+        });
     </script>
 </body>
 </html>
