@@ -119,15 +119,37 @@
       text-align: left;
     }
     
+    /* === CSS PROMOSI YANG DIPERBAIKI === */
     .promo-card { 
-      background: linear-gradient(45deg, var(--primary), var(--success)); 
+      background: linear-gradient(135deg, var(--primary), #2c3e50); 
       color: white; 
-      padding: 20px; 
-      border-radius: 12px; 
+      padding: 25px; 
+      border-radius: 15px; 
       margin-top: 25px; 
-      text-align: left;
+      border-top: 4px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     }
-    .promo-card a { color: var(--card); font-weight: bold; }
+
+    .promo-card h5 {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .promo-card p {
+        opacity: 0.9;
+    }
+
+    .promo-card .btn {
+        padding: 12px;
+        font-size: 1em;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .promo-card .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body data-theme="dark">
@@ -168,7 +190,6 @@
     function renderStatus(orderId, data) {
         const statusClass = (data.status || 'Menunggu Pembayaran').toLowerCase().replace(/ /g, '-');
         
-        // Membuat HTML untuk bukti pembayaran dari pembeli (jika ada)
         let buyerProofHTML = '';
         if (data.bukti_pembayaran_url) {
             buyerProofHTML = `
@@ -180,7 +201,6 @@
                 </div>`;
         }
         
-        // Membuat HTML untuk bukti pengiriman dari admin (jika ada)
         let adminProofHTML = '';
         if (data.bukti_pengiriman_url) {
             adminProofHTML = `
@@ -192,23 +212,45 @@
                 </div>`;
         }
 
-        // Membuat HTML untuk info atau aksi tambahan
         let additionalInfo = '';
         if (data.status === 'Menunggu Pembayaran' && !data.bukti_pembayaran_url) {
             additionalInfo = `<div class="info-box"><p>Anda belum mengunggah bukti pembayaran. Silakan <a href="upload.html?id=${orderId}">unggah bukti di sini</a>.</p></div>`;
-        } else if (data.status === 'Selesai' && data.no_whatsap_aktif) {
-            const pesanPromo = encodeURIComponent(`Mau dapat diskon untuk pembelian selanjutnya? Cek di sini: ${window.location.origin}`);
+        
+        // === BLOK PROMOSI YANG TELAH DIPERBAIKI ===
+        } else if (data.status === 'Selesai') {
+            const pesanPromo = encodeURIComponent(`Hai, saya baru saja belanja di Asdar Digital Store dan layanannya memuaskan! Cek juga ya: ${window.location.origin}`);
             const linkWA = `https://api.whatsapp.com/send?text=${pesanPromo}`;
+
             additionalInfo = `
-                <div class="promo-card">
-                    <h5 class="fw-bold">🎉 DAPATKAN DISKON PEMBELIAN SELANJUTNYA!</h5>
-                    <p class="small">Bagikan info toko kami ke teman/grup WhatsApp Anda, lalu upload screenshot (SS) untuk mendapatkan potongan harga di pesanan berikutnya.</p>
-                    <a href="${linkWA}" target="_blank" class="btn btn-light w-100 mb-2"><i class="fab fa-whatsapp"></i> 1. Bagikan via WhatsApp</a>
-                    <a href="promo-upload.html?email=${data.email_pelanggan || ''}" target="_blank" class="btn btn-dark w-100"><i class="fa fa-upload"></i> 2. Upload Bukti SS Di Sini</a>
-                </div>`;
+                <div class="promo-card text-center mt-4">
+                    <i class="fa-solid fa-gift fa-2x mb-3"></i>
+                    <h5 class="fw-bold">Terima Kasih & Bonus Spesial Untuk Anda!</h5>
+                    <p class="small mb-4">Cukup bagikan info toko kami untuk mendapatkan potongan <strong>Rp 5.000</strong> di pesanan berikutnya. Ikuti 2 langkah di bawah:</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="${linkWA}" target="_blank" class="btn btn-light text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong class="d-block">Langkah 1: Bagikan Info Toko</strong>
+                                    <small class="opacity-75">Syarat: ke 2 grup / 5 kontak WhatsApp</small>
+                                </div>
+                                <i class="fab fa-whatsapp fa-lg"></i>
+                            </div>
+                        </a>
+                        <a href="promo-upload.html?email=${data.email_pelanggan || ''}" target="_blank" class="btn btn-dark text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                 <div>
+                                    <strong class="d-block">Langkah 2: Upload Screenshot</strong>
+                                    <small class="opacity-75">Kirim bukti share Anda di sini</small>
+                                </div>
+                                <i class="fa fa-upload fa-lg"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            `;
         }
 
-        // Menggabungkan semua bagian menjadi satu tampilan utuh
         statusContent.innerHTML = `
             <h2>Status Pesanan</h2>
             <p><strong>ID Pesanan:</strong> <code>${orderId}</code></p>
@@ -233,7 +275,8 @@
         `;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // === LOGIKA JAVASCRIPT YANG DIPERBAIKI ===
+    document.addEventListener('DOMContentLoaded', async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
 
@@ -245,27 +288,28 @@
         const umumRef = dbFS.collection('pesananUmum').doc(orderId);
         const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
 
-        // Langkah 1: Coba dengarkan perubahan pada koleksi 'pesananUmum'
-        umumRef.onSnapshot(doc => {
-            if (doc.exists) {
-                renderStatus(orderId, doc.data());
-            } else {
-                // Langkah 2: Jika tidak ada, dengarkan perubahan pada koleksi 'pesananReseller'
-                resellerRef.onSnapshot(docReseller => {
-                    if (docReseller.exists) {
-                        renderStatus(orderId, docReseller.data());
-                    } else {
-                        statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
-                    }
-                }, err => {
-                    console.error("Error listener reseller:", err);
-                    statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
-                });
+        try {
+            const docUmum = await umumRef.get();
+            if (docUmum.exists) {
+                // Dokumen ditemukan di 'pesananUmum', pasang listener real-time di sini
+                umumRef.onSnapshot(doc => renderStatus(orderId, doc.data()));
+                return; 
             }
-        }, err => {
-            console.error("Error listener umum:", err);
+
+            const docReseller = await resellerRef.get();
+            if (docReseller.exists) {
+                // Dokumen ditemukan di 'pesananReseller', pasang listener real-time di sini
+                resellerRef.onSnapshot(doc => renderStatus(orderId, doc.data()));
+                return;
+            }
+            
+            // Jika tidak ditemukan di kedua koleksi
+            statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
+
+        } catch (err) {
+            console.error("Gagal mengambil data pesanan:", err);
             statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
-        });
+        }
     });
   </script>
 </body>
