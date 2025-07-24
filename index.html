@@ -215,27 +215,19 @@
         }).catch(err => { console.error('Gagal menyalin: ', err); alert('Gagal menyalin. Mohon salin secara manual.'); });
     }
 
-    // FUNGSI KODE KUSTOM VERSI LAMA
     function loadCustomCode() {
-        dbRT.ref('customCode').once('value').then(snapshot => {
+        dbRT.ref('customFeatures').once('value').then(snapshot => {
             if (snapshot.exists()) {
-                const customCode = snapshot.val();
-                if (customCode.css) {
-                    const styleTag = document.createElement('style');
-                    styleTag.innerHTML = customCode.css;
-                    document.head.appendChild(styleTag);
-                }
-                const htmlContainer = document.getElementById('custom-html-container');
-                if (htmlContainer && customCode.html) {
-                    htmlContainer.innerHTML = customCode.html;
-                }
-                if (customCode.js) {
-                    const scriptTag = document.createElement('script');
-                    scriptTag.textContent = customCode.js;
-                    document.body.appendChild(scriptTag);
-                }
+                const features = snapshot.val();
+                Object.keys(features).forEach(key => {
+                    const feature = features[key];
+                    if (feature.cssCode) { const styleTag = document.createElement('style'); styleTag.innerHTML = feature.cssCode; document.head.appendChild(styleTag); }
+                    const htmlContainer = document.getElementById('custom-html-container');
+                    if (htmlContainer && feature.htmlCode) { htmlContainer.insertAdjacentHTML('beforeend', feature.htmlCode); }
+                    if (feature.jsCode) { const scriptTag = document.createElement('script'); scriptTag.textContent = feature.jsCode; document.body.appendChild(scriptTag); }
+                });
             }
-        }).catch(error => console.error("Gagal memuat kode kustom:", error));
+        }).catch(error => console.error("Gagal memuat fitur kustom:", error));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -275,14 +267,22 @@
         loadApprovedTestimonials();
     }
 
+    // FUNGSI DENGAN PERBAIKAN
     function handleCategoryChange() {
         resetFormState();
-        const kategori = kategoriSelect.value;
-        if (!kategori) return;
+        const kategoriTerpilih = kategoriSelect.value;
+        if (!kategoriTerpilih) return;
+
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
-        const products = semuaProduk.filter(p => p.kategori === kategori);
+        
+        const products = semuaProduk.filter(p => 
+            p.kategori && p.kategori.trim().toLowerCase() === kategoriTerpilih.trim().toLowerCase()
+        );
+        
         products.sort((a, b) => (a.urutan || 0) - (b.urutan || 0));
-        products.forEach(prod => { produkSelect.innerHTML += `<option value="${prod.id}">${prod.nama_produk}</option>`; });
+        products.forEach(prod => {
+            produkSelect.innerHTML += `<option value="${prod.id}">${prod.nama_produk}</option>`;
+        });
     }
 
     function handleProductSelection() {
