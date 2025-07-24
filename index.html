@@ -102,6 +102,9 @@
 
   <main id="main-content">
     <div id="banner-container" data-aos="fade-down"></div>
+    
+    <div id="custom-html-container"></div>
+    
     <div data-aos="fade-up" class="section-container">
       <form id="formPesanan">
         <div id="formNotification" class="notification"></div>
@@ -219,8 +222,32 @@
         });
     }
 
+    // FUNGSI UNTUK MEMUAT KODE KUSTOM DARI ADMIN PANEL
+    function loadCustomCode() {
+        dbRT.ref('customCode').once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                const customCode = snapshot.val();
+                if (customCode.css) {
+                    const styleTag = document.createElement('style');
+                    styleTag.innerHTML = customCode.css;
+                    document.head.appendChild(styleTag);
+                }
+                const htmlContainer = document.getElementById('custom-html-container');
+                if (htmlContainer && customCode.html) {
+                    htmlContainer.innerHTML = customCode.html;
+                }
+                if (customCode.js) {
+                    const scriptTag = document.createElement('script');
+                    scriptTag.textContent = customCode.js;
+                    document.body.appendChild(scriptTag);
+                }
+            }
+        }).catch(error => console.error("Gagal memuat kode kustom:", error));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
+      loadCustomCode(); // Menjalankan fungsi pemuat kode kustom
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
