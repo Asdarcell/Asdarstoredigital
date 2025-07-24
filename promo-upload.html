@@ -82,7 +82,7 @@
     const errorMessage = document.getElementById('error-message');
     const submitBtn = document.getElementById('submit-btn');
 
-    let userEmail = '';
+    let userId = ''; // Variabel untuk menyimpan nomor WA
 
     const setButtonLoading = (isLoading) => {
         submitBtn.disabled = isLoading;
@@ -129,19 +129,16 @@
         }
 
         try {
-            // 1. Upload gambar ke Cloudinary
             const imageUrl = await uploadToCloudinary(proofFile);
             
-            // 2. Simpan URL ke Firestore dalam koleksi baru 'promoSubmissions'
-            // Dokumen akan dinamai sesuai email pengguna untuk kemudahan
-            await dbFS.collection('promoSubmissions').doc(userEmail).set({
-                email: userEmail,
+            // Menggunakan nomor WA (userId) sebagai nama dokumen
+            await dbFS.collection('promoSubmissions').doc(userId).set({
+                whatsapp_number: userId,
                 screenshot_url: imageUrl,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'pending_review' // Status untuk admin
-            }, { merge: true }); // Gunakan merge agar bisa überschreiben jika submit ulang
+                status: 'pending_review'
+            }, { merge: true });
 
-            // 3. Tampilkan pesan sukses
             uploadContainer.style.display = 'none';
             successContainer.style.display = 'block';
 
@@ -155,15 +152,15 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        userEmail = urlParams.get('email');
+        userId = urlParams.get('wa'); // Membaca parameter 'wa' dari URL
 
-        if (userEmail) {
+        if (userId) {
             welcomeMessage.innerHTML = `
-                <p class="fs-5">Halo <strong class="text-primary">${userEmail}</strong>!</p>
+                <p class="fs-5">Halo, Pemilik Nomor <strong class="text-primary">${userId}</strong>!</p>
                 <p class="text-muted">Selangkah lagi untuk mendapatkan hadiahmu. Unggah screenshot bukti Anda telah membagikan info toko kami.</p>
             `;
         } else {
-            uploadContainer.innerHTML = '<div class="alert alert-danger">Email tidak ditemukan. Silakan kembali melalui link di halaman status pesanan Anda.</div>';
+            uploadContainer.innerHTML = '<div class="alert alert-danger">Nomor WhatsApp tidak ditemukan. Silakan kembali melalui link di halaman status pesanan Anda.</div>';
         }
     });
   </script>
