@@ -27,6 +27,22 @@
     .success-card { text-align: center; padding: 2rem; }
     .success-card .fa-gift { font-size: 3rem; color: #f1c40f; }
     .success-card h3 { margin-top: 1rem; }
+
+    /* Perbaikan warna teks agar terlihat di tema gelap */
+    [data-theme="dark"] .text-muted {
+        color: #bbb !important; /* Warna yang lebih terang untuk text-muted */
+    }
+    [data-theme="dark"] .alert-info {
+        background-color: #215e6b; /* Warna latar yang lebih kontras */
+        color: #e0e0e0; /* Warna teks yang lebih terang */
+        border-color: #1a4d57;
+    }
+    /* Pastikan input file juga terlihat baik */
+    [data-theme="dark"] .form-control {
+        background-color: var(--bg); /* Tetap pakai warna background utama */
+        color: var(--text); /* Tetap pakai warna teks utama */
+        border-color: var(--border); /* Tetap pakai warna border utama */
+    }
   </style>
 </head>
 
@@ -75,8 +91,9 @@
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> <script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script>
     // ==========================================================
     //  KONFIGURASI FIREBASE ANDA
     // ==========================================================
@@ -85,22 +102,20 @@
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
-      storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // GANTI DENGAN STORAGE BUCKET ANDA
+      // storageBucket tidak diperlukan jika tidak menggunakan Firebase Storage
+      // storageBucket: "asdarstoredigitalll-d89c4.appspot.com" 
     };
     firebase.initializeApp(firebaseConfig);
 
     const auth = firebase.auth();
     const dbFS = firebase.firestore();
-    const storage = firebase.storage(); // Inisialisasi Firebase Storage
+    // const storage = firebase.storage(); // Hapus ini karena tidak pakai Firebase Storage
     
     // ==========================================================
-    //  KONFIGURASI CLOUDINARY
+    //  KONFIGURASI CLOUDINARY (SESUAI PERMINTAAN ANDA)
     // ==========================================================
-    // Jika Anda ingin tetap menggunakan Cloudinary, pastikan detailnya benar.
-    // Jika ingin sepenuhnya beralih ke Firebase Storage, Anda bisa hapus bagian ini
-    // dan hanya gunakan fungsi uploadToFirebaseStorage.
-    const CLOUDINARY_CLOUD_NAME = "duki2bxqr"; // Ganti dengan Cloud Name Cloudinary Anda
-    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq"; // Ganti dengan Upload Preset Cloudinary Anda
+    const CLOUDINARY_CLOUD_NAME = "duki2bxqr"; // Cloud Name Anda
+    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq"; // Upload Preset Anda
 
     // ==========================================================
     //  ELEMEN DOM
@@ -111,7 +126,7 @@
     const welcomeMessage = document.getElementById('welcome-message');
     const errorMessage = document.getElementById('error-message');
     const submitBtn = document.getElementById('submit-btn');
-    const uploadStatusDiv = document.getElementById('upload-status'); // Untuk menampilkan progress upload
+    const uploadStatusDiv = document.getElementById('upload-status'); 
 
     const loadingInitialDiv = document.getElementById('loading-initial');
     const authRequiredMessageDiv = document.getElementById('auth-required-message');
@@ -141,38 +156,9 @@
         errorMessage.style.display = 'none';
     };
 
-    // Fungsi untuk mengunggah ke Firebase Storage (DIREKOMENDASIKAN)
-    async function uploadToFirebaseStorage(file, userId) {
-        const storageRef = storage.ref(`bukti_klaim_hadiah/${userId}/${file.name}`);
-        const uploadTask = storageRef.put(file);
-
-        return new Promise((resolve, reject) => {
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    uploadStatusDiv.innerHTML = `<div class="alert alert-info">Progress Unggah: ${progress.toFixed(0)}%</div>`;
-                },
-                (error) => {
-                    uploadStatusDiv.innerHTML = ''; // Clear progress message on error
-                    console.error('Upload to Firebase Storage failed:', error);
-                    reject(new Error('Gagal mengunggah file ke Firebase Storage: ' + error.message));
-                },
-                async () => {
-                    try {
-                        const downloadURL = await storageRef.getDownloadURL();
-                        uploadStatusDiv.innerHTML = ''; // Clear progress message on success
-                        resolve(downloadURL);
-                    } catch (error) {
-                        reject(new Error('Gagal mendapatkan URL unduhan: ' + error.message));
-                    }
-                }
-            );
-        });
-    }
-
-    // Fungsi untuk mengunggah ke Cloudinary (OPSIONAL, jika Anda tetap ingin pakai)
+    // Fungsi untuk mengunggah ke Cloudinary
     async function uploadToCloudinary(file) {
-        uploadStatusDiv.innerHTML = '<div class="alert alert-info">Mengunggah ke Cloudinary...</div>';
+        uploadStatusDiv.innerHTML = '<div class="alert alert-info">Mengunggah ke Cloudinary... Ini mungkin membutuhkan waktu tergantung ukuran file.</div>';
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -181,15 +167,15 @@
                 method: "POST", body: formData,
             });
             const data = await response.json();
-            if (data.secure_url) {
+            if (response.ok && data.secure_url) { // Periksa juga response.ok
                 uploadStatusDiv.innerHTML = ''; // Clear progress message on success
                 return data.secure_url;
             } else {
-                throw new Error(data.error.message || "Error tidak diketahui");
+                throw new Error(data.error.message || `Upload failed with status: ${response.status}`);
             }
         } catch (error) {
             uploadStatusDiv.innerHTML = ''; // Clear progress message on error
-            throw new Error("Gagal terhubung ke Cloudinary. " + error.message);
+            throw new Error("Gagal terhubung atau mengunggah ke Cloudinary. " + error.message);
         }
     }
 
@@ -200,7 +186,7 @@
         e.preventDefault();
         setButtonLoading(true);
         hideMessage();
-        uploadStatusDiv.innerHTML = ''; // Clear previous status
+        uploadStatusDiv.innerHTML = ''; 
 
         const user = auth.currentUser;
         if (!user) {
@@ -217,20 +203,17 @@
         }
 
         try {
-            // Pilih salah satu fungsi upload:
-            // const imageUrl = await uploadToCloudinary(proofFile); // Jika menggunakan Cloudinary
-            const imageUrl = await uploadToFirebaseStorage(proofFile, user.uid); // Jika menggunakan Firebase Storage (DIREKOMENDASIKAN)
+            const imageUrl = await uploadToCloudinary(proofFile);
 
-            // Gunakan `user.uid` sebagai ID dokumen untuk konsistensi dengan klaim awal
-            // dan untuk memudahkan admin melacak siapa yang mengklaim/mengunggah.
+            // Perbarui dokumen klaim hadiah di Firestore
             await dbFS.collection('klaimHadiahBuyer').doc(user.uid).set({
                 userId: user.uid,
-                email: user.email || 'N/A', // Simpan email jika tersedia
+                email: user.email || 'N/A', 
                 buktiUrl: imageUrl,
-                waktuUpload: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'menunggu-verifikasi', // Ubah status setelah upload
-                hasUploadedProof: true // Menandakan bahwa user sudah upload bukti
-            }, { merge: true }); // Gunakan merge true agar tidak menimpa data klaim awal
+                waktuKlaim: firebase.firestore.FieldValue.serverTimestamp(), // Gunakan waktuKlaim untuk konsistensi
+                status: 'menunggu-verifikasi', 
+                hasUploadedProof: true 
+            }, { merge: true });
 
             uploadContainer.style.display = 'none';
             successContainer.style.display = 'block';
@@ -269,14 +252,15 @@
 
                 if (claimDoc.exists) {
                     const claimData = claimDoc.data();
-                    if (claimData.status === 'pending-upload' || claimData.status === 'menunggu-verifikasi' || claimData.hasUploadedProof) {
+                    // Jika sudah pernah upload bukti atau statusnya sudah menunggu verifikasi/disetujui/ditolak
+                    if (claimData.hasUploadedProof || claimData.status === 'menunggu-verifikasi' || claimData.status === 'disetujui' || claimData.status === 'ditolak') {
                         alreadyClaimedMessageDiv.style.display = 'block'; // Tampilkan pesan sudah klaim/upload
                         formContentDiv.style.display = 'none'; // Sembunyikan form upload
                         return;
                     }
                 }
                 
-                // Jika belum klaim atau statusnya perlu upload, tampilkan form
+                // Jika belum klaim atau statusnya 'pending-upload' (belum ada bukti di doc)
                 formContentDiv.style.display = 'block';
 
             } catch (error) {
