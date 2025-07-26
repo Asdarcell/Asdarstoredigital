@@ -101,6 +101,7 @@
             border-radius: .375rem;
         }
 
+        /* Kelas status yang sudah ada di kode Anda */
         .status-badge.status-pending { background-color: var(--warning); }
         .status-badge.status-disetujui, .status-badge.status-active { background-color: var(--success); }
         .status-badge.status-ditolak, .status-badge.status-rejected { background-color: var(--danger); }
@@ -110,7 +111,10 @@
         .status-badge.status-menunggu-verifikasi { background-color: var(--warning); }
         .status-badge.status-belum-bayar { background-color: var(--danger); }
         .status-badge.status-menunggu-konfirmasi { background-color: var(--info); }
-        /* Tambahkan lebih banyak status jika diperlukan */
+
+        /* Tambahan untuk status banner */
+        .status-badge.status-aktif { background-color: var(--success); }
+        .status-badge.status-tidak-aktif { background-color: var(--secondary); }
     </style>
 </head>
 <body>
@@ -537,7 +541,8 @@
                                 <th>Urutan</th>
                                 <th>Gambar</th>
                                 <th>Link</th>
-                                <th>Status</th> <th>Aksi</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="banners-table">
@@ -732,16 +737,17 @@
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
-            loadBanners();
+            loadBanners(); // Pastikan ini terpanggil
             loadPendingResellers();
-            loadCustomFeatures(); // Fitur kustom dari Realtime DB
+            loadCustomFeatures();
             loadGiftClaims();
 
             // Setup event listeners untuk form baru
-            setupPromoManagementForms(); // Panggil ini setelah semua DOM dimuat
+            setupPromoManagementForms();
         });
 
         // Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik)
+        // Saya asumsikan event listener ini sudah ada di kode lama Anda
         document.getElementById('products-tab').addEventListener('click', loadProducts);
         document.getElementById('active-resellers-tab').addEventListener('click', loadResellers);
         document.getElementById('verification-tab').addEventListener('click', loadPendingResellers);
@@ -750,9 +756,9 @@
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms); // Re-run setup if needed
+        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms);
         document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims);
-        document.getElementById('banners-tab').addEventListener('click', loadBanners);
+        document.getElementById('banners-tab').addEventListener('click', loadBanners); // Pastikan ini juga ada
         document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
 
         // =================================== MANAJEMEN PROMO MANUAL & HADIAH KHUSUS (FITUR BARU) ===================================
@@ -766,7 +772,7 @@
 
             // Form untuk memberikan diskon ke Reseller
             if (resellerPromoForm) {
-                resellerPromoForm.onsubmit = async (e) => { // Menggunakan onsubmit agar lebih mudah
+                resellerPromoForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const email = document.getElementById('reseller-promo-email').value;
                     const button = e.target.querySelector('[type=submit]');
@@ -779,7 +785,7 @@
                         }
                         const resellerDoc = resellerQuery.docs[0];
                         await dbFS.collection('resellers').doc(resellerDoc.id).update({
-                            punyaHakDiskon: true // Memberikan hak diskon kepada reseller
+                            punyaHakDiskon: true
                         });
                         showToast(`Hak diskon berhasil diberikan kepada reseller: ${email}`, 'success');
                         resellerPromoForm.reset();
@@ -797,7 +803,7 @@
                     const type = document.getElementById('buyer-identifier-type').value;
                     let value = document.getElementById('buyer-identifier-value').value.trim();
                     if (type === 'whatsapp') {
-                        value = normalizePhoneNumber(value); // Normalisasi nomor WhatsApp
+                        value = normalizePhoneNumber(value);
                     }
                     return { type, value };
                 };
@@ -809,12 +815,11 @@
                         return;
                     }
                     setButtonLoading(button, true);
-                    giftStatusResult.style.display = 'none'; // Sembunyikan hasil cek sebelumnya
+                    giftStatusResult.style.display = 'none';
 
                     try {
                         let existingDocRef = null;
 
-                        // Selalu lakukan query untuk mencari identifier, karena ID dokumen bisa otomatis
                         const querySnapshot = await dbFS.collection('promoEligibility')
                                                     .where('identifier', '==', value)
                                                     .limit(1)
@@ -825,14 +830,11 @@
                         }
 
                         if (existingDocRef) {
-                            // Jika dokumen sudah ada, update saja status isGiftEligible
                             await existingDocRef.set({ isGiftEligible: isEligible }, { merge: true });
                         } else {
-                            // Jika belum ada dokumen untuk identifier ini, buat baru.
-                            // Gunakan identifier sebagai data, bukan sebagai ID dokumen otomatis untuk fleksibilitas.
                             await dbFS.collection('promoEligibility').add({
                                 identifier: value,
-                                type: type, // 'email' atau 'whatsapp'
+                                type: type,
                                 isGiftEligible: isEligible
                             });
                         }
@@ -858,7 +860,6 @@
 
                     try {
                         let docSnapshot;
-                        // Selalu lakukan query untuk mencari identifier, karena ID dokumen bisa otomatis
                         const querySnapshot = await dbFS.collection('promoEligibility')
                                                         .where('identifier', '==', value)
                                                         .limit(1)
@@ -1705,12 +1706,13 @@
                         const b = { id: d.id, ...d.data() };
                         const r = bannersTableBody.insertRow();
                         const statusText = b.active ? 'Aktif' : 'Tidak Aktif';
-                        const statusClass = b.active ? 'bg-success' : 'bg-secondary';
+                        const statusClass = b.active ? 'status-aktif' : 'status-tidak-aktif'; // Menggunakan kelas status-badge custom
                         r.innerHTML = `
                             <td>${b.urutan}</td>
                             <td><a href="${b.url}" target="_blank">Lihat Gambar</a></td>
                             <td>${b.link || '-'}</td>
-                            <td><span class="badge ${statusClass}">${statusText}</span></td> <td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>
                                 <button class="btn btn-warning btn-sm" onclick="editBanner('${b.id}')">Edit</button>
                                 <button class="btn btn-${b.active ? 'secondary' : 'success'} btn-sm" onclick="toggleBannerStatus('${b.id}', ${b.active}, this)">
                                     ${b.active ? 'Sembunyikan' : 'Tampilkan'}
@@ -1721,7 +1723,7 @@
                     });
                 })
                 .catch(e => {
-                    bannersTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat banner: ${e.message}</td></tr>`; // Kolom 5 sekarang
+                    bannersTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat banner: ${e.message}</td></tr>`;
                 });
         }
 
@@ -1734,7 +1736,7 @@
                 url: document.getElementById('banner_url').value,
                 link: document.getElementById('banner_link').value || '',
                 urutan: parseInt(document.getElementById('banner_urutan').value) || 0,
-                active: bannerActiveCheckbox.checked // BARU: Menambahkan status aktif
+                active: bannerActiveCheckbox.checked // Menambahkan status aktif
             };
 
             try {
@@ -1793,7 +1795,7 @@
             }
         }
 
-        // BARU: Fungsi untuk mengubah status aktif/tidak aktif banner
+        // Fungsi untuk mengubah status aktif/tidak aktif banner
         async function toggleBannerStatus(id, currentStatus, btn) {
             setButtonLoading(btn, true);
             const newStatus = !currentStatus;
@@ -1828,7 +1830,7 @@
                 const feature = features[featureId];
                 const featureCard = document.createElement('div');
                 featureCard.className = 'd-flex justify-content-between align-items-center p-3 mb-2 border rounded';
-                featureCard.style.backgroundColor = 'var(--bg)'; // Agar ada latar belakang berbeda
+                featureCard.style.backgroundColor = 'var(--bg-secondary)'; // Menggunakan variabel CSS Bootstrap
                 featureCard.innerHTML = `
                     <div>
                         <strong style="color: var(--primary);">${feature.name}</strong>
@@ -1888,8 +1890,6 @@
         }
 
         // =================================== THEME TOGGLE (Opsional) ===================================
-        // Anda perlu menambahkan tombol ini di HTML Anda, misalnya:
-        // <button id="theme-toggle" class="btn btn-secondary">Toggle Tema</button>
         const themeToggleButton = document.getElementById('theme-toggle');
         if (themeToggleButton) {
             themeToggleButton.addEventListener('click', () => {
@@ -1906,4 +1906,4 @@
     </script>
 
 </body>
-    </html>
+                            </html>
