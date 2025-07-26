@@ -213,7 +213,7 @@
             <div class="tab-pane fade" id="promo-management" role="tabpanel">
                 <div class="section">
                     <h2>Berikan Diskon Promosi (Rp 5.000)</h2>
-                    <p>Masukkan email pelanggan yang telah mempromosikan toko. Sistem akan otomatis memberikan hak diskon pada pesanan mereka selanjutnya.</p>
+                    <p>Masukkan nomor WhatsApp atau email pelanggan yang telah mempromosikan toko. Sistem akan otomatis memberikan hak diskon pada pesanan mereka selanjutnya.</p>
                     
                     <div class="p-3 border rounded mb-4">
                         <h4>Untuk Reseller</h4>
@@ -230,8 +230,8 @@
                         <h4>Untuk Pembeli Biasa</h4>
                         <form id="grant-buyer-promo-form">
                             <div class="mb-3">
-                                <label for="buyer-promo-email" class="form-label">Email Pembeli Biasa</label>
-                                <input type="email" id="buyer-promo-email" class="form-control" placeholder="contoh@pembeli.com" required>
+                                <label for="buyer-promo-whatsapp" class="form-label">Nomor WhatsApp Pembeli Biasa</label>
+                                <input type="tel" id="buyer-promo-whatsapp" class="form-control" placeholder="Cth: 081234567890" pattern="^08[0-9]{8,15}$" required>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Beri Diskon ke Pembeli</button>
                         </form>
@@ -449,21 +449,40 @@
             if (buyerPromoForm) {
                 buyerPromoForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const email = document.getElementById('buyer-promo-email').value;
+                    // --- PERUBAHAN DI SINI: MENGAMBIL NOMOR WHATSAPP ---
+                    // Mengambil nilai dari input nomor WhatsApp (bukan email)
+                    const whatsappNumberInput = document.getElementById('buyer-promo-whatsapp'); // Menggunakan id yang baru
+                    const rawWhatsappNumber = whatsappNumberInput.value.trim();
                     const button = e.target.querySelector('[type=submit]');
                     setButtonLoading(button, true);
 
+                    // Fungsi untuk menormalisasi nomor WA (dari '08...' ke '628...')
+                    const normalizePhone = (num) => {
+                        let n = String(num).trim().replace(/[^0-9]/g, '');
+                        if (n.startsWith('0')) return '62' + n.slice(1);
+                        if (n.startsWith('62')) return n;
+                        // Jika sudah dalam format internasional tanpa +, atau format lain, kembalikan apa adanya
+                        return num;
+                    };
+
+                    const normalizedWhatsappNumber = normalizePhone(rawWhatsappNumber);
+
+                    // Validasi sederhana untuk nomor WhatsApp
+                    if (!normalizedWhatsappNumber || normalizedWhatsappNumber.length < 10) {
+                        showToast('Nomor WhatsApp tidak valid. Masukkan nomor yang benar (diawali 08...).', 'danger');
+                        setButtonLoading(button, false);
+                        return;
+                    }
+
                     try {
-                        // Kita gunakan email sebagai ID dokumen agar mudah dicari dan tidak duplikat
-                        // Dokumen ini akan menandakan bahwa pembeli biasa dengan email ini berhak mendapatkan diskon
-                        await dbFS.collection('hakDiskonOtomatis').doc(email).set({
-                            email: email,
-                            diberikanPada: new Date() // Timestamp pemberian hak diskon
-                        });
-                        showToast(`Hak diskon berhasil diberikan kepada pembeli: ${email}`, 'success');
+                        // --- PERUBAHAN DI SINI: MENULIS KE REALTIME DATABASE ---
+                        // Menulis 'true' ke Realtime Database di path 'hakDiskon/<normalized_whatsapp_number>'
+                        await dbRT.ref('hakDiskon/' + normalizedWhatsappNumber).set(true);
+
+                        showToast(`Hak diskon berhasil diberikan kepada pembeli: ${rawWhatsappNumber}`, 'success');
                         buyerPromoForm.reset();
                     } catch (error) {
-                        showToast('Gagal: ' + error.message, 'danger');
+                        showToast('Gagal memberikan diskon: ' + error.message, 'danger');
                     } finally {
                         setButtonLoading(button, false);
                     }
@@ -1117,7 +1136,6 @@
                 nomor: document.getElementById('payment_nomor').value,
                 atas_nama: document.getElementById('payment_an').value,
             };
-
             const promise = currentPaymentId
                 ? dbFS.collection('infoPembayaran').doc(currentPaymentId).update(data)
                 : dbFS.collection('infoPembayaran').add(data);
@@ -1176,7 +1194,8 @@
                 s.forEach(d => {
                     const claim = { id: d.id, ...d.data() };
                     const row = giftClaimsTableBody.insertRow();
-                    const waktuKlaim = claim.waktuKlaim ? new Date(claim.waktuKlaim.toDate()).toLocaleString() : 'N/A';
+                    // Firebase Timestamp to Date object
+                    const waktuKlaim = claim.waktuKlaim && claim.waktuKlaim.toDate ? claim.waktuKlaim.toDate().toLocaleString() : 'N/A';
                     const statusClass = `status-${(claim.status || '').toLowerCase().replace(/ /g, '-')}`;
 
                     row.innerHTML = `
@@ -1420,4 +1439,4 @@
         }
     </script>
 </body>
-    </html>
+        </html>
