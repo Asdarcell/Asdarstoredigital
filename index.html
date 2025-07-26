@@ -119,6 +119,15 @@
             <p>Anda berhak mendapatkan potongan <strong>Rp 5.000</strong> untuk pesanan kali ini.</p>
             <button id="claim-button" type="button" onclick="gunakanDiskonShare()">✅ Ya, Gunakan Diskon</button>
         </div>
+
+        <div id="claim-hadiah-section" class="section-container mt-4" style="padding-top: 15px;" data-aos="fade-up">
+            <h2><i class="fas fa-gift me-2"></i>Klaim Hadiah Anda</h2>
+            <p class="text-center text-muted">Masukkan email Anda untuk mengecek hadiah promosi.</p>
+            <label for="emailKlaimHadiah">Email Anda</label>
+            <input type="email" id="emailKlaimHadiah" placeholder="contoh@gmail.com" />
+            <button type="button" id="checkHadiahBtn">Cek Hadiah</button>
+            <div id="hadiahResult" class="info mt-3" style="display: none;"></div>
+        </div>
         <label for="kategori">Kategori Produk</label>
         <select id="kategori" required><option value="">Pilih Kategori</option></select>
         <label for="produk">Produk</label>
@@ -184,6 +193,8 @@
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonShareTerpakai = false;
+    let hadiahTerpakai = false; // <<< NEW
+    let hadiahDataTerpilih = null; // <<< NEW
     const POTONGAN_DISKON_SHARE = 5000;
     const submitBtn = document.getElementById('submitBtn');
     const kategoriSelect = document.getElementById('kategori');
@@ -251,6 +262,15 @@
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
+      document.getElementById('emailKlaimHadiah').addEventListener('input', () => { // NEW: Event listener untuk input email hadiah
+            const hadiahResultDiv = document.getElementById('hadiahResult');
+            hadiahResultDiv.style.display = 'none'; // Sembunyikan hasil saat input berubah
+            hadiahResultDiv.innerHTML = '';
+            hadiahTerpakai = false; // Reset status hadiah
+            hadiahDataTerpilih = null;
+            updateTotalHarga(); // Perbarui harga jika hadiah dibatalkan
+      });
+      document.getElementById('checkHadiahBtn').addEventListener('click', checkHadiahPembeli); // NEW: Event listener untuk tombol cek hadiah
       document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
@@ -339,6 +359,9 @@
         const produkId = produkSelect.value;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
+        hadiahTerpakai = false; // <<< NEW
+        hadiahDataTerpilih = null; // <<< NEW
+
         if (!produkId) {
             resetFormState();
             return;
@@ -347,14 +370,21 @@
         submitBtn.disabled = true;
         submitBtn.textContent = '...';
         document.getElementById('product-promo-container').innerHTML = '';
+        
+        // Sembunyikan bagian hadiah saat produk berubah
+        const hadiahResultDiv = document.getElementById('hadiahResult');
+        if (hadiahResultDiv) hadiahResultDiv.style.display = 'none';
+        
         dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
             if (!doc.exists) {
                 infoProduk.innerHTML = 'Produk tidak ditemukan.';
                 return;
             }
             produkTerpilihData = { id: doc.id, ...doc.data() };
-            updateTotalHarga();
-            checkDiskonShare();
+            updateTotalHarga(); // Panggil ini setelah produk terpilih data di set
+            checkDiskonShare(); // Cek diskon share jika ada
+            // checkHadiahPembeli(); // Tidak perlu panggil di sini, karena ada tombol terpisah
+
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 submitBtn.textContent = 'Stok Habis';
                 submitBtn.disabled = true;
@@ -362,7 +392,8 @@
             } else {
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-                if (produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
+                // Tampilkan promo produk hanya jika belum ada diskon lain yang diaktifkan
+                if (!hadiahTerpakai && !diskonShareTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
                     document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
                 }
@@ -375,15 +406,22 @@
         let hargaAwal = produkTerpilihData.harga_umum;
         let hargaFinal = hargaAwal;
         let deskripsiHarga = `<b>Harga:</b> ${formatRupiah(hargaAwal)}`;
-        if (promoProdukTerpakai && produkTerpilihData.promo) {
+        let diskonDeskripsiTambahan = '';
+
+        // Prioritas Diskon: Hadiah > Promo Produk > Diskon Share
+        if (hadiahTerpakai && hadiahDataTerpilih && hadiahDataTerpilih.potongan) { // <<< NEW
+            hargaFinal = Math.max(0, hargaAwal - hadiahDataTerpilih.potongan);
+            diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Setelah Hadiah: ${formatRupiah(hargaFinal)}</b>`;
+        } else if (promoProdukTerpakai && produkTerpilihData.promo) {
             let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
             hargaFinal = Math.max(0, hargaAwal - potongan);
-            deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
+            diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
         } else if (diskonShareTerpakai) {
             hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
-            deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
+            diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
         }
-        infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
+        
+        infoProduk.innerHTML = `${deskripsiHarga}${diskonDeskripsiTambahan}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
 
     async function handleOrderSubmit(e) {
@@ -406,16 +444,47 @@
             let hargaAwal = produkTerpilihData.harga_umum;
             let hargaFinal = hargaAwal;
             let promoDigunakan = null;
-            if (promoProdukTerpakai && produkTerpilihData.promo) {
+            let diskon_share_digunakan = false;
+            let hadiah_digunakan_info = null; // <<< NEW
+
+            // Logika diskon (konsisten dengan updateTotalHarga)
+            if (hadiahTerpakai && hadiahDataTerpilih && hadiahDataTerpilih.potongan) { // <<< NEW
+                hargaFinal = Math.max(0, hargaAwal - hadiahDataTerpilih.potongan);
+                hadiah_digunakan_info = { id: hadiahDataTerpilih.id, potongan: hadiahDataTerpilih.potongan, email: hadiahDataTerpilih.email };
+            } else if (promoProdukTerpakai && produkTerpilihData.promo) {
                 let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
                 hargaFinal = Math.max(0, hargaAwal - potongan);
                 promoDigunakan = produkTerpilihData.promo;
             } else if (diskonShareTerpakai) {
                 hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
+                diskon_share_digunakan = true;
             }
+
             const id = "P" + Date.now();
-            await dbFS.collection('pesananUmum').doc(id).set({ id, nama_pelanggan: nama, nomor_pelanggan: nomor, no_whatsap_aktif: waAktif, kategori, produk: produkTerpilihData.nama_produk, waktu: firebase.firestore.FieldValue.serverTimestamp(), status: 'Menunggu Pembayaran', harga_final: hargaFinal, promo_digunakan: promoDigunakan, diskon_share: diskonShareTerpakai });
-            if (diskonShareTerpakai) await dbRT.ref('hakDiskon/' + waAktif).remove();
+            await dbFS.collection('pesananUmum').doc(id).set({
+                id, nama_pelanggan: nama, nomor_pelanggan: nomor, no_whatsap_aktif: waAktif,
+                kategori, produk: produkTerpilihData.nama_produk,
+                waktu: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'Menunggu Pembayaran',
+                harga_final: hargaFinal,
+                promo_digunakan: promoDigunakan,
+                diskon_share: diskon_share_digunakan,
+                hadiah_digunakan: hadiah_digunakan_info // <<< NEW
+            });
+
+            if (diskon_share_digunakan) {
+                await dbRT.ref('hakDiskon/' + waAktif).remove();
+            }
+
+            // Tandai hadiah sudah terpakai di Firestore
+            if (hadiahTerpakai && hadiahDataTerpilih) { // <<< NEW
+                await dbFS.collection('hadiahPembeli').doc(hadiahDataTerpilih.id).update({
+                    digunakan: true,
+                    tanggal_digunakan: firebase.firestore.FieldValue.serverTimestamp(),
+                    id_pesanan: id // Opsional: kaitkan dengan ID pesanan
+                });
+            }
+            
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentHtml = '<div class="payment-methods-list">';
             paymentSnapshot.forEach(doc => {
@@ -440,9 +509,26 @@
         produkTerpilihData = null;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
+        hadiahTerpakai = false; // <<< NEW
+        hadiahDataTerpilih = null; // <<< NEW
+
         document.getElementById('claim-button').disabled = false;
         document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
         document.getElementById('claim-discount-section').style.display = 'none';
+
+        const hadiahResultDiv = document.getElementById('hadiahResult'); // <<< NEW
+        if (hadiahResultDiv) {
+            hadiahResultDiv.style.display = 'none';
+            hadiahResultDiv.innerHTML = '';
+        }
+        const emailKlaimHadiahInput = document.getElementById('emailKlaimHadiah'); // <<< NEW
+        if (emailKlaimHadiahInput) emailKlaimHadiahInput.value = '';
+        const checkHadiahButton = document.getElementById('checkHadiahBtn'); // <<< NEW
+        if (checkHadiahButton) {
+            checkHadiahButton.disabled = false;
+            checkHadiahButton.textContent = 'Cek Hadiah';
+        }
+
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         submitBtn.disabled = true;
         submitBtn.textContent = 'Pilih Produk Dahulu';
@@ -455,7 +541,7 @@
         dbRT.ref('faq').once('value').then(snap => {
             faqContainer.innerHTML = '';
             if (!snap.exists()) {
-                faqContainer.innerHTML = '<p>FAQ tidak tersedia.</p>';
+                faqContainer.innerHTML = `<p class="text-center text-muted">FAQ tidak tersedia.</p>`;
                 return;
             }
             snap.forEach(itemSnap => {
@@ -528,13 +614,20 @@
     window.klaimPromoProduk = () => {
         promoProdukTerpakai = true;
         diskonShareTerpakai = false;
+        hadiahTerpakai = false; // <<< NEW
         document.getElementById('claim-discount-section').style.display = 'none';
+        const hadiahResultDiv = document.getElementById('hadiahResult'); // <<< NEW
+        if (hadiahResultDiv) hadiahResultDiv.style.display = 'none';
+
         updateTotalHarga();
         document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
     
     async function checkDiskonShare() {
-        if (promoProdukTerpakai) return;
+        if (promoProdukTerpakai || hadiahTerpakai) { // <<< NEW: Tambah kondisi hadiahTerpakai
+            document.getElementById('claim-discount-section').style.display = 'none';
+            return;
+        }
         const waInput = document.getElementById('waAktif');
         const claimSection = document.getElementById('claim-discount-section');
         const nomorWA = normalizePhone(waInput.value);
@@ -554,10 +647,101 @@
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
         promoProdukTerpakai = false;
+        hadiahTerpakai = false; // <<< NEW
         document.getElementById('product-promo-container').innerHTML = '';
+        const hadiahResultDiv = document.getElementById('hadiahResult'); // <<< NEW
+        if (hadiahResultDiv) hadiahResultDiv.style.display = 'none';
+
         updateTotalHarga();
         document.getElementById('claim-button').disabled = true;
         document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
+    };
+
+    // <<< NEW FUNCTIONS FOR KLAIM HADIAH PEMBELI >>>
+
+    async function checkHadiahPembeli() {
+        const emailInput = document.getElementById('emailKlaimHadiah');
+        const email = emailInput.value.trim().toLowerCase();
+        const hadiahResultDiv = document.getElementById('hadiahResult');
+        const checkHadiahButton = document.getElementById('checkHadiahBtn');
+
+        hadiahResultDiv.style.display = 'none';
+        hadiahResultDiv.className = 'info mt-3';
+
+        if (!email) {
+            hadiahResultDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i>Mohon masukkan email Anda.';
+            hadiahResultDiv.style.display = 'block';
+            hadiahResultDiv.classList.add('notification', 'info');
+            return;
+        }
+
+        checkHadiahButton.disabled = true;
+        checkHadiahButton.textContent = 'Mengecek...';
+
+        try {
+            // Asumsi koleksi Firestore bernama 'hadiahPembeli'
+            // dan field untuk email adalah 'email' dan statusnya 'digunakan' (boolean)
+            const snapshot = await dbFS.collection('hadiahPembeli')
+                                    .where('email', '==', email)
+                                    .where('digunakan', '==', false) // Hadiah yang belum digunakan
+                                    .limit(1)
+                                    .get();
+
+            if (snapshot.empty) {
+                hadiahResultDiv.innerHTML = '<i class="fas fa-times-circle me-2"></i>Tidak ada hadiah yang ditemukan untuk email ini atau sudah digunakan.';
+                hadiahResultDiv.classList.add('notification', 'error');
+                hadiahTerpakai = false;
+                hadiahDataTerpilih = null;
+            } else {
+                hadiahDataTerpilih = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+                const potongan = hadiahDataTerpilih.potongan || 0;
+                
+                hadiahResultDiv.innerHTML = `
+                    <i class="fas fa-gift me-2"></i>Selamat! Anda mendapatkan potongan <strong>${formatRupiah(potongan)}</strong>.<br>
+                    <button type="button" class="btn btn-sm btn-primary mt-2" onclick="gunakanHadiah()">🎉 Klaim Hadiah Ini</button>
+                `;
+                hadiahResultDiv.classList.add('notification', 'success');
+                hadiahTerpakai = false; // Belum terpakai sampai tombol diklik
+                
+                // Jika hadiah ditemukan, otomatis nonaktifkan promo produk dan diskon share
+                document.getElementById('product-promo-container').innerHTML = '';
+                document.getElementById('claim-discount-section').style.display = 'none';
+                promoProdukTerpakai = false;
+                diskonShareTerpakai = false;
+            }
+            hadiahResultDiv.style.display = 'block';
+
+        } catch (error) {
+            console.error("Error saat mengecek hadiah:", error);
+            hadiahResultDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Terjadi kesalahan saat mengecek hadiah. Coba lagi.';
+            hadiahResultDiv.classList.add('notification', 'error');
+            hadiahResultDiv.style.display = 'block';
+            hadiahTerpakai = false;
+            hadiahDataTerpilih = null;
+        } finally {
+            checkHadiahButton.disabled = false;
+            checkHadiahButton.textContent = 'Cek Hadiah';
+            updateTotalHarga(); // Perbarui tampilan harga setelah cek hadiah
+        }
+    }
+
+    window.gunakanHadiah = () => {
+        if (!hadiahDataTerpilih) return;
+
+        hadiahTerpakai = true;
+        promoProdukTerpakai = false;
+        diskonShareTerpakai = false;
+
+        // Sembunyikan/nonaktifkan tombol diskon/promo lain
+        document.getElementById('product-promo-container').innerHTML = '';
+        document.getElementById('claim-discount-section').style.display = 'none';
+
+        const hadiahResultDiv = document.getElementById('hadiahResult');
+        hadiahResultDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Hadiah potongan ${formatRupiah(hadiahDataTerpilih.potongan)} diterapkan!`;
+        hadiahResultDiv.classList.remove('error', 'info');
+        hadiahResultDiv.classList.add('success');
+        
+        updateTotalHarga(); // Perbarui tampilan harga
     };
   </script>
 </body>
