@@ -521,6 +521,10 @@
                             <input type="number" class="form-control" id="banner_urutan" value="0" required>
                             <small class="form-text text-muted">Angka lebih kecil akan tampil lebih dulu.</small>
                         </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="banner_active">
+                            <label class="form-check-label" for="banner_active">Aktif (Tampilkan Banner)</label>
+                        </div>
                         <button type="submit" class="btn btn-primary">Simpan Banner</button>
                         <button type="button" class="btn btn-secondary" id="cancel-banner-edit-btn" style="display: none;">Batal Edit</button>
                     </form>
@@ -533,7 +537,7 @@
                                 <th>Urutan</th>
                                 <th>Gambar</th>
                                 <th>Link</th>
-                                <th>Aksi</th>
+                                <th>Status</th> <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="banners-table">
@@ -684,6 +688,9 @@
                         button.innerHTML = 'Beri Diskon ke Reseller';
                     } else if (button.textContent.includes('Tambah Fitur')) {
                         button.innerHTML = 'Tambah Fitur';
+                    }
+                    else if (button.textContent.includes('Sembunyikan') || button.textContent.includes('Tampilkan')) { // Penambahan untuk banner toggle
+                        // Biarkan textContent apa adanya karena sudah dinamis
                     }
                     else {
                         button.innerHTML = 'Submit'; // Fallback umum
@@ -1684,6 +1691,7 @@
         const bannerForm = document.getElementById('banner-form');
         const bannersTableBody = document.querySelector('#banners-table tbody');
         const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
+        const bannerActiveCheckbox = document.getElementById('banner_active'); // Mendapatkan checkbox baru
         let currentBannerId = null;
 
         function loadBanners() {
@@ -1691,24 +1699,29 @@
                 .then(s => {
                     bannersTableBody.innerHTML = '';
                     if (s.empty) {
-                        bannersTableBody.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada banner.</td></tr>';
+                        bannersTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada banner.</td></tr>'; // Kolom 5 sekarang
                     }
                     s.forEach(d => {
                         const b = { id: d.id, ...d.data() };
                         const r = bannersTableBody.insertRow();
+                        const statusText = b.active ? 'Aktif' : 'Tidak Aktif';
+                        const statusClass = b.active ? 'bg-success' : 'bg-secondary';
                         r.innerHTML = `
                             <td>${b.urutan}</td>
                             <td><a href="${b.url}" target="_blank">Lihat Gambar</a></td>
                             <td>${b.link || '-'}</td>
-                            <td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td> <td>
                                 <button class="btn btn-warning btn-sm" onclick="editBanner('${b.id}')">Edit</button>
+                                <button class="btn btn-${b.active ? 'secondary' : 'success'} btn-sm" onclick="toggleBannerStatus('${b.id}', ${b.active}, this)">
+                                    ${b.active ? 'Sembunyikan' : 'Tampilkan'}
+                                </button>
                                 <button class="btn btn-danger btn-sm" onclick="deleteBanner('${b.id}', this)">Hapus</button>
                             </td>
                         `;
                     });
                 })
                 .catch(e => {
-                    bannersTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat banner: ${e.message}</td></tr>`;
+                    bannersTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat banner: ${e.message}</td></tr>`; // Kolom 5 sekarang
                 });
         }
 
@@ -1719,8 +1732,9 @@
 
             const data = {
                 url: document.getElementById('banner_url').value,
-                link: document.getElementById('banner_link').value || '', // Pastikan selalu string
+                link: document.getElementById('banner_link').value || '',
                 urutan: parseInt(document.getElementById('banner_urutan').value) || 0,
+                active: bannerActiveCheckbox.checked // BARU: Menambahkan status aktif
             };
 
             try {
@@ -1734,6 +1748,7 @@
                 bannerForm.reset();
                 cancelBannerEditBtn.style.display = 'none';
                 currentBannerId = null;
+                bannerActiveCheckbox.checked = false; // Reset checkbox after submission
                 loadBanners(); // Refresh data
             } catch (err) {
                 showToast('Gagal menyimpan banner: ' + err.message, 'danger');
@@ -1746,6 +1761,7 @@
             bannerForm.reset();
             cancelBannerEditBtn.style.display = 'none';
             currentBannerId = null;
+            bannerActiveCheckbox.checked = false; // Reset checkbox
         });
 
         async function editBanner(id) {
@@ -1754,8 +1770,9 @@
                 const b = doc.data();
                 currentBannerId = id;
                 document.getElementById('banner_url').value = b.url;
-                document.getElementById('banner_link').value = b.link || ''; // Pastikan ada nilai default
-                document.getElementById('banner_urutan').value = b.urutan || 0; // Pastikan ada nilai default
+                document.getElementById('banner_link').value = b.link || '';
+                document.getElementById('banner_urutan').value = b.urutan || 0;
+                bannerActiveCheckbox.checked = b.active || false; // Set checkbox status
                 cancelBannerEditBtn.style.display = 'block';
                 bannerForm.scrollIntoView({ behavior: 'smooth' });
             }
@@ -1775,6 +1792,27 @@
                 }
             }
         }
+
+        // BARU: Fungsi untuk mengubah status aktif/tidak aktif banner
+        async function toggleBannerStatus(id, currentStatus, btn) {
+            setButtonLoading(btn, true);
+            const newStatus = !currentStatus;
+            const actionText = newStatus ? 'menampilkan' : 'menyembunyikan';
+            if (!confirm(`Yakin ingin ${actionText} banner ini?`)) {
+                setButtonLoading(btn, false);
+                return;
+            }
+            try {
+                await dbFS.collection('banners').doc(id).update({ active: newStatus });
+                showToast(`Banner berhasil di${newStatus ? 'tampilkan' : 'sembunyikan'}!`, newStatus ? 'success' : 'warning');
+                loadBanners(); // Refresh data
+            } catch (e) {
+                showToast('Gagal mengubah status banner: ' + e.message, 'danger');
+            } finally {
+                setButtonLoading(btn, false);
+            }
+        }
+
 
         // =================================== KODE KUSTOM (Realtime Database) ===================================
         const addFeatureForm = document.getElementById('add-feature-form');
@@ -1868,4 +1906,4 @@
     </script>
 
 </body>
-                                </html>
+    </html>
