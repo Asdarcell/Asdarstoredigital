@@ -96,14 +96,14 @@
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
+        .sidebar nav ul li a .fas {
+            margin-right: 10px;
+        }
+
         .sidebar nav ul li a:hover,
         .sidebar nav ul li a.active {
             background-color: var(--primary);
             color: white;
-        }
-
-        .sidebar nav ul li a .fas {
-            margin-right: 10px;
         }
 
         .content {
@@ -264,7 +264,8 @@
                     <li><a href="#faq" class="nav-link" data-target="faq"><i class="fas fa-question-circle"></i> FAQ</a></li>
                     <li><a href="#pembayaran" class="nav-link" data-target="pembayaran"><i class="fas fa-credit-card"></i> Pembayaran</a></li>
                     <li><a href="#manajemen-promo" class="nav-link" data-target="manajemen-promo"><i class="fas fa-tags"></i> Manajemen Promo</a></li>
-                    <li><a href="#manajemen-banner" class="nav-link" data-target="manajemen-banner"><i class="fas fa-bullhorn"></i> Manajemen Banner</a></li> <li><a href="#kode-kustom" class="nav-link" data-target="kode-kustom"><i class="fas fa-code"></i> Kode Kustom</a></li>
+                    <li><a href="#manajemen-banner" class="nav-link" data-target="manajemen-banner"><i class="fas fa-bullhorn"></i> Manajemen Banner</a></li>
+                    <li><a href="#kode-kustom" class="nav-link" data-target="kode-kustom"><i class="fas fa-code"></i> Kode Kustom</a></li>
                 </ul>
             </nav>
         </aside>
@@ -346,6 +347,7 @@
             <section id="reseller-aktif" class="admin-section" style="display:none;">
                 <h2>Reseller Aktif</h2>
                 <div class="section-container">
+                    <div id="reseller-aktif-notification" class="notification"></div>
                     <h3>Daftar Reseller</h3>
                     <div class="table-responsive">
                         <table id="active-resellers-table">
@@ -367,6 +369,7 @@
             <section id="verifikasi" class="admin-section" style="display:none;">
                 <h2>Verifikasi Reseller</h2>
                 <div class="section-container">
+                    <div id="verifikasi-notification" class="notification"></div>
                     <h3>Permintaan Verifikasi Pending</h3>
                     <div id="pending-verifications-list">
                         <p>Tidak ada permintaan verifikasi pending.</p>
@@ -377,6 +380,7 @@
             <section id="top-up" class="admin-section" style="display:none;">
                 <h2>Konfirmasi Top Up</h2>
                 <div class="section-container">
+                    <div id="topup-notification" class="notification"></div>
                     <h3>Permintaan Top Up Pending</h3>
                     <div id="pending-topups-list">
                         <p>Tidak ada permintaan top up pending.</p>
@@ -387,6 +391,7 @@
             <section id="pesanan" class="admin-section" style="display:none;">
                 <h2>Manajemen Pesanan</h2>
                 <div class="section-container">
+                    <div id="orders-notification" class="notification"></div>
                     <h3>Daftar Pesanan Terakhir</h3>
                     <div class="table-responsive">
                         <table id="orders-list">
@@ -413,6 +418,7 @@
             <section id="testimoni" class="admin-section" style="display:none;">
                 <h2>Manajemen Testimoni</h2>
                 <div class="section-container">
+                    <div id="testimoni-notification" class="notification"></div>
                     <h3>Daftar Testimoni Pending</h3>
                     <div id="pending-testimonials-list">
                         <p>Tidak ada testimoni pending.</p>
@@ -564,7 +570,7 @@
                         <h4>Untuk Pembeli Biasa</h4>
                         <div id="discount-buyer-notification" class="notification"></div>
                         <div class="form-group">
-                            <label for="buyer-email-discount">Nomor WhatsApp Pembeli Biasa</label>
+                            <label for="buyer-wa-discount">Nomor WhatsApp Pembeli Biasa</label>
                             <input type="text" id="buyer-wa-discount" placeholder="628123xxxxxx" required>
                         </div>
                         <button type="submit" id="give-buyer-discount-btn">Beri Diskon ke Pembeli</button>
@@ -582,10 +588,13 @@
     <script>
         // Firebase Konfigurasi (GANTI DENGAN KONFIGURASI PROYEK ANDA)
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // GANTI INI
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-          projectId: "asdarstoredigitalll-d89c4",
+          apiKey: "YOUR_API_KEY", // GANTI INI DENGAN API KEY ASLI ANDA
+          authDomain: "YOUR_AUTH_DOMAIN",
+          databaseURL: "YOUR_DATABASE_URL",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET", // Tambahkan jika ada dan diperlukan
+          messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Tambahkan jika ada
+          appId: "YOUR_APP_ID" // Tambahkan jika ada
         };
         firebase.initializeApp(firebaseConfig);
         const dbFS = firebase.firestore();
@@ -597,31 +606,38 @@
         let currentPayment = null; // For Payment Method editing
         let currentBanner = null; // For Banner editing
 
+        // --- UTILITY FUNCTIONS (PASTIKAN ADA) ---
         const showNotification = (elementId, message, type = 'error', displayTime = 3000) => {
             const notificationEl = document.getElementById(elementId);
-            notificationEl.textContent = message;
-            notificationEl.className = `notification ${type}`;
-            notificationEl.style.display = 'block';
-            setTimeout(() => {
-                notificationEl.style.display = 'none';
-            }, displayTime);
+            if (notificationEl) {
+                notificationEl.textContent = message;
+                notificationEl.className = `notification ${type}`;
+                notificationEl.style.display = 'block';
+                setTimeout(() => {
+                    notificationEl.style.display = 'none';
+                }, displayTime);
+            } else {
+                console.warn(`Notification element with ID '${elementId}' not found.`);
+                alert(`${type.toUpperCase()}: ${message}`); // Fallback alert
+            }
         };
 
         const setButtonLoading = (button, isLoading, originalText) => {
-            if (isLoading) {
-                button.disabled = true;
-                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
-            } else {
-                button.disabled = false;
-                button.innerHTML = originalText;
+            if (button) {
+                if (isLoading) {
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
             }
         };
 
         // --- AUTHENTICATION ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Check if user is admin (optional, but recommended)
-                // You might have a 'admins' collection in Firestore
+                // Check if user is admin
                 dbFS.collection('admins').doc(user.uid).get().then(doc => {
                     if (doc.exists) {
                         console.log("Admin logged in:", user.email);
@@ -825,8 +841,8 @@
                     row.innerHTML = `
                         <td>${data.nama_produk}</td>
                         <td>${data.kategori}</td>
-                        <td>${data.harga_reseller.toLocaleString('id-ID')}</td>
-                        <td>${data.harga_umum.toLocaleString('id-ID')}</td>
+                        <td>Rp${(data.harga_reseller || 0).toLocaleString('id-ID')}</td>
+                        <td>Rp${(data.harga_umum || 0).toLocaleString('id-ID')}</td>
                         <td>${data.stok}</td>
                         <td>${data.promo ? `${data.promo.nilai} ${data.promo.jenis === 'nominal' ? 'Rp' : '%'}` : 'Tidak Ada'}</td>
                         <td>${data.urutan || '-'}</td>
@@ -896,7 +912,8 @@
         async function loadActiveResellers() {
             activeResellersTableBody.innerHTML = '<tr><td colspan="4">Memuat reseller aktif...</td></tr>';
             try {
-                const snapshot = await dbFS.collection('resellers').get();
+                // Hanya tampilkan reseller yang statusnya approved
+                const snapshot = await dbFS.collection('resellers').where('status', '==', 'approved').get();
                 activeResellersTableBody.innerHTML = '';
                 if (snapshot.empty) {
                     activeResellersTableBody.innerHTML = '<tr><td colspan="4">Tidak ada reseller aktif.</td></tr>';
@@ -910,8 +927,8 @@
                         <td>Rp${(data.saldo || 0).toLocaleString('id-ID')}</td>
                         <td>${data.punyaHakDiskon ? 'Ya' : 'Tidak'}</td>
                         <td>
-                            <button class="btn-success btn-sm" onclick="showTopupModal('${doc.id}', '${data.email}')">Tambah Saldo</button>
-                            <button class="btn-danger btn-sm" onclick="deleteReseller('${doc.id}')">Hapus</button>
+                            <button class="btn-success btn-sm" onclick="showTopupModalForReseller('${doc.id}', '${data.email}')">Tambah Saldo</button>
+                            <button class="btn-danger btn-sm" onclick="deleteReseller('${doc.id}', '${data.email}')">Hapus</button>
                         </td>
                     `;
                 });
@@ -921,20 +938,13 @@
             }
         }
 
-        async function deleteReseller(uid) {
-            if (confirm("Apakah Anda yakin ingin menghapus reseller ini? Semua data terkait juga akan dihapus (akun, saldo, pesanan)? Ini tidak bisa dibatalkan!")) {
+        async function deleteReseller(uid, email) {
+            if (confirm(`Apakah Anda yakin ingin menghapus reseller ${email} ini? Semua data terkait (saldo, hak diskon) akan dihapus. Ini tidak bisa dibatalkan!`)) {
                 try {
-                    // Hapus dari Firestore 'resellers'
                     await dbFS.collection('resellers').doc(uid).delete();
-                    
-                    // Anda mungkin juga perlu menghapus akun AUTH Firebase-nya (ini perlu fungsi Cloud Functions)
-                    // Jika tidak ada Cloud Functions, akun Auth akan tetap ada, hanya data di Firestore yang hilang.
-                    // Untuk menghapus akun Auth dari sisi klien, Anda butuh kredensial admin atau Cloud Function.
-                    // Karena ini admin panel, disarankan melalui Cloud Function untuk keamanan.
-
-                    showNotification('reseller-aktif-notification', 'Reseller berhasil dihapus!', 'success'); // Tambahkan div notifikasi ini di HTML jika belum ada
+                    showNotification('reseller-aktif-notification', `Reseller ${email} berhasil dihapus!`, 'success');
                     loadActiveResellers();
-                    loadPendingVerifications(); // Mungkin ada verifikasi pending untuk reseller yang dihapus
+                    loadPendingVerifications(); // Refresh verifikasi kalau-kalau ada pending untuk user ini
                 } catch (error) {
                     console.error("Error deleting reseller:", error);
                     showNotification('reseller-aktif-notification', `Gagal menghapus reseller: ${error.message}`, 'error');
@@ -942,15 +952,16 @@
             }
         }
 
-        // --- Tambah Saldo (MODAL/FORM) - Anda perlu membuat modal/form ini di HTML admin.html
-        // Contoh sederhana untuk demo
-        function showTopupModal(uid, email) {
-            const nominal = prompt(`Masukkan nominal saldo untuk ${email}:`);
-            if (nominal && !isNaN(nominal) && parseInt(nominal) > 0) {
-                const amount = parseInt(nominal);
-                addSaldoToReseller(uid, amount);
-            } else if (nominal !== null) {
-                alert("Nominal tidak valid.");
+        // --- Tambah Saldo (via prompt sederhana) ---
+        function showTopupModalForReseller(uid, email) {
+            const nominalStr = prompt(`Masukkan nominal saldo yang ingin ditambahkan ke ${email}:`);
+            if (nominalStr !== null) {
+                const nominal = parseInt(nominalStr);
+                if (!isNaN(nominal) && nominal > 0) {
+                    addSaldoToReseller(uid, nominal);
+                } else {
+                    alert("Nominal tidak valid. Harap masukkan angka positif.");
+                }
             }
         }
 
@@ -960,16 +971,16 @@
                 await dbFS.runTransaction(async (transaction) => {
                     const doc = await transaction.get(resellerRef);
                     if (!doc.exists) {
-                        throw "Reseller tidak ditemukan!";
+                        throw new Error("Reseller tidak ditemukan!");
                     }
                     const newSaldo = (doc.data().saldo || 0) + amount;
                     transaction.update(resellerRef, { saldo: newSaldo });
                 });
-                alert(`Saldo berhasil ditambahkan ${amount.toLocaleString('id-ID')} ke reseller!`);
+                showNotification('reseller-aktif-notification', `Saldo berhasil ditambahkan Rp${amount.toLocaleString('id-ID')} ke reseller!`, 'success');
                 loadActiveResellers(); // Refresh list
             } catch (error) {
                 console.error("Error adding saldo:", error);
-                alert(`Gagal menambahkan saldo: ${error.message}`);
+                showNotification('reseller-aktif-notification', `Gagal menambahkan saldo: ${error.message}`, 'error');
             }
         }
 
@@ -978,7 +989,7 @@
         async function loadPendingVerifications() {
             pendingVerificationsList.innerHTML = '<p>Memuat permintaan verifikasi...</p>';
             try {
-                const snapshot = await dbFS.collection('resellers').where('status', '==', 'pending').get();
+                const snapshot = await dbFS.collection('resellers').where('status', '==', 'pending').orderBy('createdAt', 'desc').get();
                 if (snapshot.empty) {
                     pendingVerificationsList.innerHTML = '<p>Tidak ada permintaan verifikasi pending.</p>';
                     return;
@@ -987,12 +998,13 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
+                    const createdAt = data.createdAt ? data.createdAt.toDate().toLocaleString() : 'N/A';
                     item.innerHTML = `
                         <p><b>Email:</b> ${data.email}</p>
                         <p><b>Nama Lengkap:</b> ${data.namaLengkap || '-'}</p>
                         <p><b>No. HP:</b> ${data.noHp || '-'}</p>
-                        <p><b>Waktu Daftar:</b> ${data.createdAt ? data.createdAt.toDate().toLocaleString() : 'N/A'}</p>
+                        <p><b>Waktu Daftar:</b> ${createdAt}</p>
                         <button class="btn-success btn-sm" onclick="approveReseller('${doc.id}')">Setujui</button>
                         <button class="btn-danger btn-sm" onclick="rejectReseller('${doc.id}')">Tolak</button>
                     `;
@@ -1007,10 +1019,15 @@
         async function approveReseller(uid) {
             if (confirm("Apakah Anda yakin ingin menyetujui reseller ini?")) {
                 try {
-                    await dbFS.collection('resellers').doc(uid).update({ status: 'approved' });
-                    showNotification('verifikasi-notification', 'Reseller berhasil disetujui!', 'success'); // Tambahkan div notifikasi di HTML jika belum ada
+                    // Update status dan berikan saldo awal (jika ada kebijakan saldo awal)
+                    await dbFS.collection('resellers').doc(uid).update({ 
+                        status: 'approved',
+                        saldo: 0, // Inisialisasi saldo menjadi 0 jika belum ada
+                        punyaHakDiskon: false // Awalnya tidak punya hak diskon promosi
+                    });
+                    showNotification('verifikasi-notification', 'Reseller berhasil disetujui!', 'success');
                     loadPendingVerifications();
-                    loadActiveResellers();
+                    loadActiveResellers(); // Refresh daftar reseller aktif
                 } catch (error) {
                     console.error("Error approving reseller:", error);
                     showNotification('verifikasi-notification', `Gagal menyetujui: ${error.message}`, 'error');
@@ -1019,9 +1036,9 @@
         }
 
         async function rejectReseller(uid) {
-            if (confirm("Apakah Anda yakin ingin menolak reseller ini?")) {
+            if (confirm("Apakah Anda yakin ingin menolak reseller ini? Data akan tetap ada tapi statusnya Rejected.")) {
                 try {
-                    await dbFS.collection('resellers').doc(uid).update({ status: 'rejected' }); // Atau Anda bisa menghapus docnya
+                    await dbFS.collection('resellers').doc(uid).update({ status: 'rejected' });
                     showNotification('verifikasi-notification', 'Reseller berhasil ditolak!', 'success');
                     loadPendingVerifications();
                 } catch (error) {
@@ -1045,7 +1062,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
                     const createdAt = data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A';
                     item.innerHTML = `
                         <p><b>ID Konfirmasi:</b> ${data.id}</p>
@@ -1087,7 +1104,7 @@
                         transaction.update(resellerRef, { saldo: newSaldo });
                         transaction.update(topupRef, { status: 'approved' });
                     });
-                    showNotification('topup-notification', `Top Up berhasil disetujui & saldo ditambahkan ke reseller!`, 'success'); // Add notification div
+                    showNotification('topup-notification', `Top Up berhasil disetujui & saldo ditambahkan ke reseller!`, 'success');
                     loadPendingTopups();
                     loadActiveResellers(); // Update saldo display
                 } catch (error) {
@@ -1129,9 +1146,12 @@
                         promoInfo = `Promo: ${data.promo_digunakan.nilai} ${data.promo_digunakan.jenis === 'nominal' ? 'Rp' : '%'}`;
                     } else if (data.diskon_share) {
                         promoInfo = 'Diskon Share: Rp5.000';
-                    } else if (data.diskon_reseller_promo) { // BARU
+                    } else if (data.diskon_reseller_promo) { // Diskon dari kode kustom untuk reseller
                         promoInfo = 'Diskon Reseller: Rp5.000';
+                    } else if (data.diskon_pembeli_promo) { // Diskon dari kode kustom untuk pembeli umum
+                        promoInfo = 'Diskon Pembeli: Rp5.000';
                     }
+
 
                     const row = ordersListTableBody.insertRow();
                     row.innerHTML = `
@@ -1163,7 +1183,7 @@
         async function updateOrderStatus(orderId, newStatus) {
             try {
                 await dbFS.collection('pesananReseller').doc(orderId).update({ status: newStatus });
-                showNotification('orders-notification', 'Status pesanan berhasil diupdate!', 'success'); // Tambahkan div notifikasi
+                showNotification('orders-notification', 'Status pesanan berhasil diupdate!', 'success');
                 loadOrders(); // Reload orders to reflect changes
             } catch (error) {
                 console.error("Error updating order status:", error);
@@ -1201,7 +1221,7 @@
                     const key = childSnap.key;
                     const data = childSnap.val();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
                     const createdAt = data.createdAt ? new Date(data.createdAt).toLocaleString() : 'N/A';
                     item.innerHTML = `
                         <p><b>Nama:</b> ${data.nama}</p>
@@ -1226,7 +1246,7 @@
                     const key = childSnap.key;
                     const data = childSnap.val();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
                     const createdAt = data.createdAt ? new Date(data.createdAt).toLocaleString() : 'N/A';
                     item.innerHTML = `
                         <p><b>Nama:</b> ${data.nama}</p>
@@ -1335,7 +1355,7 @@
                     const key = childSnap.key;
                     const data = childSnap.val();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
                     item.innerHTML = `
                         <p><b>Q:</b> ${data.q}</p>
                         <p><b>A:</b> ${data.a}</p>
@@ -1439,7 +1459,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const item = document.createElement('div');
-                    item.className = 'info mb-3';
+                    item.className = 'section-container'; // Menggunakan section-container untuk tampilan lebih baik
                     item.innerHTML = `
                         <p><b>Metode:</b> ${data.metode}</p>
                         <p><b>Nomor:</b> ${data.nomor}</p>
@@ -1487,7 +1507,7 @@
             }
         }
 
-        // --- MANAJEMEN BANNER (BARU) ---
+        // --- MANAJEMEN BANNER ---
         const bannerForm = document.getElementById('banner-form');
         const bannerIdInput = document.getElementById('banner-id');
         const bannerTitleInput = document.getElementById('banner-title');
@@ -1629,9 +1649,13 @@
         discountResellerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setButtonLoading(giveResellerDiscountBtn, true, 'Beri Diskon ke Reseller');
-            const email = resellerEmailDiscountInput.value;
+            const email = resellerEmailDiscountInput.value.trim();
 
             try {
+                if (!email) {
+                    throw new Error("Email reseller tidak boleh kosong.");
+                }
+
                 const resellerSnapshot = await dbFS.collection('resellers').where('email', '==', email).limit(1).get();
                 if (resellerSnapshot.empty) {
                     throw new Error("Reseller dengan email tersebut tidak ditemukan.");
@@ -1657,10 +1681,15 @@
         discountBuyerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setButtonLoading(giveBuyerDiscountBtn, true, 'Beri Diskon ke Pembeli');
-            const waNumber = normalizePhoneNumber(buyerWaDiscountInput.value);
+            const waNumber = normalizePhoneNumber(buyerWaDiscountInput.value.trim());
 
             try {
-                await dbRT.ref('hakDiskon/' + waNumber).set(true);
+                if (!waNumber) {
+                    throw new Error("Nomor WhatsApp tidak boleh kosong.");
+                }
+                
+                // Simpan hak diskon di Realtime Database
+                await dbRT.ref('hakDiskonPembeli/' + waNumber).set(true); // Koleksi baru untuk pembeli umum
                 showNotification('discount-buyer-notification', `Hak diskon berhasil diberikan kepada pembeli ${waNumber}!`, 'success');
                 buyerWaDiscountInput.value = '';
             } catch (error) {
@@ -1679,4 +1708,4 @@
         }
     </script>
 </body>
-    </html>
+                    </html>
