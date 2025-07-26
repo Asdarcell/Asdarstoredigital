@@ -1,4 +1,4 @@
-p<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -191,7 +191,7 @@ p<!DOCTYPE html>
                     <p>Anda berhak mendapatkan potongan <strong>Rp 5.000</strong> untuk pesanan kali ini.</p>
                     <button id="claim-button" type="button" onclick="gunakanDiskonShare()">✅ Ya, Gunakan Diskon</button>
                 </div>
-                <label for="kategori">Kategori Produk</label>
+                <div id="reseller-discount-info"></div> <label for="kategori">Kategori Produk</label>
                 <select id="kategori" required>
                     <option value="">Pilih Kategori</option>
                 </select>
@@ -267,8 +267,9 @@ p<!DOCTYPE html>
         
         let produkTerpilihData = null;
         let promoProdukTerpakai = false;
-        let diskonShareTerpakai = false;
-        const POTONGAN_DISKON_SHARE = 5000;
+        let diskonShareTerpakai = false; // Untuk diskon pembeli biasa via WA
+        let hasResellerDiscount = false; // <--- BARU: Status diskon untuk reseller yang login (dari admin panel)
+        const POTONGAN_DISKON = 5000; // Menggunakan satu konstanta untuk kedua jenis diskon 5rb
         
         let loggedInReseller = null;
         let saldoReseller = 0;
@@ -281,7 +282,7 @@ p<!DOCTYPE html>
         const formNotification = document.getElementById('formNotification');
         const saldoDisplay = document.getElementById('saldo-display');
         const logoutBtn = document.getElementById('logout-btn');
-        const testimonialInterval = null;
+        // const testimonialInterval = null; // Ini tampaknya tidak digunakan secara aktif untuk clearInterval
 
         logoutBtn.addEventListener('click', () => {
             auth.signOut().then(() => {
@@ -494,19 +495,27 @@ p<!DOCTYPE html>
           document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
         });
         
+        // --- MODIFIKASI: Baca status punyaHakDiskon dari Firestore ---
         function listenToResellerBalance(uid) {
             dbFS.collection('resellers').doc(uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     saldoReseller = data.saldo || 0;
+                    hasResellerDiscount = data.punyaHakDiskon || false; // <--- BARU: Ambil punyaHakDiskon
                     saldoDisplay.textContent = `Saldo: ${formatRupiah(saldoReseller)}`;
+                    // Jika ada produk terpilih, perbarui total harga untuk menampilkan diskon reseller
+                    if (produkTerpilihData) {
+                        updateTotalHarga();
+                    }
                 } else {
                     saldoReseller = 0;
+                    hasResellerDiscount = false; // <--- BARU: Reset status diskon
                     saldoDisplay.textContent = `Saldo: Rp0`;
                 }
             }, err => {
                 console.error("Error memantau saldo:", err);
                 saldoDisplay.textContent = `Saldo: Error`;
+                hasResellerDiscount = false; // <--- BARU: Reset status diskon
             });
         }
 
@@ -549,7 +558,11 @@ p<!DOCTYPE html>
         function handleProductSelection() {
             const produkId = produkSelect.value;
             promoProdukTerpakai = false;
-            diskonShareTerpakai = false;
+            diskonShareTerpakai = false; // Pastikan diskon share direset
+            // hasResellerDiscount TIDAK direset di sini karena statusnya dari login reseller
+            document.getElementById('claim-button').disabled = false; // Reset tombol klaim diskon share
+            document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon"; // Reset teks tombol
+            
             if (!produkId) {
                 resetFormState();
                 return;
@@ -557,15 +570,18 @@ p<!DOCTYPE html>
             infoProduk.innerHTML = 'Memuat detail produk...';
             submitBtn.disabled = true;
             submitBtn.textContent = '...';
-            document.getElementById('product-promo-container').innerHTML = '';
+            document.getElementById('product-promo-container').innerHTML = ''; // Hapus promo produk sebelumnya
+            document.getElementById('reseller-discount-info').innerHTML = ''; // <--- BARU: Hapus info diskon reseller sebelumnya
+
             dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
                 if (!doc.exists) {
                     infoProduk.innerHTML = 'Produk tidak ditemukan.';
                     return;
                 }
                 produkTerpilihData = { id: doc.id, ...doc.data() };
-                updateTotalHarga();
-                checkDiskonShare();
+                updateTotalHarga(); // Panggil ini untuk menghitung harga setelah diskon reseller
+                checkDiskonShare(); // Cek diskon pembeli biasa (WA)
+                
                 if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                     submitBtn.textContent = 'Stok Habis';
                     submitBtn.disabled = true;
@@ -573,9 +589,10 @@ p<!DOCTYPE html>
                 } else {
                     submitBtn.textContent = 'Pesan Sekarang';
                     submitBtn.disabled = false;
+                    // Tampilkan promo produk jika ada
                     if (produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                         let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
-                        document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
+                        document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial Produk!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon Produk</button></div>`;
                     }
                 }
             });
@@ -585,16 +602,40 @@ p<!DOCTYPE html>
             if (!produkTerpilihData) return;
             let hargaAwal = produkTerpilihData.harga_reseller;
             let hargaFinal = hargaAwal;
-            let deskripsiHarga = `<b>Harga:</b> ${formatRupiah(hargaAwal)}`;
+            let deskripsiHarga = `<b>Harga Reseller:</b> ${formatRupiah(hargaAwal)}`;
+            let promoMessage = ''; // Untuk pesan promo di infoProduk
+            
+            // Prioritas 1: Promo Produk
             if (promoProdukTerpakai && produkTerpilihData.promo) {
                 let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
                 hargaFinal = Math.max(0, hargaAwal - potongan);
-                deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
-            } else if (diskonShareTerpakai) {
-                hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
-                deskripsiHarga = `<b>Harga Normal:</b> <del>${formatRupiah(hargaAwal)}</del><br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
+                deskripsiHarga = `<b>Harga Normal Reseller:</b> <del>${formatRupiah(hargaAwal)}</del><br>`;
+                promoMessage = `<b style="color:var(--success);">Harga Promo Produk: ${formatRupiah(hargaFinal)}</b>`;
+                // Pastikan diskon reseller info disembunyikan jika promo produk aktif
+                document.getElementById('reseller-discount-info').innerHTML = ''; 
+            } 
+            // Prioritas 2: Diskon Reseller (dari admin panel) - Jika tidak ada promo produk yang aktif
+            else if (hasResellerDiscount) { // <--- BARU: Cek diskon reseller
+                hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON);
+                deskripsiHarga = `<b>Harga Normal Reseller:</b> <del>${formatRupiah(hargaAwal)}</del><br>`;
+                promoMessage = `<b style="color:var(--success);">Harga Diskon Reseller: ${formatRupiah(hargaFinal)}</b>`;
+                // Tampilkan info diskon reseller di UI
+                document.getElementById('reseller-discount-info').innerHTML = `<div class="claim-promo-card" id="reseller-discount-badge"><p style="font-weight:600;">🎉 Anda memiliki Diskon Rp ${formatRupiah(POTONGAN_DISKON)}!</p><p>Diskon otomatis diterapkan.</p></div>`;
+                // Sembunyikan diskon share karena diskon reseller sudah otomatis
+                document.getElementById('claim-discount-section').style.display = 'none';
             }
-            infoProduk.innerHTML = `${deskripsiHarga}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
+            // Prioritas 3: Diskon Share (via WA) - Jika tidak ada promo produk atau diskon reseller aktif
+            else if (diskonShareTerpakai) {
+                hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON);
+                deskripsiHarga = `<b>Harga Normal Reseller:</b> <del>${formatRupiah(hargaAwal)}</del><br>`;
+                promoMessage = `<b style="color:var(--success);">Harga Diskon Sharing: ${formatRupiah(hargaFinal)}</b>`;
+                document.getElementById('reseller-discount-info').innerHTML = ''; // Pastikan badge diskon reseller dihapus
+            } else {
+                // Jika tidak ada diskon sama sekali
+                document.getElementById('reseller-discount-info').innerHTML = '';
+            }
+            
+            infoProduk.innerHTML = `${deskripsiHarga}${promoMessage}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
         }
         
         async function handleOrderSubmit(e) {
@@ -619,13 +660,19 @@ p<!DOCTYPE html>
                 let hargaAwal = produkTerpilihData.harga_reseller;
                 let hargaFinal = hargaAwal;
                 let promoDigunakan = null;
+                let diskonResellerDigunakan = false; // <--- BARU: Flag untuk diskon reseller
 
+                // Logika prioritas diskon di handleOrderSubmit juga harus sama dengan updateTotalHarga
                 if (promoProdukTerpakai && produkTerpilihData.promo) {
                     let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
                     hargaFinal = Math.max(0, hargaAwal - potongan);
                     promoDigunakan = produkTerpilihData.promo;
-                } else if (diskonShareTerpakai) {
-                    hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
+                } else if (hasResellerDiscount) { // <--- BARU: Logika diskon reseller
+                    hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON);
+                    diskonResellerDigunakan = true;
+                }
+                else if (diskonShareTerpakai) {
+                    hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON);
                 }
                 
                 const resellerDocRef = dbFS.collection('resellers').doc(loggedInReseller.uid);
@@ -651,6 +698,13 @@ p<!DOCTYPE html>
 
                     transaction.update(resellerDocRef, { saldo: newSaldo });
                     transaction.update(produkDocRef, { stok: newStok });
+
+                    // <--- BARU: Set punyaHakDiskon ke false setelah digunakan (jika diskon reseller yang dipakai)
+                    if (diskonResellerDigunakan) {
+                        transaction.update(resellerDocRef, { punyaHakDiskon: false });
+                    }
+                    // --- END BARU ---
+
                     pesananBerhasil = true;
                 });
                 
@@ -667,10 +721,11 @@ p<!DOCTYPE html>
                         produk: produkTerpilihData.nama_produk,
                         waktu: firebase.firestore.FieldValue.serverTimestamp(),
                         status: 'Selesai',
-                        harga_beli: hargaFinal,
-                        harga_jual: produkTerpilihData.harga_umum,
+                        harga_beli: hargaFinal, // Harga yang dibayarkan reseller
+                        harga_jual: produkTerpilihData.harga_umum, // Harga jual ke pelanggan (untuk referensi)
                         promo_digunakan: promoDigunakan,
-                        diskon_share: diskonShareTerpakai
+                        diskon_share: diskonShareTerpakai,
+                        diskon_reseller_promo: diskonResellerDigunakan // <--- BARU: Catat jika diskon reseller digunakan
                     });
                     
                     showNotification(`Pesanan berhasil! Saldo Anda berkurang sebesar ${formatRupiah(hargaFinal)}.`, 'success');
@@ -688,6 +743,9 @@ p<!DOCTYPE html>
                 showNotification(`Terjadi kesalahan. ${error.message}`, 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Pesan Sekarang';
+            } finally {
+                // Di sini kita tidak perlu mereset hasResellerDiscount karena itu akan di-update oleh onSnapshot
+                // saat transaksi selesai dan punyaHakDiskon di Firestore diubah.
             }
         }
 
@@ -695,6 +753,7 @@ p<!DOCTYPE html>
             produkTerpilihData = null;
             promoProdukTerpakai = false;
             diskonShareTerpakai = false;
+            // hasResellerDiscount tidak direset di sini karena berasal dari data reseller
             document.getElementById('claim-button').disabled = false;
             document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
             document.getElementById('claim-discount-section').style.display = 'none';
@@ -702,6 +761,8 @@ p<!DOCTYPE html>
             submitBtn.disabled = true;
             submitBtn.textContent = 'Pilih Produk Dahulu';
             document.getElementById('product-promo-container').innerHTML = '';
+            // <--- BARU: Pastikan info diskon reseller juga bersih
+            document.getElementById('reseller-discount-info').innerHTML = ''; 
             hideNotification();
         }
 
@@ -714,8 +775,10 @@ p<!DOCTYPE html>
                     return;
                 }
                 const faqData = snap.val();
-                if (Array.isArray(faqData)) {
-                    faqData.forEach(itemData => {
+                // Pastikan faqData adalah objek sebelum mengiterasi
+                if (typeof faqData === 'object' && faqData !== null) {
+                    // Convert object to array for consistent iteration
+                    Object.values(faqData).forEach(itemData => {
                         const item = document.createElement('div');
                         item.className = 'faq-item';
                         item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`;
@@ -743,10 +806,15 @@ p<!DOCTYPE html>
                 snap.forEach(childSnap => {
                     allTestimonials.push(childSnap.val());
                 });
-                allTestimonials.reverse();
-                if (testimonialInterval) clearInterval(testimonialInterval);
-                const testimonialInterval = setInterval(() => {
-                    if (allTestimonials.length === 0) return;
+                allTestimonials.reverse(); // Tampilkan yang terbaru dulu
+
+                // Clear previous interval if exists
+                if (window.currentTestimonialInterval) {
+                    clearInterval(window.currentTestimonialInterval);
+                }
+
+                if (allTestimonials.length > 0) {
+                    // Initial load
                     if (container.children.length > 6) {
                         container.firstChild.remove();
                     }
@@ -757,9 +825,25 @@ p<!DOCTYPE html>
                     container.appendChild(bubble);
                     container.scrollTop = container.scrollHeight;
                     currentIndex = (currentIndex + 1) % allTestimonials.length;
-                }, 4000);
+
+                    // Set interval for continuous display
+                    window.currentTestimonialInterval = setInterval(() => {
+                        if (allTestimonials.length === 0) return;
+                        if (container.children.length > 6) {
+                            container.firstChild.remove();
+                        }
+                        const testi = allTestimonials[currentIndex];
+                        const bubble = document.createElement('div');
+                        bubble.className = 'testimonial-bubble';
+                        bubble.innerHTML = `<div class="testimonial-header"><i class="fas fa-user-circle"></i><span class="testimonial-name">${testi.nama || 'Anonim'}</span></div><div class="testimonial-body">${testi.isi || ''}</div>`;
+                        container.appendChild(bubble);
+                        container.scrollTop = container.scrollHeight;
+                        currentIndex = (currentIndex + 1) % allTestimonials.length;
+                    }, 4000);
+                }
             });
         }
+
 
         async function handleTestimoniSubmit(e) {
             e.preventDefault();
@@ -797,14 +881,21 @@ p<!DOCTYPE html>
 
         window.klaimPromoProduk = () => {
             promoProdukTerpakai = true;
-            diskonShareTerpakai = false;
+            diskonShareTerpakai = false; // Memprioritaskan promo produk
+            hasResellerDiscount = false; // <--- BARU: Memprioritaskan promo produk
             document.getElementById('claim-discount-section').style.display = 'none';
+            document.getElementById('reseller-discount-info').innerHTML = ''; // <--- BARU: Sembunyikan badge diskon reseller
             updateTotalHarga();
             document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
         };
         
         async function checkDiskonShare() {
-            if (promoProdukTerpakai) return;
+            // Jika sudah ada promo produk atau diskon reseller, jangan tampilkan diskon share
+            if (promoProdukTerpakai || hasResellerDiscount) { // <--- BARU: Tambahkan hasResellerDiscount
+                document.getElementById('claim-discount-section').style.display = 'none';
+                return;
+            }
+
             const waInput = document.getElementById('waAktif');
             const claimSection = document.getElementById('claim-discount-section');
             const nomorWA = normalizePhone(waInput.value);
@@ -824,7 +915,9 @@ p<!DOCTYPE html>
         window.gunakanDiskonShare = () => {
             diskonShareTerpakai = true;
             promoProdukTerpakai = false;
+            hasResellerDiscount = false; // <--- BARU: Memprioritaskan diskon share jika diklaim manual
             document.getElementById('product-promo-container').innerHTML = '';
+            document.getElementById('reseller-discount-info').innerHTML = ''; // <--- BARU: Sembunyikan badge diskon reseller
             updateTotalHarga();
             document.getElementById('claim-button').disabled = true;
             document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
@@ -846,14 +939,15 @@ p<!DOCTYPE html>
                     }
                     snapshot.forEach(doc => {
                         const order = doc.data();
-                        const waktu = order.waktu ? new Date(order.waktu.toDate()).toLocaleString() : 'N/A';
+                        // Handle Firebase Timestamp or serverTimestamp
+                        const waktu = order.waktu ? (order.waktu.toDate ? order.waktu.toDate().toLocaleString() : new Date(order.waktu).toLocaleString()) : 'N/A';
                         const orderDiv = document.createElement('div');
                         orderDiv.className = 'info mb-3';
                         orderDiv.innerHTML = `
                             <p><b>ID Pesanan:</b> ${order.id}</p>
                             <p><b>Status:</b> ${order.status}</p>
                             <p><b>Produk:</b> ${order.produk}</p>
-                            <p><b>Harga:</b> ${formatRupiah(order.harga_final)}</p>
+                            <p><b>Harga:</b> ${formatRupiah(order.harga_beli)}</p>
                             <p><b>Waktu:</b> ${waktu}</p>
                         `;
                         container.appendChild(orderDiv);
