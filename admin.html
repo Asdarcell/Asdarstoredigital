@@ -55,6 +55,23 @@
             border: 1px solid var(--border);
             border-radius: 8px;
         }
+        .nav-tabs .nav-link {
+            position: relative;
+        }
+        .nav-tabs .nav-link .badge {
+            position: absolute;
+            top: 5px; /* Sesuaikan posisi vertikal */
+            right: 5px; /* Sesuaikan posisi horizontal */
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.375rem;
+            transform: translate(50%, -50%); /* Menggeser badge agar di pojok */
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -328,11 +345,11 @@
         //  KONFIGURASI FIREBASE DAN FUNGSI UMUM
         // ==========================================================
         const firebaseConfig = {
-          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Firebase Anda
-          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-          projectId: "asdarstoredigitalll-d89c4",
-          storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Pastikan ada jika menggunakan Firebase Storage
+          apiKey: "YOUR_API_KEY", // Ganti dengan API Key Firebase Anda
+          authDomain: "YOUR_AUTH_DOMAIN",
+          databaseURL: "YOUR_DATABASE_URL",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET" // Pastikan ada jika menggunakan Firebase Storage
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -392,7 +409,7 @@
         function updateBadge(badgeElement, count) {
             if (count > 0) {
                 badgeElement.textContent = count;
-                badgeElement.style.display = 'inline';
+                badgeElement.style.display = 'inline'; // Atau 'inline-block'
             } else {
                 badgeElement.style.display = 'none';
             }
@@ -686,11 +703,10 @@
         const verificationTableBody = document.getElementById('verification-table-body');
 
         function loadPendingResellers() {
-            // Listener untuk badge notifikasi
+            // Listener untuk badge notifikasi dan tabel
             dbFS.collection('resellers').where('status', '==', 'pending-approval').onSnapshot(s => {
                 updateBadge(verificationCountBadge, s.size); // Perbarui badge
 
-                // Listener untuk tabel
                 verificationTableBody.innerHTML = '';
                 if (s.empty) {
                     verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Tidak ada pendaftar yang menunggu verifikasi.</td></tr>`;
@@ -768,7 +784,7 @@
         // =================================== TOP UP (Firestore) ===================================
         const topupTableBody = document.querySelector('#topup-table tbody');
         function loadTopupConfirmations() {
-            // Listener untuk badge notifikasi
+            // Listener untuk badge notifikasi (hanya menghitung yang pending)
             dbFS.collection('konfirmasiTopup').where('status', '==', 'pending').onSnapshot(pendingSnapshot => {
                 updateBadge(topupCountBadge, pendingSnapshot.size); // Perbarui badge
             }, e => {
@@ -854,7 +870,7 @@
                     setButtonLoading(btn, false);
                 }
             }
-        }
+            }
 
         // =================================== PESANAN (Firestore) ===================================
         const ordersTableBody = document.querySelector('#orders-table-body');
@@ -863,19 +879,12 @@
 
         function loadOrders() {
             // Listener untuk badge notifikasi
-            Promise.all([
-                dbFS.collection('pesananUmum').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).get(),
-                dbFS.collection('pesananReseller').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).get()
-            ])
-            .then(([umumPendingSnapshot, resellerPendingSnapshot]) => {
-                const totalPendingOrders = umumPendingSnapshot.size + resellerPendingSnapshot.size;
-                updateBadge(ordersCountBadge, totalPendingOrders);
-            })
-            .catch(e => {
-                console.error("Error fetching pending orders for badge:", e);
-                updateBadge(ordersCountBadge, 0);
+            dbFS.collection('pesananUmum').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).onSnapshot(umumPendingSnapshot => {
+                dbFS.collection('pesananReseller').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).onSnapshot(resellerPendingSnapshot => {
+                    const totalPendingOrders = umumPendingSnapshot.size + resellerPendingSnapshot.size;
+                    updateBadge(ordersCountBadge, totalPendingOrders); // <--- INI PENTING!
+                });
             });
-
 
             // Mengambil pesanan dari kedua koleksi dan menggabungkannya
             // Menggunakan onSnapshot untuk real-time update pada tabel juga
@@ -1019,7 +1028,7 @@
             cancelTestimonialEditBtn.style.display = 'none';
         });
 
-        function editTestimonial(id) {
+        function editTestimoni(id) {
             dbRT.ref('testimonials/' + id).once('value', s => {
                 if(s.exists()){
                     const item = s.val();
@@ -1095,7 +1104,7 @@
             };
 
             const promise = currentFaqId
-                ? dbRT.ref('faq/' + currentFaqId).update(data)
+                ? dbRT.ref('faq/' + currentFqaId).update(data)
                 : dbRT.ref('faq').push(data);
             
             promise.then(() => {
@@ -1485,4 +1494,4 @@
         }
     </script>
 </body>
-    </html>
+                                                                                                                             </html>
