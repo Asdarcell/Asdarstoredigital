@@ -877,9 +877,20 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
-                const customerName = isResellerOrder ? (order.nama_reseller || order.email_reseller || order.nama) : (order.nama_pelanggan || order.nama);
-                const price = isResellerOrder ? order.harga_beli : order.harga_final; // Sesuaikan dengan field harga di data Anda
+                
+                let customerName;
+                if (isResellerOrder) {
+                    // Untuk pesanan reseller, cari nama reseller terlebih dahulu
+                    // Cek urutan prioritas: nama_reseller, lalu email_reseller, atau fallback ke 'Reseller Anonim'
+                    customerName = order.nama_reseller || order.email_reseller || 'Reseller Anonim';
+                } else {
+                    // Untuk pesanan umum, gunakan nama_pelanggan, atau fallback ke 'Pembeli Anonim'
+                    customerName = order.nama_pelanggan || order.nama || 'Pembeli Anonim';
+                }
 
+                // Untuk harga, pastikan menggunakan harga_final untuk umum dan harga_beli untuk reseller
+                const price = isResellerOrder ? (order.harga_beli || 0) : (order.harga_final || 0); 
+                
                 const row = ordersTableBody.insertRow();
                 row.innerHTML = `
                     <td>
@@ -1439,4 +1450,4 @@
         }
     </script>
 </body>
-                                                             </html>
+    </html>
