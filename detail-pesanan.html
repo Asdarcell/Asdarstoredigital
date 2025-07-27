@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; --danger: #e74c3c; --info: #17a2b8; }
+        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; --danger: #e74c3c; }
         [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
         .container { margin-top: 30px; }
@@ -19,9 +19,7 @@
         .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
         .status-diproses { background-color: #3498db; color: white; }
         .status-selesai { background-color: #28a745; color: white; }
-        .status-dibatalkan, .status-ditolak, .status-gagal { background-color: #e74c3c; color: white; }
-        /* Tambahan untuk status baru */
-        .status-notifikasi-terkirim-&-diproses { background-color: #007bff; color: white; }
+        .status-dibatalkan, .status-ditolak { background-color: #e74c3c; color: white; }
         .img-proof { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
@@ -42,7 +40,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Firebase Anda
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
@@ -51,14 +49,14 @@
     const dbFS = firebase.firestore();
 
     // === PENGATURAN CLOUDINARY ===
-    const CLOUDINARY_CLOUD_NAME = "duki2bxqr"; // Ganti dengan Cloud Name Anda
-    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq"; // Ganti dengan Upload Preset Anda
+    const CLOUDINARY_CLOUD_NAME = "duki2bxqr";
+    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq";
     
-    // --- PERBAIKAN TYPO: no_whatsap_aktif menjadi no_whatsapp_aktif ---
+    // --- KOREKSI TYPO DI SINI: no_whatsap_aktif menjadi no_whatsapp_aktif ---
     const NAMA_KOLOM_WHATSAPP = 'no_whatsapp_aktif'; 
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
-    let currentOrderDoc; // Untuk menyimpan referensi dan data pesanan yang sedang dilihat
+    let currentOrderDoc;
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
@@ -87,34 +85,20 @@
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        if (!orderId) { 
-            loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan di URL.</h2>'; 
-            return; 
-        }
-
+        if (!orderId) { loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>'; return; }
         try {
-            // Mencoba di koleksi pesananUmum terlebih dahulu
             let docRef = dbFS.collection('pesananUmum').doc(orderId);
             let doc = await docRef.get();
-            let orderType = 'umum';
-
-            // Jika tidak ditemukan di pesananUmum, coba di pesananReseller
+            let orderType = 'umum'; // Default type
             if (!doc.exists) {
                 docRef = dbFS.collection('pesananReseller').doc(orderId);
                 doc = await docRef.get();
-                orderType = 'reseller';
+                orderType = 'reseller'; // Set type if found in reseller collection
             }
-            
-            // Jika tetap tidak ditemukan
-            if (!doc.exists) { 
-                loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan di database.</h2>'; 
-                return; 
-            }
-
-            currentOrderDoc = { ref: docRef, data: doc.data(), id: doc.id, type: orderType }; // Simpan tipe pesanan juga
+            if (!doc.exists) { loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>'; return; }
+            currentOrderDoc = { ref: docRef, data: doc.data(), id: doc.id, type: orderType }; // Simpan tipe pesanan
             loadingMessage.style.display = 'none';
             renderOrderDetails(doc.id, doc.data());
-
         } catch (error) {
             console.error("Error loading order details:", error);
             loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Error: ${error.message}</p>`;
@@ -123,15 +107,16 @@
 
     function renderOrderDetails(orderId, data) {
         let statusClass = `status-${(data.status || '').toLowerCase().replace(/ /g, '-')}`;
-        // Sesuaikan nama pelanggan dan nomor WhatsApp berdasarkan tipe pesanan
         const isResellerOrder = currentOrderDoc.type === 'reseller';
         const customerName = isResellerOrder ? (data.nama_reseller || data.email_reseller || data.nama_pelanggan || 'N/A') : (data.nama_pelanggan || 'N/A');
         const customerInfo = isResellerOrder ? `<strong>Reseller:</strong> ${customerName}<br><strong>Pelanggan:</strong> ${data.nama_pelanggan || 'N/A'}` : `<strong>Pelanggan:</strong> ${customerName}`;
         
         const price = formatRupiah(data.harga_final || data.harga_beli || 0);
         
-        let targetId = data.nomor_pelanggan || data.id_game || data.target || 'N/A'; // Fleksibel untuk ID Game/Target
-        let contactWhatsapp = data[NAMA_KOLOM_WHATSAPP] || data.no_whatsapp || data.whatsapp_aktif || data.nomor_hp || 'N/A'; // Fleksibel untuk nomor WA
+        // --- Periksa urutan dan keberadaan field di sini sesuai Firestore Anda ---
+        let targetId = data.target || data.id_game || data.nomor_pelanggan || 'N/A';
+        let contactWhatsapp = data[NAMA_KOLOM_WHATSAPP] || data.no_whatsapp || data.whatsapp_aktif || data.nomor_hp || 'N/A';
+
 
         orderDetailsRow.innerHTML = `
             <div class="col-md-8 mb-4">
@@ -160,13 +145,12 @@
                 <div class="card p-4 h-100">
                     <h4 class="card-title">Aksi Admin</h4><hr>
                     <div class="d-grid gap-2">
-                        <button class="btn btn-info btn-sm" onclick="sendWhatsAppAndProcess()"><i class="fab fa-whatsapp"></i> Kirim Notif WA & Set Proses</button>
+                        <button class="btn btn-warning btn-sm" onclick="updateStatus('Menunggu Verifikasi')">Verifikasi</button>
+                        <button class="btn btn-primary btn-sm" onclick="updateStatus('Diproses')">Diproses</button>
+                        <button class="btn btn-success btn-sm" onclick="updateStatus('Selesai')">Selesai</button>
+                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Dibatalkan')">Dibatalkan</button>
                         <hr>
-                        <button class="btn btn-warning btn-sm" onclick="updateStatus('Menunggu Verifikasi')">Set Menunggu Verifikasi</button>
-                        <button class="btn btn-primary btn-sm" onclick="updateStatus('Diproses')">Set Diproses</button>
-                        <button class="btn btn-success btn-sm" onclick="updateStatus('Selesai')">Set Selesai</button>
-                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Gagal')">Set Gagal</button>
-                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Dibatalkan')">Set Dibatalkan</button>
+                        <button class="btn btn-info btn-sm" onclick="sendWhatsAppAndProcess()">Kirim Notifikasi WA & Set Proses</button>
                     </div>
                 </div>
             </div>
