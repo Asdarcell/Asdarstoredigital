@@ -66,13 +66,13 @@
                 <li class="nav-item" role="presentation"><button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">Produk</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="active-resellers-tab" data-bs-toggle="tab" data-bs-target="#active-resellers" type="button" role="tab">Reseller Aktif</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="verification-tab" data-bs-toggle="tab" data-bs-target="#verification" type="button" role="tab">Verifikasi <span id="verification-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" id="topup-tab" data-bs-toggle="tab" data-bs-target="#topup" type="button" role="tab">Top Up</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">Pesanan</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="topup-tab" data-bs-toggle="tab" data-bs-target="#topup" type="button" role="tab">Top Up <span id="topup-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">Pesanan <span id="orders-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="testimonials-tab" data-bs-toggle="tab" data-bs-target="#testimonials" type="button" role="tab">Testimoni</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="faq-tab" data-bs-toggle="tab" data-bs-target="#faq" type="button" role="tab">FAQ</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Pembayaran</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="promo-management-tab" data-bs-toggle="tab" data-bs-target="#promo-management" type="button" role="tab">Manajemen Promo</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" id="gift-claims-tab" data-bs-toggle="tab" data-bs-target="#gift-claims" type="button" role="tab">Klaim Hadiah Buyer</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="gift-claims-tab" data-bs-toggle="tab" data-bs-target="#gift-claims" type="button" role="tab">Klaim Hadiah Buyer <span id="gift-claims-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="banners-tab" data-bs-toggle="tab" data-bs-target="#banners" type="button" role="tab">Banner</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="custom-code-tab" data-bs-toggle="tab" data-bs-target="#custom-code" type="button" role="tab">Kode Kustom</button></li>
             </ul>
@@ -382,36 +382,56 @@
             }
         }
 
+        // ====================================== VARIABEL BADGE NOTIFIKASI ======================================
+        const verificationCountBadge = document.getElementById('verification-count');
+        const topupCountBadge = document.getElementById('topup-count');
+        const ordersCountBadge = document.getElementById('orders-count');
+        const giftClaimsCountBadge = document.getElementById('gift-claims-count');
+
+        // Fungsi pembantu untuk memperbarui badge notifikasi
+        function updateBadge(badgeElement, count) {
+            if (count > 0) {
+                badgeElement.textContent = count;
+                badgeElement.style.display = 'inline';
+            } else {
+                badgeElement.style.display = 'none';
+            }
+        }
+
+
         // ====================================== MANAJEMEN TABS & PEMUATAN DATA AWAL ======================================
         document.addEventListener('DOMContentLoaded', () => {
             // Muat data untuk semua tab saat halaman dimuat
             loadProducts();
             loadResellers();
-            loadTopupConfirmations();
-            loadOrders();
+            loadPendingResellers(); // Menggunakan listener real-time di sini
+            loadTopupConfirmations(); // Menggunakan listener real-time di sini
+            loadOrders(); // Menggunakan listener real-time di sini
             loadTestimonials();
             loadFaq();
             loadPaymentMethods();
             loadBanners();
-            loadPendingResellers(); 
             loadCustomFeatures();
-            loadGiftClaims(); // Panggil fungsi baru untuk memuat klaim hadiah
+            loadGiftClaims(); // Menggunakan listener real-time di sini
 
             // Setup event listeners untuk form baru
             setupPromoManagementForms();
         });
 
-        // Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik)
+        // Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik,
+        // meskipun beberapa sudah menggunakan listener real-time global)
         document.getElementById('products-tab').addEventListener('click', loadProducts);
         document.getElementById('active-resellers-tab').addEventListener('click', loadResellers);
+        // Verification, Top Up, Orders, Gift Claims sudah pakai onSnapshot global,
+        // jadi klik tab akan memuat ulang tabel saja, bukan notifikasi
         document.getElementById('verification-tab').addEventListener('click', loadPendingResellers);
         document.getElementById('topup-tab').addEventListener('click', loadTopupConfirmations);
         document.getElementById('orders-tab').addEventListener('click', loadOrders);
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms); // Memanggil ulang setup form jika perlu
-        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims); // Tambahkan ini
+        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms);
+        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims);
         document.getElementById('banners-tab').addEventListener('click', loadBanners);
         document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
 
@@ -449,25 +469,20 @@
             if (buyerPromoForm) {
                 buyerPromoForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    // --- PERUBAHAN DI SINI: MENGAMBIL NOMOR WHATSAPP ---
-                    // Mengambil nilai dari input nomor WhatsApp (bukan email)
-                    const whatsappNumberInput = document.getElementById('buyer-promo-whatsapp'); // Menggunakan id yang baru
+                    const whatsappNumberInput = document.getElementById('buyer-promo-whatsapp');
                     const rawWhatsappNumber = whatsappNumberInput.value.trim();
                     const button = e.target.querySelector('[type=submit]');
                     setButtonLoading(button, true);
 
-                    // Fungsi untuk menormalisasi nomor WA (dari '08...' ke '628...')
                     const normalizePhone = (num) => {
                         let n = String(num).trim().replace(/[^0-9]/g, '');
                         if (n.startsWith('0')) return '62' + n.slice(1);
                         if (n.startsWith('62')) return n;
-                        // Jika sudah dalam format internasional tanpa +, atau format lain, kembalikan apa adanya
                         return num;
                     };
 
                     const normalizedWhatsappNumber = normalizePhone(rawWhatsappNumber);
 
-                    // Validasi sederhana untuk nomor WhatsApp
                     if (!normalizedWhatsappNumber || normalizedWhatsappNumber.length < 10) {
                         showToast('Nomor WhatsApp tidak valid. Masukkan nomor yang benar (diawali 08...).', 'danger');
                         setButtonLoading(button, false);
@@ -475,10 +490,7 @@
                     }
 
                     try {
-                        // --- PERUBAHAN DI SINI: MENULIS KE REALTIME DATABASE ---
-                        // Menulis 'true' ke Realtime Database di path 'hakDiskon/<normalized_whatsapp_number>'
                         await dbRT.ref('hakDiskon/' + normalizedWhatsappNumber).set(true);
-
                         showToast(`Hak diskon berhasil diberikan kepada pembeli: ${rawWhatsappNumber}`, 'success');
                         buyerPromoForm.reset();
                     } catch (error) {
@@ -672,18 +684,18 @@
         
         // =================================== VERIFIKASI RESELLER (Firestore) ===================================
         const verificationTableBody = document.getElementById('verification-table-body');
-        const verificationCountBadge = document.getElementById('verification-count');
 
         function loadPendingResellers() {
+            // Listener untuk badge notifikasi
             dbFS.collection('resellers').where('status', '==', 'pending-approval').onSnapshot(s => {
+                updateBadge(verificationCountBadge, s.size); // Perbarui badge
+
+                // Listener untuk tabel
                 verificationTableBody.innerHTML = '';
                 if (s.empty) {
                     verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Tidak ada pendaftar yang menunggu verifikasi.</td></tr>`;
-                    verificationCountBadge.style.display = 'none';
                     return;
                 }
-                verificationCountBadge.textContent = s.size;
-                verificationCountBadge.style.display = 'inline';
                 s.forEach(d => {
                     const r = d.data();
                     const uid = d.id; // UID reseller adalah ID dokumen
@@ -704,6 +716,7 @@
                 });
             }, e => {
                 verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal memuat data verifikasi: ${e.message}</td></tr>`;
+                updateBadge(verificationCountBadge, 0); // Sembunyikan badge jika ada error
             });
         }
 
@@ -755,6 +768,15 @@
         // =================================== TOP UP (Firestore) ===================================
         const topupTableBody = document.querySelector('#topup-table tbody');
         function loadTopupConfirmations() {
+            // Listener untuk badge notifikasi
+            dbFS.collection('konfirmasiTopup').where('status', '==', 'pending').onSnapshot(pendingSnapshot => {
+                updateBadge(topupCountBadge, pendingSnapshot.size); // Perbarui badge
+            }, e => {
+                console.error("Error fetching pending topups for badge:", e);
+                updateBadge(topupCountBadge, 0);
+            });
+
+            // Listener untuk mengisi tabel (menampilkan semua status)
             dbFS.collection('konfirmasiTopup').orderBy('created_at', 'desc').onSnapshot(s => {
                 topupTableBody.innerHTML = '';
                 if (s.empty) {
@@ -763,7 +785,7 @@
                 s.forEach(d => {
                     const k = { id: d.id, ...d.data() };
                     const r = topupTableBody.insertRow();
-                    const statusClass = `status-${k.status.replace(' ', '-')}`;
+                    const statusClass = `status-${k.status.replace(/ /g, '-')}`;
                     r.innerHTML = `
                         <td><code>${k.id.substring(0,6)}...</code></td>
                         <td>${k.reseller_email}</td>
@@ -840,26 +862,41 @@
         let allOrdersData = []; // Menyimpan semua data pesanan untuk filtering lokal
 
         function loadOrders() {
-            // Mengambil pesanan dari kedua koleksi dan menggabungkannya
+            // Listener untuk badge notifikasi
             Promise.all([
-                dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
-                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
+                dbFS.collection('pesananUmum').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).get(),
+                dbFS.collection('pesananReseller').where('status', 'in', ['pending', 'belum-bayar', 'pending-upload']).get()
             ])
-            .then(([umumSnapshot, resellerSnapshot]) => {
-                let combinedOrders = [];
-                umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
-                resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
-
-                // Urutkan berdasarkan waktu (yang terbaru di atas)
-                allOrdersData = combinedOrders.sort((a, b) => {
-                    const timeA = a.waktu ? (a.waktu.toDate ? a.waktu.toDate().getTime() : a.waktu.getTime()) : 0;
-                    const timeB = b.waktu ? (b.waktu.toDate ? b.waktu.toDate().getTime() : b.waktu.getTime()) : 0;
-                    return timeB - timeA;
-                });
-                renderOrders(allOrdersData);
+            .then(([umumPendingSnapshot, resellerPendingSnapshot]) => {
+                const totalPendingOrders = umumPendingSnapshot.size + resellerPendingSnapshot.size;
+                updateBadge(ordersCountBadge, totalPendingOrders);
             })
             .catch(e => {
-                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${e.message}</td></tr>`;
+                console.error("Error fetching pending orders for badge:", e);
+                updateBadge(ordersCountBadge, 0);
+            });
+
+
+            // Mengambil pesanan dari kedua koleksi dan menggabungkannya
+            // Menggunakan onSnapshot untuk real-time update pada tabel juga
+            dbFS.collection('pesananUmum').orderBy('waktu', 'desc').onSnapshot(umumSnapshot => {
+                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').onSnapshot(resellerSnapshot => {
+                    let combinedOrders = [];
+                    umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
+                    resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+
+                    // Urutkan berdasarkan waktu (yang terbaru di atas)
+                    allOrdersData = combinedOrders.sort((a, b) => {
+                        const timeA = a.waktu ? (a.waktu.toDate ? a.waktu.toDate().getTime() : a.waktu.getTime()) : 0;
+                        const timeB = b.waktu ? (b.waktu.toDate ? b.waktu.toDate().getTime() : b.waktu.getTime()) : 0;
+                        return timeB - timeA;
+                    });
+                    renderOrders(allOrdersData);
+                }, e => {
+                    ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan reseller: ${e.message}</td></tr>`;
+                });
+            }, e => {
+                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan umum: ${e.message}</td></tr>`;
             });
         }
 
@@ -910,7 +947,7 @@
                 try {
                     await dbFS.collection(collectionName).doc(id).delete();
                     showToast('Pesanan berhasil dihapus.', 'warning');
-                    loadOrders(); // Muat ulang semua pesanan setelah penghapusan
+                    // loadOrders() akan otomatis memuat ulang karena onSnapshot
                 } catch (e) {
                     showToast('Gagal menghapus pesanan: ' + e.message, 'danger');
                 } finally {
@@ -1000,7 +1037,7 @@
                 await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' });
                 showToast('Testimoni berhasil disetujui dan ditampilkan!', 'success');
             } catch (e) {
-                showToast('Gagal menyetujui testimoni: ' + e.message, 'danger');
+                showToast('Gagal menyetujoni testimoni: ' + e.message, 'danger');
             } finally {
                 setButtonLoading(btn, false);
             }
@@ -1185,6 +1222,15 @@
         const giftClaimsTableBody = document.querySelector('#gift-claims-table tbody');
 
         function loadGiftClaims() {
+            // Listener untuk badge notifikasi
+            dbFS.collection('klaimHadiahBuyer').where('status', '==', 'menunggu-verifikasi').onSnapshot(pendingSnapshot => {
+                updateBadge(giftClaimsCountBadge, pendingSnapshot.size); // Perbarui badge
+            }, e => {
+                console.error("Error fetching pending gift claims for badge:", e);
+                updateBadge(giftClaimsCountBadge, 0);
+            });
+
+            // Listener untuk mengisi tabel (menampilkan semua status)
             dbFS.collection('klaimHadiahBuyer').orderBy('waktuKlaim', 'desc').onSnapshot(s => {
                 giftClaimsTableBody.innerHTML = '';
                 if (s.empty) {
