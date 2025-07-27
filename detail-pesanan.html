@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; --danger: #e74c3c; }
+        :root { --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db; --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05); --success: #28a745; --danger: #e74c3c; --info: #17a2b8; }
         [data-theme="dark"] { --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c; --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15); }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
         .container { margin-top: 30px; }
@@ -19,7 +19,8 @@
         .status-menunggu-verifikasi { background-color: #ffc107; color: black; }
         .status-diproses { background-color: #3498db; color: white; }
         .status-selesai { background-color: #28a745; color: white; }
-        .status-dibatalkan, .status-ditolak { background-color: #e74c3c; color: white; }
+        .status-dibatalkan, .status-ditolak, .status-gagal { background-color: #e74c3c; color: white; }
+        .status-notifikasi-terkirim-dan-diproses { background-color: #007bff; color: white; }
         .img-proof { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
@@ -40,7 +41,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Firebase Anda
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
@@ -49,18 +50,17 @@
     const dbFS = firebase.firestore();
 
     // === PENGATURAN CLOUDINARY ===
-    const CLOUDINARY_CLOUD_NAME = "duki2bxqr";
-    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq";
+    const CLOUDINARY_CLOUD_NAME = "duki2bxqr"; // Ganti dengan Cloud Name Anda
+    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq"; // Ganti dengan Upload Preset Anda
     
-    // --- KOREKSI TYPO DI SINI: no_whatsap_aktif menjadi no_whatsapp_aktif ---
-    const NAMA_KOLOM_WHATSAPP = 'no_whatsap_aktif'; 
+    const NAMA_KOLOM_WHATSAPP = 'no_whatsap_aktif'; // Sesuai dengan nama field di Firestore Anda
     const orderDetailsRow = document.getElementById('order-details-row');
     const loadingMessage = document.getElementById('loading-message');
-    let currentOrderDoc;
+    let currentOrderDoc; // Untuk menyimpan referensi dan data pesanan yang sedang dilihat
 
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    // === FUNGSI BARU UNTUK UPLOAD KE CLOUDINARY ===
+    // === FUNGSI UNTUK UPLOAD KE CLOUDINARY ===
     async function uploadToCloudinary(file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -85,20 +85,46 @@
     async function loadOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        if (!orderId) { loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan.</h2>'; return; }
+        if (!orderId) { 
+            loadingMessage.innerHTML = '<h2>ID Pesanan tidak ditemukan di URL.</h2>'; 
+            return; 
+        }
+
         try {
+            // Mencoba di koleksi pesananUmum terlebih dahulu
             let docRef = dbFS.collection('pesananUmum').doc(orderId);
             let doc = await docRef.get();
-            let orderType = 'umum'; // Default type
+            let orderType = 'umum';
+
+            // Jika tidak ditemukan di pesananUmum, coba di pesananReseller
             if (!doc.exists) {
                 docRef = dbFS.collection('pesananReseller').doc(orderId);
                 doc = await docRef.get();
-                orderType = 'reseller'; // Set type if found in reseller collection
+                orderType = 'reseller';
             }
-            if (!doc.exists) { loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan.</h2>'; return; }
-            currentOrderDoc = { ref: docRef, data: doc.data(), id: doc.id, type: orderType }; // Simpan tipe pesanan
+            
+            // Jika tetap tidak ditemukan
+            if (!doc.exists) { 
+                loadingMessage.innerHTML = '<h2>Pesanan tidak ditemukan di database.</h2>'; 
+                return; 
+            }
+
+            // Simpan data mentah dari Firestore di currentOrderDoc.data agar selalu up-to-date
+            currentOrderDoc = { ref: docRef, data: doc.data(), id: doc.id, type: orderType }; 
             loadingMessage.style.display = 'none';
             renderOrderDetails(doc.id, doc.data());
+
+            // Tambahkan listener untuk perubahan realtime pada dokumen pesanan
+            docRef.onSnapshot((docSnapshot) => {
+                if (docSnapshot.exists) {
+                    currentOrderDoc.data = docSnapshot.data(); // Perbarui data secara realtime
+                    renderOrderDetails(docSnapshot.id, docSnapshot.data()); // Render ulang tampilan
+                } else {
+                    // Jika dokumen tidak ada lagi (mungkin dihapus), tampilkan pesan
+                    orderDetailsRow.innerHTML = '<div class="col-md-12 text-center"><h2>Pesanan ini telah dihapus.</h2></div>';
+                }
+            });
+
         } catch (error) {
             console.error("Error loading order details:", error);
             loadingMessage.innerHTML = `<h2>Terjadi kesalahan saat memuat data.</h2><p>Error: ${error.message}</p>`;
@@ -113,10 +139,19 @@
         
         const price = formatRupiah(data.harga_final || data.harga_beli || 0);
         
-        // --- Periksa urutan dan keberadaan field di sini sesuai Firestore Anda ---
-        let targetId = data.target || data.id_game || data.nomor_pelanggan || 'N/A';
-        let contactWhatsapp = data[NAMA_KOLOM_WHATSAPP] || data.no_whatsapp || data.whatsapp_aktif || data.nomor_hp || 'N/A';
+        let targetId = data.nomor_pelanggan || data.id_game || data.target || 'N/A';
+        let contactWhatsapp = data[NAMA_KOLOM_WHATSAPP] || data.no_whatsapp || data.whatsapp_aktif || data.nomor_hp || 'N/A'; 
 
+        // Tentukan metode pembayaran
+        let paymentMethod;
+        if (isResellerOrder) {
+            paymentMethod = 'Saldo';
+        } else {
+            paymentMethod = data.metode_pembayaran || 'N/A';
+        }
+
+        // Hitung profit reseller (harga_final - harga_beli)
+        const profitReseller = (data.harga_final || 0) - (data.harga_beli || 0);
 
         orderDetailsRow.innerHTML = `
             <div class="col-md-8 mb-4">
@@ -128,15 +163,15 @@
                         <li class="list-group-item"><strong>Target / ID Game:</strong> ${targetId}</li>
                         <li class="list-group-item"><strong>No WhatsApp Aktif:</strong> ${contactWhatsapp}</li>
                         <li class="list-group-item"><strong>Produk:</strong> ${data.produk || 'N/A'}</li>
-                        <li class="list-group-item"><strong>Service:</strong> ${data.service || 'N/A'}</li>
+                        
                         <li class="list-group-item"><strong>Harga:</strong> ${price}</li>
                         <li class="list-group-item"><strong>Status:</strong> <span class="status-badge ${statusClass}">${data.status || 'N/A'}</span></li>
                         <li class="list-group-item"><strong>Waktu Pesanan:</strong> ${data.waktu ? new Date(data.waktu.toDate()).toLocaleString('id-ID') : 'N/A'}</li>
-                        <li class="list-group-item"><strong>Metode Pembayaran:</strong> ${data.metode_pembayaran || 'N/A'}</li>
-                        <li class="list-group-item"><strong>Catatan:</strong> ${data.catatan || 'Tidak ada'}</li>
+                        <li class="list-group-item"><strong>Metode Pembayaran:</strong> ${paymentMethod}</li>
+                        
                         ${isResellerOrder ? `
                             <li class="list-group-item"><strong>Harga Beli Reseller:</strong> ${formatRupiah(data.harga_beli || 0)}</li>
-                            <li class="list-group-item"><strong>Profit Reseller:</strong> ${formatRupiah((data.harga_final || 0) - (data.harga_beli || 0))}</li>
+                            <li class="list-group-item"><strong>Profit Reseller:</strong> ${formatRupiah(profitReseller)}</li>
                         ` : ''}
                     </ul>
                 </div>
@@ -145,12 +180,13 @@
                 <div class="card p-4 h-100">
                     <h4 class="card-title">Aksi Admin</h4><hr>
                     <div class="d-grid gap-2">
-                        <button class="btn btn-warning btn-sm" onclick="updateStatus('Menunggu Verifikasi')">Verifikasi</button>
-                        <button class="btn btn-primary btn-sm" onclick="updateStatus('Diproses')">Diproses</button>
-                        <button class="btn btn-success btn-sm" onclick="updateStatus('Selesai')">Selesai</button>
-                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Dibatalkan')">Dibatalkan</button>
+                        <button class="btn btn-warning btn-sm" onclick="updateStatus('Menunggu Verifikasi')">Set Menunggu Verifikasi</button>
+                        <button class="btn btn-primary btn-sm" onclick="updateStatus('Diproses')">Set Diproses</button>
+                        <button class="btn btn-success btn-sm" onclick="updateStatus('Selesai')">Set Selesai</button>
+                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Gagal')">Set Gagal</button>
+                        <button class="btn btn-danger btn-sm" onclick="updateStatus('Dibatalkan')">Set Dibatalkan</button>
                         <hr>
-                        <button class="btn btn-info btn-sm" onclick="sendWhatsAppAndProcess()">Kirim Notifikasi WA & Set Proses</button>
+                        <button class="btn btn-info btn-sm" onclick="sendWhatsAppNotification()"><i class="fab fa-whatsapp"></i> Kirim Notifikasi WA</button>
                     </div>
                 </div>
             </div>
@@ -179,7 +215,7 @@
         }
         if (!confirm(`Yakin ingin mengubah status menjadi "${newStatus}"?`)) return;
         
-        const button = event.target; // Dapatkan tombol yang diklik
+        const button = event.target; 
         button.disabled = true;
         const originalText = button.innerHTML;
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
@@ -187,13 +223,7 @@
         try {
             await currentOrderDoc.ref.update({ status: newStatus, waktu_perubahan_status: firebase.firestore.FieldValue.serverTimestamp() });
             alert(`Status berhasil diubah menjadi "${newStatus}"!`);
-            // Update UI secara langsung
-            const statusBadge = document.querySelector('.status-badge');
-            if (statusBadge) {
-                statusBadge.textContent = newStatus;
-                // Hapus semua kelas status lama dan tambahkan yang baru
-                statusBadge.className = `status-badge status-${newStatus.toLowerCase().replace(/ /g, '-')}`;
-            }
+            // UI akan diperbarui secara otomatis oleh onSnapshot di loadOrderDetails
         } catch (error) {
             console.error("Error updating status:", error);
             alert("Gagal mengubah status: " + error.message);
@@ -212,16 +242,13 @@
         uploadButton.disabled = true;
         uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Unggah...';
         try {
-            const downloadURL = await uploadToCloudinary(file); // Memanggil fungsi Cloudinary
+            const downloadURL = await uploadToCloudinary(file); 
             await currentOrderDoc.ref.update({
                 bukti_pengiriman_url: downloadURL,
                 waktu_pengiriman_bukti: firebase.firestore.FieldValue.serverTimestamp()
             });
             alert("Bukti pengiriman berhasil diunggah!");
-            const proofContainer = document.getElementById('bukti-pengiriman-container');
-            if (proofContainer) {
-                proofContainer.innerHTML = `<a href="${downloadURL}" target="_blank"><img src="${downloadURL}" alt="Bukti Pengiriman" class="img-fluid img-proof"></a>`;
-            }
+            // UI akan diperbarui secara otomatis oleh onSnapshot di loadOrderDetails
         } catch (error) {
             console.error("Error uploading proof:", error);
             alert("Gagal mengunggah bukti: " + error.message);
@@ -232,8 +259,8 @@
         }
     }
 
-    // --- FUNGSI BARU: Mengirim WA dan Mengubah Status Sekaligus ---
-    async function sendWhatsAppAndProcess() {
+    // === FUNGSI UNTUK MENGIRIM NOTIFIKASI WHATSAPP SESUAI STATUS TERKINI ===
+    async function sendWhatsAppNotification() {
         if (!currentOrderDoc || !currentOrderDoc.data) {
             alert("Data pesanan belum dimuat. Mohon refresh halaman.");
             return;
@@ -248,65 +275,57 @@
         }
 
         // Normalisasi nomor WhatsApp: ubah 08x menjadi 628x
-        nomorTujuanWA = String(nomorTujuanWA).replace(/[^0-9]/g, ''); // Hapus semua karakter non-digit
+        nomorTujuanWA = String(nomorTujuanWA).replace(/[^0-9]/g, ''); 
         if (nomorTujuanWA.startsWith('08')) {
             nomorTujuanWA = '62' + nomorTujuanWA.substring(1);
         } else if (!nomorTujuanWA.startsWith('62')) {
             // Jika tidak diawali 08 atau 62, asumsikan itu adalah nomor lokal yang perlu 62
-            // Ini mungkin perlu disesuaikan tergantung format nomor yang biasa Anda terima
             nomorTujuanWA = '62' + nomorTujuanWA; 
         }
-
-        // Pastikan nomor WhatsApp minimal 10 digit (setelah 62)
-        if (nomorTujuanWA.length < 10) { // Cukup aman untuk mengasumsikan nomor setelah 62 minimal 8 digit
+        
+        // Pastikan nomor WhatsApp valid setelah normalisasi
+        if (nomorTujuanWA.length < 10) { 
             alert(`Nomor WhatsApp (${orderData[NAMA_KOLOM_WHATSAPP] || orderData.nomor_hp}) tidak valid setelah diformat. Pastikan format nomor benar (misal: 08xxxxxxxxxx).`);
             return;
         }
         
-        // Dapatkan detail yang diperlukan untuk pesan
+        const customerName = orderData.nama_reseller ? orderData.nama_pelanggan : orderData.nama_pelanggan;
         const target = orderData.target || orderData.id_game || orderData.nomor_pelanggan || 'N/A';
-        const service = orderData.service || orderData.produk || 'N/A';
+        const service = orderData.service || orderData.produk || 'N/A'; // Tetap gunakan service/produk untuk pesan WA
         const harga = formatRupiah(orderData.harga_final || orderData.harga_beli || 0);
+        const currentStatus = orderData.status || 'N/A'; // Ambil status terkini dari data pesanan
 
-        // URL dasar untuk cek status pesanan (SESUAIKAN DENGAN URL ASLI WEBSITE ANDA!)
-        // Asumsi: Halaman status ada di root domain Anda
-        const BASE_STATUS_CHECK_URL = `${window.location.origin.replace(/\/$/, '')}/status.html?id=`;
+        const BASE_STATUS_CHECK_URL = `https://asdarcell.github.io/Asdarstoredigital/status.html?id=`; // Sesuaikan dengan domain Anda
         const linkCekStatus = BASE_STATUS_CHECK_URL + currentOrderDoc.id;
 
-        // Template pesan WhatsApp sesuai contoh screenshot
-        let pesanWhatsapp = `Halo kak! Admin Jagoanssh ✨\n\n`;
+        let pesanWhatsapp = `Halo kak! ${customerName} ✨\n\n`;
         pesanWhatsapp += `Pembelian Berhasil!\n`;
         pesanWhatsapp += `Target: ${target}\n`;
-        pesanWhatsapp += `Service: ${service}\n`;
+        pesanWhatsapp += `Service: ${service}\n`; // Service tetap dipertahankan di pesan WA
         pesanWhatsapp += `Harga: ${harga}\n`;
-        pesanWhatsapp += `Status: Diproses\n\n`; // Set status awal di pesan sebagai "Diproses"
-        pesanWhatsapp += `Terimakasih sudah menggunakan layanan di Jagoanssh\n\n`;
+        pesanWhatsapp += `Status: ${currentStatus}\n\n`; // GUNAKAN STATUS TERKINI
+        pesanWhatsapp += `Terimakasih sudah menggunakan layanan di Asdar Store Digital\n\n`;
         pesanWhatsapp += `Silahkan cek status pesanan Anda secara otomatis melalui link berikut:\n`;
         pesanWhatsapp += `${linkCekStatus}`;
 
         const pesanTerencode = encodeURIComponent(pesanWhatsapp);
         const whatsappLink = `https://wa.me/${nomorTujuanWA}?text=${pesanTerencode}`;
 
-        if (!confirm('Anda akan diarahkan ke WhatsApp untuk mengirim notifikasi. Setelah itu, status pesanan akan diubah menjadi "Notifikasi Terkirim & Diproses". Lanjutkan?')) {
+        if (!confirm('Anda akan diarahkan ke WhatsApp untuk mengirim notifikasi. Lanjutkan?')) {
             return;
         }
 
         const button = event.target;
         button.disabled = true;
         const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
 
         try {
             window.open(whatsappLink, '_blank');
-            // Beri sedikit jeda agar user bisa melihat tab WA terbuka
-            await new Promise(resolve => setTimeout(resolve, 1000)); 
-
-            // Setelah membuka link WA, langsung update status di database
-            await updateStatus('Notifikasi Terkirim & Diproses'); // Panggil updateStatus
-            alert('Tautan WhatsApp berhasil dibuka. Status pesanan telah diubah.');
+            alert('Tautan WhatsApp berhasil dibuka.');
         } catch (e) {
-            console.error('Gagal membuka tautan WhatsApp atau memperbarui status:', e);
-            alert('Gagal membuka tautan WhatsApp atau memperbarui status. Pastikan browser Anda mengizinkan pop-up dan aplikasi WhatsApp terinstal. Error: ' + e.message);
+            console.error('Gagal membuka tautan WhatsApp:', e);
+            alert('Gagal membuka tautan WhatsApp. Pastikan browser Anda mengizinkan pop-up dan aplikasi WhatsApp terinstal. Error: ' + e.message);
         } finally {
             button.disabled = false;
             button.innerHTML = originalText;
