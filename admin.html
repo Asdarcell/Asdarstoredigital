@@ -155,6 +155,42 @@
                         </table>
                     </div>
                 </div>
+                <div class="modal fade" id="editOrderModal" tabindex="-1" aria-labelledby="editOrderModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editOrderModalLabel">Edit Pesanan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editOrderForm">
+                                    <input type="hidden" id="editOrderId">
+                                    <input type="hidden" id="editOrderType">
+                                    <div class="mb-3">
+                                        <label for="editOrderCustomerName" class="form-label">Nama Pelanggan/Reseller</label>
+                                        <input type="text" class="form-control" id="editOrderCustomerName" required>
+                                        <small class="form-text text-muted">Isi dengan nama yang benar jika sebelumnya 'undefined'.</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editOrderStatus" class="form-label">Status</label>
+                                        <select class="form-select" id="editOrderStatus" required>
+                                            <option value="belum-bayar">Belum Bayar</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="diproses">Diproses</option>
+                                            <option value="disetujui">Disetujui</option>
+                                            <option value="selesai">Selesai</option>
+                                            <option value="ditolak">Ditolak</option>
+                                            <option value="dibatalkan">Dibatalkan</option>
+                                            <option value="pending-upload">Pending Upload Bukti</option>
+                                            <option value="menunggu-verifikasi">Menunggu Verifikasi</option>
+                                            </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Simpan Perubahan</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="tab-pane fade" id="testimonials" role="tabpanel">
@@ -417,6 +453,7 @@
         document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
 
         // BARU/UBAH: Variabel untuk referensi badge notifikasi
+        const verificationCountBadge = document.getElementById('verification-count'); // Pastikan ini juga didefinisikan
         const topupCountBadge = document.getElementById('topup-count');
         const testimonialsCountBadge = document.getElementById('testimonials-count');
         const ordersCountBadge = document.getElementById('orders-count'); // BARU
@@ -761,7 +798,7 @@
         
         // =================================== VERIFIKASI RESELLER (Firestore) ===================================
         const verificationTableBody = document.getElementById('verification-table-body');
-        const verificationCountBadge = document.getElementById('verification-count');
+        // const verificationCountBadge = document.getElementById('verification-count'); // Sudah dideklarasi di atas
 
         function loadPendingResellers() {
             dbFS.collection('resellers').where('status', '==', 'pending-approval').get() // UBAH: Ganti onSnapshot jadi get()
@@ -798,13 +835,23 @@
         async function approveReseller(uid, amount) {
             if (!confirm(`Yakin ingin menyetujui pendaftaran reseller ini dan menambahkan saldo ${formatRupiah(amount)}?`)) return;
             try {
-                await dbFS.collection('resellers').doc(uid).update({
-                    status: 'active',
-                    saldo: firebase.firestore.FieldValue.increment(amount), // Menambahkan saldo ke reseller
-                    approvedAt: new Date()
+                await dbFS.runTransaction(async (transaction) => {
+                    const resellerRef = dbFS.collection('resellers').doc(uid);
+                    // Ambil doc reseller untuk update saldo yang benar
+                    const resellerDoc = await transaction.get(resellerRef);
+                    if (!resellerDoc.exists) {
+                        throw new Error("Data reseller tidak ditemukan.");
+                    }
+                    const currentSaldo = resellerDoc.data().saldo || 0;
+
+                    transaction.update(resellerRef, {
+                        status: 'active',
+                        saldo: currentSaldo + amount, // Menambahkan saldo ke reseller
+                        approvedAt: new Date()
+                    });
                 });
                 showToast('Pendaftaran reseller berhasil disetujui!', 'success');
-                // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
+                loadPendingResellers(); // Refresh data setelah transaksi
             } catch (e) {
                 showToast('Gagal menyetujui reseller: ' + e.message, 'danger');
             }
@@ -819,7 +866,7 @@
                     rejectedAt: new Date()
                 });
                 showToast('Pendaftaran reseller berhasil ditolak.', 'warning');
-                // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
+                loadPendingResellers(); // Refresh data setelah update
             } catch (e) {
                 showToast('Gagal menolak reseller: ' + e.message, 'danger');
             }
@@ -831,7 +878,7 @@
                 try {
                     await dbFS.collection('resellers').doc(uid).delete();
                     showToast('Permintaan pendaftaran dihapus.', 'warning');
-                    // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
+                    loadPendingResellers(); // Refresh data setelah update
                 } catch (e) {
                     showToast('Gagal menghapus permintaan: ' + e.message, 'danger');
                 } finally {
@@ -855,7 +902,7 @@
                     s.forEach(d => {
                         const k = { id: d.id, ...d.data() };
                         const r = topupTableBody.insertRow();
-                        const statusClass = `status-${k.status.replace(' ', '-')}`;
+                        const statusClass = `status-${(k.status || '').toLowerCase().replace(' ', '-')}`; // handle undefined status
                         r.innerHTML = `
                             <td><code>${k.id.substring(0,6)}...</code></td>
                             <td>${k.reseller_email}</td>
@@ -894,6 +941,7 @@
                     transaction.update(topupRef, { status: 'disetujui', confirmed_at: new Date() });
                 });
                 showToast('Top up berhasil disetujui dan saldo ditambahkan!', 'success');
+                loadTopupConfirmations(); // Refresh data
             } catch (e) {
                 showToast('Gagal menyetujui top up: ' + e.message, 'danger');
             } finally {
@@ -906,6 +954,7 @@
                 try {
                     await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'ditolak', rejected_at: new Date() });
                     showToast('Permintaan top up ditolak.', 'warning');
+                    loadTopupConfirmations(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menolak top up: ' + e.message, 'danger');
                 } finally {
@@ -919,6 +968,7 @@
                 try {
                     await dbFS.collection('konfirmasiTopup').doc(id).delete();
                     showToast('Riwayat top up dihapus.', 'warning');
+                    loadTopupConfirmations(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menghapus riwayat top up: ' + e.message, 'danger');
                 } finally {
@@ -970,7 +1020,9 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
-                const customerName = isResellerOrder ? (order.nama_reseller || order.email_reseller || order.nama) : (order.nama_pelanggan || order.nama);
+                // *** BARIS KUNCI UNTUK MASALAH ANDA ***
+                // Memastikan customerName tidak undefined jika semua field kosong
+                const customerName = isResellerOrder ? (order.nama_reseller || order.email_reseller || order.nama || '[Tidak Diketahui]') : (order.nama_pelanggan || order.nama || '[Tidak Diketahui]');
                 const price = isResellerOrder ? order.harga_beli : order.harga_final; // Sesuaikan dengan field harga di data Anda
 
                 const row = ordersTableBody.insertRow();
@@ -987,6 +1039,7 @@
                     <td>${formatRupiah(price)}</td>
                     <td><span class="status-badge ${statusClass}">${order.status}</span></td>
                     <td>
+                        <button class="btn btn-sm btn-warning" onclick="openEditOrderModal('${order.id}', '${order.type}', '${customerName.replace(/'/g, "\\'")}', '${order.status.replace(/'/g, "\\'")}')">Edit</button>
                         <a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a>
                         <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button>
                     </td>
@@ -1012,6 +1065,58 @@
             }
         }
 
+        // --- Fungsi untuk Modal Edit Pesanan (ditambahkan di sini) ---
+        const editOrderModal = new bootstrap.Modal(document.getElementById('editOrderModal'));
+        const editOrderForm = document.getElementById('editOrderForm');
+        const editOrderIdInput = document.getElementById('editOrderId');
+        const editOrderTypeInput = document.getElementById('editOrderType');
+        const editOrderCustomerNameInput = document.getElementById('editOrderCustomerName');
+        const editOrderStatusInput = document.getElementById('editOrderStatus');
+
+        function openEditOrderModal(orderId, orderType, customerName, orderStatus) {
+            editOrderIdInput.value = orderId;
+            editOrderTypeInput.value = orderType;
+            // Set nilai default menjadi kosong jika 'undefined'
+            editOrderCustomerNameInput.value = (customerName === 'undefined' || customerName === 'null' || customerName === '[Tidak Diketahui]') ? '' : customerName;
+            editOrderStatusInput.value = orderStatus;
+            editOrderModal.show();
+        }
+
+        editOrderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('[type=submit]');
+            setButtonLoading(btn, true);
+
+            const orderId = editOrderIdInput.value;
+            const orderType = editOrderTypeInput.value;
+            const newCustomerName = editOrderCustomerNameInput.value;
+            const newStatus = editOrderStatusInput.value;
+
+            const collectionName = orderType === 'reseller' ? 'pesananReseller' : 'pesananUmum';
+            let updateData = { status: newStatus };
+
+            if (orderType === 'reseller') {
+                // Untuk pesanan reseller, update nama_reseller.
+                updateData.nama_reseller = newCustomerName;
+                // Anda mungkin juga ingin mengosongkan/mengupdate field lain jika nama_reseller menjadi sumber utama
+                // updateData.nama = newCustomerName; // Jika Anda menggunakan 'nama' sebagai fallback utama
+                // updateData.email_reseller = ''; // Misalnya, jika nama_reseller sudah diisi
+            } else {
+                updateData.nama_pelanggan = newCustomerName; // Untuk pesanan umum
+            }
+
+            try {
+                await dbFS.collection(collectionName).doc(orderId).update(updateData);
+                showToast('Pesanan berhasil diperbarui!', 'success');
+                editOrderModal.hide();
+                loadOrders(); // Muat ulang tabel pesanan untuk melihat perubahan
+            } catch (e) {
+                showToast('Gagal memperbarui pesanan: ' + e.message, 'danger');
+            } finally {
+                setButtonLoading(btn, false);
+            }
+        });
+        
         // =================================== TESTIMONI (Realtime Database) ===================================
         const testimonialsTableBody = document.querySelector('#testimonials-table tbody');
         const testimonialForm = document.getElementById('testimonial-form');
@@ -1063,6 +1168,7 @@
                 testimonialForm.reset();
                 currentTestimonialId = null;
                 cancelTestimonialEditBtn.style.display = 'none';
+                loadTestimonials(); // Refresh data
             }).catch(err => {
                 showToast('Gagal menyimpan testimoni: ' + err.message, 'danger');
             }).finally(() => {
@@ -1093,6 +1199,7 @@
             try {
                 await dbRT.ref('testimonials/' + id).update({ status: 'disetujui' });
                 showToast('Testimoni berhasil disetujui dan ditampilkan!', 'success');
+                loadTestimonials(); // Refresh data
             } catch (e) {
                 showToast('Gagal menyetujui testimoni: ' + e.message, 'danger');
             } finally {
@@ -1106,6 +1213,7 @@
                 try {
                     await dbRT.ref('testimonials/' + id).remove();
                     showToast('Testimoni berhasil dihapus.', 'warning');
+                    loadTestimonials(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menghapus testimoni: ' + e.message, 'danger');
                 } finally {
@@ -1217,6 +1325,9 @@
                             </td>
                         `;
                     });
+                })
+                .catch(e => {
+                    paymentsTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">Gagal memuat info pembayaran: ${e.message}</td></tr>`;
                 });
         }
 
@@ -1325,6 +1436,7 @@
                         waktuDisetujui: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     showToast('Klaim hadiah disetujui!', 'success');
+                    loadGiftClaims(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menyetujui klaim: ' + e.message, 'danger');
                 } finally {
@@ -1344,6 +1456,7 @@
                         waktuDitolak: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     showToast('Klaim hadiah ditolak.', 'warning');
+                    loadGiftClaims(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menolak klaim: ' + e.message, 'danger');
                 } finally {
@@ -1369,6 +1482,7 @@
                     }
                     await dbFS.collection('klaimHadiahBuyer').doc(id).delete();
                     showToast('Klaim hadiah dihapus.', 'warning');
+                    loadGiftClaims(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menghapus klaim: ' + e.message, 'danger');
                 } finally {
@@ -1535,4 +1649,4 @@
         }
     </script>
 </body>
-                                                                                      </html>
+                                                    </html>
