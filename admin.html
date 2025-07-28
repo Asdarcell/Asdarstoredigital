@@ -2008,8 +2008,9 @@
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         const order = change.doc.data();
-                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru
-                        if (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000) {
+                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru (dalam 5 detik terakhir)
+                        // Ini membantu menghindari notifikasi saat halaman dimuat ulang dan menangkap data awal.
+                        if (order.waktu && (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000)) {
                             showToast(`Pesanan Umum Baru dari ${order.nama_pelanggan || order.nama}! Produk: ${order.produk}`, 'success');
                             if (notificationSound) {
                                 notificationSound.play().catch(e => console.warn("Gagal memutar suara notifikasi:", e));
@@ -2026,8 +2027,8 @@
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         const order = change.doc.data();
-                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru
-                        if (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000) {
+                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru (dalam 5 detik terakhir)
+                        if (order.waktu && (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000)) {
                             showToast(`Pesanan Reseller Baru dari ${order.nama_pelanggan || order.nama_reseller || order.email_reseller || order.nama}! Produk: ${order.produk}`, 'info');
                             if (notificationSound) {
                                 notificationSound.play().catch(e => console.warn("Gagal memutar suara notifikasi:", e));
@@ -2041,4 +2042,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
