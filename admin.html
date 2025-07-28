@@ -1246,28 +1246,51 @@
         const orderFilter = document.getElementById('order-filter');
         let allOrdersData = []; // Menyimpan semua data pesanan untuk filtering lokal
 
-        function loadOrders() {
-            // Mengambil pesanan dari kedua koleksi dan menggabungkannya
-            Promise.all([
-                dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
-                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
-            ])
-            .then(([umumSnapshot, resellerSnapshot]) => {
+        async function loadOrders() { // Fungsi ini perlu async untuk await
+            try {
+                // Mengambil pesanan dari kedua koleksi dan menggabungkannya
+                const [umumSnapshot, resellerSnapshot] = await Promise.all([
+                    dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
+                    dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
+                ]);
+
                 let combinedOrders = [];
                 umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
-                resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
 
-                // Urutkan berdasarkan waktu (yang terbaru di atas)
+                // Promise.all untuk mengambil data nama reseller dari koleksi 'resellers'
+                const resellerPromises = resellerSnapshot.docs.map(async doc => {
+                    const orderData = doc.data();
+                    const resellerId = orderData.resellerId; // Asumsi 'resellerId' ada di dokumen pesanan reseller
+
+                    let namaReseller = 'N/A'; // Default jika tidak ditemukan
+                    if (resellerId) {
+                        const resellerDoc = await dbFS.collection('resellers').doc(resellerId).get();
+                        if (resellerDoc.exists) {
+                            // Prioritaskan 'nama' jika ada, fallback ke 'email'
+                            namaReseller = resellerDoc.data().nama || resellerDoc.data().email || 'N/A (Nama/Email tidak ada)';
+                        } else {
+                            namaReseller = 'N/A (Reseller tidak ditemukan)';
+                        }
+                    } else {
+                        namaReseller = 'N/A (ID Reseller tidak ada)';
+                    }
+
+                    return { id: doc.id, ...orderData, nama_reseller: namaReseller, type: 'reseller' };
+                });
+
+                const resellerOrdersWithNames = await Promise.all(resellerPromises);
+                combinedOrders = combinedOrders.concat(resellerOrdersWithNames);
+
+                // Urutkan semua pesanan berdasarkan waktu (yang terbaru di atas)
                 allOrdersData = combinedOrders.sort((a, b) => {
                     const timeA = a.waktu ? (a.waktu.toDate ? a.waktu.toDate().getTime() : a.waktu.getTime()) : 0;
                     const timeB = b.waktu ? (b.waktu.toDate ? b.waktu.toDate().getTime() : b.waktu.getTime()) : 0;
                     return timeB - timeA;
                 });
                 renderOrders(allOrdersData);
-            })
-            .catch(e => {
+            } catch (e) {
                 ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Gagal memuat pesanan: ${e.message}</td></tr>`;
-            });
+            }
         }
 
         function renderOrders(orders) {
@@ -1284,9 +1307,10 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
-                // --- KODE LAMA ANDA DI SINI ---
-                const customerName = isResellerOrder ? (order.nama_reseller || 'N/A') : (order.nama || 'N/A');
-                // --- AKHIR KODE LAMA ANDA ---
+
+                // Bagian perbaikan utama: Mengambil nama pelanggan
+                const customerName = isResellerOrder ? (order.nama_reseller || order.email || 'N/A') : (order.nama || 'N/A');
+
                 const price = isResellerOrder ? order.harga_beli : order.harga_final; // Sesuaikan dengan field harga di data Anda
 
                 const row = ordersTableBody.insertRow();
@@ -1993,4 +2017,4 @@
         }
     </script>
 </body>
-                                                    </html>
+</html>
