@@ -153,8 +153,6 @@
     </style>
 </head>
 <body>
-    <audio id="notificationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-back-2575.mp3" preload="auto"></audio>
-
     <div id="auth-check">
         <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
             <div class="container-fluid">
@@ -884,9 +882,6 @@
             loadBanners();
             loadCustomFeatures(); // This is already using onSnapshot, so it will be live
 
-            // Setup new order notifications
-            setupNewOrderNotifications();
-
             // Setup tab change listeners to re-render or load data if needed
             document.getElementById('products-tab').addEventListener('click', loadProducts);
             document.getElementById('resellers-tab').addEventListener('click', loadResellers);
@@ -1289,11 +1284,9 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
-                // --- PERBAIKAN DI SINI ---
-                const customerName = isResellerOrder
-                                    ? (order.nama_pelanggan || order.nama_reseller || order.email_reseller || order.nama || 'N/A')
-                                    : (order.nama_pelanggan || order.nama || 'N/A');
-                // --- AKHIR PERBAIKAN ---
+                // --- KODE LAMA ANDA DI SINI ---
+                const customerName = isResellerOrder ? (order.nama_reseller || 'N/A') : (order.nama || 'N/A');
+                // --- AKHIR KODE LAMA ANDA ---
                 const price = isResellerOrder ? order.harga_beli : order.harga_final; // Sesuaikan dengan field harga di data Anda
 
                 const row = ordersTableBody.insertRow();
@@ -1998,48 +1991,6 @@
                     .catch(error => { showToast('Gagal menghapus fitur: ' + error.message, 'danger'); });
             }
         }
-
-        // =================================== NOTIFIKASI PESANAN BARU ===================================
-        const notificationSound = document.getElementById('notificationSound');
-
-        function setupNewOrderNotifications() {
-            // Memantau pesanan umum baru
-            dbFS.collection('pesananUmum').orderBy('waktu', 'desc').limit(1).onSnapshot(snapshot => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const order = change.doc.data();
-                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru (dalam 5 detik terakhir)
-                        // Ini membantu menghindari notifikasi saat halaman dimuat ulang dan menangkap data awal.
-                        if (order.waktu && (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000)) {
-                            showToast(`Pesanan Umum Baru dari ${order.nama_pelanggan || order.nama}! Produk: ${order.produk}`, 'success');
-                            if (notificationSound) {
-                                notificationSound.play().catch(e => console.warn("Gagal memutar suara notifikasi:", e));
-                            }
-                        }
-                    }
-                });
-            }, error => {
-                console.error("Error monitoring new general orders:", error);
-            });
-
-            // Memantau pesanan reseller baru
-            dbFS.collection('pesananReseller').orderBy('waktu', 'desc').limit(1).onSnapshot(snapshot => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const order = change.doc.data();
-                        // Filter untuk hanya notifikasi pesanan yang benar-benar baru (dalam 5 detik terakhir)
-                        if (order.waktu && (Date.now() - (order.waktu.toDate ? order.waktu.toDate() : order.waktu).getTime() < 5000)) {
-                            showToast(`Pesanan Reseller Baru dari ${order.nama_pelanggan || order.nama_reseller || order.email_reseller || order.nama}! Produk: ${order.produk}`, 'info');
-                            if (notificationSound) {
-                                notificationSound.play().catch(e => console.warn("Gagal memutar suara notifikasi:", e));
-                            }
-                        }
-                    }
-                });
-            }, error => {
-                console.error("Error monitoring new reseller orders:", error);
-            });
-        }
     </script>
 </body>
-    </html>
+                                                    </html>
