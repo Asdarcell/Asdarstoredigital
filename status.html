@@ -190,31 +190,80 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('id');
-        if (!orderId) {
-            statusContent.innerHTML = '<h2><i class="fa fa-exclamation-triangle"></i> ID Pesanan Tidak Ditemukan.</h2><p>Pastikan link yang Anda masukkan sudah benar.</p>';
-            return;
-        }
-        const umumRef = dbFS.collection('pesananUmum').doc(orderId);
-        const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
-        try {
-            const docUmum = await umumRef.get();
-            if (docUmum.exists) {
-                umumRef.onSnapshot(doc => renderStatus(orderId, doc.data()));
-                return; 
-            }
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('id');
+    const kembaliButton = document.querySelector('header .btn-secondary'); // Mendapatkan elemen tombol "Kembali"
+
+    // Jika ID pesanan tidak ditemukan di URL
+    if (!orderId) {
+        statusContent.innerHTML = '<h2><i class="fa fa-exclamation-triangle"></i> ID Pesanan Tidak Ditemukan.</h2><p>Pastikan tautan yang Anda masukkan sudah benar.</p>';
+        // Atur tombol kembali ke halaman index secara default
+        kembaliButton.href = 'index.html'; 
+        return;
+    }
+
+    // Tampilkan status memuat data awal
+    statusContent.innerHTML = `
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Memuat status pesanan...</p>
+    `;
+
+    const umumRef = dbFS.collection('pesananUmum').doc(orderId);
+    const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
+
+    try {
+        let orderFound = false;
+        let isResellerOrder = false; // Flag untuk menentukan apakah ini pesanan reseller
+
+        // Coba ambil dokumen dari koleksi 'pesananUmum' (untuk pembeli biasa)
+        const docUmum = await umumRef.get();
+        if (docUmum.exists) {
+            renderStatus(orderId, docUmum.data());
+            // Dengarkan perubahan real-time untuk pesanan umum
+            umumRef.onSnapshot(doc => {
+                if (doc.exists) { // Pastikan dokumen masih ada setelah pembaruan
+                    renderStatus(orderId, doc.data());
+                }
+            });
+            orderFound = true;
+            isResellerOrder = false; // Ini pesanan pembeli biasa
+        } else {
+            // Jika tidak ditemukan di 'pesananUmum', coba di 'pesananReseller'
             const docReseller = await resellerRef.get();
             if (docReseller.exists) {
-                resellerRef.onSnapshot(doc => renderStatus(orderId, doc.data()));
-                return;
+                renderStatus(orderId, docReseller.data());
+                // Dengarkan perubahan real-time untuk pesanan reseller
+                resellerRef.onSnapshot(doc => {
+                    if (doc.exists) { // Pastikan dokumen masih ada setelah pembaruan
+                        renderStatus(orderId, doc.data());
+                    }
+                });
+                orderFound = true;
+                isResellerOrder = true; // Ini pesanan reseller
             }
-            statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
-        } catch (err) {
-            console.error("Gagal mengambil data pesanan:", err);
-            statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2>';
         }
-    });
+
+        // Setelah jenis pesanan ditentukan, atur tautan tombol "Kembali"
+        if (orderFound) {
+            if (isResellerOrder) {
+                kembaliButton.href = 'dashboard_reseller.html';
+            } else {
+                kembaliButton.href = 'index.html';
+            }
+        }
+        // Pastikan tombol kembali juga diatur jika pesanan tidak ditemukan
+        else {
+            statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
+            kembaliButton.href = 'index.html'; 
+        }
+
+    } catch (err) {
+        console.error("Gagal mengambil data pesanan:", err);
+        statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2><p>Silakan coba lagi nanti atau hubungi dukungan.</p>';
+        // Atur tombol kembali ke halaman index jika ada error
+        kembaliButton.href = 'index.html'; 
+    }
+});
   </script>
 </body>
 </html>
