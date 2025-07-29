@@ -1,5 +1,3 @@
-// assets/js/admin.js
-
 // ==========================================================
 //  KONFIGURASI FIREBASE DAN FUNGSI UMUM
 // ==========================================================
@@ -10,16 +8,12 @@ const firebaseConfig = {
     databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com", // URL Realtime Database Anda
     projectId: "asdarstoredigitalll-d89c4", // Project ID Anda
     storageBucket: "asdarstoredigitalll-d89c4.appspot.com", // Pastikan ada jika menggunakan Firebase Storage
-    // Jika ada, tambahkan juga:
-    // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    // appId: "YOUR_APP_ID",
-    // measurementId: "YOUR_MEASUREMENT_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const dbFS = firebase.firestore();
 const dbRT = firebase.database();
-const storage = firebase.storage(); // Inisialisasi Firebase Storage
+const storage = firebase.storage();
 
 // Redirect jika belum login
 auth.onAuthStateChanged(user => { if (!user) { window.location.href = "loginadmin.html"; } });
@@ -65,7 +59,6 @@ function setButtonLoading(button, isLoading) {
 
 // ====================================== MANAJEMEN TABS & PEMUATAN DATA AWAL ======================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Muat data untuk semua tab saat halaman dimuat
     loadProducts();
     loadResellers();
     loadTopupConfirmations();
@@ -77,15 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPendingResellers(); 
     loadCustomFeatures();
     loadGiftClaims();
-    loadJagoanPediaProducts(); // Panggil fungsi baru untuk memuat produk API
-
-    // Setup event listeners untuk form baru
+    loadJagoanPediaProducts();
     setupPromoManagementForms();
 });
 
-// Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik)
+// Event listeners untuk setiap tab
 document.getElementById('products-tab').addEventListener('click', loadProducts);
-document.getElementById('api-products-tab').addEventListener('click', loadJagoanPediaProducts); // Tambahkan ini
+document.getElementById('api-products-tab').addEventListener('click', loadJagoanPediaProducts);
 document.getElementById('active-resellers-tab').addEventListener('click', loadResellers);
 document.getElementById('verification-tab').addEventListener('click', loadPendingResellers);
 document.getElementById('topup-tab').addEventListener('click', loadTopupConfirmations);
@@ -93,12 +84,12 @@ document.getElementById('orders-tab').addEventListener('click', loadOrders);
 document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
 document.getElementById('faq-tab').addEventListener('click', loadFaq);
 document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms); // Memanggil ulang setup form jika perlu
+document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms);
 document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims);
 document.getElementById('banners-tab').addEventListener('click', loadBanners);
 document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
 
-// =================================== MANAJEMEN PROMO MANUAL (FITUR BARU) ===================================
+// =================================== MANAJEMEN PROMO MANUAL ===================================
 function setupPromoManagementForms() {
     const resellerPromoForm = document.getElementById('grant-reseller-promo-form');
     const buyerPromoForm = document.getElementById('grant-buyer-promo-form');
@@ -117,7 +108,7 @@ function setupPromoManagementForms() {
                 }
                 const resellerDoc = resellerQuery.docs[0];
                 await dbFS.collection('resellers').doc(resellerDoc.id).update({
-                    punyaHakDiskon: true // Memberikan hak diskon kepada reseller
+                    punyaHakDiskon: true
                 });
                 showToast(`Hak diskon berhasil diberikan kepada reseller: ${email}`, 'success');
                 resellerPromoForm.reset();
@@ -154,7 +145,6 @@ function setupPromoManagementForms() {
 
             try {
                 await dbRT.ref('hakDiskon/' + normalizedWhatsappNumber).set(true);
-
                 showToast(`Hak diskon berhasil diberikan kepada pembeli: ${rawWhatsappNumber}`, 'success');
                 buyerPromoForm.reset();
             } catch (error) {
@@ -165,7 +155,6 @@ function setupPromoManagementForms() {
         });
     }
 }
-
 
 // =================================== PRODUK (Firestore) ===================================
 const productForm = document.getElementById('product-form');
@@ -318,9 +307,9 @@ async function addSaldo(id, saldo, btn) {
         if (!isNaN(nominal) && nominal > 0) {
             setButtonLoading(btn, true);
             try {
-                await dbFS.collection('resellers').doc(id).update({ saldo: saldo + nominal });
+                await dbFS.collection('resellers').doc(id).update({ saldo: firebase.firestore.FieldValue.increment(nominal) });
                 showToast(`Saldo ${formatRupiah(nominal)} berhasil ditambahkan!`, 'success');
-                loadResellers(); // Refresh data
+                loadResellers();
             } catch (e) {
                 showToast('Gagal menambah saldo: ' + e.message, 'danger');
             } finally {
@@ -337,7 +326,7 @@ async function deleteReseller(id, btn) {
         try {
             await dbFS.collection('resellers').doc(id).delete();
             showToast('Reseller berhasil dihapus.', 'warning');
-            loadResellers(); // Refresh data
+            loadResellers();
         } catch (e) {
             showToast('Gagal menghapus reseller: ' + e.message, 'danger');
         } finally {
@@ -362,7 +351,7 @@ function loadPendingResellers() {
         verificationCountBadge.style.display = 'inline';
         s.forEach(d => {
             const r = d.data();
-            const uid = d.id; // UID reseller adalah ID dokumen
+            const uid = d.id;
             const row = `
                 <tr>
                     <td>${r.email}</td>
@@ -383,24 +372,18 @@ function loadPendingResellers() {
     });
 }
 
+// ==================================
+// FUNGSI INI TELAH DIPERBAIKI
+// ==================================
 async function approveReseller(uid, amount) {
     if (!confirm(`Yakin ingin menyetujui pendaftaran reseller ini dan menambahkan saldo ${formatRupiah(amount)}?`)) return;
     try {
-        await dbFS.runTransaction(async (transaction) => {
-            const resellerRef = dbFS.collection('resellers').doc(uid);
-            // Hapus baris ini: const topupRef = dbFS.collection('konfirmasiTopup').doc(id); // Ini salah, harusnya tidak ada topupRef di sini
-
-            const resellerDoc = await transaction.get(resellerRef);
-            if (!resellerDoc.exists) {
-                throw new Error("Data reseller tidak ditemukan.");
-            }
-
-            const currentSaldo = resellerDoc.data().saldo || 0;
-            transaction.update(resellerRef, { saldo: currentSaldo + amount }); // Gunakan 'amount' dari parameter
-            // Hapus baris ini: transaction.update(topupRef, { status: 'disetujui', confirmed_at: new Date() }); // Baris ini harus dihapus atau dipindahkan jika tidak relevan
+        await dbFS.collection('resellers').doc(uid).update({
+            status: 'active',
+            saldo: firebase.firestore.FieldValue.increment(amount),
+            approvedAt: new Date()
         });
         showToast('Pendaftaran reseller berhasil disetujui!', 'success');
-        // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
     } catch (e) {
         showToast('Gagal menyetujui reseller: ' + e.message, 'danger');
     }
@@ -415,7 +398,6 @@ async function rejectReseller(uid) {
             rejectedAt: new Date()
         });
         showToast('Pendaftaran reseller berhasil ditolak.', 'warning');
-        // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
     } catch (e) {
         showToast('Gagal menolak reseller: ' + e.message, 'danger');
     }
@@ -427,7 +409,6 @@ async function deletePendingReseller(uid, btn) {
         try {
             await dbFS.collection('resellers').doc(uid).delete();
             showToast('Permintaan pendaftaran dihapus.', 'warning');
-            // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
         } catch (e) {
             showToast('Gagal menghapus permintaan: ' + e.message, 'danger');
         } finally {
@@ -479,9 +460,8 @@ async function approveTopup(id, uid, nominal, btn) {
             if (!resellerDoc.exists) {
                 throw new Error("Data reseller tidak ditemukan.");
             }
-
-            const currentSaldo = resellerDoc.data().saldo || 0;
-            transaction.update(resellerRef, { saldo: currentSaldo + nominal });
+            
+            transaction.update(resellerRef, { saldo: firebase.firestore.FieldValue.increment(nominal) });
             transaction.update(topupRef, { status: 'disetujui', confirmed_at: new Date() });
         });
         showToast('Top up berhasil disetujui dan saldo ditambahkan!', 'success');
@@ -521,23 +501,20 @@ async function deleteTopupConfirmation(id, btn) {
 // =================================== PESANAN (Firestore) ===================================
 const ordersTableBody = document.querySelector('#orders-table-body');
 const orderFilter = document.getElementById('order-filter');
-let allOrdersData = []; // Menyimpan semua data pesanan untuk filtering lokal
+let allOrdersData = [];
 
 function loadOrders() {
-    // Mengambil pesanan dari kedua koleksi dan menggabungkannya
-    // Sekarang juga mengambil dari 'pesananApi'
     Promise.all([
         dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
         dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get(),
-        dbFS.collection('pesananApi').orderBy('waktu', 'desc').get() // Tambahkan ini
+        dbFS.collection('pesananApi').orderBy('waktu', 'desc').get()
     ])
-    .then(([umumSnapshot, resellerSnapshot, apiSnapshot]) => { // Tambahkan apiSnapshot
+    .then(([umumSnapshot, resellerSnapshot, apiSnapshot]) => {
         let combinedOrders = [];
         umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
         resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
-        apiSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'api' })); // Tambahkan ini
+        apiSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'api' }));
 
-        // Urutkan berdasarkan waktu (yang terbaru di atas)
         allOrdersData = combinedOrders.sort((a, b) => {
             const timeA = a.waktu ? (a.waktu.toDate ? a.waktu.toDate().getTime() : a.waktu.getTime()) : 0;
             const timeB = b.waktu ? (b.waktu.toDate ? b.waktu.toDate().getTime() : b.waktu.getTime()) : 0;
@@ -551,13 +528,8 @@ function loadOrders() {
 }
 
 function renderOrders(orders) {
-    const filteredOrders = orders.filter(order => {
-        // Perbarui filter untuk menyertakan 'api'
-        return orderFilter.value === 'all' || 
-               (orderFilter.value === 'umum' && order.type === 'umum') ||
-               (orderFilter.value === 'reseller' && order.type === 'reseller') ||
-               (orderFilter.value === 'api' && order.type === 'api'); // Tambahkan ini
-    });
+    const filterValue = orderFilter.value;
+    const filteredOrders = orders.filter(order => filterValue === 'all' || order.type === filterValue);
 
     ordersTableBody.innerHTML = '';
     if (filteredOrders.length === 0) {
@@ -567,19 +539,11 @@ function renderOrders(orders) {
 
     filteredOrders.forEach(order => {
         const isResellerOrder = order.type === 'reseller';
-        const isApiOrder = order.type === 'api'; // Flag untuk pesanan API
+        const isApiOrder = order.type === 'api';
         const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
 
-        let customerName;
-        if (isResellerOrder) {
-            customerName = order.nama_pelanggan || order.reseller_email || order.nama || 'N/A';
-        } else if (isApiOrder) { // Untuk pesanan API
-            customerName = order.nama_pelanggan || 'N/A';
-        } else {
-            customerName = order.nama_pelanggan || order.nama || 'N/A';
-        }
-
-        const price = isResellerOrder ? order.harga_beli : order.harga_final; // Harga untuk pesanan API adalah harga_final
+        let customerName = order.nama_pelanggan || order.reseller_email || order.nama || 'N/A';
+        const price = isResellerOrder ? order.harga_beli : order.harga_final;
 
         const row = ordersTableBody.insertRow();
         row.innerHTML = `
@@ -607,18 +571,11 @@ orderFilter.addEventListener('change', () => renderOrders(allOrdersData));
 async function deleteOrder(id, type, btn) {
     if (confirm('Anda yakin ingin menghapus pesanan ini secara permanen?')) {
         setButtonLoading(btn, true);
-        let collectionName;
-        if (type === 'reseller') {
-            collectionName = 'pesananReseller';
-        } else if (type === 'api') { // Tambahkan ini
-            collectionName = 'pesananApi';
-        } else {
-            collectionName = 'pesananUmum';
-        }
+        const collectionName = type === 'reseller' ? 'pesananReseller' : (type === 'api' ? 'pesananApi' : 'pesananUmum');
         try {
             await dbFS.collection(collectionName).doc(id).delete();
             showToast('Pesanan berhasil dihapus.', 'warning');
-            loadOrders(); // Muat ulang semua pesanan setelah penghapusan
+            loadOrders();
         } catch (e) {
             showToast('Gagal menghapus pesanan: ' + e.message, 'danger');
         } finally {
@@ -665,7 +622,7 @@ testimonialForm.addEventListener('submit', (e) => {
     const data = {
         nama: document.getElementById('testimonial-nama').value,
         isi: document.getElementById('testimonial-isi').value,
-        status: 'pending' // Default status saat ditambahkan/diedit
+        status: 'pending'
     };
 
     const promise = currentTestimonialId
@@ -786,7 +743,7 @@ function editFaq(id) {
             const item = s.val();
             document.getElementById('faq_q').value = item.q;
             document.getElementById('faq_a').value = item.a;
-            currentFaqId = id; // Perbaikan typo: currentFaqId
+            currentFaqId = id;
             faqForm.scrollIntoView({ behavior: 'smooth' });
         }
     });
@@ -852,7 +809,7 @@ paymentForm.addEventListener('submit', (e) => {
         showToast('Info pembayaran berhasil disimpan!', 'success');
         paymentForm.reset();
         currentPaymentId = null;
-        loadPaymentMethods(); // Refresh data
+        loadPaymentMethods();
     }).catch(err => {
         showToast('Gagal menyimpan info pembayaran: ' + err.message, 'danger');
     }).finally(() => {
@@ -880,7 +837,7 @@ async function deletePayment(id, btn) {
         try {
             await dbFS.collection('infoPembayaran').doc(id).delete();
             showToast('Info pembayaran berhasil dihapus!', 'warning');
-            loadPaymentMethods(); // Refresh data
+            loadPaymentMethods();
         } catch (e) {
             showToast('Gagal menghapus info pembayaran: ' + e.message, 'danger');
         } finally {
@@ -902,7 +859,6 @@ function loadGiftClaims() {
         s.forEach(d => {
             const claim = { id: d.id, ...d.data() };
             const row = giftClaimsTableBody.insertRow();
-            // Firebase Timestamp to Date object
             const waktuKlaim = claim.waktuKlaim && claim.waktuKlaim.toDate ? claim.waktuKlaim.toDate().toLocaleString() : 'N/A';
             const statusClass = `status-${(claim.status || '').toLowerCase().replace(/ /g, '-')}`;
 
@@ -968,15 +924,13 @@ async function deleteGiftClaim(id, btn) {
     if (confirm('Hapus klaim hadiah ini secara permanen?')) {
         setButtonLoading(btn, true);
         try {
-            // Optional: Delete the proof from storage if it exists
             const claimDoc = await dbFS.collection('klaimHadiahBuyer').doc(id).get();
             if (claimDoc.exists && claimDoc.data().buktiUrl) {
                 try {
                     const storageRef = storage.refFromURL(claimDoc.data().buktiUrl);
                     await storageRef.delete();
-                    console.log("Bukti dihapus dari Storage.");
                 } catch (storageError) {
-                    console.warn("Gagal menghapus bukti dari Storage (mungkin sudah tidak ada):", storageError.message);
+                    console.warn("Gagal menghapus bukti dari Storage:", storageError.message);
                 }
             }
             await dbFS.collection('klaimHadiahBuyer').doc(id).delete();
@@ -1043,7 +997,7 @@ bannerForm.addEventListener('submit', async (e) => {
         bannerForm.reset();
         cancelBannerEditBtn.style.display = 'none';
         currentBannerId = null;
-        loadBanners(); // Refresh data
+        loadBanners();
     } catch (err) {
         showToast('Gagal menyimpan banner: ' + err.message, 'danger');
     } finally {
@@ -1075,7 +1029,7 @@ async function deleteBanner(id, btn) {
         setButtonLoading(btn, true);
         try {
             await dbFS.collection('banners').doc(id).delete();
-            loadBanners(); // Refresh data
+            loadBanners();
             showToast('Banner berhasil dihapus!', 'warning');
         } catch (e) {
             showToast('Gagal menghapus banner: ' + e.message, 'danger');
@@ -1146,53 +1100,48 @@ window.deleteCustomFeature = function(featureId) {
     }
 }
 
-// =================================== MANAJEMEN PRODUK API JAGOAN PEDIA (BARU) ===================================
-const JAGOAN_PEDIA_API_ADMIN_ENDPOINT = 'https://api-ppob.myhosting.com/index.php'; // GANTI DENGAN URL API PHP Anda yang sebenarnya!
+// =================================== MANAJEMEN PRODUK API JAGOAN PEDIA ===================================
+
+// ==================================
+// URL INI TELAH DIPERBARUI
+// ==================================
+const JAGOAN_PEDIA_API_ADMIN_ENDPOINT = 'https://bdc6e33f-fbb8-4709-967c-a2954eacd3d9-00-9te87knee8tl.sisko.replit.dev/';
 const syncApiProductsBtn = document.getElementById('sync-api-products-btn');
 const apiSyncStatusDiv = document.getElementById('api-sync-status');
 const apiProductsTableBody = document.querySelector('#api-products-table tbody');
 
-// Fungsi untuk memanggil API PHP Anda (untuk sinkronisasi)
 async function callAdminApi(action, data = {}) {
     try {
         const response = await fetch(JAGOAN_PEDIA_API_ADMIN_ENDPOINT, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, ...data })
         });
-
-        const result = await response.json();
-        return result;
-
+        return await response.json();
     } catch (error) {
         console.error('Error saat memanggil API Admin:', error);
         return { success: false, message: 'Kesalahan jaringan atau server saat menghubungi API Admin.' };
     }
 }
 
-// Fungsi untuk memuat dan menampilkan produk Jagoan Pedia yang dikelola dari Firestore
 function loadJagoanPediaProducts() {
-    // Menggunakan onSnapshot untuk real-time update
     dbFS.collection('jagoanPediaManagedProducts').orderBy('jp_name').onSnapshot(s => {
         apiProductsTableBody.innerHTML = '';
         if (s.empty) {
-            apiProductsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada produk Jagoan Pedia yang disinkronkan. Silakan sinkronkan terlebih dahulu.</td></tr>';
+            apiProductsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada produk Jagoan Pedia yang disinkronkan.</td></tr>';
             return;
         }
 
         s.forEach(d => {
-            const p = { id: d.id, ...d.data() }; // id dokumen Firestore adalah jp_id
+            const p = { id: d.id, ...d.data() };
             
-            // Hitung harga final dengan markup/diskon
             let finalPrice = parseFloat(p.jp_price || 0);
             if (p.custom_markup && typeof p.custom_markup === 'number') {
                 finalPrice += p.custom_markup;
             } else if (p.custom_discount && typeof p.custom_discount === 'number') {
                 finalPrice -= p.custom_discount;
             }
-            finalPrice = Math.max(0, finalPrice); // Pastikan harga tidak negatif
+            finalPrice = Math.max(0, finalPrice);
 
             const statusJpClass = `status-${(p.jp_status || '').toLowerCase().replace(/ /g, '-')}`;
 
@@ -1226,7 +1175,6 @@ function loadJagoanPediaProducts() {
     });
 }
 
-// Event listener untuk tombol sinkronisasi
 if (syncApiProductsBtn) {
     syncApiProductsBtn.addEventListener('click', async () => {
         setButtonLoading(syncApiProductsBtn, true);
@@ -1241,15 +1189,12 @@ if (syncApiProductsBtn) {
         } else {
             apiSyncStatusDiv.textContent = `Gagal sinkronisasi: ${response.message}`;
             apiSyncStatusDiv.classList.add('alert-danger');
-            console.error("Sinkronisasi API gagal:", response);
         }
         apiSyncStatusDiv.style.display = 'block';
         setButtonLoading(syncApiProductsBtn, false);
-        loadJagoanPediaProducts(); // Refresh tabel setelah sinkronisasi
     });
 }
 
-// Fungsi untuk update status aktif/non-aktif produk Jagoan Pedia di Firestore
 async function updateJagoanPediaProductStatus(id, isActive, element) {
     try {
         await dbFS.collection('jagoanPediaManagedProducts').doc(id).update({
@@ -1258,36 +1203,29 @@ async function updateJagoanPediaProductStatus(id, isActive, element) {
         showToast(`Produk ${isActive ? 'diaktifkan' : 'dinonaktifkan'} di website.`, 'success');
     } catch (e) {
         showToast('Gagal memperbarui status produk: ' + e.message, 'danger');
-        element.checked = !isActive; // Kembalikan state checkbox jika gagal
+        element.checked = !isActive;
     }
 }
 
-// Fungsi untuk update markup/diskon produk Jagoan Pedia di Firestore
-async function updateJagoanPediaProductMarkup(id, value, element) {
+async function updateJagoanPediaProductMarkup(id, value) {
     const numericValue = parseInt(value);
     if (isNaN(numericValue)) {
         showToast('Nilai markup/diskon harus angka.', 'danger');
-        // element.value = 0; // Atau kembalikan ke nilai sebelumnya
         return;
     }
 
     try {
-        // Asumsi: Jika nilai positif itu markup, jika negatif itu diskon
-        // Anda bisa memisahkan field ini di Firestore jika ingin lebih eksplisit (e.g., custom_markup, custom_discount)
         await dbFS.collection('jagoanPediaManagedProducts').doc(id).update({
-            custom_markup: numericValue // Simpan sebagai markup
-            // Jika Anda ingin diskon, bisa tambahkan: custom_discount: numericValue < 0 ? Math.abs(numericValue) : 0
+            custom_markup: numericValue
         });
         showToast('Markup/Diskon produk berhasil diperbarui!', 'success');
-        loadJagoanPediaProducts(); // Refresh tabel untuk melihat harga final yang diperbarui
     } catch (e) {
         showToast('Gagal memperbarui markup/diskon: ' + e.message, 'danger');
     }
 }
 
-// Fungsi untuk menghapus produk Jagoan Pedia dari Firestore (opsional)
 async function deleteJagoanPediaProduct(id, btn) {
-    if (confirm('Anda yakin ingin menghapus produk Jagoan Pedia ini dari daftar kelola Anda? Ini tidak akan menghapus dari Jagoan Pedia aslinya.')) {
+    if (confirm('Anda yakin ingin menghapus produk ini dari daftar kelola? Ini tidak akan menghapus dari Jagoan Pedia.')) {
         setButtonLoading(btn, true);
         try {
             await dbFS.collection('jagoanPediaManagedProducts').doc(id).delete();
@@ -1298,5 +1236,4 @@ async function deleteJagoanPediaProduct(id, btn) {
             setButtonLoading(btn, false);
         }
     }
-}
-
+        }
