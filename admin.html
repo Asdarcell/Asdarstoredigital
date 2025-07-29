@@ -44,8 +44,8 @@
         th { background-color: var(--primary); color: white; }
         .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8em; }
         .status-pending, .status-menunggu-verifikasi, .status-pending-upload { background-color: #ffc107; color: #343a40; }
-        .status-disetujui, .status-selesai { background-color: #28a745; color: white; }
-        .status-ditolak, .status-dibatalkan { background-color: #dc3545; color: white; }
+        .status-disetujui, .status-selesai, .status-available { background-color: #28a745; color: white; } /* Tambah .status-available */
+        .status-ditolak, .status-dibatalkan, .status-unavailable { background-color: #dc3545; color: white; } /* Tambah .status-unavailable */
         .status-belum-bayar, .status-diproses { background-color: #007bff; color: white; }
         .btn-sm { padding: 5px 10px; font-size: 0.8em; }
         .logout-btn { position: absolute; top: 20px; right: 20px; }
@@ -54,6 +54,60 @@
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 8px;
+        }
+        /* Styling untuk toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary);
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(20px);
+            -ms-transform: translateX(20px);
+            transform: translateX(20px);
+        }
+        /* Round sliders */
+        .slider.round {
+            border-radius: 20px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -64,6 +118,9 @@
             <button id="logout-btn" class="btn btn-danger logout-btn">Logout</button>
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation"><button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">Produk</button></li>
+                <!-- TAB BARU UNTUK PRODUK API JAGOAN PEDIA -->
+                <li class="nav-item" role="presentation"><button class="nav-link" id="api-products-tab" data-bs-toggle="tab" data-bs-target="#api-products" type="button" role="tab">Produk API</button></li>
+                <!-- AKHIR TAB BARU -->
                 <li class="nav-item" role="presentation"><button class="nav-link" id="active-resellers-tab" data-bs-toggle="tab" data-bs-target="#active-resellers" type="button" role="tab">Reseller Aktif</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="verification-tab" data-bs-toggle="tab" data-bs-target="#verification" type="button" role="tab">Verifikasi <span id="verification-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="topup-tab" data-bs-toggle="tab" data-bs-target="#topup" type="button" role="tab">Top Up</button></li>
@@ -81,7 +138,7 @@
         <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="products" role="tabpanel">
                 <div class="section">
-                    <h2>Daftar Produk</h2>
+                    <h2>Daftar Produk (Dikelola Manual)</h2>
                     <div class="table-responsive-container">
                         <table id="products-table" class="table table-striped">
                             <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Harga Umum</th><th>Harga Reseller</th><th>Stok</th><th>Aksi</th></tr></thead>
@@ -89,7 +146,7 @@
                         </table>
                     </div>
                     <hr>
-                    <h2>Tambah/Edit Produk</h2>
+                    <h2>Tambah/Edit Produk Manual</h2>
                     <form id="product-form">
                         <input type="hidden" id="productId" />
                         <div class="mb-3"><label for="nama_produk">Nama Produk</label><input type="text" id="nama_produk" class="form-control" required></div>
@@ -109,6 +166,36 @@
                     </form>
                 </div>
             </div>
+
+            <!-- TAB BARU: PRODUK API JAGOAN PEDIA -->
+            <div class="tab-pane fade" id="api-products" role="tabpanel">
+                <div class="section">
+                    <h2>Produk Jagoan Pedia (Dikelola Admin)</h2>
+                    <p>Sinkronkan produk dari Jagoan Pedia API, lalu kelola status aktif dan harga markup/diskon di sini.</p>
+                    <button id="sync-api-products-btn" class="btn btn-success mb-3 w-100">
+                        <i class="fas fa-sync-alt"></i> Sinkronkan Produk dari Jagoan Pedia
+                    </button>
+                    <div id="api-sync-status" class="alert mt-2" style="display:none;"></div>
+                    <div class="table-responsive-container">
+                        <table id="api-products-table" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nama Produk</th>
+                                    <th>Kategori</th>
+                                    <th>Harga JP</th>
+                                    <th>Markup/Diskon</th>
+                                    <th>Harga Final</th>
+                                    <th>Status JP</th>
+                                    <th>Aktif di Web</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- AKHIR TAB BARU -->
 
             <div class="tab-pane fade" id="active-resellers" role="tabpanel">
                 <div class="section">
@@ -400,7 +487,8 @@
             loadBanners();
             loadPendingResellers(); 
             loadCustomFeatures();
-            loadGiftClaims(); // Panggil fungsi baru untuk memuat klaim hadiah
+            loadGiftClaims();
+            loadJagoanPediaProducts(); // Panggil fungsi baru untuk memuat produk API
 
             // Setup event listeners untuk form baru
             setupPromoManagementForms();
@@ -408,6 +496,7 @@
 
         // Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik)
         document.getElementById('products-tab').addEventListener('click', loadProducts);
+        document.getElementById('api-products-tab').addEventListener('click', loadJagoanPediaProducts); // Tambahkan ini
         document.getElementById('active-resellers-tab').addEventListener('click', loadResellers);
         document.getElementById('verification-tab').addEventListener('click', loadPendingResellers);
         document.getElementById('topup-tab').addEventListener('click', loadTopupConfirmations);
@@ -416,7 +505,7 @@
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
         document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms); // Memanggil ulang setup form jika perlu
-        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims); // Tambahkan ini
+        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims);
         document.getElementById('banners-tab').addEventListener('click', loadBanners);
         document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
 
@@ -454,25 +543,20 @@
             if (buyerPromoForm) {
                 buyerPromoForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    // --- PERUBAHAN DI SINI: MENGAMBIL NOMOR WHATSAPP ---
-                    // Mengambil nilai dari input nomor WhatsApp (bukan email)
-                    const whatsappNumberInput = document.getElementById('buyer-promo-whatsapp'); // Menggunakan id yang baru
+                    const whatsappNumberInput = document.getElementById('buyer-promo-whatsapp');
                     const rawWhatsappNumber = whatsappNumberInput.value.trim();
                     const button = e.target.querySelector('[type=submit]');
                     setButtonLoading(button, true);
 
-                    // Fungsi untuk menormalisasi nomor WA (dari '08...' ke '628...')
                     const normalizePhone = (num) => {
                         let n = String(num).trim().replace(/[^0-9]/g, '');
                         if (n.startsWith('0')) return '62' + n.slice(1);
                         if (n.startsWith('62')) return n;
-                        // Jika sudah dalam format internasional tanpa +, atau format lain, kembalikan apa adanya
                         return num;
                     };
 
                     const normalizedWhatsappNumber = normalizePhone(rawWhatsappNumber);
 
-                    // Validasi sederhana untuk nomor WhatsApp
                     if (!normalizedWhatsappNumber || normalizedWhatsappNumber.length < 10) {
                         showToast('Nomor WhatsApp tidak valid. Masukkan nomor yang benar (diawali 08...).', 'danger');
                         setButtonLoading(button, false);
@@ -480,8 +564,6 @@
                     }
 
                     try {
-                        // --- PERUBAHAN DI SINI: MENULIS KE REALTIME DATABASE ---
-                        // Menulis 'true' ke Realtime Database di path 'hakDiskon/<normalized_whatsapp_number>'
                         await dbRT.ref('hakDiskon/' + normalizedWhatsappNumber).set(true);
 
                         showToast(`Hak diskon berhasil diberikan kepada pembeli: ${rawWhatsappNumber}`, 'success');
@@ -715,10 +797,18 @@
         async function approveReseller(uid, amount) {
             if (!confirm(`Yakin ingin menyetujui pendaftaran reseller ini dan menambahkan saldo ${formatRupiah(amount)}?`)) return;
             try {
-                await dbFS.collection('resellers').doc(uid).update({
-                    status: 'active',
-                    saldo: firebase.firestore.FieldValue.increment(amount), // Menambahkan saldo ke reseller
-                    approvedAt: new Date()
+                await dbFS.runTransaction(async (transaction) => {
+                    const resellerRef = dbFS.collection('resellers').doc(uid);
+                    const topupRef = dbFS.collection('konfirmasiTopup').doc(id); // Ini salah, harusnya tidak ada topupRef di sini
+
+                    const resellerDoc = await transaction.get(resellerRef);
+                    if (!resellerDoc.exists) {
+                        throw new Error("Data reseller tidak ditemukan.");
+                    }
+
+                    const currentSaldo = resellerDoc.data().saldo || 0;
+                    transaction.update(resellerRef, { saldo: currentSaldo + amount }); // Gunakan 'amount' dari parameter
+                    // transaction.update(topupRef, { status: 'disetujui', confirmed_at: new Date() }); // Baris ini harus dihapus atau dipindahkan jika tidak relevan
                 });
                 showToast('Pendaftaran reseller berhasil disetujui!', 'success');
                 // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
@@ -846,14 +936,17 @@
 
         function loadOrders() {
             // Mengambil pesanan dari kedua koleksi dan menggabungkannya
+            // Sekarang juga mengambil dari 'pesananApi'
             Promise.all([
                 dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
-                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
+                dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get(),
+                dbFS.collection('pesananApi').orderBy('waktu', 'desc').get() // Tambahkan ini
             ])
-            .then(([umumSnapshot, resellerSnapshot]) => {
+            .then(([umumSnapshot, resellerSnapshot, apiSnapshot]) => { // Tambahkan apiSnapshot
                 let combinedOrders = [];
                 umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
                 resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                apiSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'api' })); // Tambahkan ini
 
                 // Urutkan berdasarkan waktu (yang terbaru di atas)
                 allOrdersData = combinedOrders.sort((a, b) => {
@@ -870,7 +963,11 @@
 
         function renderOrders(orders) {
             const filteredOrders = orders.filter(order => {
-                return orderFilter.value === 'all' || order.type === orderFilter.value;
+                // Perbarui filter untuk menyertakan 'api'
+                return orderFilter.value === 'all' || 
+                       (orderFilter.value === 'umum' && order.type === 'umum') ||
+                       (orderFilter.value === 'reseller' && order.type === 'reseller') ||
+                       (orderFilter.value === 'api' && order.type === 'api'); // Tambahkan ini
             });
 
             ordersTableBody.innerHTML = '';
@@ -881,20 +978,19 @@
 
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
+                const isApiOrder = order.type === 'api'; // Flag untuk pesanan API
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
 
                 let customerName;
                 if (isResellerOrder) {
-                    // Untuk pesanan reseller, prioritaskan nama_pelanggan, lalu reseller_email, lalu nama (jika ada)
                     customerName = order.nama_pelanggan || order.reseller_email || order.nama || 'N/A';
+                } else if (isApiOrder) { // Untuk pesanan API
+                    customerName = order.nama_pelanggan || 'N/A';
                 } else {
-                    // Untuk pesanan umum, prioritaskan nama_pelanggan, lalu nama
                     customerName = order.nama_pelanggan || order.nama || 'N/A';
                 }
 
-                // Field produk sudah benar (order.produk)
-                // Field harga sudah benar (order.harga_beli untuk reseller, order.harga_final untuk umum)
-                const price = isResellerOrder ? order.harga_beli : order.harga_final;
+                const price = isResellerOrder ? order.harga_beli : order.harga_final; // Harga untuk pesanan API adalah harga_final
 
                 const row = ordersTableBody.insertRow();
                 row.innerHTML = `
@@ -904,7 +1000,7 @@
                     </td>
                     <td>${order.produk}</td>
                     <td>
-                        ${isResellerOrder ? `<span class="badge bg-primary">R</span>` : `<span class="badge bg-secondary">U</span>`}
+                        ${isResellerOrder ? `<span class="badge bg-primary">R</span>` : isApiOrder ? `<span class="badge bg-info">API</span>` : `<span class="badge bg-secondary">U</span>`}
                         ${customerName}
                     </td>
                     <td>${formatRupiah(price)}</td>
@@ -922,7 +1018,14 @@
         async function deleteOrder(id, type, btn) {
             if (confirm('Anda yakin ingin menghapus pesanan ini secara permanen?')) {
                 setButtonLoading(btn, true);
-                const collectionName = type === 'reseller' ? 'pesananReseller' : 'pesananUmum';
+                let collectionName;
+                if (type === 'reseller') {
+                    collectionName = 'pesananReseller';
+                } else if (type === 'api') { // Tambahkan ini
+                    collectionName = 'pesananApi';
+                } else {
+                    collectionName = 'pesananUmum';
+                }
                 try {
                     await dbFS.collection(collectionName).doc(id).delete();
                     showToast('Pesanan berhasil dihapus.', 'warning');
@@ -1094,7 +1197,7 @@
                     const item = s.val();
                     document.getElementById('faq_q').value = item.q;
                     document.getElementById('faq_a').value = item.a;
-                    currentFqaId = id; // Perbaikan typo: currentFaqId
+                    currentFaqId = id; // Perbaikan typo: currentFaqId
                     faqForm.scrollIntoView({ behavior: 'smooth' });
                 }
             });
@@ -1455,4 +1558,4 @@
         }
     </script>
 </body>
-    </html>
+    </ht
