@@ -60,6 +60,7 @@ function setButtonLoading(button, isLoading) {
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
+    loadPendingResellers(); // Untuk notifikasi badge
     setupEventListeners();
 });
 
@@ -68,6 +69,15 @@ function setupEventListeners() {
         'products-tab': loadProducts,
         'sort-products-tab': loadProductsToSort,
         'sort-categories-tab': loadCategoriesAndSetupSort,
+        'api-products-tab': () => console.log('Fungsi load API Products belum dibuat'), // Placeholder
+        'active-resellers-tab': loadResellers,
+        'verification-tab': loadPendingResellers,
+        'orders-tab': loadOrders,
+        'testimonials-tab': loadTestimonials,
+        'faq-tab': loadFaq,
+        'payments-tab': loadPaymentMethods,
+        'banners-tab': loadBanners,
+        'custom-code-tab': loadCustomFeatures,
     };
     for (const [tabId, loadFunction] of Object.entries(tabSelectors)) {
         const tabElement = document.getElementById(tabId);
@@ -340,7 +350,7 @@ async function saveNewCategoryOrder() {
 }
 
 async function deleteCategory(id, name) {
-    if (confirm(`Anda yakin ingin menghapus kategori "${name}"? Ini akan mempengaruhi produk yang menggunakan kategori ini.`)) {
+    if (confirm(`Anda yakin ingin menghapus kategori "${name}"? Ini tidak bisa dibatalkan.`)) {
         try {
             await dbFS.collection('kategori').doc(id).delete();
             showToast('Kategori berhasil dihapus.', 'warning');
@@ -350,3 +360,37 @@ async function deleteCategory(id, name) {
         }
     }
 }
+
+
+// ================================================================
+//  FUNGSI-FUNGSI LAINNYA (RESELLER, PESANAN, DLL.)
+//  CATATAN: Kode di bawah ini adalah placeholder. Anda perlu
+//  mengisinya kembali dengan kode lengkap dari file admin.js lama Anda
+//  jika ingin fungsionalitasnya kembali.
+// ================================================================
+
+function loadResellers() {
+    const tableBody = document.querySelector('#resellers-table tbody');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="3">Fungsi loadResellers() belum diisi.</td></tr>';
+}
+
+function loadPendingResellers() {
+    const tableBody = document.querySelector('#verification-table-body');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="5">Fungsi loadPendingResellers() belum diisi.</td></tr>';
+}
+
+function loadOrders() {
+     const tableBody = document.querySelector('#orders-table-body');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="4">Fungsi loadOrders() belum diisi.</td></tr>';
+}
+
+function loadTestimonials() {
+    const tableBody = document.querySelector('#testimonials-table tbody');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="4">Fungsi loadTestimonials() belum diisi.</td></tr>';
+}
+// ... dan seterusnya untuk fungsi-fungsi lainnya
+function loadFaq(){}
+function loadPaymentMethods(){}
+function loadBanners(){}
+function loadCustomFeatures(){}
+function loadJagoanPediaProducts(){}
