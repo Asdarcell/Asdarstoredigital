@@ -1105,7 +1105,7 @@ window.deleteCustomFeature = function(featureId) {
 // ==================================
 // URL INI TELAH DIPERBARUI
 // ==================================
-const JAGOAN_PEDIA_API_ADMIN_ENDPOINT = 'https://4ca872c1-c2d0-4c55-a17b-db97b0ba9c9b-00-1mexijqem27fy.pike.replit.dev/services.php';
+const JAGOAN_PEDIA_API_ADMIN_ENDPOINT = 'https://4ca872c1-c2d0-4c55-a17b-db97b0ba9c9b-00-1mexijqem27fy.pike.replit.dev/';
 const syncApiProductsBtn = document.getElementById('sync-api-products-btn');
 const apiSyncStatusDiv = document.getElementById('api-sync-status');
 const apiProductsTableBody = document.querySelector('#api-products-table tbody');
