@@ -16,25 +16,19 @@ const storage = firebase.storage();
 
 // Redirect jika belum login
 auth.onAuthStateChanged(user => {
-    if (!user) {
-        window.location.href = "loginadmin.html";
-    }
+    if (!user) { window.location.href = "loginadmin.html"; }
 });
 
 // Fungsi logout
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        auth.signOut().then(() => {
-            window.location.href = "loginadmin.html";
-        });
+        auth.signOut().then(() => { window.location.href = "loginadmin.html"; });
     });
 }
 
-// Fungsi format Rupiah
 const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-// Fungsi menampilkan Toast Notifikasi
 function showToast(message, type = 'success') {
     const toastElement = document.getElementById('liveToast');
     const toastBody = toastElement.querySelector('.toast-body');
@@ -46,19 +40,17 @@ function showToast(message, type = 'success') {
     toastBootstrap.show();
 }
 
-// Fungsi loading button
 function setButtonLoading(button, isLoading) {
     if (!button) return;
     if (isLoading) {
-        if (!button.dataset.originalText) {
-            button.dataset.originalText = button.innerHTML;
-        }
+        if (!button.dataset.originalText) { button.dataset.originalText = button.innerHTML; }
         button.disabled = true;
         button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
     } else {
         button.disabled = false;
         if (button.dataset.originalText) {
             button.innerHTML = button.dataset.originalText;
+            delete button.dataset.originalText;
         }
     }
 }
@@ -67,37 +59,27 @@ function setButtonLoading(button, isLoading) {
 //  MANAJEMEN TABS & EVENT LISTENERS
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Memuat data untuk tab yang aktif pertama kali
     loadProducts();
-    
-    // Menyiapkan semua event listener
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    // Listener untuk tab
     const tabSelectors = {
         'products-tab': loadProducts,
         'sort-products-tab': loadProductsToSort,
         'sort-categories-tab': loadCategoriesAndSetupSort,
-        // Tambahkan fungsi load untuk tab lain di sini jika ada
     };
-
     for (const [tabId, loadFunction] of Object.entries(tabSelectors)) {
         const tabElement = document.getElementById(tabId);
-        if (tabElement) {
-            tabElement.addEventListener('click', loadFunction);
-        }
+        if (tabElement) { tabElement.addEventListener('click', loadFunction); }
     }
 
-    // Listener untuk form
     const productForm = document.getElementById('product-form');
     if (productForm) productForm.addEventListener('submit', handleProductSubmit);
 
     const addCategoryForm = document.getElementById('add-category-form');
     if (addCategoryForm) addCategoryForm.addEventListener('submit', handleAddCategory);
 
-    // Listener untuk tombol
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetProductForm);
 
@@ -111,9 +93,14 @@ let currentProductId = null;
 function loadProducts() {
     const productsTableBody = document.querySelector('#products-table tbody');
     if (!productsTableBody) return;
+    productsTableBody.innerHTML = '<tr><td colspan="6">Memuat produk...</td></tr>';
     dbFS.collection('produk').orderBy('urutan', 'asc').get()
         .then(snapshot => {
             productsTableBody.innerHTML = '';
+            if (snapshot.empty) {
+                productsTableBody.innerHTML = '<tr><td colspan="6">Belum ada produk.</td></tr>';
+                return;
+            }
             snapshot.forEach(doc => {
                 const p = { id: doc.id, ...doc.data() };
                 const r = productsTableBody.insertRow();
@@ -146,7 +133,7 @@ async function handleProductSubmit(e) {
         harga_umum: parseInt(document.getElementById('harga_umum').value),
         harga_reseller: parseInt(document.getElementById('harga_reseller').value),
         stok: parseInt(document.getElementById('stok').value),
-        urutan: parseInt(document.getElementById('urutan').value)
+        urutan: parseInt(document.getElementById('urutan').value) || 0
     };
 
     try {
@@ -278,7 +265,7 @@ function loadCategoriesAndSetupSort() {
     dbFS.collection('kategori').orderBy('urutan').get().then(snapshot => {
         categoryListBody.innerHTML = '';
         if (snapshot.empty) {
-            categoryListBody.innerHTML = '<tr><td colspan="2">Belum ada kategori. Tambahkan di bawah.</td></tr>';
+            categoryListBody.innerHTML = '<tr><td colspan="2">Belum ada kategori.</td></tr>';
         }
         snapshot.forEach(doc => {
             const category = doc.data();
@@ -290,14 +277,13 @@ function loadCategoriesAndSetupSort() {
             `;
         });
 
-        // Hancurkan instance Sortable lama jika ada, lalu buat yang baru
         if (categorySortable) {
             categorySortable.destroy();
         }
         categorySortable = new Sortable(categoryListBody, {
             animation: 150,
             ghostClass: 'sortable-ghost',
-            onEnd: () => saveNewCategoryOrder() // Simpan otomatis saat selesai digeser
+            onEnd: () => saveNewCategoryOrder()
         });
 
     }).catch(error => {
@@ -324,7 +310,7 @@ async function handleAddCategory(e) {
         });
         showToast('Kategori baru berhasil ditambahkan!', 'success');
         newCategoryNameInput.value = '';
-        loadCategoriesAndSetupSort(); // Muat ulang daftar
+        loadCategoriesAndSetupSort();
     } catch (error) {
         showToast('Gagal menambah kategori: ' + error.message, 'danger');
     } finally {
@@ -346,7 +332,6 @@ async function saveNewCategoryOrder() {
     try {
         await batch.commit();
         showToast('Urutan kategori diperbarui!', 'success');
-        // Muat ulang daftar untuk menampilkan nomor urutan yang baru
         loadCategoriesAndSetupSort();
     } catch (error) {
         console.error('Error saving new category order:', error);
@@ -355,7 +340,7 @@ async function saveNewCategoryOrder() {
 }
 
 async function deleteCategory(id, name) {
-    if (confirm(`Anda yakin ingin menghapus kategori "${name}"? Ini tidak bisa dibatalkan.`)) {
+    if (confirm(`Anda yakin ingin menghapus kategori "${name}"? Ini akan mempengaruhi produk yang menggunakan kategori ini.`)) {
         try {
             await dbFS.collection('kategori').doc(id).delete();
             showToast('Kategori berhasil dihapus.', 'warning');
