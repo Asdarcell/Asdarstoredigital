@@ -166,6 +166,99 @@ let currentProductId = null;
 
 promoCheckbox.addEventListener('change', () => { promoOptions.style.display = promoCheckbox.checked ? 'block' : 'none'; });
 
+// Tambahkan kode ini ke dalam file admin.js Anda
+
+// Fungsi untuk memuat produk ke dalam daftar yang bisa diurutkan
+function loadProductsToSort() {
+    const sortList = document.getElementById('product-sort-list');
+    if (!sortList) return; // Pastikan elemen ada
+
+    sortList.innerHTML = '<li class="list-group-item">Memuat produk...</li>';
+
+    db.collection('produk').orderBy('urutan').get().then(snapshot => {
+        sortList.innerHTML = ''; // Kosongkan daftar sebelum diisi
+        if (snapshot.empty) {
+            sortList.innerHTML = '<li class="list-group-item">Tidak ada produk untuk diurutkan.</li>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const product = doc.data();
+            const item = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            // Simpan ID dokumen produk di 'data-id'
+            item.setAttribute('data-id', doc.id); 
+            item.textContent = `${product.nama_produk} (Kategori: ${product.kategori})`;
+            
+            const gripIcon = document.createElement('i');
+            gripIcon.className = 'fas fa-grip-vertical text-muted';
+            item.appendChild(gripIcon);
+
+            sortList.appendChild(item);
+        });
+
+        // Aktifkan SortableJS setelah daftar selesai dibuat
+        new Sortable(sortList, {
+            animation: 150,
+            ghostClass: 'bg-info' // Kelas dari Bootstrap untuk item bayangan
+        });
+
+    }).catch(error => {
+        console.error("Error loading products to sort: ", error);
+        sortList.innerHTML = '<li class="list-group-item text-danger">Gagal memuat produk.</li>';
+    });
+}
+
+// Fungsi untuk menyimpan urutan baru
+function saveNewProductOrder() {
+    const saveBtn = document.getElementById('save-sort-order-btn');
+    if (!saveBtn) return;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Menyimpan...';
+
+    const productItems = document.querySelectorAll('#product-sort-list li');
+    const batch = db.batch();
+
+    productItems.forEach((item, index) => {
+        const docId = item.getAttribute('data-id');
+        if (docId) {
+            const docRef = db.collection('produk').doc(docId);
+            // Update field 'urutan' berdasarkan posisi baru (index + 1)
+            batch.update(docRef, { urutan: index + 1 });
+        }
+    });
+
+    batch.commit().then(() => {
+        showToast('Urutan produk berhasil disimpan!', 'success');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Simpan Urutan Baru';
+        // Muat ulang daftar produk di tabel utama agar urutannya update
+        loadProducts(); 
+    }).catch(error => {
+        console.error('Error saving new order: ', error);
+        showToast('Gagal menyimpan urutan.', 'danger');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Simpan Urutan Baru';
+    });
+}
+
+
+// Pastikan fungsi-fungsi ini dipanggil saat halaman dimuat
+// Di dalam event listener DOMContentLoaded Anda:
+document.addEventListener('DOMContentLoaded', () => {
+    // ... kode Anda yang lain ...
+
+    // Panggil fungsi untuk memuat produk yang bisa diurutkan
+    loadProductsToSort();
+
+    // Tambahkan event listener ke tombol simpan urutan
+    const saveOrderBtn = document.getElementById('save-sort-order-btn');
+    if (saveOrderBtn) {
+        saveOrderBtn.addEventListener('click', saveNewProductOrder);
+    }
+});
+
 function loadProducts() {
     dbFS.collection('produk').orderBy('urutan').get()
         .then(s => {
