@@ -1120,7 +1120,9 @@ async function callAdminApi(action, data = {}) {
         return await response.json();
     } catch (error) {
         console.error('Error saat memanggil API Admin:', error);
-        return { success: false, message: 'Kesalahan jaringan atau server saat menghubungi API Admin.' };
+        // [MODIFIKASI DI SINI]
+        // Kita ubah agar pesan error teknisnya yang ditampilkan.
+        return { success: false, message: 'DETAIL ERROR: ' + error.toString() };
     }
 }
 
