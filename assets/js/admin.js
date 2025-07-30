@@ -1120,8 +1120,6 @@ async function callAdminApi(action, data = {}) {
         return await response.json();
     } catch (error) {
         console.error('Error saat memanggil API Admin:', error);
-        // [MODIFIKASI DI SINI]
-        // Kita ubah agar pesan error teknisnya yang ditampilkan.
         return { success: false, message: 'DETAIL ERROR: ' + error.toString() };
     }
 }
@@ -1137,13 +1135,11 @@ function loadJagoanPediaProducts() {
         s.forEach(d => {
             const p = { id: d.id, ...d.data() };
             
-            let finalPrice = parseFloat(p.jp_price || 0);
-            if (p.custom_markup && typeof p.custom_markup === 'number') {
-                finalPrice += p.custom_markup;
-            } else if (p.custom_discount && typeof p.custom_discount === 'number') {
-                finalPrice -= p.custom_discount;
-            }
-            finalPrice = Math.max(0, finalPrice);
+            // [PERBAIKAN] Menggunakan satu field 'price_adjustment' untuk markup/diskon.
+            // Nilai positif = markup, nilai negatif = diskon.
+            const priceAdjustment = parseFloat(p.price_adjustment || 0);
+            let finalPrice = parseFloat(p.jp_price || 0) + priceAdjustment;
+            finalPrice = Math.max(0, finalPrice); // Pastikan harga tidak negatif
 
             const statusJpClass = `status-${(p.jp_status || '').toLowerCase().replace(/ /g, '-')}`;
 
@@ -1153,9 +1149,9 @@ function loadJagoanPediaProducts() {
                 <td>${p.jp_category || '-'}</td>
                 <td>${formatRupiah(p.jp_price)}</td>
                 <td>
-                    <input type="number" class="form-control form-control-sm" value="${p.custom_markup || p.custom_discount || 0}" 
-                           onchange="updateJagoanPediaProductMarkup('${p.id}', this.value, this)" 
-                           placeholder="Markup/Diskon">
+                    <input type="number" class="form-control form-control-sm" value="${priceAdjustment}" 
+                           onchange="updateJagoanPediaPriceAdjustment('${p.id}', this.value)" 
+                           placeholder="Contoh: 500 atau -500">
                 </td>
                 <td>${formatRupiah(finalPrice)}</td>
                 <td><span class="status-badge ${statusJpClass}">${p.jp_status || 'Unknown'}</span></td>
@@ -1205,37 +1201,41 @@ async function updateJagoanPediaProductStatus(id, isActive, element) {
         showToast(`Produk ${isActive ? 'diaktifkan' : 'dinonaktifkan'} di website.`, 'success');
     } catch (e) {
         showToast('Gagal memperbarui status produk: ' + e.message, 'danger');
-        element.checked = !isActive;
+        element.checked = !isActive; // Kembalikan state jika gagal
     }
 }
 
-async function updateJagoanPediaProductMarkup(id, value) {
-    const numericValue = parseInt(value);
+// [PERBAIKAN] Fungsi ini menggantikan 'updateJagoanPediaProductMarkup'
+async function updateJagoanPediaPriceAdjustment(id, value) {
+    // Menggunakan parseFloat untuk mendukung angka desimal
+    const numericValue = parseFloat(value);
     if (isNaN(numericValue)) {
-        showToast('Nilai markup/diskon harus angka.', 'danger');
+        showToast('Nilai penyesuaian harga harus berupa angka.', 'danger');
         return;
     }
 
     try {
+        // Memperbarui field tunggal 'price_adjustment'
         await dbFS.collection('jagoanPediaManagedProducts').doc(id).update({
-            custom_markup: numericValue
+            price_adjustment: numericValue
         });
-        showToast('Markup/Diskon produk berhasil diperbarui!', 'success');
+        showToast('Penyesuaian harga produk berhasil diperbarui!', 'success');
     } catch (e) {
-        showToast('Gagal memperbarui markup/diskon: ' + e.message, 'danger');
+        showToast('Gagal memperbarui penyesuaian harga: ' + e.message, 'danger');
     }
 }
 
+
 async function deleteJagoanPediaProduct(id, btn) {
-    if (confirm('Anda yakin ingin menghapus produk ini dari daftar kelola? Ini tidak akan menghapus dari Jagoan Pedia.')) {
+    if (confirm('Anda yakin ingin menghapus produk ini dari daftar kelola? Tindakan ini tidak akan menghapus produk dari Jagoan Pedia.')) {
         setButtonLoading(btn, true);
         try {
             await dbFS.collection('jagoanPediaManagedProducts').doc(id).delete();
-            showToast('Produk Jagoan Pedia berhasil dihapus dari daftar kelola.', 'warning');
+            showToast('Produk berhasil dihapus dari daftar kelola.', 'warning');
         } catch (e) {
-            showToast('Gagal menghapus produk Jagoan Pedia: ' + e.message, 'danger');
+            showToast('Gagal menghapus produk: ' + e.message, 'danger');
         } finally {
             setButtonLoading(btn, false);
         }
     }
-        }
+            }
