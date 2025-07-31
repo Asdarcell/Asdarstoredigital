@@ -84,21 +84,18 @@ function setupEventListeners() {
         if (tabElement) { tabElement.addEventListener('click', loadFunction); }
     }
 
-    // Forms
     const productForm = document.getElementById('product-form');
     if (productForm) productForm.addEventListener('submit', handleProductSubmit);
 
     const addCategoryForm = document.getElementById('add-category-form');
     if (addCategoryForm) addCategoryForm.addEventListener('submit', handleAddCategory);
 
-    // Buttons
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetProductForm);
 
     const saveProductOrderBtn = document.getElementById('save-product-order-btn');
     if (saveProductOrderBtn) saveProductOrderBtn.addEventListener('click', saveNewProductOrder);
     
-    // Filters
     const orderFilter = document.getElementById('order-filter');
     if(orderFilter) { orderFilter.addEventListener('change', () => renderOrders(allOrdersData)); }
 }
@@ -367,6 +364,7 @@ async function deleteCategory(id, name) {
     }
 }
 
+
 // ================================================================
 //  FUNGSI LAMA ANDA (DIKEMBALIKAN SEPENUHNYA)
 // ================================================================
@@ -374,6 +372,7 @@ async function deleteCategory(id, name) {
 function loadResellers() {
     const resellersTableBody = document.querySelector('#resellers-table tbody');
     if (!resellersTableBody) return;
+    resellersTableBody.innerHTML = '<tr><td colspan="3">Memuat reseller...</td></tr>';
     dbFS.collection('resellers').where('status', '==', 'active').get()
         .then(s => {
             resellersTableBody.innerHTML = '';
@@ -387,7 +386,7 @@ function loadResellers() {
 }
 
 async function addSaldo(id, btn) {
-    const nominalStr = prompt("Masukkan nominal saldo yang akan ditambahkan:");
+    const nominalStr = prompt("Masukkan nominal saldo:");
     if (nominalStr !== null) {
         const nominal = parseInt(nominalStr);
         if (!isNaN(nominal) && nominal > 0) {
@@ -400,6 +399,7 @@ async function addSaldo(id, btn) {
         } else { showToast("Input nominal tidak valid.", 'warning'); }
     }
 }
+
 async function deleteReseller(id, btn) {
     if (confirm('Yakin hapus reseller ini?')) {
         setButtonLoading(btn, true);
@@ -458,11 +458,11 @@ async function deletePendingReseller(uid, btn) {
     }
 }
 
-
 let allOrdersData = [];
 function loadOrders() {
     const ordersTableBody = document.querySelector('#orders-table-body');
     if (!ordersTableBody) return;
+    ordersTableBody.innerHTML = '<tr><td colspan="6">Memuat pesanan...</td></tr>';
     Promise.all([
         dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
         dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get(),
@@ -498,6 +498,7 @@ function renderOrders(orders) {
 function loadTestimonials() {
     const testimonialsTableBody = document.querySelector('#testimonials-table tbody');
     if (!testimonialsTableBody) return;
+     testimonialsTableBody.innerHTML = '<tr><td colspan="4">Memuat testimoni...</td></tr>';
     dbRT.ref('testimonials').on('value', s => {
         testimonialsTableBody.innerHTML = '';
         if (!s.exists()) { testimonialsTableBody.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada testimoni.</td></tr>'; return; }
@@ -525,8 +526,7 @@ async function deleteTestimonial(id, btn) {
         } catch (e) { showToast('Gagal: ' + e.message, 'danger'); } finally { setButtonLoading(btn, false); }
     }
 }
-
-// Dan seterusnya untuk semua fungsi-fungsi lainnya...
+// Dan seterusnya untuk sisa fungsi lama...
 function loadFaq(){}
 function loadPaymentMethods(){}
 function loadBanners(){}
