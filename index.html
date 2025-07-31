@@ -399,24 +399,22 @@
     function updateTotalHarga() {
     if (!produkTerpilihData) return;
 
-    // 1. AMBIL KEDUA HARGA DARI DATA PRODUK
     let hargaAwal = produkTerpilihData.harga_umum;
-    let hargaReseller = produkTerpilihData.harga_reseller; // Mengambil harga reseller
-
+    let hargaReseller = produkTerpilihData.harga_reseller;
     let hargaFinal = hargaAwal;
-    let deskripsiHargaHTML; // Variabel untuk menampung HTML tampilan harga
+    let deskripsiHargaHTML;
 
-    // 2. BUAT TAMPILAN HARGA BERDASARKAN DATA YANG ADA
-    // Cek jika ada harga reseller, maka tampilkan keduanya
+    // --- BAGIAN INI DIUBAH ---
+    // Cek jika ada harga reseller, tampilkan keduanya tanpa coretan
     if (hargaReseller && hargaReseller > 0) {
         deskripsiHargaHTML = `
-            <div style="line-height: 1.4;">
-                <span style="font-size: 0.9em; color: var(--muted-text);">Harga Normal: 
-                    <s style="text-decoration: line-through;">${formatRupiah(hargaAwal)}</s>
-                </span><br>
-                <span style="font-weight: bold; font-size: 1.2em; color: var(--success);">
-                    Harga Reseller: ${formatRupiah(hargaReseller)}
-                </span>
+            <div style="line-height: 1.5;">
+                <p style="margin: 0; font-size: 1em;">
+                    <b>Harga Normal:</b> ${formatRupiah(hargaAwal)}
+                </p>
+                <p style="margin: 0; font-weight: bold; font-size: 1.1em; color: var(--success);">
+                    <b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}
+                </p>
             </div>
         `;
     } else {
@@ -426,7 +424,7 @@
 
     let diskonDeskripsiTambahan = '';
 
-    // (Logika diskon Anda yang sudah ada tetap di sini, tidak perlu diubah)
+    // Logika diskon Anda yang sudah ada tetap di sini
     if (promoProdukTerpakai && produkTerpilihData.promo) {
         let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
         hargaFinal = Math.max(0, hargaAwal - potongan);
@@ -436,7 +434,7 @@
         diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
     }
     
-    // 3. GABUNGKAN SEMUA INFORMASI UNTUK DITAMPILKAN
+    // Gabungkan semua informasi untuk ditampilkan
     infoProduk.innerHTML = `
         ${deskripsiHargaHTML}
         ${diskonDeskripsiTambahan}
