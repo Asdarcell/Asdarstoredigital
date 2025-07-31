@@ -397,23 +397,53 @@
     }
 
     function updateTotalHarga() {
-        if (!produkTerpilihData) return;
-        let hargaAwal = produkTerpilihData.harga_umum;
-        let hargaFinal = hargaAwal;
-        let deskripsiHarga = `<b>Harga:</b> ${formatRupiah(hargaAwal)}`;
-        let diskonDeskripsiTambahan = '';
+    if (!produkTerpilihData) return;
 
-        // Prioritas Diskon: Promo Produk > Diskon Share (Hadiah Email dihapus)
-        if (promoProdukTerpakai && produkTerpilihData.promo) {
-            let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
-            hargaFinal = Math.max(0, hargaAwal - potongan);
-            diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
-        } else if (diskonShareTerpakai) {
-            hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
-            diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
-        }
-        
-        infoProduk.innerHTML = `${deskripsiHarga}${diskonDeskripsiTambahan}<br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
+    // 1. AMBIL KEDUA HARGA DARI DATA PRODUK
+    let hargaAwal = produkTerpilihData.harga_umum;
+    let hargaReseller = produkTerpilihData.harga_reseller; // Mengambil harga reseller
+
+    let hargaFinal = hargaAwal;
+    let deskripsiHargaHTML; // Variabel untuk menampung HTML tampilan harga
+
+    // 2. BUAT TAMPILAN HARGA BERDASARKAN DATA YANG ADA
+    // Cek jika ada harga reseller, maka tampilkan keduanya
+    if (hargaReseller && hargaReseller > 0) {
+        deskripsiHargaHTML = `
+            <div style="line-height: 1.4;">
+                <span style="font-size: 0.9em; color: var(--muted-text);">Harga Normal: 
+                    <s style="text-decoration: line-through;">${formatRupiah(hargaAwal)}</s>
+                </span><br>
+                <span style="font-weight: bold; font-size: 1.2em; color: var(--success);">
+                    Harga Reseller: ${formatRupiah(hargaReseller)}
+                </span>
+            </div>
+        `;
+    } else {
+        // Jika tidak ada harga reseller, tampilkan harga normal saja
+        deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
+    }
+
+    let diskonDeskripsiTambahan = '';
+
+    // (Logika diskon Anda yang sudah ada tetap di sini, tidak perlu diubah)
+    if (promoProdukTerpakai && produkTerpilihData.promo) {
+        let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
+        hargaFinal = Math.max(0, hargaAwal - potongan);
+        diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
+    } else if (diskonShareTerpakai) {
+        hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
+        diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
+    }
+    
+    // 3. GABUNGKAN SEMUA INFORMASI UNTUK DITAMPILKAN
+    infoProduk.innerHTML = `
+        ${deskripsiHargaHTML}
+        ${diskonDeskripsiTambahan}
+        <hr style="margin: 10px 0; border-color: var(--border);">
+        <b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br>
+        <b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}
+    `;
     }
 
     async function handleOrderSubmit(e) {
