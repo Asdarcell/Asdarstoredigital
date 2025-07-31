@@ -60,7 +60,7 @@ function setButtonLoading(button, isLoading) {
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
-    loadPendingResellers(); // Untuk notifikasi badge
+    loadPendingResellers(); 
     setupEventListeners();
 });
 
@@ -95,6 +95,9 @@ function setupEventListeners() {
 
     const saveProductOrderBtn = document.getElementById('save-product-order-btn');
     if (saveProductOrderBtn) saveProductOrderBtn.addEventListener('click', saveNewProductOrder);
+    
+    const orderFilter = document.getElementById('order-filter');
+    if(orderFilter) { orderFilter.addEventListener('change', () => renderOrders(allOrdersData)); }
 }
 
 // =================================== PRODUK (Firestore) ===================================
@@ -362,7 +365,7 @@ async function deleteCategory(id, name) {
 }
 
 // ================================================================
-//  FUNGSI-FUNGSI LAMA ANDA YANG SUDAH BERFUNGSI
+//  FUNGSI LAMA ANDA
 // ================================================================
 
 function loadResellers() {
@@ -403,24 +406,11 @@ function loadPendingResellers() {
     }, e => { verificationTableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Gagal: ${e.message}</td></tr>`; });
 }
 
-function loadOrders() {
-     const ordersTableBody = document.querySelector('#orders-table-body');
-    if (!ordersTableBody) return;
-    ordersTableBody.innerHTML = `<tr><td colspan="4">Memuat pesanan...</td></tr>`;
-    // Logika lengkap untuk loadOrders Anda...
-}
-
-function loadTestimonials() {
-    const testimonialsTableBody = document.querySelector('#testimonials-table tbody');
-    if (!testimonialsTableBody) return;
-    testimonialsTableBody.innerHTML = `<tr><td colspan="4">Memuat testimoni...</td></tr>`;
-     // Logika lengkap untuk loadTestimonials Anda...
-}
-
-// ...dan seterusnya untuk semua fungsi lainnya.
+// ... Sisa fungsi Anda bisa ditambahkan di sini
+function loadOrders(){}
+function loadTestimonials(){}
 function loadFaq(){}
 function loadPaymentMethods(){}
 function loadBanners(){}
 function loadCustomFeatures(){}
 function loadJagoanPediaProducts(){}
-// ... (Salin sisa fungsi-fungsi lama Anda yang sudah berfungsi ke sini)
