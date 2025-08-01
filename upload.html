@@ -55,12 +55,16 @@
         <div class="success-card">
           <i class="fas fa-check-circle"></i>
           <h3>Upload Berhasil!</h3>
-          <p>Bukti pembayaran Anda telah kami terima. Admin akan segera memverifikasi pesanan Anda.</p>
-          <a href="#" id="back-to-status-btn" class="btn btn-success mt-3">Lihat Status Pesanan Saya</a>
+          <p>Bukti pembayaran Anda telah kami terima. Untuk mempercepat proses, silakan kirim notifikasi ke admin.</p>
+          
+          <a href="#" id="notify-admin-wa-btn" target="_blank" class="btn btn-info mt-2 w-100" style="background-color: #25D366; border-color: #25D366;">
+            <i class="fab fa-whatsapp"></i> Kirim Notifikasi ke Admin
+          </a>
+          
+          <a href="#" id="back-to-status-btn" class="btn btn-secondary mt-3 w-100">Lihat Status Pesanan Saya</a>
         </div>
       </div>
-
-    </div>
+      </div>
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -156,20 +160,19 @@
                 waktu_upload_bukti: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // ================== BAGIAN YANG DIUBAH MULAI ==================
-            // Setelah semua proses di atas berhasil, kirim laporan ke Cloud Function Anda
-            // PENTING: Ganti URL di bawah ini dengan URL Cloud Function Anda yang sebenarnya!
-            const cloudFunctionUrl = "https://asia-southeast2-nama-proyek-anda.cloudfunctions.net/notifikasiBuktiPembayaranHttp";
+            // ================== BAGIAN JAVASCRIPT YANG DIUBAH MULAI ==================
+            // Setelah upload berhasil, kita buat link wa.me secara dinamis
             
-            fetch(cloudFunctionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: orderId })
-            })
-            .then(response => response.text())
-            .then(result => console.log("Hasil trigger notifikasi:", result))
-            .catch(err => console.error("Gagal mengirim trigger notifikasi:", err));
-            // ================== BAGIAN YANG DIUBAH SELESAI ==================
+            const adminWaNumber = "6281803004607"; // <-- GANTI DENGAN NOMOR WA ADMIN ANDA
+            const orderData = orderDoc.data();
+            const message = `Halo Admin,\n\nSaya sudah upload bukti pembayaran untuk pesanan:\n\nID: ${orderId}\nProduk: ${orderData.produk}\nTotal: ${formatRupiah(orderData.harga_final)}\n\nMohon segera diverifikasi. Terima kasih.`;
+            
+            // Buat link wa.me yang lengkap
+            const waLink = `https://wa.me/${adminWaNumber}?text=${encodeURIComponent(message)}`;
+            
+            // Masukkan link tersebut ke tombol notifikasi
+            document.getElementById('notify-admin-wa-btn').href = waLink;
+            // ================== BAGIAN JAVASCRIPT YANG DIUBAH SELESAI ==================
 
             uploadContainer.style.display = 'none';
             successContainer.style.display = 'block';
