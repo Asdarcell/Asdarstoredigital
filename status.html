@@ -33,62 +33,20 @@
     .status-detail-item strong { color: var(--primary); }
     .proof-image-container img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 6px var(--shadow); cursor: pointer; }
     .info-box { border-left: 4px solid var(--primary); padding: 15px; background-color: var(--bg); margin-top: 20px; border-radius: 4px; text-align: left; }
-    
-    .promo-card {
-      background: linear-gradient(145deg, hsl(204, 70%, 53%), hsl(221, 44%, 19%));
-      color: #ffffff;
-      padding: 30px;
-      border-radius: 18px;
-      margin-top: 25px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      text-align: center;
-    }
-    .promo-card .fa-gift {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      color: #f1c40f;
-      text-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
-    }
-    .promo-card h5 {
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.5rem;
-    }
-    .promo-card p {
-      opacity: 0.85;
-      font-size: 0.95rem;
-      margin-bottom: 2rem;
-    }
-    .promo-card .btn-promo {
-      width: 100%;
-      padding: 12px;
-      font-weight: 600;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      transition: all 0.3s ease;
-      border: 2px solid transparent;
-    }
-    .promo-card .btn-promo-primary {
-      background-color: #ffffff;
-      color: #1a1a2e;
-    }
-    .promo-card .btn-promo-primary:hover {
-      background-color: #f1c40f;
-      color: #1a1a2e;
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(255,255,255,0.2);
-    }
-    .promo-card .btn-promo-secondary {
-      background-color: transparent;
-      color: #ffffff;
-      border: 2px solid rgba(255, 255, 255, 0.5);
-    }
-    .promo-card .btn-promo-secondary:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      border-color: #ffffff;
-    }
+    .promo-card { background: linear-gradient(145deg, hsl(204, 70%, 53%), hsl(221, 44%, 19%)); color: #ffffff; padding: 30px; border-radius: 18px; margin-top: 25px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); text-align: center; }
+    .promo-card .fa-gift { font-size: 2.5rem; margin-bottom: 1rem; color: #f1c40f; text-shadow: 0 0 15px rgba(241, 196, 15, 0.7); }
+    .promo-card h5 { font-weight: 700; font-size: 1.5rem; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .promo-card p { opacity: 0.85; font-size: 0.95rem; margin-bottom: 2rem; }
+    .promo-card .btn-promo { width: 100%; padding: 12px; font-weight: 600; border-radius: 10px; margin-bottom: 10px; transition: all 0.3s ease; border: 2px solid transparent; }
+    .promo-card .btn-promo-primary { background-color: #ffffff; color: #1a1a2e; }
+    .promo-card .btn-promo-primary:hover { background-color: #f1c40f; color: #1a1a2e; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
+    .promo-card .btn-promo-secondary { background-color: transparent; color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.5); }
+    .promo-card .btn-promo-secondary:hover { background-color: rgba(255, 255, 255, 0.1); border-color: #ffffff; }
+    /* === STYLE BARU UNTUK KOTAK PEMBAYARAN === */
+    .payment-instruction-box { margin-top: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background-color: var(--bg); }
+    .payment-method-item { background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .copy-btn { background-color: transparent; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .copy-btn:disabled { background-color: var(--success) !important; color: white !important; border-color: var(--success) !important; }
   </style>
 </head>
 <body data-theme="dark">
@@ -126,54 +84,103 @@
     const statusContent = document.getElementById('status-content');
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 
-    function renderStatus(orderId, data) {
+    function copyToClipboard(text, element) {
+        navigator.clipboard.writeText(text).then(() => {
+            element.innerHTML = `<i class="fas fa-check"></i> Disalin!`;
+            element.disabled = true;
+            setTimeout(() => {
+                element.innerHTML = `<i class="far fa-copy"></i> Salin`;
+                element.disabled = false;
+            }, 2000);
+        });
+    }
+
+    // ================== FUNGSI BARU DIMULAI ==================
+    // Fungsi ini membuat blok HTML untuk instruksi pembayaran
+    async function generatePaymentInstructions(orderData) {
+        const metode = orderData.metode_pembayaran;
+        let instructionContent = '';
+
+        if (metode === 'QRIS') {
+            instructionContent = `
+                <div style="text-align: center;">
+                    <p>Pindai kode di bawah ini:</p>
+                    <img src="https://i.imgur.com/ganti-dengan-url-anda.png" alt="QRIS Code" width="250">
+                    <p style="font-weight: bold; color: var(--danger);">PENTING: Masukkan total tagihan secara manual.</p>
+                </div>`;
+        } else if (metode === 'DANA' || metode === 'ShopeePay') {
+            const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
+            let paymentInfo = null;
+            paymentSnapshot.forEach(doc => {
+                if (doc.data().metode.toLowerCase() === metode.toLowerCase()) {
+                    paymentInfo = doc.data();
+                }
+            });
+
+            if (paymentInfo) {
+                instructionContent = `
+                    <div class="payment-method-item">
+                        <div class="payment-details">
+                            <div style="font-weight: 600;">${paymentInfo.metode}</div>
+                            <div style="color: var(--primary);">${paymentInfo.nomor}</div>
+                            <div>a.n ${paymentInfo.atas_nama}</div>
+                        </div>
+                        <button class="copy-btn" onclick="copyToClipboard('${paymentInfo.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
+                    </div>`;
+            } else {
+                instructionContent = `<p class="text-center text-danger">Detail pembayaran tidak ditemukan.</p>`;
+            }
+        } else {
+             instructionContent = `<p class="text-center text-muted">Metode pembayaran tidak diketahui.</p>`;
+        }
+        
+        return `
+            <div class="payment-instruction-box">
+                <h4 class="text-center">Lanjutkan Pembayaran</h4>
+                <p class="text-center">Lakukan pembayaran sebesar <strong>${formatRupiah(orderData.harga_final)}</strong></p>
+                ${instructionContent}
+                <p class="text-center mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p>
+                <a class='btn btn-primary d-block mt-3' href="upload.html?id=${orderData.id}"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
+            </div>`;
+    }
+    // ================== FUNGSI BARU SELESAI ==================
+
+    // Fungsi renderStatus sekarang diubah menjadi async
+    async function renderStatus(orderId, data) {
         const statusClass = (data.status || 'Menunggu Pembayaran').toLowerCase().replace(/ /g, '-');
         
         let buyerProofHTML = '';
         if (data.bukti_pembayaran_url) {
-            buyerProofHTML = `
-                <div class="status-detail-item proof-image-container">
-                    <strong>Bukti Pembayaran Anda:</strong><br>
-                    <a href="${data.bukti_pembayaran_url}" target="_blank">
-                        <img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran">
-                    </a>
-                </div>`;
+            buyerProofHTML = `<div class="status-detail-item proof-image-container"><strong>Bukti Pembayaran Anda:</strong><br><a href="${data.bukti_pembayaran_url}" target="_blank"><img src="${data.bukti_pembayaran_url}" alt="Bukti Pembayaran"></a></div>`;
         }
         
         let adminProofHTML = '';
         if (data.bukti_pengiriman_url) {
-            adminProofHTML = `
-                <div class="status-detail-item proof-image-container">
-                    <strong>Bukti Pengiriman dari Admin:</strong><br>
-                    <a href="${data.bukti_pengiriman_url}" target="_blank">
-                        <img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman">
-                    </a>
-                </div>`;
+            adminProofHTML = `<div class="status-detail-item proof-image-container"><strong>Bukti Pengiriman dari Admin:</strong><br><a href="${data.bukti_pengiriman_url}" target="_blank"><img src="${data.bukti_pengiriman_url}" alt="Bukti Pengiriman"></a></div>`;
         }
 
         let additionalInfo = '';
-        if (data.status === 'Menunggu Pembayaran' && !data.bukti_pembayaran_url) {
-            additionalInfo = `<div class="info-box"><p>Anda belum mengunggah bukti pembayaran. Silakan <a href="upload.html?id=${orderId}">unggah bukti di sini</a>.</p></div>`;
-        
-        } else if (data.status === 'Selesai') {
+        // ================== LOGIKA UTAMA DIUBAH ==================
+        // Jika status Menunggu Pembayaran, panggil fungsi untuk menampilkan instruksi
+        if (data.status === 'Menunggu Pembayaran') {
+            additionalInfo = await generatePaymentInstructions(data);
+        } 
+        // Logika untuk status Selesai tetap sama
+        else if (data.status === 'Selesai') {
             const tokoLink = "https://asdarcell.github.io/Asdarstoredigital/auth.html";
             const pesanPromo = encodeURIComponent(`Asli, aku baru nemu store digital favorit! Prosesnya cepet, aman, dan terpercaya banget. Kalau kamu butuh top-up atau lainnya, coba cek di sini deh, dijamin suka! 😉 ${tokoLink}`);
             const linkWA = `https://wa.me/?text=${pesanPromo}`;
-
             additionalInfo = `
                 <div class="promo-card">
                     <i class="fas fa-gift"></i>
                     <h5>Sebuah Kejutan Manis, Khusus Untukmu...</h5>
                     <p>Karena kamu pelanggan istimewa, kami ingin memberimu hadiah. Cukup bagikan sedikit cerita tentang kami dan dapatkan potongan <strong>Rp 5.000</strong> untuk petualangan belanjamu selanjutnya.</p>
-                    <a href="${linkWA}" target="_blank" class="btn btn-promo btn-promo-primary">
-                        Langkah 1: Bagikan Cerita <i class="fab fa-whatsapp ms-2"></i>
-                    </a>
-                    <a href="promo-upload.html?wa=${data.no_whatsap_aktif || ''}" target="_blank" class="btn btn-promo btn-promo-secondary">
-                        Langkah 2: Klaim Hadiahmu <i class="fas fa-upload ms-2"></i>
-                    </a>
+                    <a href="${linkWA}" target="_blank" class="btn btn-promo btn-promo-primary">Langkah 1: Bagikan Cerita <i class="fab fa-whatsapp ms-2"></i></a>
+                    <a href="promo-upload.html?wa=${data.no_whatsap_aktif || ''}" target="_blank" class="btn btn-promo btn-promo-secondary">Langkah 2: Klaim Hadiahmu <i class="fas fa-upload ms-2"></i></a>
                 </div>
             `;
         }
+        // ================== AKHIR DARI PERUBAHAN ==================
 
         statusContent.innerHTML = `
             <h2>Status Pesanan</h2>
@@ -190,80 +197,62 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get('id');
-    const kembaliButton = document.querySelector('header .btn-secondary'); // Mendapatkan elemen tombol "Kembali"
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+        const kembaliButton = document.querySelector('header .btn-secondary');
 
-    // Jika ID pesanan tidak ditemukan di URL
-    if (!orderId) {
-        statusContent.innerHTML = '<h2><i class="fa fa-exclamation-triangle"></i> ID Pesanan Tidak Ditemukan.</h2><p>Pastikan tautan yang Anda masukkan sudah benar.</p>';
-        // Atur tombol kembali ke halaman index secara default
-        kembaliButton.href = 'index.html'; 
-        return;
-    }
+        if (!orderId) {
+            statusContent.innerHTML = '<h2><i class="fa fa-exclamation-triangle"></i> ID Pesanan Tidak Ditemukan.</h2><p>Pastikan tautan yang Anda masukkan sudah benar.</p>';
+            kembaliButton.href = 'index.html'; 
+            return;
+        }
 
-    // Tampilkan status memuat data awal
-    statusContent.innerHTML = `
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Memuat status pesanan...</p>
-    `;
+        const umumRef = dbFS.collection('pesananUmum').doc(orderId);
+        const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
 
-    const umumRef = dbFS.collection('pesananUmum').doc(orderId);
-    const resellerRef = dbFS.collection('pesananReseller').doc(orderId);
-
-    try {
-        let orderFound = false;
-        let isResellerOrder = false; // Flag untuk menentukan apakah ini pesanan reseller
-
-        // Coba ambil dokumen dari koleksi 'pesananUmum' (untuk pembeli biasa)
-        const docUmum = await umumRef.get();
-        if (docUmum.exists) {
-            renderStatus(orderId, docUmum.data());
-            // Dengarkan perubahan real-time untuk pesanan umum
-            umumRef.onSnapshot(doc => {
-                if (doc.exists) { // Pastikan dokumen masih ada setelah pembaruan
-                    renderStatus(orderId, doc.data());
+        try {
+            let orderFound = false;
+            let isResellerOrder = false;
+            
+            // Mengubah listener menjadi onSnapshot untuk update real-time
+            const unsubscribeUmum = umumRef.onSnapshot(async doc => {
+                if (doc.exists) {
+                    if (orderFound) return; // Mencegah duplikasi jika reseller juga ditemukan
+                    orderFound = true;
+                    isResellerOrder = false;
+                    kembaliButton.href = 'index.html';
+                    await renderStatus(orderId, doc.data());
+                    unsubscribeReseller(); // Hentikan listener lain jika sudah ketemu
                 }
             });
-            orderFound = true;
-            isResellerOrder = false; // Ini pesanan pembeli biasa
-        } else {
-            // Jika tidak ditemukan di 'pesananUmum', coba di 'pesananReseller'
-            const docReseller = await resellerRef.get();
-            if (docReseller.exists) {
-                renderStatus(orderId, docReseller.data());
-                // Dengarkan perubahan real-time untuk pesanan reseller
-                resellerRef.onSnapshot(doc => {
-                    if (doc.exists) { // Pastikan dokumen masih ada setelah pembaruan
-                        renderStatus(orderId, doc.data());
-                    }
-                });
-                orderFound = true;
-                isResellerOrder = true; // Ini pesanan reseller
-            }
-        }
 
-        // Setelah jenis pesanan ditentukan, atur tautan tombol "Kembali"
-        if (orderFound) {
-            if (isResellerOrder) {
-                kembaliButton.href = 'reseller-dashboard.html';
-            } else {
-                kembaliButton.href = 'index.html';
-            }
-        }
-        // Pastikan tombol kembali juga diatur jika pesanan tidak ditemukan
-        else {
-            statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
+            const unsubscribeReseller = resellerRef.onSnapshot(async doc => {
+                if (doc.exists) {
+                    if (orderFound) return;
+                    orderFound = true;
+                    isResellerOrder = true;
+                    kembaliButton.href = 'reseller-dashboard.html';
+                    await renderStatus(orderId, doc.data());
+                    unsubscribeUmum(); // Hentikan listener lain jika sudah ketemu
+                }
+            });
+
+            // Memberi sedikit waktu agar onSnapshot bisa berjalan
+            setTimeout(() => {
+                if (!orderFound) {
+                    unsubscribeUmum();
+                    unsubscribeReseller();
+                    statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
+                    kembaliButton.href = 'index.html'; 
+                }
+            }, 3000); // Timeout 3 detik
+
+        } catch (err) {
+            console.error("Gagal mengambil data pesanan:", err);
+            statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2><p>Silakan coba lagi nanti atau hubungi dukungan.</p>';
             kembaliButton.href = 'index.html'; 
         }
-
-    } catch (err) {
-        console.error("Gagal mengambil data pesanan:", err);
-        statusContent.innerHTML = '<h2>Terjadi Kesalahan Saat Memuat Data.</h2><p>Silakan coba lagi nanti atau hubungi dukungan.</p>';
-        // Atur tombol kembali ke halaman index jika ada error
-        kembaliButton.href = 'index.html'; 
-    }
-});
+    });
   </script>
 </body>
 </html>
