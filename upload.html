@@ -55,13 +55,15 @@
         <div class="success-card">
           <i class="fas fa-check-circle"></i>
           <h3>Upload Berhasil!</h3>
-          <p>Bukti pembayaran Anda telah kami terima. Untuk mempercepat proses, silakan kirim notifikasi ke admin.</p>
+          <p>Bukti pembayaran Anda telah kami terima. **Langkah terakhir, klik tombol di bawah untuk memberitahu admin.**</p>
           
-          <a href="#" id="notify-admin-wa-btn" target="_blank" class="btn btn-info mt-2 w-100" style="background-color: #25D366; border-color: #25D366;">
-            <i class="fab fa-whatsapp"></i> Kirim Notifikasi ke Admin
+          <a href="#" id="notify-admin-wa-btn" target="_blank" class="btn btn-primary mt-2 w-100" style="background-color: #25D366; border-color: #25D366;">
+            <i class="fab fa-whatsapp"></i> Langkah 1: Kirim Notifikasi ke Admin
           </a>
           
-          <a href="#" id="back-to-status-btn" class="btn btn-secondary mt-3 w-100">Lihat Status Pesanan Saya</a>
+          <a href="#" id="back-to-status-btn" class="btn btn-secondary mt-3 w-100 disabled" style="pointer-events: none;">
+            Langkah 2: Lihat Status Pesanan Saya
+          </a>
         </div>
       </div>
       </div>
@@ -161,17 +163,32 @@
             });
 
             // ================== BAGIAN JAVASCRIPT YANG DIUBAH MULAI ==================
-            // Setelah upload berhasil, kita buat link wa.me secara dinamis
-            
-            const adminWaNumber = "6281803004607"; // <-- GANTI DENGAN NOMOR WA ADMIN ANDA
+            const adminWaNumber = "628xxxxxxxxxx"; // <-- GANTI DENGAN NOMOR WA ADMIN ANDA
+            const adminBaseUrl = "https://asdarcell.github.io/Asdarstoredigital/admin.html"; // <-- GANTI JIKA PERLU
             const orderData = orderDoc.data();
-            const message = `Halo Admin,\n\nSaya sudah upload bukti pembayaran untuk pesanan:\n\nID: ${orderId}\nProduk: ${orderData.produk}\nTotal: ${formatRupiah(orderData.harga_final)}\n\nMohon segera diverifikasi. Terima kasih.`;
             
-            // Buat link wa.me yang lengkap
+            // 1. Buat link admin yang unik
+            const adminLink = `${adminBaseUrl}?id=${orderId}`;
+            
+            // 2. Rakit pesan WhatsApp dengan link admin
+            const message = `Halo Admin,\n\nBukti bayar baru diterima:\nID: ${orderId}\nProduk: ${orderData.produk}\nTotal: ${formatRupiah(orderData.harga_final)}\n\nKlik link di bawah untuk proses:\n${adminLink}`;
+            
             const waLink = `https://wa.me/${adminWaNumber}?text=${encodeURIComponent(message)}`;
             
-            // Masukkan link tersebut ke tombol notifikasi
-            document.getElementById('notify-admin-wa-btn').href = waLink;
+            const notifyBtn = document.getElementById('notify-admin-wa-btn');
+            const statusBtn = document.getElementById('back-to-status-btn');
+
+            // 3. Set link ke tombol notifikasi
+            notifyBtn.href = waLink;
+
+            // 4. Tambahkan event listener untuk mengaktifkan tombol status
+            notifyBtn.addEventListener('click', function() {
+                setTimeout(() => {
+                    statusBtn.classList.remove('disabled');
+                    statusBtn.style.pointerEvents = 'auto';
+                    statusBtn.classList.replace('btn-secondary', 'btn-success');
+                }, 500); // Diberi jeda agar tab baru sempat terbuka
+            });
             // ================== BAGIAN JAVASCRIPT YANG DIUBAH SELESAI ==================
 
             uploadContainer.style.display = 'none';
