@@ -90,11 +90,14 @@
     .banner-item { display: block; margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow); }
     .banner-image { width: 100%; display: block; vertical-align: middle; }
     .header-right {
-    display: flex;
-    flex-direction: column; /* INI KUNCINYA: Mengatur arah flex menjadi kolom (vertikal) */
-    align-items: flex-end; /* Menyelaraskan item ke ujung kanan secara horizontal */
-    /* gap: 15px; <-- Anda bisa hapus ini jika mb-2 sudah cukup, atau sesuaikan */
+      display: flex; flex-direction: column; align-items: flex-end;
     }
+    
+    /* */
+    .qris-separator { text-align: center; font-weight: bold; margin: 20px 0; }
+    #show-qris-btn { display: block; width: 100%; padding: 12px; font-size: 16px; font-weight: bold; color: white; background-color: #2980b9; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; }
+    #show-qris-btn:hover { background-color: #3498db; }
+
   </style>
 </head>
 
@@ -104,13 +107,10 @@
         <h1>Asdar Store Digital</h1>
     </div>
     <div class="header-right">
-        <!-- Tombol "Lihat Semua Produk" -->
-        <a href="daftar-produk.html" class="all-products-btn mb-2"> <!-- Tambahkan kelas mb-2 untuk margin bawah -->
+        <a href="daftar-produk.html" class="all-products-btn mb-2">
             <i class="fas fa-list"></i> Lihat Semua Produk
         </a>
-        <!-- user-panel yang akan diisi oleh JavaScript Anda -->
         <div id="user-panel">
-            <!-- Isi awal dari JavaScript (Login/Daftar atau Dashboard Reseller) -->
             <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
         </div>
     </div>
@@ -118,7 +118,6 @@
   
   <main id="main-content">
     <div id="banner-container" data-aos="fade-down"></div>
-    
     <div id="custom-html-container"></div>
     
     <div data-aos="fade-up" class="section-container">
@@ -201,7 +200,6 @@
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonShareTerpakai = false;
-    // Variabel hadiahTerpakai dan hadiahDataTerpilih dihapus
     const POTONGAN_DISKON_SHARE = 5000;
     const submitBtn = document.getElementById('submitBtn');
     const kategoriSelect = document.getElementById('kategori');
@@ -240,7 +238,6 @@
         });
     }
 
-    // FUNGSI UNTUK MEMUAT KODE KUSTOM DARI ADMIN PANEL
     function loadCustomCode() {
         dbRT.ref('customCode').once('value').then(snapshot => {
             if (snapshot.exists()) {
@@ -265,11 +262,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
-      loadCustomCode(); // Menjalankan fungsi pemuat kode kustom
+      loadCustomCode();
       kategoriSelect.addEventListener('change', handleCategoryChange);
       produkSelect.addEventListener('change', handleProductSelection);
       document.getElementById('waAktif').addEventListener('input', checkDiskonShare);
-      // Event listener untuk emailKlaimHadiah dan checkHadiahBtn dihapus
       document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
       document.getElementById('formPesanan').addEventListener('submit', handleOrderSubmit);
     });
@@ -358,7 +354,6 @@
         const produkId = produkSelect.value;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        // hadiahTerpakai dan hadiahDataTerpilih dihapus
         
         if (!produkId) {
             resetFormState();
@@ -369,16 +364,14 @@
         submitBtn.textContent = '...';
         document.getElementById('product-promo-container').innerHTML = '';
         
-        // Bagian sembunyikan hadiah dihapus
-        
         dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
             if (!doc.exists) {
                 infoProduk.innerHTML = 'Produk tidak ditemukan.';
                 return;
             }
             produkTerpilihData = { id: doc.id, ...doc.data() };
-            updateTotalHarga(); // Panggil ini setelah produk terpilih data di set
-            checkDiskonShare(); // Cek diskon share jika ada
+            updateTotalHarga(); 
+            checkDiskonShare(); 
 
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 submitBtn.textContent = 'Stok Habis';
@@ -387,7 +380,6 @@
             } else {
                 submitBtn.textContent = 'Pesan Sekarang';
                 submitBtn.disabled = false;
-                // Tampilkan promo produk hanya jika belum ada diskon share yang diaktifkan
                 if (!diskonShareTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
                     document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
@@ -397,51 +389,29 @@
     }
 
     function updateTotalHarga() {
-    if (!produkTerpilihData) return;
+      if (!produkTerpilihData) return;
+      let hargaAwal = produkTerpilihData.harga_umum;
+      let hargaReseller = produkTerpilihData.harga_reseller;
+      let hargaFinal = hargaAwal;
+      let deskripsiHargaHTML;
 
-    let hargaAwal = produkTerpilihData.harga_umum;
-    let hargaReseller = produkTerpilihData.harga_reseller;
-    let hargaFinal = hargaAwal;
-    let deskripsiHargaHTML;
+      if (hargaReseller && hargaReseller > 0) {
+          deskripsiHargaHTML = `<div style="line-height: 1.5;"><p style="margin: 0; font-size: 1em;"><b>Harga Normal:</b> ${formatRupiah(hargaAwal)}</p><p style="margin: 0; font-weight: bold; font-size: 1.1em; color: var(--success);"><b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}</p></div>`;
+      } else {
+          deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
+      }
 
-    // --- BAGIAN INI DIUBAH ---
-    // Cek jika ada harga reseller, tampilkan keduanya tanpa coretan
-    if (hargaReseller && hargaReseller > 0) {
-        deskripsiHargaHTML = `
-            <div style="line-height: 1.5;">
-                <p style="margin: 0; font-size: 1em;">
-                    <b>Harga Normal:</b> ${formatRupiah(hargaAwal)}
-                </p>
-                <p style="margin: 0; font-weight: bold; font-size: 1.1em; color: var(--success);">
-                    <b>Harga Reseller:</b> ${formatRupiah(hargaReseller)}
-                </p>
-            </div>
-        `;
-    } else {
-        // Jika tidak ada harga reseller, tampilkan harga normal saja
-        deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
-    }
-
-    let diskonDeskripsiTambahan = '';
-
-    // Logika diskon Anda yang sudah ada tetap di sini
-    if (promoProdukTerpakai && produkTerpilihData.promo) {
-        let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
-        hargaFinal = Math.max(0, hargaAwal - potongan);
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
-    } else if (diskonShareTerpakai) {
-        hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
-    }
-    
-    // Gabungkan semua informasi untuk ditampilkan
-    infoProduk.innerHTML = `
-        ${deskripsiHargaHTML}
-        ${diskonDeskripsiTambahan}
-        <hr style="margin: 10px 0; border-color: var(--border);">
-        <b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br>
-        <b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}
-    `;
+      let diskonDeskripsiTambahan = '';
+      if (promoProdukTerpakai && produkTerpilihData.promo) {
+          let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
+          hargaFinal = Math.max(0, hargaAwal - potongan);
+          diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`;
+      } else if (diskonShareTerpakai) {
+          hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE);
+          diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`;
+      }
+      
+      infoProduk.innerHTML = `${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
 
     async function handleOrderSubmit(e) {
@@ -465,9 +435,7 @@
             let hargaFinal = hargaAwal;
             let promoDigunakan = null;
             let diskon_share_digunakan = false;
-            // variabel hadiah_digunakan_info dihapus
 
-            // Logika diskon (konsisten dengan updateTotalHarga)
             if (promoProdukTerpakai && produkTerpilihData.promo) {
                 let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100);
                 hargaFinal = Math.max(0, hargaAwal - potongan);
@@ -486,14 +454,11 @@
                 harga_final: hargaFinal,
                 promo_digunakan: promoDigunakan,
                 diskon_share: diskon_share_digunakan,
-                // field hadiah_digunakan dihapus
             });
 
             if (diskon_share_digunakan) {
                 await dbRT.ref('hakDiskon/' + waAktif).remove();
             }
-
-            // Bagian tandai hadiah sudah terpakai dihapus
             
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentHtml = '<div class="payment-methods-list">';
@@ -502,8 +467,30 @@
                 paymentHtml += `<div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${detail.metode}</div><div class="payment-method-number">${detail.nomor}</div><div class="payment-method-an">a.n ${detail.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${detail.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div>`;
             });
             paymentHtml += '</div>';
-            hasilDiv.style.display = 'block';
-            hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p><p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p><div class="info"><p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>${paymentHtml}</div><p class="text-center mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
+
+            // const qrisPaymentSection = `
+                <p class="qris-separator">--- ATAU ---</p>
+                <button id="show-qris-btn" onclick="showQris()">Bayar dengan QRIS (Scan)</button>
+                <div id="qris-container" style="display: none; margin-top: 15px; text-align: center;">
+                    <p>Silakan pindai kode di bawah ini:</p>
+                    <img src="https://iili.io/FgTQZNa.png" alt="QRIS Code" width="250">
+                    <p style="font-weight: bold; color: var(--danger);">PENTING: Masukkan total tagihan secara manual.</p>
+                </div>
+            `;
+            // hasilDiv.style.display = 'block';
+            hasilDiv.innerHTML = `
+                <p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p>
+                <p class="text-center"><b>ID Pesanan:</b> <code>${id}</code></p>
+                <div class="info">
+                    <p class="mb-2 text-center"><strong>Lakukan pembayaran sebesar ${formatRupiah(hargaFinal)}</strong> ke salah satu rekening berikut:</p>
+                    ${paymentHtml} 
+                    ${qrisPaymentSection} </div>
+                <p class="text-center mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p>
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
+                    <a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a>
+                </div>`;
+            
             document.getElementById('formPesanan').reset();
             resetFormState();
             window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
@@ -515,18 +502,21 @@
         }
     }
 
-    function resetFormState() {
+    // function showQris() {
+      var qrisContainer = document.getElementById('qris-container');
+      var qrisButton = document.getElementById('show-qris-btn');
+      if(qrisContainer && qrisButton) {
+        qrisContainer.style.display = 'block';
+        qrisButton.style.display = 'none';
+      }
+    }
+    // function resetFormState() {
         produkTerpilihData = null;
         promoProdukTerpakai = false;
         diskonShareTerpakai = false;
-        // Variabel hadiahTerpakai dan hadiahDataTerpilih dihapus
-        
         document.getElementById('claim-button').disabled = false;
         document.getElementById('claim-button').innerText = "✅ Ya, Gunakan Diskon";
         document.getElementById('claim-discount-section').style.display = 'none';
-
-        // Bagian reset elemen hadiah dihapus
-        
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         submitBtn.disabled = true;
         submitBtn.textContent = 'Pilih Produk Dahulu';
@@ -612,16 +602,13 @@
     window.klaimPromoProduk = () => {
         promoProdukTerpakai = true;
         diskonShareTerpakai = false;
-        // hadiahTerpakai dihapus
         document.getElementById('claim-discount-section').style.display = 'none';
-        // Bagian sembunyikan hadiah dihapus
-
         updateTotalHarga();
         document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
     
     async function checkDiskonShare() {
-        if (promoProdukTerpakai) { // Kondisi hadiahTerpakai dihapus
+        if (promoProdukTerpakai) {
             document.getElementById('claim-discount-section').style.display = 'none';
             return;
         }
@@ -644,16 +631,12 @@
     window.gunakanDiskonShare = () => {
         diskonShareTerpakai = true;
         promoProdukTerpakai = false;
-        // hadiahTerpakai dihapus
         document.getElementById('product-promo-container').innerHTML = '';
-        // Bagian sembunyikan hadiah dihapus
-
         updateTotalHarga();
         document.getElementById('claim-button').disabled = true;
         document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan";
     };
 
-    // Fungsi checkHadiahPembeli dan gunakanHadiah telah dihapus
   </script>
 </body>
 </html>
