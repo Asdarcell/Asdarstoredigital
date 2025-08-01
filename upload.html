@@ -61,7 +61,7 @@
             <i class="fab fa-whatsapp"></i> Langkah 1: Kirim Notifikasi ke Admin
           </a>
           
-          <a href="#" id="back-to-status-btn" class="btn btn-secondary mt-3 w-100 disabled" style="pointer-events: none;">
+          <a href="#" id="back-to-status-btn" class="btn btn-secondary mt-3 w-100 disabled">
             Langkah 2: Lihat Status Pesanan Saya
           </a>
         </div>
@@ -162,34 +162,37 @@
                 waktu_upload_bukti: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // ================== BAGIAN JAVASCRIPT YANG DIUBAH MULAI ==================
+            // ================== BAGIAN LOGIKA NOTIFIKASI YANG BARU ==================
+            
             const adminWaNumber = "6281803004607"; // <-- GANTI DENGAN NOMOR WA ADMIN ANDA
-            const adminBaseUrl = "https://asdarcell.github.io/Asdarstoredigital/admin.html"; // <-- GANTI JIKA PERLU
+            const adminBaseUrl = "https://asdarcell.github.io/Asdarstoredigital/admin.html";
             const orderData = orderDoc.data();
             
-            // 1. Buat link admin yang unik
             const adminLink = `${adminBaseUrl}?id=${orderId}`;
-            
-            // 2. Rakit pesan WhatsApp dengan link admin
             const message = `Halo Admin,\n\nBukti bayar baru diterima:\nID: ${orderId}\nProduk: ${orderData.produk}\nTotal: ${formatRupiah(orderData.harga_final)}\n\nKlik link di bawah untuk proses:\n${adminLink}`;
-            
             const waLink = `https://wa.me/${adminWaNumber}?text=${encodeURIComponent(message)}`;
             
             const notifyBtn = document.getElementById('notify-admin-wa-btn');
             const statusBtn = document.getElementById('back-to-status-btn');
 
-            // 3. Set link ke tombol notifikasi
             notifyBtn.href = waLink;
 
-            // 4. Tambahkan event listener untuk mengaktifkan tombol status
+            // Tambahkan listener ke tombol notifikasi untuk mengaktifkan tombol status
             notifyBtn.addEventListener('click', function() {
                 setTimeout(() => {
                     statusBtn.classList.remove('disabled');
-                    statusBtn.style.pointerEvents = 'auto';
                     statusBtn.classList.replace('btn-secondary', 'btn-success');
-                }, 500); // Diberi jeda agar tab baru sempat terbuka
+                }, 500); 
             });
-            // ================== BAGIAN JAVASCRIPT YANG DIUBAH SELESAI ==================
+
+            // Tambahkan listener ke tombol status untuk menampilkan alert jika belum aktif
+            statusBtn.addEventListener('click', function(event) {
+                if (statusBtn.classList.contains('disabled')) {
+                    event.preventDefault(); // Mencegah link di-klik
+                    alert('Langkah 1: Harap klik "Kirim Notifikasi ke Admin" terlebih dahulu!');
+                }
+            });
+            // ================== AKHIR DARI PERUBAHAN ==================
 
             uploadContainer.style.display = 'none';
             successContainer.style.display = 'block';
