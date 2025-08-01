@@ -65,18 +65,21 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
+      // === KONFIGURASI BARU DITAMBAHKAN UNTUK FIREBASE STORAGE ===
+      storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
     };
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
-    
-    const CLOUDINARY_CLOUD_NAME = "duki2bxqr";
-    const CLOUDINARY_UPLOAD_PRESET = "hyvcqshq";
+    // === INISIALISASI BARU UNTUK FIREBASE STORAGE ===
+    const storage = firebase.storage();
 
     const uploadContainer = document.getElementById('upload-container');
     const successContainer = document.getElementById('success-container');
@@ -102,25 +105,26 @@
         statusMessage.style.display = 'block';
     };
     
-    async function uploadToCloudinary(file) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    // ================== FUNGSI UPLOAD DIUBAH TOTAL ==================
+    // Fungsi uploadToCloudinary dihapus dan diganti dengan uploadToFirebaseStorage
+    async function uploadToFirebaseStorage(file, orderId) {
+        // Nama file di server akan menjadi ID Pesanan, misal: P12345.jpg
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${orderId}.${fileExtension}`;
+        // Lokasi penyimpanan di Firebase Storage di dalam folder 'bukti_pembayaran'
+        const filePath = `bukti_pembayaran/${fileName}`;
+        const storageRef = storage.ref(filePath);
+
         try {
-            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                method: "POST",
-                body: formData,
-            });
-            const data = await response.json();
-            if (data.secure_url) {
-                return data.secure_url;
-            } else {
-                throw new Error(data.error.message || "Error tidak diketahui dari Cloudinary");
-            }
+            const snapshot = await storageRef.put(file);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            return downloadURL;
         } catch (error) {
-            throw new Error("Gagal terhubung ke server Cloudinary. " + error.message);
+            console.error("Firebase Storage upload error:", error);
+            throw new Error("Gagal mengunggah file ke server Firebase. " + error.message);
         }
     }
+    // ================== AKHIR DARI PERUBAHAN FUNGSI UPLOAD ==================
 
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -128,11 +132,20 @@
         statusMessage.style.display = 'none';
         const proofFile = document.getElementById('proof').files[0];
         const orderId = orderIdDisplay.textContent;
+
         if (!proofFile || !orderId) {
             showMessage('Pilih file bukti dan pastikan ID Pesanan ada.');
             setButtonLoading(false);
             return;
         }
+        
+        // Membatasi ukuran file maksimal 2MB
+        if (proofFile.size > 2 * 1024 * 1024) {
+            showMessage('Ukuran file bukti tidak boleh lebih dari 2 MB.', 'danger');
+            setButtonLoading(false);
+            return;
+        }
+
         try {
             let orderRef;
             let orderDoc;
@@ -146,7 +159,9 @@
             if (orderDoc.data().status !== 'Menunggu Pembayaran') throw new Error('Bukti sudah pernah dikirim atau pesanan sudah diproses.');
             
             showMessage('Sedang mengunggah bukti, mohon tunggu...', 'info');
-            const imageUrl = await uploadToCloudinary(proofFile);
+            
+            // === MEMANGGIL FUNGSI UPLOAD YANG BARU ===
+            const imageUrl = await uploadToFirebaseStorage(proofFile, orderId);
             
             await orderRef.update({
                 status: 'Menunggu Verifikasi',
@@ -157,6 +172,7 @@
             uploadContainer.style.display = 'none';
             successContainer.style.display = 'block';
             backToStatusBtn.href = `status.html?id=${orderId}`;
+
         } catch (error) {
             console.error("Error saat mengunggah bukti:", error);
             showMessage(`Gagal mengirim bukti: ${error.message}`, 'danger');
@@ -165,6 +181,7 @@
         }
     });
 
+    // Fungsi fetchOrderDetails tidak perlu diubah, tetap sama
     async function fetchOrderDetails(orderId) {
         try {
             let orderDoc;
