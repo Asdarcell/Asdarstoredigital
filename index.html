@@ -222,7 +222,7 @@
       let n = String(num).trim().replace(/[^0-9]/g, '');
       if (n.startsWith('0')) return '62' + n.slice(1);
       if (n.startsWith('62')) return n;
-      return `62${n}`; // Assume it's a local number without 0
+      return `62${n}`;
     };
     const showNotification = (message, type = 'error') => {
         formNotification.textContent = message;
@@ -242,28 +242,39 @@
     // === EVENT LISTENER UTAMA ===
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
-      checkForLostId(); // Cek ID hilang saat load
+      checkForLostId();
       orderFormFields.kategori.addEventListener('change', handleCategoryChange);
       orderFormFields.produk.addEventListener('change', handleProductSelection);
-      orderFormFields.waAktif.addEventListener('blur', handleWaInputChange); // Cek pesanan tertunda
-      orderFormFields.waAktif.addEventListener('input', checkDiskonShare); // Cek diskon share
+      orderFormFields.waAktif.addEventListener('blur', handleWaInputChange);
+      orderFormFields.waAktif.addEventListener('input', checkDiskonShare);
       document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
       orderFormFields.nextBtn.addEventListener('click', handleNextToPayment);
     });
 
     // === FUNGSI PEMULIHAN SESI (ID HILANG) ===
-    function checkForLostId() {
+    async function checkForLostId() {
         const lastOrderId = sessionStorage.getItem('lastUnpaidOrderId');
         if (lastOrderId) {
-            const recoveryNotif = document.createElement('div');
-            recoveryNotif.style.cssText = `background-color: var(--primary); color: white; padding: 15px; text-align: center; font-weight: 600; position: sticky; top: 0; z-index: 1000;`;
-            recoveryNotif.innerHTML = `Anda punya pesanan (${lastOrderId}) yang belum selesai. <button id="recover-btn" style="background: white; color: var(--primary); padding: 5px 10px; border-radius: 5px; margin-left: 10px; border: none; cursor: pointer;">Lanjutkan Pembayaran</button>`;
-            document.body.prepend(recoveryNotif);
-            document.getElementById('recover-btn').addEventListener('click', () => {
-                document.getElementById('idCek').value = lastOrderId;
-                cekStatus();
-                recoveryNotif.remove();
-            });
+            try {
+                const docRef = dbFS.collection('pesananUmum').doc(lastOrderId);
+                const doc = await docRef.get();
+                if (doc.exists && doc.data().status === 'Menunggu Pembayaran') {
+                    const recoveryNotif = document.createElement('div');
+                    recoveryNotif.style.cssText = `background-color: var(--primary); color: white; padding: 15px; text-align: center; font-weight: 600; position: sticky; top: 0; z-index: 1000;`;
+                    recoveryNotif.innerHTML = `Anda punya pesanan (${lastOrderId}) yang belum selesai. <button id="recover-btn" style="background: white; color: var(--primary); padding: 5px 10px; border-radius: 5px; margin-left: 10px; border: none; cursor: pointer;">Lanjutkan Pembayaran</button>`;
+                    document.body.prepend(recoveryNotif);
+                    document.getElementById('recover-btn').addEventListener('click', () => {
+                        document.getElementById('idCek').value = lastOrderId;
+                        cekStatus();
+                        recoveryNotif.remove();
+                    });
+                } else {
+                    sessionStorage.removeItem('lastUnpaidOrderId');
+                }
+            } catch (error) {
+                console.error("Gagal verifikasi ID tersimpan:", error);
+                sessionStorage.removeItem('lastUnpaidOrderId');
+            }
         }
     }
 
@@ -319,7 +330,10 @@
                 if (!querySnapshot.empty) { const doc = querySnapshot.docs[0]; orderData = doc.data(); orderId = doc.id; }
             }
             if (orderData) {
-                if (orderData.status === 'Menunggu Pembayaran') { await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran'); } 
+                if (orderData.status === 'Menunggu Pembayaran') {
+                    pendingOrderData = orderData; // PERBAIKAN DITAMBAHKAN DI SINI
+                    await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran'); 
+                } 
                 else { window.location.href = `status.html?id=${orderId}`; }
             } else { alert('Pesanan tidak ditemukan.'); }
         } catch (error) { alert('Terjadi kesalahan saat cek status.'); } 
@@ -358,7 +372,7 @@
                 contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden"><p class="text-center fw-bold">Silakan transfer ke:</p><div class="payment-methods-list"><div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${metode.metode}</div><div class="payment-method-number">${metode.nomor}</div><div class="payment-method-an">a.n ${metode.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${metode.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div></div></div>`;
             });
             const orderIdHtml = dataPesanan.id ? `<p><strong>ID Pesanan:</strong> ${dataPesanan.id}</p>` : '';
-            paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${orderIdHtml}<p><strong>Produk:</strong> ${dataPesanan.produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3><div id="payment-options-list">${radioButtonsHTML}</div><div id="payment-details-container">${contentDivsHTML}</div><button id="confirmOrderBtn" onclick="buatPesanan()" disabled>${judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran'}</button>`;
+            paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${orderIdHtml}<p><strong>Produk:</strong> ${dataPesanan.produk || dataPesanan.nama_produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3><div id="payment-options-list">${radioButtonsHTML}</div><div id="payment-details-container">${contentDivsHTML}</div><button id="confirmOrderBtn" onclick="buatPesanan()" disabled>${judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran'}</button>`;
             setupPaymentEventListeners();
             window.scrollTo({ top: paymentContainer.offsetTop - 80, behavior: 'smooth' });
         } catch (error) { paymentContainer.innerHTML = `<p class="text-center text-danger">Gagal memuat metode pembayaran.</p>`; }
@@ -412,7 +426,6 @@
       document.getElementById('product-promo-container').innerHTML = '';
       hideNotification();
     }
-    // ... Sisa fungsi seperti loadInitialData, handleTestimoniSubmit, dll. diletakkan di sini ...
     auth.onAuthStateChanged(user => { if (user) { const resellerRef = dbFS.collection('resellers').doc(user.uid); resellerRef.get().then(doc => { if (doc.exists && doc.data().status === 'active') { userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i><span>Dashboard Reseller</span></a>`; } else { userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`; } }).catch(error => { userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Reseller</span></a>`; }); } else { userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`; } });
     function loadInitialData() { dbFS.collection('produk').get().then(snapshot => { const categories = new Set(); snapshot.forEach(doc => { const data = doc.data(); if (data.kategori) { categories.add(data.kategori); } }); orderFormFields.kategori.innerHTML = '<option value="">Pilih Kategori</option>'; categories.forEach(kategori => { orderFormFields.kategori.innerHTML += `<option value="${kategori}">${kategori}</option>`; }); }); loadAndDisplayBanners(); loadAndRenderFaq(); loadApprovedTestimonials(); }
     async function loadAndDisplayBanners() { const bannerContainer = document.getElementById('banner-container'); if (!bannerContainer) return; try { const snapshot = await dbFS.collection('banners').orderBy('urutan').get(); if (snapshot.empty) { bannerContainer.style.display = 'none'; return; } let bannersHTML = ''; snapshot.forEach(doc => { const banner = doc.data(); const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`; if (banner.link) { bannersHTML += `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>`; } else { bannersHTML += `<div class="banner-item">${imgTag}</div>`; } }); bannerContainer.innerHTML = bannersHTML; } catch (error) { console.error("Gagal memuat banner:", error); } }
@@ -427,4 +440,4 @@
     window.gunakanDiskonShare = () => { diskonShareTerpakai = true; promoProdukTerpakai = false; document.getElementById('product-promo-container').innerHTML = ''; updateTotalHarga(); document.getElementById('claim-button').disabled = true; document.getElementById('claim-button').innerText = "✅ Diskon Diterapkan"; };
   </script>
 </body>
-        </html>
+</html>
