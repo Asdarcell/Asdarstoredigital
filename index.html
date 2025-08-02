@@ -14,12 +14,10 @@
       --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
       --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
       --success: #28a745; --danger: #e74c3c;
-      --muted-text: #6c757d;
     }
     [data-theme="dark"] {
       --bg: #1a1a2e; --text: #e0e0e0; --primary: #1abc9c;
       --card: #2c2c40; --border: #444; --shadow: rgba(0, 0, 0, 0.15);
-      --muted-text: #8a93a2;
     }
     body {
       font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text);
@@ -54,22 +52,62 @@
     h2 { color: var(--primary); margin-top: 30px; margin-bottom: 20px; text-align: center; }
     .payment-method-item { background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
     .payment-details { line-height: 1.4; }
-    .payment-method-name { font-weight: 600; color: var(--text); }
     .payment-method-number { font-weight: 500; color: var(--primary); }
-    .payment-method-an { font-size: 0.85em; color: var(--muted-text); }
+    .payment-method-an { font-size: 0.85em; }
     .copy-btn { background-color: transparent; border: 1px solid var(--border); color: var(--muted-text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; margin-left: 1rem; }
     .notification { padding: 15px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; display: none; text-align: center; }
     .notification.error { background-color: #f8d7da; color: #721c24; }
+    
+    /* CSS BARU UNTUK PEMBAYARAN BUKA-TUTUP */
+    .payment-accordion-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .payment-accordion-header {
+      background-color: var(--bg);
+      padding: 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      border-bottom: 1px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .payment-accordion-header.active {
+      background-color: var(--primary);
+      color: white;
+      border-bottom-color: var(--border);
+    }
+    .payment-accordion-header::after {
+      content: '▼';
+      font-size: 14px;
+      transition: transform 0.3s ease;
+    }
+    .payment-accordion-header.active::after {
+      transform: rotate(180deg);
+    }
+    .payment-accordion-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+      padding: 0 15px;
+      background-color: var(--card);
+    }
   </style>
 </head>
 <body data-theme="dark">
-<header>
-    <h1>Asdar Store Digital</h1>
+<header id="header">
+    <div class="header-left">
+        <h1>Asdar Store Digital</h1>
+    </div>
 </header>
   
-<main>
+<main id="main-content">
     <div data-aos="fade-up" class="section-container" id="order-form-container">
-      <form id="formPesanan" onsubmit="return false;">
+      <form id="formPesanan" onsubmit="return false">
         <div id="formNotification" class="notification"></div>
         <label for="nama">Nama Lengkap</label>
         <input type="text" id="nama" placeholder="Cth: Budi Santoso" required />
@@ -77,13 +115,11 @@
         <input type="text" id="nomor" placeholder="Cth: 081234567890" required />
         <label for="waAktif">Nomor WhatsApp Aktif</label>
         <input type="tel" id="waAktif" placeholder="Cth: 081234567890" pattern="^08[0-9]{8,15}$" required />
-        
         <label for="kategori">Kategori Produk</label>
         <select id="kategori" required><option value="">Pilih Kategori</option></select>
         <label for="produk">Produk</label>
         <select id="produk" required><option value="">Pilih Produk</option></select>
         <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
-        
         <button type="button" id="nextToPaymentBtn" disabled>Lanjut ke Pembayaran</button>
       </form>
     </div>
@@ -106,7 +142,6 @@
     firebase.initializeApp(firebaseConfig);
     const dbFS = firebase.firestore();
     
-    // === Variabel Global ===
     const nextToPaymentBtn = document.getElementById('nextToPaymentBtn');
     const kategoriSelect = document.getElementById('kategori');
     const produkSelect = document.getElementById('produk');
@@ -115,7 +150,6 @@
     let produkTerpilihData = null;
     let pendingOrderData = {}; 
 
-    // === Fungsi Utilitas ===
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const showNotification = (message) => {
         formNotification.textContent = message;
@@ -129,7 +163,6 @@
         });
     }
 
-    // === Event Listeners Utama ===
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
       kategoriSelect.addEventListener('change', handleCategoryChange);
@@ -137,7 +170,8 @@
       nextToPaymentBtn.addEventListener('click', handleNextToPayment);
     });
 
-    // === Logika Utama Pemesanan ===
+    // ================== LOGIKA PEMBAYARAN BARU ==================
+
     function handleNextToPayment() {
         if (!document.getElementById('formPesanan').checkValidity() || !produkTerpilihData) {
             showNotification("Harap lengkapi semua data pesanan dengan benar!");
@@ -156,84 +190,112 @@
         document.getElementById('order-form-container').style.display = 'none';
         const paymentContainer = document.getElementById('payment-selection-container');
         paymentContainer.style.display = 'block';
+        paymentContainer.innerHTML = `<h2 class="text-center">Pilih Metode Pembayaran</h2><div class="info"><p><strong>Produk:</strong> ${pendingOrderData.produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(pendingOrderData.harga_final)}</strong></p></div><div id="payment-accordion" class="mt-4">Memuat metode pembayaran...</div>`;
         
-        paymentContainer.innerHTML = `
-            <h2 class="text-center">Konfirmasi Pembayaran</h2>
-            <div class="info">
-                <p><strong>Produk:</strong> ${pendingOrderData.produk}</p>
-                <p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(pendingOrderData.harga_final)}</strong></p>
-            </div>
-            <h3 style="margin-top:20px; text-align:center;">Pilih Metode Bayar:</h3>
-            <div id="payment-buttons" style="display:flex; flex-direction:column; gap:10px;">
-                <button onclick="buatPesanan('DANA')"><i class="fas fa-wallet"></i> Transfer DANA</button>
-                <button onclick="buatPesanan('ShopeePay')"><i class="fas fa-mobile-alt"></i> Transfer ShopeePay</button>
-                <button onclick="buatPesanan('QRIS')"><i class="fas fa-qrcode"></i> QRIS (Scan)</button>
-            </div>
-            <div id="payment-instruction" style="margin-top: 20px;"></div>
-        `;
+        dbFS.collection('infoPembayaran').where('status', '==', 'on').get().then(snapshot => {
+            const accordionContainer = document.getElementById('payment-accordion');
+            if (snapshot.empty) {
+                accordionContainer.innerHTML = '<p class="text-center">Tidak ada metode pembayaran yang aktif saat ini.</p>';
+                return;
+            }
+
+            let accordionHtml = '';
+            snapshot.forEach(doc => {
+                const payment = doc.data();
+                const icon = payment.metode.toLowerCase().includes('dana') ? 'fa-wallet' : payment.metode.toLowerCase().includes('shopee') ? 'fa-mobile-alt' : 'fa-qrcode';
+                accordionHtml += `
+                    <div class="payment-accordion-item" id="item-${payment.metode}">
+                        <div class="payment-accordion-header" onclick="togglePaymentMethod('${payment.metode}')">
+                            <span><i class="fas ${icon}"></i> ${payment.metode}</span>
+                        </div>
+                        <div class="payment-accordion-body"></div>
+                    </div>
+                `;
+            });
+            accordionContainer.innerHTML = accordionHtml;
+        }).catch(err => {
+            console.error("Gagal memuat metode pembayaran: ", err);
+            document.getElementById('payment-accordion').innerHTML = '<p class="text-center text-danger">Gagal memuat metode pembayaran.</p>';
+        });
+
         window.scrollTo({ top: paymentContainer.offsetTop - 80, behavior: 'smooth' });
     }
 
+    async function togglePaymentMethod(metode) {
+        document.querySelectorAll('.payment-accordion-body').forEach(body => {
+            body.style.maxHeight = '0';
+            body.style.padding = '0 15px';
+        });
+        document.querySelectorAll('.payment-accordion-header').forEach(header => {
+            header.classList.remove('active');
+        });
+
+        const item = document.getElementById(`item-${metode}`);
+        const header = item.querySelector('.payment-accordion-header');
+        const body = item.querySelector('.payment-accordion-body');
+        
+        header.classList.add('active');
+        body.innerHTML = '<p class="text-center py-3">Memuat detail...</p>';
+        body.style.padding = '15px';
+        body.style.maxHeight = '500px';
+
+        let detailHtml = '';
+        try {
+            const paymentDoc = await dbFS.collection('infoPembayaran').where('metode', '==', metode).limit(1).get();
+            if (!paymentDoc.empty) {
+                const paymentInfo = paymentDoc.docs[0].data();
+                if(metode === 'QRIS') {
+                   detailHtml = `<div style="text-align: center;"><img src="${paymentInfo.url}" alt="QRIS Code" width="250" style="border-radius: 8px;"><p style="font-weight: bold;" class="mt-2">PENTING: Masukkan total bayar manual.</p></div>`;
+                } else {
+                   detailHtml = `
+                    <div class="payment-method-item">
+                      <div class="payment-details">
+                          <div class="payment-method-name">${paymentInfo.metode}</div>
+                          <div class="payment-method-number">${paymentInfo.nomor}</div>
+                          <div class="payment-method-an">a.n ${paymentInfo.atas_nama}</div>
+                      </div>
+                      <button class="copy-btn" onclick="copyToClipboard('${paymentInfo.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
+                    </div>`;
+                }
+                detailHtml += `<button class="btn btn-success mt-3" onclick="buatPesanan('${metode}')">Konfirmasi & Buat Pesanan</button>`;
+            } else {
+                detailHtml = `<p class="text-center text-danger">Pengaturan pembayaran tidak ditemukan.</p>`;
+            }
+        } catch(err) {
+            console.error("Error get payment detail:", err);
+            detailHtml = `<p class="text-center text-danger">Gagal memuat detail pembayaran.</p>`;
+        }
+        body.innerHTML = detailHtml;
+    }
+
     async function buatPesanan(metode) {
-        document.querySelectorAll('#payment-buttons button').forEach(button => button.disabled = true);
-        const instructionDiv = document.getElementById('payment-instruction');
-        instructionDiv.innerHTML = '<p style="text-align:center;">Memproses pesanan Anda...</p>';
+        const item = document.getElementById(`item-${metode}`);
+        const body = item.querySelector('.payment-accordion-body');
+        body.innerHTML = '<p style="text-align:center;">Memproses pesanan Anda...</p>';
 
         try {
             const id = "P" + Date.now();
-            const finalOrderData = {
-                id,
-                ...pendingOrderData,
-                metode_pembayaran: metode,
-                status: 'Menunggu Pembayaran',
-                waktu: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
+            const finalOrderData = { id, ...pendingOrderData, metode_pembayaran: metode, status: 'Menunggu Pembayaran', waktu: firebase.firestore.FieldValue.serverTimestamp() };
             await dbFS.collection('pesananUmum').doc(id).set(finalOrderData);
 
-            let instructionHtml = '';
-            if (metode === 'QRIS') {
-                const qrisDoc = await dbFS.collection('infoPembayaran').doc('QRIS').get();
-                if(qrisDoc.exists() && qrisDoc.data().url) {
-                    instructionHtml = `<div style="text-align: center;"><p>Silakan pindai kode QRIS di bawah ini:</p><img src="${qrisDoc.data().url}" alt="QRIS Code" width="250" style="border-radius:8px;"><p style="font-weight: bold; color: var(--danger);">PENTING: Masukkan total tagihan secara manual.</p></div>`;
-                } else {
-                    instructionHtml = `<p class="text-center text-danger">Detail pembayaran QRIS tidak tersedia.</p>`;
-                }
-            } else {
-                const paymentSnapshot = await dbFS.collection('infoPembayaran').where('metode', '==', metode).limit(1).get();
-                if (!paymentSnapshot.empty) {
-                    const paymentInfo = paymentSnapshot.docs[0].data();
-                    instructionHtml = `
-                        <p class="text-center">Silakan transfer ke:</p>
-                        <div class="payment-method-item">
-                            <div class="payment-details">
-                                <div class="payment-method-name">${paymentInfo.metode}</div>
-                                <div class="payment-method-number">${paymentInfo.nomor}</div>
-                                <div class="payment-method-an">a.n ${paymentInfo.atas_nama}</div>
-                            </div>
-                            <button class="copy-btn" onclick="copyToClipboard('${paymentInfo.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
-                        </div>`;
-                } else {
-                    instructionHtml = `<p class="text-center text-danger">Detail pembayaran ${metode} tidak tersedia.</p>`;
-                }
-            }
-            
-            instructionDiv.innerHTML = `
-                <hr>
+            const paymentContainer = document.getElementById('payment-selection-container');
+            paymentContainer.innerHTML = `
                 <div class="text-center" style="color:var(--success);">
-                  <i class="fas fa-check-circle fa-2x"></i>
-                  <p class="fw-bold fs-5 mt-2">Pesanan Berhasil Dibuat!</p>
+                    <i class="fas fa-check-circle fa-3x"></i>
+                    <h2 class="mt-3">Pesanan Berhasil Dibuat!</h2>
+                    <p>Terima kasih telah melakukan pemesanan.</p>
+                    <p><b>ID Pesanan Anda:</b> <code>${id}</code></p>
+                    <p>Pesanan Anda akan segera kami proses setelah pembayaran diterima.</p>
                 </div>
-                <p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>
-                ${instructionHtml}
-                <p class="text-center mt-3">Setelah membayar, Anda dapat mengupload bukti atau mengecek status pesanan pada halaman terpisah.</p>`;
+            `;
         } catch (error) {
             console.error("Gagal membuat pesanan:", error);
-            instructionDiv.innerHTML = `<p class="text-center text-danger">Terjadi kesalahan: ${error.message}</p>`;
+            body.innerHTML = `<p class="text-center text-danger">Terjadi kesalahan: ${error.message}</p>`;
         }
     }
 
-    // === Fungsi-fungsi Pendukung ===
+    // ================== FUNGSI-FUNGSI LAMA (TIDAK DIUBAH) ==================
+
     function loadInitialData() {
         dbFS.collection('produk').get().then(snapshot => {
             const categories = [...new Set(snapshot.docs.map(doc => doc.data().kategori).filter(Boolean))];
@@ -245,10 +307,8 @@
         produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
         infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.';
         nextToPaymentBtn.disabled = true;
-        
         const kategori = kategoriSelect.value;
         if (!kategori) return;
-
         dbFS.collection('produk').where('kategori', '==', kategori).get().then(snapshot => {
             snapshot.forEach(doc => {
                 produkSelect.innerHTML += `<option value="${doc.id}">${doc.data().nama_produk}</option>`;
@@ -263,13 +323,9 @@
             nextToPaymentBtn.disabled = true;
             return;
         }
-
         infoProduk.innerHTML = 'Memuat...';
         dbFS.collection('produk').doc(produkId).get().then(doc => {
-            if (!doc.exists) {
-                infoProduk.innerHTML = 'Produk tidak ditemukan.';
-                return;
-            }
+            if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
             produkTerpilihData = { id: doc.id, ...doc.data() };
             infoProduk.innerHTML = `<b>Harga: ${formatRupiah(produkTerpilihData.harga_umum)}</b><br><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}`;
             nextToPaymentBtn.disabled = false;
