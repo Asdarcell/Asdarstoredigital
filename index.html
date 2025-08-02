@@ -272,6 +272,10 @@
     function handleProductSelection() { const produkId = produkSelect.value; promoProdukTerpakai = false; diskonShareTerpakai = false; if (!produkId) { resetFormState(); return; } infoProduk.innerHTML = 'Memuat detail produk...'; nextToPaymentBtn.disabled = true; nextToPaymentBtn.textContent = '...'; document.getElementById('product-promo-container').innerHTML = ''; dbFS.collection('produk').doc(produkId).onSnapshot(doc => { if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; } produkTerpilihData = { id: doc.id, ...doc.data() }; updateTotalHarga(); checkDiskonShare(); if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) { nextToPaymentBtn.textContent = 'Stok Habis'; nextToPaymentBtn.disabled = true; infoProduk.innerHTML += `<br><b class="text-danger">Stok saat ini habis.</b>`; } else { nextToPaymentBtn.textContent = 'Lanjut ke Pembayaran'; nextToPaymentBtn.disabled = false; if (!diskonShareTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) { let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`; document.getElementById('product-promo-container').innerHTML = `<div class="info" style="border-color: var(--success);"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`; } } }); }
     function updateTotalHarga() { if (!produkTerpilihData) return; let hargaAwal = produkTerpilihData.harga_umum; let hargaFinal = hargaAwal; let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`; let diskonDeskripsiTambahan = ''; if (promoProdukTerpakai && produkTerpilihData.promo) { let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); hargaFinal = Math.max(0, hargaAwal - potongan); diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; } else if (diskonShareTerpakai) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_SHARE); diskonDeskripsiTambahan = `<br><b style="color:var(--success);">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; } infoProduk.innerHTML = `${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`; }
 
+    // ==================================================================
+    // === LOGIKA PEMBAYARAN BARU YANG MENIRU CONTOH ANDA DIMULAI DI SINI ===
+    // ==================================================================
+
     function handleNextToPayment() {
         hideNotification();
         if (nextToPaymentBtn.disabled) return;
@@ -311,6 +315,7 @@
         const paymentContainer = document.getElementById('payment-selection-container');
         paymentContainer.style.display = 'block';
         
+        // Meniru layout dari contoh yang Anda berikan
         paymentContainer.innerHTML = `
             <h2 class="text-center">Konfirmasi Pembayaran</h2>
             <div class="info">
@@ -330,8 +335,7 @@
         `;
         window.scrollTo({ top: paymentContainer.offsetTop - 80, behavior: 'smooth' });
     }
-
-    // === FUNGSI BARU UNTUK KEMBALI KE FORM ===
+    
     function kembaliKeForm() {
         document.getElementById('order-form-container').style.display = 'block';
         document.getElementById('payment-selection-container').style.display = 'none';
@@ -341,7 +345,8 @@
 
     async function buatPesanan(metode) {
         document.querySelectorAll('#payment-buttons button').forEach(button => button.disabled = true);
-        document.querySelector('button[onclick="kembaliKeForm()"]').style.display = 'none'; // Sembunyikan tombol kembali
+        document.querySelector('button[onclick="kembaliKeForm()"]').style.display = 'none'; 
+        
         const instructionDiv = document.getElementById('payment-instruction');
         instructionDiv.innerHTML = '<p style="text-align:center;">Memproses pesanan Anda...</p>';
 
@@ -361,10 +366,12 @@
                 await dbRT.ref('hakDiskon/' + finalOrderData.no_whatsap_aktif).remove();
             }
 
+            // Tampilan instruksi pembayaran meniru contoh
             let instructionHtml = '';
-            
+            // LOGIKA PENGAMBILAN DATA TETAP MENGGUNAKAN 'admin/pengaturan' YANG LEBIH BAIK
+            const adminSettingsRef = await dbFS.collection('admin').doc('pengaturan').get();
+
             if (metode === 'QRIS') {
-                const adminSettingsRef = await dbFS.collection('admin').doc('pengaturan').get();
                 const qrisUrl = adminSettingsRef.exists() ? adminSettingsRef.data().qrisUrl : null;
                 if(qrisUrl){
                     instructionHtml = `
@@ -376,8 +383,7 @@
                 } else {
                     instructionHtml = `<p class="text-center text-danger">Gambar QRIS tidak tersedia. Hubungi admin.</p>`;
                 }
-            } else {
-                const adminSettingsRef = await dbFS.collection('admin').doc('pengaturan').get();
+            } else { // DANA atau ShopeePay
                 let paymentInfo = {};
                 if(adminSettingsRef.exists()){
                     const settings = adminSettingsRef.data();
@@ -404,15 +410,16 @@
                 }
             }
             
+            // Tampilan akhir setelah pesanan berhasil dibuat
             instructionDiv.innerHTML = `
                 <hr>
                 <p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat!</p>
                 <p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>
                 ${instructionHtml}
                 <p class="text-center mt-3">Setelah membayar, jangan lupa upload bukti pembayaran.</p>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <a href="upload.html?id=${id}" class="btn" style="flex: 1; text-decoration: none;"><i class="fas fa-upload"></i> Upload Bukti</a>
-                    <a href="status.html?id=${id}" class="btn" style="flex: 1; text-decoration: none; background-color: var(--muted-text);"><i class="fas fa-eye"></i> Cek Status</a>
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%; text-decoration:none;"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
+                    <a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%; text-decoration:none;"><i class="fas fa-eye me-2"></i>Cek Status</a>
                 </div>`;
 
         } catch (error) {
