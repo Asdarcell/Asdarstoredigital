@@ -65,7 +65,6 @@
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation"><button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">Produk</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="active-resellers-tab" data-bs-toggle="tab" data-bs-target="#active-resellers" type="button" role="tab">Reseller Aktif</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" id="registered-users-tab" data-bs-toggle="tab" data-bs-target="#registered-users" type="button" role="tab">Pengguna Terdaftar</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="verification-tab" data-bs-toggle="tab" data-bs-target="#verification" type="button" role="tab">Verifikasi <span id="verification-count" class="badge bg-danger ms-1" style="display: none;"></span></button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="topup-tab" data-bs-toggle="tab" data-bs-target="#topup" type="button" role="tab">Top Up</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">Pesanan</button></li>
@@ -118,34 +117,6 @@
                         <table id="resellers-table" class="table table-striped">
                             <thead><tr><th>Email</th><th>Saldo</th><th>Aksi</th></tr></thead>
                             <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="registered-users" role="tabpanel">
-                <div class="section">
-                    <h2>Daftar Pengguna Terdaftar</h2>
-                    <p>Daftar ini berisi semua pengguna (reseller) yang terdaftar di sistem Anda.</p>
-                    <div class="alert alert-info" style="background-color: var(--card); border-color: var(--primary); color: var(--text);">
-                        <i class="fas fa-info-circle"></i> <strong>Catatan:</strong> Fitur "Terakhir Login" akan berfungsi jika Anda menambahkan field `lastLogin` di data reseller pada database Firestore Anda.
-                    </div>
-                    
-                    <button id="copy-all-emails-btn" class="btn btn-success mb-3">
-                        <i class="fas fa-copy"></i> Salin Semua Email
-                    </button>
-                    
-                    <div class="table-responsive-container">
-                        <table id="all-users-table" class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Email Pengguna</th>
-                                    <th>Terakhir Login</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="all-users-table-body">
-                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -357,17 +328,17 @@
         //  KONFIGURASI FIREBASE DAN FUNGSI UMUM
         // ==========================================================
         const firebaseConfig = {
-  apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
-  authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-  databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
-  projectId: "asdarstoredigitalll-d89c4,",
-  storageBucket: "asdarstoredigitalll-d89c4.firebasestorage.app"
+          apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan API Key Firebase Anda
+          authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
+          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
+          projectId: "asdarstoredigitalll-d89c4",
+          storageBucket: "asdarstoredigitalll-d89c4.appspot.com" // Pastikan ada jika menggunakan Firebase Storage
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const dbFS = firebase.firestore();
         const dbRT = firebase.database();
-        const storage = firebase.storage();
+        const storage = firebase.storage(); // Inisialisasi Firebase Storage
 
         // Redirect jika belum login
         auth.onAuthStateChanged(user => { if (!user) { window.location.href = "loginadmin.html"; } });
@@ -416,7 +387,6 @@
             // Muat data untuk semua tab saat halaman dimuat
             loadProducts();
             loadResellers();
-            loadRegisteredUsers(); // Panggil fungsi baru
             loadTopupConfirmations();
             loadOrders();
             loadTestimonials();
@@ -425,7 +395,7 @@
             loadBanners();
             loadPendingResellers(); 
             loadCustomFeatures();
-            loadGiftClaims();
+            loadGiftClaims(); // Panggil fungsi baru untuk memuat klaim hadiah
 
             // Setup event listeners untuk form baru
             setupPromoManagementForms();
@@ -434,68 +404,16 @@
         // Event listeners untuk setiap tab (agar data di-refresh setiap kali tab diklik)
         document.getElementById('products-tab').addEventListener('click', loadProducts);
         document.getElementById('active-resellers-tab').addEventListener('click', loadResellers);
-        document.getElementById('registered-users-tab').addEventListener('click', loadRegisteredUsers); // Listener untuk tab baru
         document.getElementById('verification-tab').addEventListener('click', loadPendingResellers);
         document.getElementById('topup-tab').addEventListener('click', loadTopupConfirmations);
         document.getElementById('orders-tab').addEventListener('click', loadOrders);
         document.getElementById('testimonials-tab').addEventListener('click', loadTestimonials);
         document.getElementById('faq-tab').addEventListener('click', loadFaq);
         document.getElementById('payments-tab').addEventListener('click', loadPaymentMethods);
-        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms);
-        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims);
+        document.getElementById('promo-management-tab').addEventListener('click', setupPromoManagementForms); // Memanggil ulang setup form jika perlu
+        document.getElementById('gift-claims-tab').addEventListener('click', loadGiftClaims); // Tambahkan ini
         document.getElementById('banners-tab').addEventListener('click', loadBanners);
         document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
-
-        // =================================== PENGGUNA TERDAFTAR (FITUR BARU) ===================================
-        function loadRegisteredUsers() {
-            const tableBody = document.getElementById('all-users-table-body');
-            const copyBtn = document.getElementById('copy-all-emails-btn');
-            
-            tableBody.innerHTML = '<tr><td colspan="3" class="text-center">Memuat data pengguna...</td></tr>';
-
-            // Mengambil data dari koleksi 'resellers'
-            dbFS.collection('resellers').orderBy('email').get()
-                .then(snapshot => {
-                    tableBody.innerHTML = '';
-                    if (snapshot.empty) {
-                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center">Belum ada pengguna (reseller) yang terdaftar.</td></tr>';
-                        return;
-                    }
-
-                    let allEmails = [];
-                    snapshot.forEach(doc => {
-                        const user = { id: doc.id, ...doc.data() };
-                        allEmails.push(user.email);
-                        
-                        const lastLoginTime = user.lastLogin ? new Date(user.lastLogin.toDate()).toLocaleString('id-ID') : 'Belum tercatat';
-                        const statusClass = `status-${(user.status || '').toLowerCase().replace(/ /g, '-')}`;
-
-                        const row = tableBody.insertRow();
-                        row.innerHTML = `
-                            <td>${user.email}</td>
-                            <td>${lastLoginTime}</td>
-                            <td><span class="status-badge ${statusClass}">${user.status || 'N/A'}</span></td>
-                        `;
-                    });
-
-                    copyBtn.onclick = () => {
-                        if (allEmails.length === 0) {
-                            showToast('Tidak ada email untuk disalin.', 'warning');
-                            return;
-                        }
-                        const emailString = allEmails.join(', ');
-                        navigator.clipboard.writeText(emailString).then(() => {
-                            showToast('Semua email berhasil disalin!', 'success');
-                        }).catch(err => {
-                            showToast('Gagal menyalin email.', 'danger');
-                        });
-                    };
-                })
-                .catch(error => {
-                    console.error("Gagal memuat pengguna terdaftar: ", error);
-                    tableBody.innerHTML = `<tr><td colspan="3" class="text-danger">Gagal memuat pengguna: ${error.message}</td></tr>`;
-                });
-        }
 
         // =================================== MANAJEMEN PROMO MANUAL (FITUR BARU) ===================================
         function setupPromoManagementForms() {
@@ -536,6 +454,8 @@
                     setButtonLoading(button, true);
 
                     try {
+                        // Kita gunakan email sebagai ID dokumen agar mudah dicari dan tidak duplikat
+                        // Dokumen ini akan menandakan bahwa pembeli biasa dengan email ini berhak mendapatkan diskon
                         await dbFS.collection('hakDiskonOtomatis').doc(email).set({
                             email: email,
                             diberikanPada: new Date() // Timestamp pemberian hak diskon
@@ -550,6 +470,7 @@
                 });
             }
         }
+
 
         // =================================== PRODUK (Firestore) ===================================
         const productForm = document.getElementById('product-form');
@@ -776,6 +697,7 @@
                     approvedAt: new Date()
                 });
                 showToast('Pendaftaran reseller berhasil disetujui!', 'success');
+                // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
             } catch (e) {
                 showToast('Gagal menyetujui reseller: ' + e.message, 'danger');
             }
@@ -790,6 +712,7 @@
                     rejectedAt: new Date()
                 });
                 showToast('Pendaftaran reseller berhasil ditolak.', 'warning');
+                // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
             } catch (e) {
                 showToast('Gagal menolak reseller: ' + e.message, 'danger');
             }
@@ -801,6 +724,7 @@
                 try {
                     await dbFS.collection('resellers').doc(uid).delete();
                     showToast('Permintaan pendaftaran dihapus.', 'warning');
+                    // loadPendingResellers() akan otomatis ter-refresh karena onSnapshot
                 } catch (e) {
                     showToast('Gagal menghapus permintaan: ' + e.message, 'danger');
                 } finally {
@@ -894,9 +818,10 @@
         // =================================== PESANAN (Firestore) ===================================
         const ordersTableBody = document.querySelector('#orders-table-body');
         const orderFilter = document.getElementById('order-filter');
-        let allOrdersData = [];
+        let allOrdersData = []; // Menyimpan semua data pesanan untuk filtering lokal
 
         function loadOrders() {
+            // Mengambil pesanan dari kedua koleksi dan menggabungkannya
             Promise.all([
                 dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(),
                 dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()
@@ -906,6 +831,7 @@
                 umumSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
                 resellerSnapshot.forEach(doc => combinedOrders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
 
+                // Urutkan berdasarkan waktu (yang terbaru di atas)
                 allOrdersData = combinedOrders.sort((a, b) => {
                     const timeA = a.waktu ? (a.waktu.toDate ? a.waktu.toDate().getTime() : a.waktu.getTime()) : 0;
                     const timeB = b.waktu ? (b.waktu.toDate ? b.waktu.toDate().getTime() : b.waktu.getTime()) : 0;
@@ -933,7 +859,7 @@
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
                 const customerName = isResellerOrder ? (order.nama_reseller || order.email_reseller || order.nama) : (order.nama_pelanggan || order.nama);
-                const price = isResellerOrder ? order.harga_beli : order.harga_final;
+                const price = isResellerOrder ? order.harga_beli : order.harga_final; // Sesuaikan dengan field harga di data Anda
 
                 const row = ordersTableBody.insertRow();
                 row.innerHTML = `
@@ -965,7 +891,7 @@
                 try {
                     await dbFS.collection(collectionName).doc(id).delete();
                     showToast('Pesanan berhasil dihapus.', 'warning');
-                    loadOrders();
+                    loadOrders(); // Muat ulang semua pesanan setelah penghapusan
                 } catch (e) {
                     showToast('Gagal menghapus pesanan: ' + e.message, 'danger');
                 } finally {
@@ -1012,7 +938,7 @@
             const data = {
                 nama: document.getElementById('testimonial-nama').value,
                 isi: document.getElementById('testimonial-isi').value,
-                status: 'pending'
+                status: 'pending' // Default status saat ditambahkan/diedit
             };
 
             const promise = currentTestimonialId
@@ -1200,7 +1126,7 @@
                 showToast('Info pembayaran berhasil disimpan!', 'success');
                 paymentForm.reset();
                 currentPaymentId = null;
-                loadPaymentMethods();
+                loadPaymentMethods(); // Refresh data
             }).catch(err => {
                 showToast('Gagal menyimpan info pembayaran: ' + err.message, 'danger');
             }).finally(() => {
@@ -1228,7 +1154,7 @@
                 try {
                     await dbFS.collection('infoPembayaran').doc(id).delete();
                     showToast('Info pembayaran berhasil dihapus!', 'warning');
-                    loadPaymentMethods();
+                    loadPaymentMethods(); // Refresh data
                 } catch (e) {
                     showToast('Gagal menghapus info pembayaran: ' + e.message, 'danger');
                 } finally {
@@ -1315,13 +1241,15 @@
             if (confirm('Hapus klaim hadiah ini secara permanen?')) {
                 setButtonLoading(btn, true);
                 try {
+                    // Optional: Delete the proof from storage if it exists
                     const claimDoc = await dbFS.collection('klaimHadiahBuyer').doc(id).get();
                     if (claimDoc.exists && claimDoc.data().buktiUrl) {
                         try {
                             const storageRef = storage.refFromURL(claimDoc.data().buktiUrl);
                             await storageRef.delete();
+                            console.log("Bukti dihapus dari Storage.");
                         } catch (storageError) {
-                            console.warn("Gagal menghapus bukti dari Storage:", storageError.message);
+                            console.warn("Gagal menghapus bukti dari Storage (mungkin sudah tidak ada):", storageError.message);
                         }
                     }
                     await dbFS.collection('klaimHadiahBuyer').doc(id).delete();
@@ -1388,7 +1316,7 @@
                 bannerForm.reset();
                 cancelBannerEditBtn.style.display = 'none';
                 currentBannerId = null;
-                loadBanners();
+                loadBanners(); // Refresh data
             } catch (err) {
                 showToast('Gagal menyimpan banner: ' + err.message, 'danger');
             } finally {
@@ -1420,7 +1348,7 @@
                 setButtonLoading(btn, true);
                 try {
                     await dbFS.collection('banners').doc(id).delete();
-                    loadBanners();
+                    loadBanners(); // Refresh data
                     showToast('Banner berhasil dihapus!', 'warning');
                 } catch (e) {
                     showToast('Gagal menghapus banner: ' + e.message, 'danger');
@@ -1492,4 +1420,4 @@
         }
     </script>
 </body>
-    </html>
+                    </html>
