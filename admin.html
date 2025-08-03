@@ -81,8 +81,7 @@
         </header>
 
         <div class="tab-content" id="myTabContent">
-            <!-- Daftar Pengguna -->
-             <div class="tab-pane fade show active" id="users" role="tabpanel">
+            <div class="tab-pane fade show active" id="users" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Pengguna Terdaftar</h2>
                     <p>Daftar ini diisi otomatis setiap pengguna login/mendaftar. Gunakan untuk keperluan promosi.</p>
@@ -100,7 +99,6 @@
                 </div>
             </div>
             
-            <!-- Produk -->
             <div class="tab-pane fade" id="products" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Produk</h2>
@@ -132,7 +130,6 @@
                 </div>
             </div>
 
-             <!-- Pesanan -->
              <div class="tab-pane fade" id="orders" role="tabpanel">
                 <div class="section">
                     <h2>Semua Pesanan</h2>
@@ -146,7 +143,6 @@
                 </div>
             </div>
 
-            <!-- Reseller -->
             <div class="tab-pane fade" id="active-resellers" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Reseller Aktif</h2>
@@ -159,7 +155,6 @@
                 </div>
             </div>
 
-            <!-- Verifikasi -->
             <div class="tab-pane fade" id="verification" role="tabpanel">
                 <div class="section">
                     <h2>Verifikasi Pendaftaran Reseller</h2>
@@ -172,7 +167,6 @@
                 </div>
             </div>
 
-            <!-- Top Up -->
             <div class="tab-pane fade" id="topup" role="tabpanel">
                 <div class="section">
                     <h2>Konfirmasi Top Up Masuk</h2>
@@ -185,7 +179,6 @@
                 </div>
             </div>
             
-            <!-- Testimoni -->
             <div class="tab-pane fade" id="testimonials" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Testimoni</h2>
@@ -207,7 +200,6 @@
                 </div>
             </div>
             
-            <!-- FAQ -->
             <div class="tab-pane fade" id="faq" role="tabpanel">
                 <div class="section">
                     <h2>Manajemen FAQ</h2>
@@ -223,7 +215,6 @@
                 </div>
             </div>
 
-            <!-- Pembayaran -->
             <div class="tab-pane fade" id="payments" role="tabpanel">
                 <div class="section">
                     <h2>Info Pembayaran</h2>
@@ -239,7 +230,6 @@
                 </div>
             </div>
 
-            <!-- Promo Manual -->
             <div class="tab-pane fade" id="promo-management" role="tabpanel">
                 <div class="section">
                     <h2>Berikan Diskon Promosi Manual</h2>
@@ -254,7 +244,6 @@
                 </div>
             </div>
 
-            <!-- Klaim Hadiah -->
             <div class="tab-pane fade" id="gift-claims" role="tabpanel">
                 <div class="section">
                     <h2>Klaim Hadiah Pembeli</h2>
@@ -267,7 +256,6 @@
                 </div>
             </div>
 
-            <!-- Banner -->
             <div class="tab-pane fade" id="banners" role="tabpanel">
                 <div class="section">
                     <h2>Daftar Banner</h2>
@@ -283,7 +271,6 @@
                 </div>
             </div>
 
-            <!-- Kode Kustom -->
             <div class="tab-pane fade" id="custom-code" role="tabpanel">
                 <div class="section">
                     <h2>Manajemen Fitur Kustom</h2>
@@ -414,11 +401,14 @@
                 const btn = e.target.querySelector('[type=submit]'); setButtonLoading(btn, true);
                 const data = { ...customData };
                 fields.forEach(f => {
-                    const inputId = (specialCase === 'customCode') ? `feature-${f}` : `${formId.split('-')[0]}-${f}`;
+                    let inputId = `${formId.split('-')[0]}-${f}`;
+                    if(specialCase === true) inputId = `feature-${f.replace('Code', '')}`;
+                    
                     const input = document.getElementById(inputId.replace(/_[a-z]/g, m => m.toUpperCase().substring(1)));
+
                     if(input) {
-                        const key = f.replace(/Code/g, ''); // Fix for custom code
-                        if(input.type === 'number' || f === 'urutan' || f === 'stok' || f === 'harga_umum' || f === 'harga_reseller') data[key] = parseInt(input.value || 0);
+                        const key = f.replace(/Code/g, '');
+                        if(input.type === 'number' || ['urutan','stok','harga_umum','harga_reseller','nilai'].includes(f)) data[key] = parseInt(input.value || 0);
                         else data[key] = input.value;
                     }
                 });
@@ -454,7 +444,7 @@
                 const data = snap.val ? snap.val() : snap.data();
                 if(hiddenId) document.getElementById(hiddenId).value = id;
                 fields.forEach(f => {
-                    const inputId = (specialCase === 'customCode') ? `feature-${f}` : `${formId.split('-')[0]}-${f.replace(/_/g, '-')}`;
+                    const inputId = `${formId.split('-')[0]}-${f.replace(/_/g, '-')}`;
                      if(document.getElementById(inputId)) document.getElementById(inputId).value = data[f] || '';
                 });
                 
@@ -564,11 +554,11 @@
                 s.forEach(d => {
                     const r = { id: d.id, ...d.data() };
                     const row = tableBody.insertRow();
-                    row.innerHTML = `<td>${r.email}</td><td>${formatRupiah(r.saldo || 0)}</td><td><button class="btn btn-primary btn-sm" onclick="addSaldo('${r.id}', ${r.saldo || 0}, this)">+ Saldo</button></td>`;
+                    row.innerHTML = `<td>${r.email}</td><td>${formatRupiah(r.saldo || 0)}</td><td><button class="btn btn-primary btn-sm" onclick="addSaldo('${r.id}', this)">+ Saldo</button></td>`;
                 });
             });
         }
-        async function addSaldo(id, saldo, btn) {
+        async function addSaldo(id, btn) {
             const nominal = parseInt(prompt("Masukkan nominal saldo:"));
             if (nominal > 0) {
                 setButtonLoading(btn, true);
@@ -624,7 +614,7 @@
             setButtonLoading(btn, false);
         }
         async function rejectTopup(id, btn) { if(confirm('Tolak top up?')) await dbFS.collection('konfirmasiTopup').doc(id).update({ status: 'ditolak' }); }
-
+        
         function loadTestimonials() {
             const tableBody = document.getElementById('testimonials-table-body');
             dbRT.ref('testimonials').on('value', s => {
@@ -693,7 +683,7 @@
                 s.forEach(d => {
                     const b = {id: d.id, ...d.data()};
                     const r = tableBody.insertRow();
-                    r.innerHTML = `<td>${b.urutan}</td><td><a href="${b.url}" target="_blank">Lihat</a></td><td>${b.link || '-'}</td><td><button onclick="editBanner('${b.id}')">E</button><button onclick="deleteBanner('${b.id}',this)">H</button></td>`;
+                    r.innerHTML = `<td>${b.urutan}</td><td><a href="${b.url}" target="_blank">Lihat</a></td><td>${b.link || '-'}</td><td><button class="btn btn-warning btn-sm" onclick="editBanner('${b.id}')">E</button><button class="btn btn-danger btn-sm" onclick="deleteBanner('${b.id}', this)">H</button></td>`;
                 });
             });
         }
