@@ -96,6 +96,19 @@
     .hidden { display: none; }
     #existing-order-notification { padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #e67e22; background-color: #f39c1233; color: #d35400; font-size: 0.95em; line-height: 1.6; }
     #existing-order-notification button { background-color: var(--danger); color: white; padding: 8px 12px; font-size: 0.9em; margin-top: 10px; width: auto; }
+    
+    /* === 👇 CSS UNTUK QRIS DITAMBAHKAN DI SINI 👇 === */
+    .qris-details {
+      text-align: center; /* Membuat konten di tengah */
+      padding: 15px;
+    }
+    .qris-image {
+      max-width: 250px; /* Ukuran maksimal gambar QRIS */
+      width: 100%;      /* Membuat lebar gambar menyesuaikan wadahnya */
+      height: auto;     /* Menjaga rasio aspek gambar */
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 
@@ -331,7 +344,7 @@
             }
             if (orderData) {
                 if (orderData.status === 'Menunggu Pembayaran') {
-                    pendingOrderData = orderData; // PERBAIKAN DITAMBAHKAN DI SINI
+                    pendingOrderData = orderData; 
                     await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran'); 
                 } 
                 else { window.location.href = `status.html?id=${orderId}`; }
@@ -365,12 +378,48 @@
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentMethods = [];
             paymentSnapshot.forEach(doc => paymentMethods.push({ id: doc.id, ...doc.data() }));
+            
             let radioButtonsHTML = '', contentDivsHTML = '';
+
+            // === 👇 PERUBAHAN LOGIKA UTAMA ADA DI SINI 👇 ===
             paymentMethods.forEach(metode => {
                 const metodeId = metode.metode.replace(/\s+/g, '-').toLowerCase();
+                
+                // Membuat tombol radio (tidak berubah)
                 radioButtonsHTML += `<div class="payment-option"><input type="radio" id="pilih-${metodeId}" name="metode_pembayaran" value="${metode.metode}"><label for="pilih-${metodeId}"><i class="fas fa-wallet"></i> ${metode.metode}</label></div>`;
-                contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden"><p class="text-center fw-bold">Silakan transfer ke:</p><div class="payment-methods-list"><div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${metode.metode}</div><div class="payment-method-number">${metode.nomor}</div><div class="payment-method-an">a.n ${metode.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${metode.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div></div></div>`;
+                
+                // Cek apakah metode ini adalah QRIS
+                if (metode.metode.toLowerCase().includes('qris')) {
+                    // Jika YA, buat tampilan untuk gambar QRIS
+                    contentDivsHTML += `
+                    <div id="content-${metodeId}" class="payment-content hidden">
+                        <div class="qris-details">
+                            <h4>Silakan pindai (scan) kode QRIS di bawah:</h4>
+                            <img src="${metode.nomor}" alt="Kode QRIS Pembayaran" class="qris-image">
+                            <p>a.n ${metode.atas_nama}</p>
+                            <p>Nominal: <strong>${formatRupiah(dataPesanan.harga_final)}</strong></p>
+                        </div>
+                    </div>`;
+                } else {
+                    // Jika BUKAN, buat tampilan standar (transfer bank/e-wallet)
+                    contentDivsHTML += `
+                    <div id="content-${metodeId}" class="payment-content hidden">
+                        <p class="text-center fw-bold">Silakan transfer ke:</p>
+                        <div class="payment-methods-list">
+                            <div class="payment-method-item">
+                                <div class="payment-details">
+                                    <div class="payment-method-name">${metode.metode}</div>
+                                    <div class="payment-method-number">${metode.nomor}</div>
+                                    <div class="payment-method-an">a.n ${metode.atas_nama}</div>
+                                </div>
+                                <button class="copy-btn" onclick="copyToClipboard('${metode.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
             });
+            // === Batas Perubahan Logika ===
+
             const orderIdHtml = dataPesanan.id ? `<p><strong>ID Pesanan:</strong> ${dataPesanan.id}</p>` : '';
             paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${orderIdHtml}<p><strong>Produk:</strong> ${dataPesanan.produk || dataPesanan.nama_produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3><div id="payment-options-list">${radioButtonsHTML}</div><div id="payment-details-container">${contentDivsHTML}</div><button id="confirmOrderBtn" onclick="buatPesanan()" disabled>${judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran'}</button>`;
             setupPaymentEventListeners();
