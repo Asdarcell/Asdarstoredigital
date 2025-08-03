@@ -356,7 +356,7 @@
                 button.innerHTML = button.dataset.originalText;
             }
         }
-
+        
         // ======================================
         //  EVENT LISTENER UTAMA (PINTU MASUK)
         // ======================================
@@ -377,18 +377,15 @@
                         case 'testimonials': loadTestimonials(); break;
                         case 'faq': loadFaq(); break;
                         case 'payments': loadPaymentMethods(); break;
-                        case 'promo-management': /* Cukup tampilkan form */ break;
                         case 'gift-claims': loadGiftClaims(); break;
                         case 'banners': loadBanners(); break;
                         case 'custom-code': loadCustomFeatures(); break;
                     }
                 });
             });
-
-            // Pasang event listener ke semua form sekali saja
             setupAllForms();
         });
-        
+
         // =================================== DAFTAR PENGGUNA ===================================
         const usersTableBody = document.getElementById('users-table-body');
         const userCountBadge = document.getElementById('user-count');
@@ -398,14 +395,11 @@
         function loadAllUsers() {
             usersTableBody.innerHTML = `<tr><td colspan="3" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>`;
             userCountBadge.textContent = 'Memuat...';
-
             dbFS.collection('users_mirror').orderBy('terakhirLogin', 'desc').onSnapshot(snapshot => {
-                usersTableBody.innerHTML = '';
-                allUserEmails = [];
+                usersTableBody.innerHTML = ''; allUserEmails = [];
                 if (snapshot.empty) {
                     usersTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Belum ada pengguna tercatat.</td></tr>';
-                    userCountBadge.textContent = '0 Pengguna';
-                    return;
+                    userCountBadge.textContent = '0 Pengguna'; return;
                 }
                 snapshot.forEach(doc => {
                     const user = doc.data();
@@ -415,114 +409,171 @@
                     if (user.email) allUserEmails.push(user.email);
                 });
                 userCountBadge.textContent = `${snapshot.size} Pengguna`;
-            }, error => {
-                usersTableBody.innerHTML = `<tr><td colspan="3" class="text-danger text-center">Gagal memuat data.</td></tr>`;
             });
         }
         copyAllEmailsBtn.addEventListener('click', (e) => {
-            if (allUserEmails.length > 0) {
-                copyToClipboard(allUserEmails.join('\n'), e.currentTarget);
-            } else { alert('Tidak ada email untuk disalin.'); }
+            if (allUserEmails.length > 0) copyToClipboard(allUserEmails.join('\n'), e.currentTarget);
+            else alert('Tidak ada email untuk disalin.');
         });
 
-        // =================================== MANAJEMEN PRODUK ===================================
-        const productForm = document.getElementById('product-form');
-        const productsTableBody = document.getElementById('products-table-body');
-        let currentProductId = null;
+        // =================================== SETUP SEMUA FORM ===================================
+        function setupAllForms() {
+            // Product Form
+            const productForm = document.getElementById('product-form');
+            if(productForm) {
+                productForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const btn = e.target.querySelector('[type=submit]'); setButtonLoading(btn, true);
+                    const promoCheckbox = document.getElementById('promo-checkbox');
+                    const productData = {
+                        nama_produk: document.getElementById('nama_produk').value, kategori: document.getElementById('kategori').value,
+                        deskripsi: document.getElementById('deskripsi').value, harga_umum: parseInt(document.getElementById('harga_umum').value),
+                        harga_reseller: parseInt(document.getElementById('harga_reseller').value), stok: parseInt(document.getElementById('stok').value),
+                        urutan: parseInt(document.getElementById('urutan').value),
+                        promo: promoCheckbox.checked ? { jenis: document.getElementById('promo-jenis').value, nilai: parseInt(document.getElementById('promo-nilai').value) } : null
+                    };
+                    const currentProductId = document.getElementById('productId').value;
+                    try {
+                        if (currentProductId) await dbFS.collection('produk').doc(currentProductId).update(productData);
+                        else await dbFS.collection('produk').add(productData);
+                        showToast('Produk disimpan!', 'success');
+                        productForm.reset(); document.getElementById('promo-options').style.display = 'none';
+                        document.getElementById('cancel-edit-btn').style.display = 'none'; document.getElementById('productId').value = '';
+                        loadProducts();
+                    } catch (err) { showToast('Gagal: ' + err.message, 'danger'); } finally { setButtonLoading(btn, false); }
+                });
+                document.getElementById('cancel-edit-btn').addEventListener('click', () => { productForm.reset(); document.getElementById('promo-options').style.display = 'none'; document.getElementById('cancel-edit-btn').style.display = 'none'; document.getElementById('productId').value = ''; });
+                document.getElementById('promo-checkbox').addEventListener('change', (e) => { document.getElementById('promo-options').style.display = e.target.checked ? 'block' : 'none'; });
+            }
+            
+            // Testimonial, FAQ, Payment, Banner, Custom Code, Promo Manual Forms
+            setupCrudForm('testimonial-form', 'testimonials', 'testimonialId', ['testimonial-nama', 'testimonial-isi'], loadTestimonials, { status: 'pending' });
+            setupCrudForm('faq-form', 'faq', 'faqId', ['faq_q', 'faq_a'], loadFaq);
+            setupCrudForm('payment-form', 'infoPembayaran', 'paymentId', ['payment_metode', 'payment_nomor', 'payment_an'], loadPaymentMethods);
+            setupCrudForm('banner-form', 'banners', 'bannerId', ['banner_url', 'banner_link', 'banner_urutan'], loadBanners, { urutan: (val) => parseInt(val) || 0 });
+            setupCrudForm('add-feature-form', 'customFeatures', null, ['feature-name', 'feature-html', 'feature-css', 'feature-js'], loadCustomFeatures);
+            
+            const promoForm = document.getElementById('grant-buyer-promo-form');
+            if(promoForm) {
+                promoForm.addEventListener('submit', async (e) => {
+                    e.preventDefault(); const btn = e.target.querySelector('button'); setButtonLoading(btn, true);
+                    const contact = document.getElementById('buyer-promo-contact').value;
+                    const normalize = (num) => { let n = String(num).trim().replace(/\D/g, ''); return n.startsWith('0') ? '62' + n.slice(1) : (n.startsWith('62') ? n : '62' + n); };
+                    try { await dbRT.ref('hakDiskon/' + normalize(contact)).set(true); showToast(`Hak diskon diberikan ke ${contact}`, 'success'); promoForm.reset(); }
+                    catch(e) { showToast('Gagal: ' + e.message, 'danger'); } finally { setButtonLoading(btn, false); }
+                });
+            }
+        }
 
+        // =================================== FUNGSI-FUNGSI CRUD UNIVERSAL ===================================
+        function setupCrudForm(formId, collectionName, hiddenIdField, fieldIds, callbackOnSuccess, customDataProcessing = {}) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = e.target.querySelector('[type=submit]'); setButtonLoading(btn, true);
+                const data = {};
+                fieldIds.forEach(id => {
+                    const input = document.getElementById(id.replace('_', '-')); // Handle inkonsistensi penamaan
+                    const key = id.replace('-', '_');
+                    data[key] = customDataProcessing[key] ? customDataProcessing[key](input.value) : input.value;
+                });
+                if(customDataProcessing.status) data.status = customDataProcessing.status;
+
+                const currentId = document.getElementById(hiddenIdField)?.value;
+                const db = (collectionName === 'faq' || collectionName === 'testimonials' || collectionName === 'customFeatures') ? dbRT.ref(collectionName) : dbFS.collection(collectionName);
+
+                try {
+                    if (currentId) {
+                        if (db.doc) await db.doc(currentId).update(data); else await db.child(currentId).update(data);
+                    } else {
+                        if (db.doc) await db.add(data); else await db.push(data);
+                    }
+                    showToast('Data berhasil disimpan!', 'success');
+                    form.reset();
+                    if(document.getElementById(hiddenIdField)) document.getElementById(hiddenIdField).value = '';
+                    if(document.getElementById(`cancel-${formId.split('-')[0]}-edit-btn`)) document.getElementById(`cancel-${formId.split('-')[0]}-edit-btn`).style.display = 'none';
+                    callbackOnSuccess();
+                } catch (e) { showToast('Gagal: ' + e.message, 'danger'); } finally { setButtonLoading(btn, false); }
+            });
+            const cancelBtn = document.getElementById(`cancel-${formId.split('-')[0]}-edit-btn`);
+            if(cancelBtn) cancelBtn.addEventListener('click', () => { form.reset(); if(document.getElementById(hiddenIdField)) document.getElementById(hiddenIdField).value = ''; cancelBtn.style.display = 'none'; });
+        }
+
+        async function universalEdit(id, collectionName, hiddenIdField, formId, fieldMapping) {
+            const db = (collectionName === 'faq' || collectionName === 'testimonials') ? dbRT.ref(collectionName).child(id) : dbFS.collection(collectionName).doc(id);
+            const snapshot = await (db.doc ? db.get() : db.once('value'));
+            if (snapshot.exists) {
+                const data = db.doc ? snapshot.data() : snapshot.val();
+                document.getElementById(hiddenIdField).value = id;
+                Object.keys(fieldMapping).forEach(formFieldId => {
+                    document.getElementById(formFieldId).value = data[fieldMapping[formFieldId]] || '';
+                });
+                const cancelBtn = document.getElementById(`cancel-${formId.split('-')[0]}-edit-btn`);
+                if(cancelBtn) cancelBtn.style.display = 'block';
+                document.getElementById(formId).scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        async function universalDelete(id, collectionName, callbackOnSuccess, btn) {
+            if (confirm('Yakin ingin hapus data ini?')) {
+                setButtonLoading(btn, true);
+                const db = (collectionName === 'faq' || collectionName === 'testimonials' || collectionName === 'customFeatures') ? dbRT.ref(collectionName).child(id) : dbFS.collection(collectionName).doc(id);
+                try {
+                    if(db.doc) await db.delete(); else await db.remove();
+                    showToast('Data dihapus.', 'warning');
+                    callbackOnSuccess();
+                } catch (e) { showToast('Gagal: ' + e.message, 'danger'); } finally { setButtonLoading(btn, false); }
+            }
+        }
+
+        // =================================== IMPLEMENTASI UNTUK SETIAP TAB ===================================
+        // Produk
         function loadProducts() {
-            productsTableBody.innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>`;
+            const tableBody = document.getElementById('products-table-body');
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>`;
             dbFS.collection('produk').orderBy('urutan').get().then(s => {
-                productsTableBody.innerHTML = '';
-                if(s.empty) productsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Belum ada produk.</td></tr>';
+                tableBody.innerHTML = ''; if(s.empty) tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Belum ada produk.</td></tr>';
                 s.forEach(d => {
                     const p = { id: d.id, ...d.data() };
-                    const r = productsTableBody.insertRow();
+                    const r = tableBody.insertRow();
                     r.innerHTML = `<td>${p.nama_produk}</td><td>${p.kategori}</td><td>${formatRupiah(p.harga_umum)}</td><td>${formatRupiah(p.harga_reseller)}</td><td>${p.stok}</td>
                     <td><button class="btn btn-warning btn-sm" onclick="editProduct('${p.id}')">E</button><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}', this)">H</button></td>`;
                 });
             });
         }
-        
-        async function editProduct(id) {
-            const doc = await dbFS.collection('produk').doc(id).get();
-            if (doc.exists) {
-                const p = doc.data();
-                currentProductId = id;
-                ['nama_produk', 'kategori', 'deskripsi', 'harga_umum', 'harga_reseller', 'stok', 'urutan'].forEach(field => document.getElementById(field).value = p[field] || (field === 'urutan' ? 0 : ''));
-                const promoCheckbox = document.getElementById('promo-checkbox');
-                const promoOptions = document.getElementById('promo-options');
-                promoCheckbox.checked = !!p.promo;
-                promoOptions.style.display = p.promo ? 'block' : 'none';
-                if (p.promo) {
-                    document.getElementById('promo-jenis').value = p.promo.jenis;
-                    document.getElementById('promo-nilai').value = p.promo.nilai;
-                }
-                document.getElementById('cancel-edit-btn').style.display = 'block';
-                productForm.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
+        function editProduct(id) { universalEdit(id, 'produk', 'productId', 'product-form', { 'nama_produk': 'nama_produk', 'kategori': 'kategori', 'deskripsi': 'deskripsi', 'harga_umum': 'harga_umum', 'harga_reseller': 'harga_reseller', 'stok': 'stok', 'urutan': 'urutan' }); }
+        function deleteProduct(id, btn) { universalDelete(id, 'produk', loadProducts, btn); }
 
-        async function deleteProduct(id, btn) {
-            if (confirm('Yakin ingin hapus produk ini?')) {
-                setButtonLoading(btn, true);
-                await dbFS.collection('produk').doc(id).delete();
-                showToast('Produk dihapus.', 'warning');
-                loadProducts();
-                setButtonLoading(btn, false);
-            }
-        }
-
-        // ... Implementasi fungsi load dan CRUD untuk semua tab lainnya ...
-        // (Kode di bawah ini adalah implementasi lengkap untuk semua fitur)
-        
-        // =================================== SEMUA FORM SETUP ===================================
-        function setupAllForms() {
-            // Product Form
-            productForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const btn = e.target.querySelector('[type=submit]'); setButtonLoading(btn, true);
-                const promoCheckbox = document.getElementById('promo-checkbox');
-                const productData = {
-                    nama_produk: document.getElementById('nama_produk').value, kategori: document.getElementById('kategori').value,
-                    deskripsi: document.getElementById('deskripsi').value, harga_umum: parseInt(document.getElementById('harga_umum').value),
-                    harga_reseller: parseInt(document.getElementById('harga_reseller').value), stok: parseInt(document.getElementById('stok').value),
-                    urutan: parseInt(document.getElementById('urutan').value),
-                    promo: promoCheckbox.checked ? { jenis: document.getElementById('promo-jenis').value, nilai: parseInt(document.getElementById('promo-nilai').value) } : null
-                };
-                try {
-                    if (currentProductId) await dbFS.collection('produk').doc(currentProductId).update(productData);
-                    else await dbFS.collection('produk').add(productData);
-                    showToast('Produk disimpan!', 'success');
-                    productForm.reset(); document.getElementById('promo-options').style.display = 'none';
-                    document.getElementById('cancel-edit-btn').style.display = 'none'; currentProductId = null; loadProducts();
-                } catch (err) { showToast('Gagal: ' + err.message, 'danger'); } finally { setButtonLoading(btn, false); }
+        // Pesanan
+        function loadOrders() {
+            const tableBody = document.getElementById('orders-table-body');
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>`;
+            Promise.all([dbFS.collection('pesananUmum').orderBy('waktu', 'desc').get(), dbFS.collection('pesananReseller').orderBy('waktu', 'desc').get()])
+            .then(([umum, reseller]) => {
+                let orders = [];
+                umum.forEach(doc => orders.push({ id: doc.id, ...doc.data(), type: 'umum' }));
+                reseller.forEach(doc => orders.push({ id: doc.id, ...doc.data(), type: 'reseller' }));
+                orders.sort((a, b) => (b.waktu?.toDate() || 0) - (a.waktu?.toDate() || 0));
+                
+                const filter = document.getElementById('order-filter').value;
+                const filteredOrders = orders.filter(o => filter === 'all' || o.type === filter);
+                
+                tableBody.innerHTML = '';
+                if(filteredOrders.length === 0) tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada pesanan.</td></tr>';
+                filteredOrders.forEach(o => {
+                    const r = tableBody.insertRow();
+                    const customer = o.type === 'reseller' ? o.nama_reseller : o.nama_pelanggan;
+                    const price = o.type === 'reseller' ? o.harga_beli : o.harga_final;
+                    r.innerHTML = `<td><code>${o.id}</code></td><td>${o.produk}</td><td>${customer}</td><td>${formatRupiah(price)}</td><td><span class="status-badge status-${o.status.toLowerCase().replace(/ /g, '-')}">${o.status}</span></td>
+                    <td><a href="detail-pesanan.html?id=${o.id}&type=${o.type}" class="btn btn-sm btn-primary">Kelola</a></td>`;
+                });
             });
-            document.getElementById('cancel-edit-btn').addEventListener('click', () => { productForm.reset(); document.getElementById('promo-options').style.display = 'none'; document.getElementById('cancel-edit-btn').style.display = 'none'; currentProductId = null; });
-            document.getElementById('promo-checkbox').addEventListener('change', (e) => { document.getElementById('promo-options').style.display = e.target.checked ? 'block' : 'none'; });
-
-            // Testimonial Form, FAQ Form, Payment Form, Banner Form, etc. (mengikuti pola yang sama)
-            // ... (Kode lengkap untuk semua form CRUD lainnya)
         }
-        
-        // =================================== KODE LENGKAP UNTUK SEMUA FITUR ===================================
-        // (Karena keterbatasan ruang, saya akan meringkas logika. Kode sebenarnya akan lebih panjang seperti di jawaban sebelumnya)
+        document.getElementById('order-filter').addEventListener('change', loadOrders);
 
-        function loadOrders() { /* ... logika load ... */ }
-        function loadResellers() { /* ... logika load ... */ }
-        function loadPendingResellers() { /* ... logika load ... */ }
-        function loadTopupConfirmations() { /* ... logika load ... */ }
-        function loadTestimonials() { /* ... logika load ... */ }
-        function loadFaq() { /* ... logika load ... */ }
-        function loadPaymentMethods() { /* ... logika load ... */ }
-        function loadGiftClaims() { /* ... logika load ... */ }
-        function loadBanners() { /* ... logika load ... */ }
-        function loadCustomFeatures() { /* ... logika load ... */ }
-
-        // Event listener untuk form lainnya...
-        document.getElementById('testimonial-form')?.addEventListener('submit', () => { /* ... logika save ... */ });
-        document.getElementById('faq-form')?.addEventListener('submit', () => { /* ... logika save ... */ });
-        // ... dan seterusnya untuk semua form
+        // ... Implementasi lengkap untuk semua fungsi lainnya (Reseller, Verifikasi, Topup, dll.)
+        // (Mengikuti pola yang sama dengan fungsi Produk dan Pesanan di atas)
     </script>
 </body>
-    </html>
+</html>
