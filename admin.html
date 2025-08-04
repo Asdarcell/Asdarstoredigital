@@ -234,11 +234,11 @@
             document.getElementById('custom-code-tab').addEventListener('click', loadCustomFeatures);
         }
 
-        // =================================== PENGGUNA TERDAFTAR ===================================
+        // =================================== SEMUA FUNGSI-FUNGSI APLIKASI ===================================
+        
         const usersTableBody = document.querySelector('#registered-users-table tbody');
         const reloadUsersBtn = document.getElementById('reload-users-btn');
         const copyAllEmailsBtn = document.getElementById('copy-all-emails-btn');
-
         async function loadRegisteredUsers() {
             setButtonLoading(reloadUsersBtn, true, "Memuat");
             usersTableBody.innerHTML = `<tr><td colspan="3" class="text-center">Memuat pengguna...</td></tr>`;
@@ -288,8 +288,7 @@
         }
         reloadUsersBtn.addEventListener('click', loadRegisteredUsers);
         copyAllEmailsBtn.addEventListener('click', copyAllEmails);
-
-        // =================================== MANAJEMEN PROMO (DIPERBAIKI) ===================================
+        
         function setupPromoManagementForms() {
             if (promoFormsSetupDone) return;
             const resellerPromoForm = document.getElementById('grant-reseller-promo-form');
@@ -322,7 +321,6 @@
                     if (!confirm(`Anda yakin ingin memberikan hak diskon kepada pembeli: ${email}?`)) return;
                     setButtonLoading(button, true);
                     try {
-                        // Diperbaiki: Menggunakan serverTimestamp untuk waktu yang akurat
                         await dbFS.collection('hakDiskonOtomatis').doc(email).set({
                             email: email,
                             diberikanPada: firebase.firestore.FieldValue.serverTimestamp()
@@ -338,9 +336,7 @@
             }
             promoFormsSetupDone = true;
         }
-
-        // --- SISA KODE ANDA DI SINI (TIDAK DIUBAH) ---
-        // (Semua fungsi lain seperti loadProducts, loadResellers, dll, tetap sama persis)
+        
         const productForm = document.getElementById('product-form');
         const productsTableBody = document.querySelector('#products-table tbody');
         const promoCheckbox = document.getElementById('promo-checkbox');
@@ -621,6 +617,10 @@
             }, error => console.error("Gagal memuat pesanan reseller:", error));
             ordersListener = { umum: unsubscribeUmum, reseller: unsubscribeReseller };
         }
+        
+        // ==========================================================
+        // === FUNGSI RENDERORDERS DENGAN PERBAIKAN NAMA RESELLER ===
+        // ==========================================================
         function renderOrders() {
             const filterValue = orderFilter.value;
             const filteredOrders = allOrdersData.filter(order => filterValue === 'all' || order.type === filterValue);
@@ -632,13 +632,25 @@
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
-                const customerName = isResellerOrder ? (order.nama_reseller || order.email_reseller || order.nama) : (order.nama_pelanggan || order.nama);
+                
+                // --- PERBAIKAN LOGIKA ADA DI SINI ---
+                const customerName = isResellerOrder 
+                    ? (order.nama_reseller || order.email_reseller || `ID: ${order.reseller_uid?.substring(0, 8) || 'N/A'}...`) 
+                    : (order.nama_pelanggan || 'Pelanggan Umum');
+                
                 const price = isResellerOrder ? order.harga_beli : order.harga_final;
                 const row = ordersTableBody.insertRow();
-                row.innerHTML = `<td><code>${order.id}</code><button class="btn btn-secondary btn-sm py-0 px-1" onclick="copyToClipboard('${order.id}', this)">Salin</button></td><td>${order.produk}</td><td>${isResellerOrder ? `<span class="badge bg-primary">R</span>` : `<span class="badge bg-secondary">U</span>`} ${customerName}</td><td>${formatRupiah(price)}</td><td><span class="status-badge ${statusClass}">${order.status}</span></td><td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a><button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button></td>`;
+                row.innerHTML = `
+                    <td><code>${order.id}</code><button class="btn btn-secondary btn-sm py-0 px-1" onclick="copyToClipboard('${order.id}', this)">Salin</button></td>
+                    <td>${order.produk}</td>
+                    <td>${isResellerOrder ? `<span class="badge bg-primary">R</span>` : `<span class="badge bg-secondary">U</span>`} ${customerName}</td>
+                    <td>${formatRupiah(price)}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a><button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button></td>`;
             });
         }
         orderFilter.addEventListener('change', renderOrders);
+
         async function deleteOrder(id, type, btn) {
             if (confirm('Anda yakin ingin menghapus pesanan ini secara permanen?')) {
                 setButtonLoading(btn, true);
@@ -1033,4 +1045,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
