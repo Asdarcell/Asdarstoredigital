@@ -193,7 +193,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
@@ -202,13 +201,11 @@
         const firebaseConfig = {
           apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
           authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
-          databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
           projectId: "asdarstoredigitalll-d89c4",
           storageBucket: "asdarstoredigitalll-d89c4.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
         const dbFS = firebase.firestore();
-        const dbRT = firebase.database();
         const auth = firebase.auth();
         const storage = firebase.storage();
         
@@ -271,6 +268,20 @@
             });
         });
 
+        nominalInput.addEventListener('input', () => {
+            const value = parseInt(nominalInput.value, 10);
+            if (!isNaN(value) && value >= 20000) {
+                selectedNominal = value;
+                submitBtnTopup.disabled = false;
+                submitBtnTopup.textContent = 'Kirim Bukti Sekarang';
+                nominalButtons.forEach(b => b.classList.remove('selected'));
+            } else {
+                selectedNominal = null;
+                submitBtnTopup.disabled = true;
+                submitBtnTopup.textContent = 'Pilih/Masukkan Nominal Valid';
+            }
+        });
+
         function showStatusTopup(message, type) {
             formStatusTopup.textContent = message;
             formStatusTopup.className = `notification ${type}`;
@@ -279,20 +290,11 @@
 
         confirmationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!selectedNominal) {
-                showStatusTopup('Silakan pilih nominal!', 'error');
-                return;
-            }
+            if (!selectedNominal) { showStatusTopup('Silakan pilih nominal!', 'error'); return; }
             const user = auth.currentUser;
-            if (!user) {
-                showStatusTopup('Anda harus login!', 'error');
-                return;
-            }
+            if (!user) { showStatusTopup('Anda harus login!', 'error'); return; }
             const proofFile = document.getElementById('uploadProof').files[0];
-            if (!proofFile) {
-                showStatusTopup('Harap unggah bukti transfer.', 'error');
-                return;
-            }
+            if (!proofFile) { showStatusTopup('Harap unggah bukti transfer.', 'error'); return; }
 
             submitBtnTopup.disabled = true;
             submitBtnTopup.innerHTML = 'Mengunggah...';
@@ -387,17 +389,35 @@
                 });
             });
         }
-
+        
+        // ==========================================================
+        // === FUNGSI DIPERBAIKI UNTUK MENGATASI ERROR INDEX ===
+        // ==========================================================
         function handleCategoryChange() {
             resetFormState();
             const kategori = kategoriSelect.value;
             if (!kategori) return;
             produkSelect.innerHTML = '<option value="">Memuat produk...</option>';
-            dbFS.collection('produk').where('kategori', '==', kategori).orderBy('urutan').get().then(snapshot => {
+            
+            dbFS.collection('produk').where('kategori', '==', kategori).orderBy('urutan').get()
+            .then(snapshot => {
                 produkSelect.innerHTML = '<option value="">Pilih Produk</option>';
+                if (snapshot.empty) {
+                    produkSelect.innerHTML = '<option value="">Tidak ada produk</option>';
+                    return;
+                }
                 snapshot.forEach(doc => {
                     produkSelect.innerHTML += `<option value="${doc.id}">${doc.data().nama_produk}</option>`;
                 });
+            })
+            .catch(error => {
+                console.error("Error memuat produk:", error);
+                produkSelect.innerHTML = '<option value="">Gagal memuat</option>';
+                if (error.code === 'failed-precondition') {
+                    alert("DATABASE ERROR: Anda perlu membuat Index di Firestore. Silakan buka halaman ini di Komputer, tekan F12 untuk membuka Console, dan klik link yang muncul untuk membuat index secara otomatis.");
+                } else {
+                    alert("Terjadi kesalahan saat memuat produk: " + error.message);
+                }
             });
         }
 
@@ -477,9 +497,10 @@
                     const resellerDoc = await transaction.get(resellerDocRef);
                     const produkDoc = await transaction.get(produkDocRef);
 
-                    if (!resellerDoc.exists || !produkDoc.exists) throw new Error("Data reseller atau produk tidak ditemukan.");
-                    if ((resellerDoc.data().saldo || 0) < hargaFinal) throw new Error("Transaksi gagal, saldo Anda sudah berubah.");
-                    if ((produkDoc.data().stok || 0) < 1) throw new Error("Transaksi gagal, stok produk sudah habis.");
+                    if (!resellerDoc.exists) throw new Error("Data reseller Anda tidak ditemukan.");
+                    if (!produkDoc.exists) throw new Error("Data produk tidak ditemukan, mungkin sudah dihapus.");
+                    if ((resellerDoc.data().saldo || 0) < hargaFinal) throw new Error("Transaksi gagal, saldo Anda tidak mencukupi.");
+                    if ((produkDoc.data().stok || 0) < 1) throw new Error("Transaksi gagal, stok produk baru saja habis.");
                     
                     transaction.update(resellerDocRef, { saldo: firebase.firestore.FieldValue.increment(-hargaFinal) });
                     transaction.update(produkDocRef, { stok: firebase.firestore.FieldValue.increment(-1) });
@@ -492,14 +513,10 @@
                 await dbFS.collection('pesananReseller').doc(idPesanan).set({
                     id: idPesanan,
                     reseller_uid: loggedInReseller.uid,
-                    // ===============================================
-                    // ▼▼▼ PERBAIKAN UTAMA ADA DI DUA BARIS INI ▼▼▼
-                    // ===============================================
                     email_reseller: loggedInReseller.email,
                     nama_reseller: loggedInReseller.displayName || loggedInReseller.email,
-                    
-                    nama_pelanggan: nama, // Ini adalah nama customer dari si reseller
-                    nomor_pelanggan: nomor, // Ini adalah nomor customer dari si reseller
+                    nama_pelanggan: nama,
+                    nomor_pelanggan: nomor,
                     kategori: kategoriSelect.value,
                     produk: produkTerpilihData.nama_produk,
                     waktu: firebase.firestore.FieldValue.serverTimestamp(),
@@ -507,9 +524,9 @@
                     harga_beli: hargaFinal
                 });
                 
-                showNotification(`Pesanan berhasil! Saldo Anda berkurang sebesar ${formatRupiah(hargaFinal)}.`, 'success');
+                showNotification(`Pesanan berhasil! Saldo Anda berkurang ${formatRupiah(hargaFinal)}.`, 'success');
                 hasilDiv.style.display = 'block';
-                hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${idPesanan}</code></p><div class="info"><p class="text-center">Pesanan telah dibayar menggunakan saldo dan akan segera diproses.</p></div>`;
+                hasilDiv.innerHTML = `<p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil!</p><p class="text-center"><b>ID Pesanan:</b> <code>${idPesanan}</code></p><div class="info"><p class="text-center">Pesanan telah dibayar menggunakan saldo.</p></div>`;
                 document.getElementById('formPesanan').reset();
                 resetFormState();
                 window.scrollTo({ top: hasilDiv.offsetTop - 80, behavior: 'smooth' });
