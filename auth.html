@@ -175,30 +175,38 @@
     // Inisialisasi Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); 
-    const dbFS = firebase.firestore(); // INISIALISASI FIRESTORE DITAMBAHKAN
+    const dbFS = firebase.firestore();
 
     // ==========================================================
-    // KODE PENCATAT OTOMATIS DITAMBAHKAN DI SINI
+    // KODE PENCATAT OTOMATIS (VERSI DIPERBAIKI)
     // ==========================================================
     auth.onAuthStateChanged(user => {
         if (user) {
-            // Pengguna berhasil login atau baru mendaftar
-            console.log("Pengguna terdeteksi:", user.email);
+            // Kode ini berjalan setiap kali pengguna login atau mendaftar.
+            const userRef = dbFS.collection('users').doc(user.uid);
             
-            // Siapkan referensi ke Firestore
-            const userRef = dbFS.collection('users_mirror').doc(user.uid);
-
-            // Simpan/update data pengguna di 'users_mirror'
-            userRef.set({
-                email: user.email,
-                uid: user.uid,
-                terakhirLogin: new Date()
-            }, { merge: true }) // 'merge: true' agar tidak menimpa data lain jika sudah ada
-            .then(() => {
-                console.log("Data pengguna berhasil dicatat di Firestore.");
-            })
-            .catch(error => {
-                console.error("Gagal mencatat data pengguna:", error);
+            userRef.get().then(doc => {
+                const now = firebase.firestore.FieldValue.serverTimestamp();
+                if (!doc.exists) {
+                    // Jika pengguna BARU, buat dokumen baru dengan createdAt dan lastLogin
+                    userRef.set({
+                        email: user.email,
+                        uid: user.uid,
+                        createdAt: now,
+                        lastLogin: now
+                    })
+                    .then(() => console.log("Pengguna baru berhasil dicatat di Firestore."))
+                    .catch(error => console.error("Gagal mencatat pengguna baru:", error));
+                } else {
+                    // Jika pengguna LAMA, cukup perbarui waktu lastLogin
+                    userRef.update({
+                        lastLogin: now
+                    })
+                    .then(() => console.log("Waktu login pengguna berhasil diperbarui."))
+                    .catch(error => console.error("Gagal memperbarui waktu login:", error));
+                }
+            }).catch(error => {
+                console.error("Error saat memeriksa data pengguna:", error);
             });
         }
     });
@@ -265,13 +273,13 @@
             .then((userCredential) => {
                 // Login berhasil, onAuthStateChanged akan otomatis berjalan
                 alert('Login berhasil! Mengalihkan ke halaman utama...');
-                window.location.href = 'https://asdarcell.github.io/Asdarstoredigital/';
+                window.location.href = 'https://asdarcell.github.io/Asdarstoredigital/'; // Ganti dengan URL tujuan Anda
             })
             .catch((error) => {
                 let pesanErrorIndonesia;
                 switch (error.code) {
                     case 'auth/user-not-found':
-                    case 'auth/invalid-credential': // Handle new error code for wrong credentials
+                    case 'auth/invalid-credential':
                         pesanErrorIndonesia = 'Email atau password yang Anda masukkan salah. Silakan coba lagi.';
                         break;
                     case 'auth/wrong-password':
