@@ -619,34 +619,44 @@
         }
         
         // ==========================================================
-        // === FUNGSI RENDERORDERS DENGAN PERBAIKAN NAMA RESELLER ===
+        // === FUNGSI RENDERORDERS DENGAN PERBAIKAN NAMA PELANGGAN ===
         // ==========================================================
         function renderOrders() {
             const filterValue = orderFilter.value;
             const filteredOrders = allOrdersData.filter(order => filterValue === 'all' || order.type === filterValue);
             ordersTableBody.innerHTML = '';
             if (filteredOrders.length === 0) {
-                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-center">Belum ada pesanan.</td></tr>`;
+                ordersTableBody.innerHTML = `<tr><td colspan="6" class="text-center">Belum ada pesanan untuk filter ini.</td></tr>`;
                 return;
             }
             filteredOrders.forEach(order => {
                 const isResellerOrder = order.type === 'reseller';
                 const statusClass = `status-${(order.status || '').toLowerCase().replace(/ /g, '-')}`;
                 
-                // --- PERBAIKAN LOGIKA ADA DI SINI ---
-                const customerName = isResellerOrder 
-                    ? (order.nama_reseller || order.email_reseller || `ID: ${order.reseller_uid?.substring(0, 8) || 'N/A'}...`) 
-                    : (order.nama_pelanggan || 'Pelanggan Umum');
+                // --- LOGIKA YANG SUDAH DIPERBAIKI ---
+                // 1. Selalu ambil nama pelanggan dari field 'nama_pelanggan'.
+                const namaPelanggan = order.nama_pelanggan || 'Nama Tidak Dicatat';
                 
+                // 2. Jika ini pesanan reseller, buat teks tambahan untuk menampilkan info resellernya.
+                const infoResellerTambahan = isResellerOrder 
+                    ? `<br><small class="text-muted" style="font-size: 0.8em;">via ${order.reseller_email || 'Reseller'}</small>` 
+                    : '';
+
+                // 3. Tentukan harga yang akan ditampilkan.
                 const price = isResellerOrder ? order.harga_beli : order.harga_final;
+                
                 const row = ordersTableBody.insertRow();
                 row.innerHTML = `
-                    <td><code>${order.id}</code><button class="btn btn-secondary btn-sm py-0 px-1" onclick="copyToClipboard('${order.id}', this)">Salin</button></td>
+                    <td><code>${order.id}</code><button class="btn btn-secondary btn-sm py-0 px-1 ms-1" onclick="copyToClipboard('${order.id}', this)">Salin</button></td>
                     <td>${order.produk}</td>
-                    <td>${isResellerOrder ? `<span class="badge bg-primary">R</span>` : `<span class="badge bg-secondary">U</span>`} ${customerName}</td>
+                    <td>
+                        ${isResellerOrder ? `<span class="badge bg-primary">Reseller</span>` : `<span class="badge bg-secondary">Umum</span>`} 
+                        ${namaPelanggan}
+                        ${infoResellerTambahan}
+                    </td>
                     <td>${formatRupiah(price)}</td>
                     <td><span class="status-badge ${statusClass}">${order.status}</span></td>
-                    <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-primary">Kelola</a><button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button></td>`;
+                    <td><a href="detail-pesanan.html?id=${order.id}&type=${order.type}" class="btn btn-sm btn-info">Kelola</a><button class="btn btn-sm btn-danger ms-1" onclick="deleteOrder('${order.id}', '${order.type}', this)">Hapus</button></td>`;
             });
         }
         orderFilter.addEventListener('change', renderOrders);
@@ -1045,4 +1055,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
