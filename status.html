@@ -42,7 +42,6 @@
     .promo-card .btn-promo-primary:hover { background-color: #f1c40f; color: #1a1a2e; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
     .promo-card .btn-promo-secondary { background-color: transparent; color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.5); }
     .promo-card .btn-promo-secondary:hover { background-color: rgba(255, 255, 255, 0.1); border-color: #ffffff; }
-    /* === STYLE BARU UNTUK KOTAK PEMBAYARAN === */
     .payment-instruction-box { margin-top: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background-color: var(--bg); }
     .payment-method-item { background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
     .copy-btn { background-color: transparent; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
@@ -73,7 +72,7 @@
     AOS.init({ duration: 800, once: true, offset: 50 });
 
     const firebaseConfig = {
-      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210",
+      apiKey: "AIzaSyA_L6U3HKM1DnKuq_Q1zKFH4bk8GMAz210", // Ganti dengan config Anda
       authDomain: "asdarstoredigitalll-d89c4.firebaseapp.com",
       databaseURL: "https://asdarstoredigitalll-d89c4-default-rtdb.firebaseio.com",
       projectId: "asdarstoredigitalll-d89c4",
@@ -95,24 +94,27 @@
         });
     }
 
-    // ================== FUNGSI BARU DIMULAI ==================
+    // ================== FUNGSI DIPERBAIKI ==================
     // Fungsi ini membuat blok HTML untuk instruksi pembayaran
     async function generatePaymentInstructions(orderData) {
-        const metode = orderData.metode_pembayaran;
+        // Ambil metode pembayaran, ubah ke huruf kecil, dan pastikan tidak null
+        const metode = (orderData.metode_pembayaran || '').toLowerCase();
         let instructionContent = '';
 
-        if (metode === 'QRIS') {
+        if (metode === 'qris') {
             instructionContent = `
                 <div style="text-align: center;">
                     <p>Pindai kode di bawah ini:</p>
                     <img src="https://iili.io/FgTQZNa.png" alt="QRIS Code" width="250">
                     <p style="font-weight: bold; color: var(--danger);">PENTING: Masukkan total tagihan secara manual.</p>
                 </div>`;
-        } else if (metode === 'DANA' || metode === 'ShopeePay') {
+        } else if (metode === 'dana' || metode === 'shopeepay') {
             const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
             let paymentInfo = null;
+            
+            // Cari info pembayaran yang cocok (tidak case-sensitive)
             paymentSnapshot.forEach(doc => {
-                if (doc.data().metode.toLowerCase() === metode.toLowerCase()) {
+                if (doc.data().metode.toLowerCase() === metode) {
                     paymentInfo = doc.data();
                 }
             });
@@ -128,10 +130,12 @@
                         <button class="copy-btn" onclick="copyToClipboard('${paymentInfo.nomor}', this)"><i class="far fa-copy"></i> Salin</button>
                     </div>`;
             } else {
-                instructionContent = `<p class="text-center text-danger">Detail pembayaran tidak ditemukan.</p>`;
+                // Pesan jika info (misal: nomor DANA) tidak ada di koleksi 'infoPembayaran'
+                instructionContent = `<p class="text-center text-danger">Detail untuk metode pembayaran ${orderData.metode_pembayaran} tidak ditemukan.</p>`;
             }
         } else {
-             instructionContent = `<p class="text-center text-muted">Metode pembayaran tidak diketahui.</p>`;
+            // Pesan jika metode pembayaran dari pesanan tidak dikenali
+            instructionContent = `<p class="text-center text-muted">Metode pembayaran tidak diketahui.</p>`;
         }
         
         return `
@@ -143,9 +147,8 @@
                 <a class='btn btn-primary d-block mt-3' href="upload.html?id=${orderData.id}"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
             </div>`;
     }
-    // ================== FUNGSI BARU SELESAI ==================
+    // ================== AKHIR PERBAIKAN ==================
 
-    // Fungsi renderStatus sekarang diubah menjadi async
     async function renderStatus(orderId, data) {
         const statusClass = (data.status || 'Menunggu Pembayaran').toLowerCase().replace(/ /g, '-');
         
@@ -160,10 +163,11 @@
         }
 
         let additionalInfo = '';
-        // ================== LOGIKA UTAMA DIUBAH ==================
         // Jika status Menunggu Pembayaran, panggil fungsi untuk menampilkan instruksi
         if (data.status === 'Menunggu Pembayaran') {
-            additionalInfo = await generatePaymentInstructions(data);
+            // Tambahkan data 'id' ke object sebelum dikirim, karena fungsi instruksi membutuhkannya
+            const orderDataWithId = { ...data, id: orderId };
+            additionalInfo = await generatePaymentInstructions(orderDataWithId);
         } 
         // Logika untuk status Selesai tetap sama
         else if (data.status === 'Selesai') {
@@ -180,7 +184,6 @@
                 </div>
             `;
         }
-        // ================== AKHIR DARI PERUBAHAN ==================
 
         statusContent.innerHTML = `
             <h2>Status Pesanan</h2>
@@ -212,12 +215,10 @@
 
         try {
             let orderFound = false;
-            let isResellerOrder = false;
             
-            // Mengubah listener menjadi onSnapshot untuk update real-time
             const unsubscribeUmum = umumRef.onSnapshot(async doc => {
                 if (doc.exists) {
-                    if (orderFound) return; // Mencegah duplikasi jika reseller juga ditemukan
+                    if (orderFound && !isResellerOrder) return; // Hanya render ulang jika dari sumber yang sama
                     orderFound = true;
                     isResellerOrder = false;
                     kembaliButton.href = 'index.html';
@@ -228,7 +229,7 @@
 
             const unsubscribeReseller = resellerRef.onSnapshot(async doc => {
                 if (doc.exists) {
-                    if (orderFound) return;
+                    if (orderFound && isResellerOrder) return;
                     orderFound = true;
                     isResellerOrder = true;
                     kembaliButton.href = 'reseller-dashboard.html';
@@ -237,7 +238,6 @@
                 }
             });
 
-            // Memberi sedikit waktu agar onSnapshot bisa berjalan
             setTimeout(() => {
                 if (!orderFound) {
                     unsubscribeUmum();
@@ -245,7 +245,7 @@
                     statusContent.innerHTML = '<h2><i class="fa fa-search"></i> Pesanan Tidak Ditemukan.</h2>';
                     kembaliButton.href = 'index.html'; 
                 }
-            }, 3000); // Timeout 3 detik
+            }, 3000);
 
         } catch (err) {
             console.error("Gagal mengambil data pesanan:", err);
