@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <style>
-    /* === KOLEKSI TEMA LENGKAP DITAMBAHKAN === */
+    /* === KOLEKSI TEMA LENGKAP === */
     :root { /* Tema Default: Light */
       --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
       --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
@@ -408,8 +408,7 @@
 
     // === EVENT LISTENER UTAMA & AUTENTIKASI ===
     document.addEventListener('DOMContentLoaded', () => {
-      // Logika pemilih tema ditambahkan di sini
-      const savedTheme = localStorage.getItem('selectedTheme') || 'aqua_gradient';
+      const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
       switchTheme(savedTheme);
       document.querySelectorAll('.theme-button').forEach(button => {
         button.addEventListener('click', () => {
@@ -430,23 +429,19 @@
                 const resellerDoc = await resellerRef.get();
                 if (resellerDoc.exists && resellerDoc.data().status === 'active') {
                     userPanel.innerHTML = `
-                        <a href="reseller-dashboard.html" class="dashboard-btn mb-2"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a>
+                        <a href="reseller-dashboard.html" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
                         <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
                     `;
                 } else {
                     userPanel.innerHTML = `
-                        <a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a>
+                        <a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Jadi Seller</span></a>
                         <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
                     `;
                 }
             } catch (error) {
                 console.error("Gagal memeriksa status reseller:", error);
-                userPanel.innerHTML = `
-                    <a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a>
-                    <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
-                `;
+                userPanel.innerHTML = `<a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
             }
-
             orderFormFields.nama.value = user.displayName || '';
             const pelangganDoc = await pelangganRef.get();
             if (!pelangganDoc.exists) {
@@ -462,7 +457,6 @@
             resetSemuaDiskon();
             updateTotalHarga(); 
         }
-
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
         orderFormFields.produk.addEventListener('change', handleProductSelection);
@@ -674,7 +668,6 @@
         }
     }
 
-    // PERBAIKAN BUG: Fungsi ini diubah agar tidak bergantung pada produkTerpilihData saat melanjutkan pesanan lama.
     async function buatPesanan() {
         const confirmButton = document.getElementById('confirmOrderBtn');
         if (pendingOrderData.harga_final <= 0 && !pendingOrderData.id) {
@@ -689,6 +682,7 @@
         const metode = selectedRadio.value;
         const id = pendingOrderData.id || "P" + Date.now();
         
+        // PERBAIKAN BUG: Menggunakan data dari `pendingOrderData` saat melanjutkan pesanan
         const finalOrderData = { 
             ...pendingOrderData,
             id,
@@ -701,9 +695,9 @@
             const batch = dbFS.batch();
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
             batch.set(pesananRef, finalOrderData, { merge: true });
-            if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) { // Hanya update jika pesanan baru
+            if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) {
                 batch.update(dbFS.collection('pelanggan').doc(currentUser.uid), { punyaBonusPendaftaran: false });
-            } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) { // Hanya update jika pesanan baru
+            } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
             await batch.commit();
@@ -782,7 +776,7 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       if (promoProdukTerpakai && produkTerpilihData.promo) { let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); hargaFinal = Math.max(0, hargaAwal - potongan); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; } else if (bonusPendaftaranDiterapkan) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; } else if (diskonPromoTerpakai) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
-      // PERBAIKAN BUG: Mengganti formatRuh menjadi formatRupiah
+      // PERBAIKAN BUG: Mengganti formatRuh menjadi formatRupiah yang sudah ada di kode asli
       diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; }
       let jenisProdukLabel = produkTerpilihData.jenis_produk === 'otomatis' ? `<span style="background-color: var(--success); color: white; padding: 3px 8px; font-size: 0.8em; border-radius: 20px; font-weight: bold;">⚡ Pengiriman Otomatis</span><br><br>` : '';
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
