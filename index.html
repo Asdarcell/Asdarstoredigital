@@ -274,16 +274,16 @@
 
     // === LOGIKA TEMA ===
     function switchTheme(themeName) {
-      if (!themeName || themeName === 'default') {
+      const effectiveTheme = themeName || 'default';
+      if (effectiveTheme === 'default') {
         document.body.removeAttribute('data-theme');
-        localStorage.setItem('selectedTheme', 'default');
       } else {
-        document.body.setAttribute('data-theme', themeName);
-        localStorage.setItem('selectedTheme', themeName);
+        document.body.setAttribute('data-theme', effectiveTheme);
       }
+      localStorage.setItem('selectedTheme', effectiveTheme);
 
       document.querySelectorAll('.theme-button').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.querySelector(`.theme-button[data-theme-name="${themeName}"]`);
+      const activeBtn = document.querySelector(`.theme-button[data-theme-name="${effectiveTheme}"]`);
       if (activeBtn) activeBtn.classList.add('active');
     }
 
@@ -501,7 +501,21 @@
         loadApprovedTestimonials();
         loadAndRenderFaq();
     }
-    async function loadAndDisplayBanners() { /* Implementasi banner */ }
+    async function loadAndDisplayBanners() { 
+        const bannerContainer = document.getElementById('banner-container');
+        if (!bannerContainer) return;
+        try {
+            const snapshot = await dbFS.collection('banners').orderBy('urutan').get();
+            if (snapshot.empty) { bannerContainer.style.display = 'none'; return; }
+            let bannersHTML = '';
+            snapshot.forEach(doc => {
+                const banner = doc.data();
+                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`;
+                bannersHTML += banner.link ? `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>` : `<div class="banner-item">${imgTag}</div>`;
+            });
+            bannerContainer.innerHTML = bannersHTML;
+        } catch (error) { console.error("Gagal memuat banner:", error); }
+    }
     function handleCategoryChange() {
         resetFormState();
         const kategori = orderFormFields.kategori.value;
@@ -527,9 +541,50 @@
         if (!produkTerpilihData) return;
         infoProduk.innerHTML = `<b>Harga: ${formatRupiah(produkTerpilihData.harga_umum)}</b><hr style="margin:10px 0; border-color: var(--glass-border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok:</b> ${produkTerpilihData.stok || 0}`;
     }
-    function loadAndRenderFaq() { /* Implementasi FAQ */ }
-    function loadApprovedTestimonials() { /* Implementasi Testimoni */ }
-    async function handleTestimoniSubmit(e) { e.preventDefault(); /* ... */ }
+    function loadAndRenderFaq() {
+        const faqContainer = document.getElementById('faq-container');
+        dbRT.ref('faq').once('value').then(snap => {
+            if (!snap.exists()) { faqContainer.innerHTML = `<p>FAQ tidak tersedia.</p>`; return; }
+            let faqHTML = '';
+            snap.forEach(itemSnap => {
+                const itemData = itemSnap.val();
+                faqHTML += `<div class="faq-item"><div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div></div>`;
+            });
+            faqContainer.innerHTML = faqHTML;
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => item.parentElement.classList.toggle('active'));
+            });
+        }).catch(err => console.error("Gagal memuat FAQ:", err));
+    }
+    function loadApprovedTestimonials() {
+        const container = document.getElementById('testimoniContainer');
+        dbRT.ref('testimonials').orderByChild('status').equalTo('disetujui').limitToLast(20).once('value', snap => {
+            if (!snap.exists()) { container.innerHTML = `<p style="text-align:center;">Jadilah yang pertama memberi testimoni!</p>`; return; }
+            let testimonialsHTML = '';
+            snap.forEach(childSnap => {
+                const testi = childSnap.val();
+                testimonialsHTML = `<div class="testimonial-bubble"><div class="testimonial-header"><i class="fas fa-user-circle"></i><span class="testimonial-name">${testi.nama || 'Anonim'}</span></div><div class="testimonial-body">${testi.isi || ''}</div></div>` + testimonialsHTML;
+            });
+            container.innerHTML = testimonialsHTML;
+        }).catch(err => console.error("Gagal memuat testimoni:", err));
+    }
+    async function handleTestimoniSubmit(e) {
+        e.preventDefault();
+        const nama = document.getElementById('testiNama').value.trim();
+        const pesan = document.getElementById('testiPesan').value.trim();
+        const statusEl = document.getElementById('testiStatus');
+        if (!nama || !pesan) { statusEl.textContent = 'Nama dan pesan wajib diisi!'; return; }
+        try {
+            await dbRT.ref('testimonials').push({ nama, isi: pesan, status: 'pending', createdAt: new Date().toISOString() });
+            statusEl.textContent = 'Terima kasih! Testimoni Anda akan kami review.';
+            statusEl.style.color = 'var(--success-color)';
+            e.target.reset();
+            setTimeout(() => { statusEl.textContent = ''; }, 4000);
+        } catch (error) {
+            statusEl.textContent = 'Gagal mengirim testimoni.';
+            statusEl.style.color = 'var(--danger-color)';
+        }
+    }
 
   </script>
 </body>
