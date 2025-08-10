@@ -117,6 +117,9 @@
     }
     header h1 { color: var(--primary-color); font-weight: 700; transition: color 0.5s ease; }
 
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    #user-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
     main { max-width: 700px; margin: 30px auto; padding: 0 20px; }
     label { font-weight: 600; margin-top: 15px; display: block; color: var(--text-color); }
     input, select, textarea {
@@ -134,6 +137,8 @@
       cursor: pointer; font-weight: bold; font-size: 16px; text-decoration: none;
       transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
+    .all-products-btn { margin-top: 0; }
+    .reseller-btn, .dashboard-btn { margin-top: 0; }
     .all-products-btn { font-size: 0.9em; padding: 10px 16px; }
     .reseller-btn { font-size: 0.9em; padding: 10px 16px; }
     button:hover, .reseller-btn:hover, .dashboard-btn:hover, .all-products-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); filter: brightness(1.1); }
@@ -192,8 +197,7 @@
             <i class="fas fa-list"></i> Semua Produk
         </a>
         <div id="user-panel">
-            <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
-        </div>
+            </div>
     </div>
 </header>
   
@@ -346,17 +350,45 @@
     document.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('selectedTheme') || 'default';
       switchTheme(savedTheme);
+      
       loadInitialData();
       checkForLostId();
     });
 
+    // ### FUNGSI LOGIN YANG DIPERBAIKI ###
     auth.onAuthStateChanged(async user => {
         currentUser = user; 
         if (user) {
-            userPanel.innerHTML = `<a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background: var(--danger-color);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
+            const resellerRef = dbFS.collection('resellers').doc(user.uid);
+            try {
+                const resellerDoc = await resellerRef.get();
+                if (resellerDoc.exists && resellerDoc.data().status === 'active') {
+                    // Jika user adalah seller aktif
+                    userPanel.innerHTML = `
+                        <a href="reseller-dashboard.html" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a>
+                        <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background: var(--danger-color);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                    `;
+                } else {
+                    // Jika user login tapi BUKAN seller aktif
+                    userPanel.innerHTML = `
+                        <a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a>
+                        <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background: var(--danger-color);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                    `;
+                }
+            } catch (error) {
+                console.error("Gagal memeriksa status reseller:", error);
+                // Fallback jika ada error
+                userPanel.innerHTML = `
+                    <a href="reseller.html" class="reseller-btn"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a>
+                    <a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background: var(--danger-color);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                `;
+            }
         } else {
+            // Jika user tidak login
             userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`;
         }
+
+        // Event listener lainnya
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
         orderFormFields.produk.addEventListener('change', handleProductSelection);
@@ -480,7 +512,7 @@
             
             setupPaymentEventListeners();
 
-        } catch (error) { paymentContainer.innerHTML = `<p class="text-danger text-center">Gagal memuat metode pembayaran.</p>`; }
+        } catch (error) { paymentContainer.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat metode pembayaran.</p>`; }
     }
     
     function setupPaymentEventListeners() {
@@ -516,7 +548,7 @@
             paymentContainer.innerHTML = `<hr><p style="text-align:center; font-weight:bold; color:var(--success-color);"><i class="fas fa-check-circle"></i> Pesanan Berhasil Dibuat/Diperbarui!</p><p style="text-align:center;"><b>ID Pesanan Anda:</b> <code>${id}</code></p><div class="payment-content">${instructionHtml}</div><p style="text-align:center; margin-top:1rem;">Setelah membayar, silakan upload bukti pembayaran atau cek status pesanan Anda.</p><div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;"><a href="upload.html?id=${id}" style="flex:1; text-align:center;" class="dashboard-btn">Upload Bukti</a><a href="status.html?id=${id}" style="flex:1; text-align:center; background: #95a5a6;" class="dashboard-btn">Cek Status</a></div>`;
         } catch (error) { 
             console.error("Gagal membuat pesanan:", error);
-            paymentContainer.innerHTML += `<p class="text-danger text-center">Terjadi kesalahan: ${error.message}</p>`; 
+            paymentContainer.innerHTML += `<p style="color:var(--danger-color); text-align:center;">Terjadi kesalahan: ${error.message}</p>`; 
         }
     }
 
