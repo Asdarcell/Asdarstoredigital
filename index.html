@@ -165,7 +165,14 @@
     .notification.success { background-color: var(--success-color); }
     .notification.error { background-color: var(--danger-color); }
 
-    .payment-option input[type="radio"]:checked + label { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+    .payment-option input[type="radio"] { display: none; }
+    .payment-option label { display: block; padding: 15px; border: 2px solid var(--glass-border); border-radius: 8px; cursor: pointer; transition: all 0.2s ease-in-out; font-weight: 600; margin-top: 10px; }
+    .payment-option label:hover { border-color: var(--primary-color); }
+    .payment-option input[type="radio"]:checked + label { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
+    .payment-content { border: 1px solid var(--glass-border); padding: 20px; margin-top: 15px; border-radius: 8px; }
+    .hidden { display: none; }
+    .qris-image { max-width: 250px; width: 100%; height: auto; margin: 10px auto; display: block; border-radius: 8px; }
+    .copy-btn { background-color: rgba(0,0,0,0.05); border: 1px solid var(--glass-border); color: var(--muted-text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 
     #theme-switcher { background: var(--glass-bg); padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; }
     #theme-switcher h3 { margin-top: 0; margin-bottom: 15px; font-weight: 600; color: var(--text-color); }
@@ -339,7 +346,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('selectedTheme') || 'default';
       switchTheme(savedTheme);
-      
       loadInitialData();
       checkForLostId();
     });
@@ -450,25 +456,50 @@
     async function tampilkanUiPembayaran(dataPesanan, judul) {
         document.getElementById('order-form-container').style.display = 'none';
         const paymentContainer = document.getElementById('payment-selection-container');
-        paymentContainer.style.display = 'block'; paymentContainer.innerHTML = `<p style="text-align:center;">Memuat...</p>`;
+        paymentContainer.style.display = 'block';
+        paymentContainer.innerHTML = `<p style="text-align:center;">Memuat...</p>`;
         try {
-            const snapshot = await dbFS.collection('infoPembayaran').get();
-            let methodsHTML = '';
-            snapshot.forEach(doc => {
-                const metode = doc.data();
-                const metodeId = doc.id;
-                methodsHTML += `<div class="payment-option"><input type="radio" id="pilih-${metodeId}" name="metode_pembayaran" value="${metode.metode}"><label for="pilih-${metodeId}">${metode.metode}</label></div>`;
+            const paymentSnapshot = await dbFS.collection('infoPembayaran').get();
+            let paymentMethods = [];
+            paymentSnapshot.forEach(doc => paymentMethods.push({ id: doc.id, ...doc.data() }));
+            
+            let radioButtonsHTML = '', contentDivsHTML = '';
+            paymentMethods.forEach(metode => {
+                const metodeId = metode.metode.replace(/\s+/g, '-').toLowerCase();
+                radioButtonsHTML += `<div class="payment-option"><input type="radio" id="pilih-${metodeId}" name="metode_pembayaran" value="${metode.metode}"><label for="pilih-${metodeId}"><i class="fas fa-wallet"></i> ${metode.metode}</label></div>`;
+                
+                if (metode.metode.toLowerCase().includes('qris')) {
+                    contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden" style="text-align:center;"><p>Silakan pindai (scan) kode QRIS di bawah:</p><img src="${metode.nomor}" alt="Kode QRIS" class="qris-image"><p>a.n ${metode.atas_nama}</p><p>Nominal: <strong>${formatRupiah(dataPesanan.harga_final)}</strong></p></div>`;
+                } else {
+                    contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden"><p>Silakan transfer ke:</p><div><strong>${metode.metode}</strong>: ${metode.nomor} <button class="copy-btn" onclick="copyToClipboard('${metode.nomor}', this)">Salin</button></div><p>a.n ${metode.atas_nama}</p><p>Nominal: <strong>${formatRupiah(dataPesanan.harga_final)}</strong></p></div>`;
+                }
             });
+
             const orderIdHtml = dataPesanan.id ? `<p><strong>ID Pesanan:</strong> ${dataPesanan.id}</p>` : '';
-            paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${orderIdHtml}<p><strong>Produk:</strong> ${dataPesanan.produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3>Pilih Metode Pembayaran:</h3>${methodsHTML}<button id="confirmOrderBtn" onclick="buatPesanan()" disabled>${judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran'}</button>`;
-            document.querySelectorAll('input[name="metode_pembayaran"]').forEach(radio => {
-                radio.addEventListener('change', () => { document.getElementById('confirmOrderBtn').disabled = false; });
-            });
+            paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${orderIdHtml}<p><strong>Produk:</strong> ${dataPesanan.produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3><div id="payment-options-list">${radioButtonsHTML}</div><div id="payment-details-container">${contentDivsHTML}</div><button id="confirmOrderBtn" onclick="buatPesanan()" disabled>${judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran'}</button>`;
+            
+            setupPaymentEventListeners();
+
         } catch (error) { paymentContainer.innerHTML = `<p class="text-danger text-center">Gagal memuat metode pembayaran.</p>`; }
+    }
+    
+    function setupPaymentEventListeners() {
+        const radioButtons = document.querySelectorAll('input[name="metode_pembayaran"]');
+        const confirmButton = document.getElementById('confirmOrderBtn');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.payment-content').forEach(content => content.classList.add('hidden'));
+                const selectedContentId = `content-${this.value.replace(/\s+/g, '-').toLowerCase()}`;
+                const selectedContent = document.getElementById(selectedContentId);
+                if (selectedContent) selectedContent.classList.remove('hidden');
+                confirmButton.disabled = false;
+            });
+        });
     }
 
     async function buatPesanan() {
         const confirmButton = document.getElementById('confirmOrderBtn');
+        const paymentContainer = document.getElementById('payment-selection-container');
         const selectedRadio = document.querySelector('input[name="metode_pembayaran"]:checked');
         if (!selectedRadio) { alert('Pilih metode pembayaran.'); return; }
         confirmButton.disabled = true; confirmButton.innerHTML = 'Memproses...';
@@ -480,10 +511,12 @@
         try {
             await dbFS.collection('pesananUmum').doc(id).set(finalOrderData, { merge: true });
             sessionStorage.setItem('lastUnpaidOrderId', id);
-            window.location.href = `status.html?id=${id}`;
+            
+            const instructionHtml = document.getElementById(`content-${selectedRadio.value.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
+            paymentContainer.innerHTML = `<hr><p style="text-align:center; font-weight:bold; color:var(--success-color);"><i class="fas fa-check-circle"></i> Pesanan Berhasil Dibuat/Diperbarui!</p><p style="text-align:center;"><b>ID Pesanan Anda:</b> <code>${id}</code></p><div class="payment-content">${instructionHtml}</div><p style="text-align:center; margin-top:1rem;">Setelah membayar, silakan upload bukti pembayaran atau cek status pesanan Anda.</p><div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;"><a href="upload.html?id=${id}" style="flex:1; text-align:center;" class="dashboard-btn">Upload Bukti</a><a href="status.html?id=${id}" style="flex:1; text-align:center; background: #95a5a6;" class="dashboard-btn">Cek Status</a></div>`;
         } catch (error) { 
             console.error("Gagal membuat pesanan:", error);
-            confirmButton.parentElement.innerHTML += `<p class="text-danger text-center">Terjadi kesalahan: ${error.message}</p>`; 
+            paymentContainer.innerHTML += `<p class="text-danger text-center">Terjadi kesalahan: ${error.message}</p>`; 
         }
     }
 
@@ -510,8 +543,8 @@
             let bannersHTML = '';
             snapshot.forEach(doc => {
                 const banner = doc.data();
-                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`;
-                bannersHTML += banner.link ? `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>` : `<div class="banner-item">${imgTag}</div>`;
+                const imgTag = `<img src="${banner.url}" alt="Banner Promosi" style="width:100%; border-radius: 16px;">`;
+                bannersHTML += banner.link ? `<a href="${banner.link}" target="_blank" style="display:block; margin-bottom:10px;">${imgTag}</a>` : `<div style="margin-bottom:10px;">${imgTag}</div>`;
             });
             bannerContainer.innerHTML = bannersHTML;
         } catch (error) { console.error("Gagal memuat banner:", error); }
@@ -585,7 +618,6 @@
             statusEl.style.color = 'var(--danger-color)';
         }
     }
-
   </script>
 </body>
 </html>
