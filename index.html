@@ -438,6 +438,7 @@
     auth.onAuthStateChanged(async user => {
         currentUser = user; 
         if (user) {
+            // Ini adalah alur untuk PENGGUNA YANG SUDAH LOGIN
             const resellerRef = dbFS.collection('resellers').doc(user.uid);
             const pelangganRef = dbFS.collection('pelanggan').doc(user.uid);
             try {
@@ -461,10 +462,18 @@
             } else { await pelangganRef.update({ terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() }); }
             await cekDanTerapkanDiskonOtomatis();
         } else {
+            // ==========================================================
+            // === BAGIAN YANG DIPERBAIKI 1: PESAN UNTUK PENGGUNA BARU ===
+            // ==========================================================
             currentUser = null;
-            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>`;
+            // Tampilkan tombol Login/Daftar dengan pesan tambahan untuk menarik pengguna baru
+            userPanel.innerHTML = `
+                <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
+                <p class="small text-center mt-1" style="color: var(--muted-text); font-size: 0.8em;">
+                    Daftar & dapatkan bonus Rp 5.000!
+                </p>
+            `;
             resetSemuaDiskon();
-            updateTotalHarga(); 
         }
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
@@ -725,8 +734,43 @@
             sessionStorage.setItem('lastUnpaidOrderId', id);
             const instructionHtml = document.getElementById(`content-${metode.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
             const paymentContainer = document.getElementById('payment-selection-container');
-            paymentContainer.innerHTML = `<hr><p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!</p><p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>${instructionHtml}<p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
+            
+            // =======================================================================
+            // === BAGIAN YANG DIPERBAIKI 2: PESAN AJAKAN SETELAH PESANAN SUKSES ===
+            // =======================================================================
+            
+            // Siapkan pesan sukses dasar
+            let pesanSuksesHTML = `
+                <hr>
+                <p class="fw-bold fs-5 text-center" style="color:var(--success);">
+                    <i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!
+                </p>
+                <p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>
+                ${instructionHtml}
+                <p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p>
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
+                    <a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a>
+                </div>
+            `;
+
+            // Jika pesanan dibuat oleh tamu (tidak ada user yang login), tambahkan pesan ajakan
+            if (!currentUser) {
+                pesanSuksesHTML += `
+                    <div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;">
+                        <h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5>
+                        <p style="font-size: 0.9em; color: var(--muted-text);">
+                            Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!
+                        </p>
+                        <a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a>
+                    </div>
+                `;
+            }
+
+            // Tampilkan pesan akhir ke layar
+            paymentContainer.innerHTML = pesanSuksesHTML;
             localStorage.removeItem('metodeTerpilih');
+
         } catch (error) { 
             console.error("Gagal membuat pesanan:", error);
             alert('Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.');
@@ -790,7 +834,7 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       if (promoProdukTerpakai && produkTerpilihData.promo) { let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); hargaFinal = Math.max(0, hargaAwal - potongan); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; } else if (bonusPendaftaranDiterapkan) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; } else if (diskonPromoTerpakai) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
-      // PERBAIKAN BUG `formatRuh`
+      // PERBAIKAN BUG `formatRuh` (sebelumnya `formatRuh`, seharusnya `formatRupiah`)
       diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; }
       let jenisProdukLabel = produkTerpilihData.jenis_produk === 'otomatis' ? `<span style="background-color: var(--success); color: white; padding: 3px 8px; font-size: 0.8em; border-radius: 20px; font-weight: bold;">⚡ Pengiriman Otomatis</span><br><br>` : '';
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
