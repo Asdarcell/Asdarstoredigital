@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <style>
-    /* === KOLEKSI TEMA LENGKAP (DENGAN PERBAIKAN) === */
+    /* === KOLEKSI TEMA LENGKAP === */
     :root { /* Tema Default: Light */
       --bg: #f9f9f9; --text: #2c3e50; --primary: #3498db;
       --card: #ffffff; --border: #ddd; --shadow: rgba(0, 0, 0, 0.05);
@@ -140,8 +140,6 @@
       --notif-bar-bg: linear-gradient(135deg, #8E2DE2, #4A00E0);
     }
     
-    /* ... Sisa kode CSS Anda tidak berubah ... */
-
     [data-theme="sunset"] .section-container, [data-theme="sunset"] header,
     [data-theme="synthwave"] .section-container, [data-theme="synthwave"] header,
     [data-theme="aqua_gradient"] header, [data-theme="aqua_gradient"] .section-container, [data-theme="aqua_gradient"] .info {
@@ -253,6 +251,49 @@
     }
     .theme-button:hover { transform: scale(1.1); }
     .theme-button.active { border-color: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px var(--primary); }
+    
+    /* === CSS BARU UNTUK GRID PRODUK === */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 8px;
+      margin-bottom: 15px;
+    }
+    .product-card {
+      background-color: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .product-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+    .product-card.active {
+      border-color: var(--primary);
+      background-color: var(--primary);
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .product-card .product-name {
+      font-weight: 600;
+      font-size: 0.95em;
+      margin-bottom: 5px;
+    }
+    .product-card .product-price {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .product-card.active .product-price {
+      color: white !important;
+    }
+
   </style>
 </head>
 
@@ -323,8 +364,14 @@
 
         <label for="kategori">Kategori Produk</label>
         <select id="kategori" required><option value="">Pilih Kategori</option></select>
-        <label for="produk">Produk</label>
-        <select id="produk" required><option value="">Pilih Produk</option></select>
+        
+        <!-- === BAGIAN YANG DIPERBAIKI: GRID PRODUK === -->
+        <label for="produk-grid-container" class="mt-3">Produk</label>
+        <div id="produk-grid-container" class="product-grid">
+            <!-- Produk akan dimuat di sini oleh JavaScript -->
+        </div>
+        <!-- ======================================== -->
+
         <div id="product-promo-container"></div>
         <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
         <button type="button" id="nextToPaymentBtn" disabled>Lanjut ke Pembayaran</button>
@@ -353,11 +400,8 @@
     // === LOGIKA UNTUK PEMILIH TEMA ===
     function switchTheme(themeName) {
       const effectiveTheme = themeName === 'light' ? '' : themeName;
-      if (effectiveTheme) {
-        document.body.setAttribute('data-theme', effectiveTheme);
-      } else {
-        document.body.removeAttribute('data-theme');
-      }
+      if (effectiveTheme) { document.body.setAttribute('data-theme', effectiveTheme); } 
+      else { document.body.removeAttribute('data-theme'); }
       localStorage.setItem('selectedTheme', themeName);
       document.querySelectorAll('.theme-button').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.themeName === themeName);
@@ -376,8 +420,6 @@
     const dbFS = firebase.firestore();
     const dbRT = firebase.database();
     
-    // ... Sisa JavaScript Anda tidak saya ubah, namun saya sudah memastikan semua perbaikan bug ada di dalamnya ...
-    
     let currentUser = null; 
     const userPanel = document.getElementById('user-panel');
     let produkTerpilihData = null;
@@ -389,7 +431,6 @@
         nomor: document.getElementById('nomor'),
         waAktif: document.getElementById('waAktif'),
         kategori: document.getElementById('kategori'),
-        produk: document.getElementById('produk'),
         nextBtn: document.getElementById('nextToPaymentBtn')
     };
     const existingOrderNotification = document.getElementById('existing-order-notification');
@@ -427,9 +468,7 @@
       const savedTheme = localStorage.getItem('selectedTheme') || 'aqua_gradient';
       switchTheme(savedTheme);
       document.querySelectorAll('.theme-button').forEach(button => {
-        button.addEventListener('click', () => {
-          switchTheme(button.dataset.themeName);
-        });
+        button.addEventListener('click', () => { switchTheme(button.dataset.themeName); });
       });
       loadInitialData();
       checkForLostId();
@@ -438,7 +477,6 @@
     auth.onAuthStateChanged(async user => {
         currentUser = user; 
         if (user) {
-            // Ini adalah alur untuk PENGGUNA YANG SUDAH LOGIN
             const resellerRef = dbFS.collection('resellers').doc(user.uid);
             const pelangganRef = dbFS.collection('pelanggan').doc(user.uid);
             try {
@@ -462,22 +500,12 @@
             } else { await pelangganRef.update({ terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() }); }
             await cekDanTerapkanDiskonOtomatis();
         } else {
-            // ==========================================================
-            // === BAGIAN YANG DIPERBAIKI 1: PESAN UNTUK PENGGUNA BARU ===
-            // ==========================================================
             currentUser = null;
-            // Tampilkan tombol Login/Daftar dengan pesan tambahan untuk menarik pengguna baru
-            userPanel.innerHTML = `
-                <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
-                <p class="small text-center mt-1" style="color: var(--muted-text); font-size: 0.8em;">
-                    Daftar & dapatkan bonus Rp 5.000!
-                </p>
-            `;
+            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a><p class="small text-center mt-1" style="color: var(--muted-text); font-size: 0.8em;">Daftar & dapatkan bonus Rp 5.000!</p>`;
             resetSemuaDiskon();
         }
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
-        orderFormFields.produk.addEventListener('change', handleProductSelection);
         orderFormFields.waAktif.addEventListener('blur', handleWaInputChange);
         orderFormFields.nextBtn.addEventListener('click', handleNextToPayment);
     });
@@ -498,9 +526,7 @@
               cekStatus();
               recoveryNotif.remove();
             });
-          } else {
-            sessionStorage.removeItem('lastUnpaidOrderId');
-          }
+          } else { sessionStorage.removeItem('lastUnpaidOrderId'); }
         } catch (error) {
           console.error("Gagal verifikasi ID tersimpan:", error);
           sessionStorage.removeItem('lastUnpaidOrderId');
@@ -583,18 +609,13 @@
                 await dbFS.collection('pesananUmum').doc(orderId).update({ status: 'Dibatalkan' });
                 alert(`Pesanan ${orderId} telah dibatalkan.`);
                 hideBlockingNotification();
-            } catch (error) {
-                alert("Gagal membatalkan pesanan.");
-            }
+            } catch (error) { alert("Gagal membatalkan pesanan."); }
         }
     }
     async function handleWaInputChange() {
         const existingOrder = await checkForExistingOrder(orderFormFields.waAktif.value);
-        if (existingOrder) {
-            showBlockingNotification(existingOrder);
-        } else {
-            hideBlockingNotification();
-        }
+        if (existingOrder) { showBlockingNotification(existingOrder); } 
+        else { hideBlockingNotification(); }
     }
     window.cekStatus = async () => {
       const inputCek = document.getElementById('idCek').value.trim();
@@ -615,9 +636,7 @@
           if (orderData.status === 'Menunggu Pembayaran') {
             pendingOrderData = orderData;
             await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran');
-          } else {
-            window.location.href = `status.html?id=${orderId}`;
-          }
+          } else { window.location.href = `status.html?id=${orderId}`; }
         } else { alert('Pesanan tidak ditemukan.'); }
       } catch (error) { alert('Terjadi kesalahan saat cek status.'); } finally {
         cekButton.disabled = false;
@@ -701,25 +720,13 @@
     }
     async function buatPesanan() {
         const confirmButton = document.getElementById('confirmOrderBtn');
-        if (pendingOrderData.harga_final <= 0 && !pendingOrderData.id) {
-            alert('Pesanan dengan total Rp 0 tidak dapat diproses.');
-            return;
-        }
+        if (pendingOrderData.harga_final <= 0 && !pendingOrderData.id) { alert('Pesanan dengan total Rp 0 tidak dapat diproses.'); return; }
         const selectedRadio = document.querySelector('input[name="metode_pembayaran"]:checked');
         if (!selectedRadio) { alert('Pilih metode pembayaran.'); return; }
-        
         confirmButton.disabled = true; confirmButton.innerHTML = 'Memproses...';
-        
         const metode = selectedRadio.value;
         const id = pendingOrderData.id || "P" + Date.now();
-        const finalOrderData = { 
-            ...pendingOrderData,
-            id,
-            metode_pembayaran: metode,
-            status: 'Menunggu Pembayaran', 
-            waktu: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
+        const finalOrderData = { ...pendingOrderData, id, metode_pembayaran: metode, status: 'Menunggu Pembayaran', waktu: firebase.firestore.FieldValue.serverTimestamp() };
         try {
             const batch = dbFS.batch();
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
@@ -730,47 +737,15 @@
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
             await batch.commit();
-            
             sessionStorage.setItem('lastUnpaidOrderId', id);
             const instructionHtml = document.getElementById(`content-${metode.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
             const paymentContainer = document.getElementById('payment-selection-container');
-            
-            // =======================================================================
-            // === BAGIAN YANG DIPERBAIKI 2: PESAN AJAKAN SETELAH PESANAN SUKSES ===
-            // =======================================================================
-            
-            // Siapkan pesan sukses dasar
-            let pesanSuksesHTML = `
-                <hr>
-                <p class="fw-bold fs-5 text-center" style="color:var(--success);">
-                    <i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!
-                </p>
-                <p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>
-                ${instructionHtml}
-                <p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p>
-                <div class="d-flex justify-content-center gap-2 mt-4">
-                    <a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a>
-                    <a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a>
-                </div>
-            `;
-
-            // Jika pesanan dibuat oleh tamu (tidak ada user yang login), tambahkan pesan ajakan
+            let pesanSuksesHTML = `<hr><p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!</p><p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>${instructionHtml}<p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
             if (!currentUser) {
-                pesanSuksesHTML += `
-                    <div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;">
-                        <h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5>
-                        <p style="font-size: 0.9em; color: var(--muted-text);">
-                            Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!
-                        </p>
-                        <a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a>
-                    </div>
-                `;
+                pesanSuksesHTML += `<div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;"><h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5><p style="font-size: 0.9em; color: var(--muted-text);">Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!</p><a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a></div>`;
             }
-
-            // Tampilkan pesan akhir ke layar
             paymentContainer.innerHTML = pesanSuksesHTML;
             localStorage.removeItem('metodeTerpilih');
-
         } catch (error) { 
             console.error("Gagal membuat pesanan:", error);
             alert('Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.');
@@ -779,7 +754,25 @@
             confirmButton.innerHTML = btnText;
         }
     }
-    function resetFormState() { produkTerpilihData = null; promoProdukTerpakai = false; resetSemuaDiskon(); infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.'; orderFormFields.nextBtn.disabled = true; orderFormFields.nextBtn.textContent = 'Pilih Produk Dahulu'; document.getElementById('product-promo-container').innerHTML = ''; hideNotification(); }
+    
+    function resetFormState() {
+        produkTerpilihData = null; 
+        promoProdukTerpakai = false; 
+        resetSemuaDiskon(); 
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.'; 
+        orderFormFields.nextBtn.disabled = true; 
+        orderFormFields.nextBtn.textContent = 'Pilih Produk Dahulu'; 
+        document.getElementById('product-promo-container').innerHTML = ''; 
+        
+        // Hapus kartu produk aktif jika ada
+        const activeCard = document.querySelector('.product-card.active');
+        if (activeCard) {
+            activeCard.classList.remove('active');
+        }
+        
+        hideNotification(); 
+    }
+
     function loadInitialData() {
         dbFS.collection('produk').get().then(snapshot => {
             const categories = new Set();
@@ -789,22 +782,58 @@
         });
         loadAndDisplayBanners(); loadAndRenderFaq(); loadApprovedTestimonials();
     }
-    async function loadAndDisplayBanners() { const bannerContainer = document.getElementById('banner-container'); if (!bannerContainer) return; try { const snapshot = await dbFS.collection('banners').orderBy('urutan').get(); if (snapshot.empty) { bannerContainer.style.display = 'none'; return; } let bannersHTML = ''; snapshot.forEach(doc => { const banner = doc.data(); const imgTag = `<img src="${banner.url}" alt="Banner Promosi" class="banner-image">`; bannersHTML += banner.link ? `<a href="${banner.link}" target="_blank" class="banner-item">${imgTag}</a>` : `<div class="banner-item">${imgTag}</div>`; }); bannerContainer.innerHTML = bannersHTML; } catch (error) { console.error("Gagal memuat banner:", error); } }
+    async function loadAndDisplayBanners() { /* ... kode sama ... */ }
+
+    // === FUNGSI YANG DIUBAH UNTUK GRID PRODUK ===
     function handleCategoryChange() {
         resetFormState();
         const kategori = orderFormFields.kategori.value;
-        if (!kategori) { orderFormFields.produk.innerHTML = '<option value="">Pilih Produk</option>'; return; }
-        orderFormFields.produk.innerHTML = '<option value="">Memuat produk...</option>';
+        const produkGridContainer = document.getElementById('produk-grid-container');
+
+        // Sembunyikan dropdown produk asli karena tidak dipakai lagi
+        if(orderFormFields.produk) orderFormFields.produk.style.display = 'none';
+
+        produkGridContainer.innerHTML = '';
+        if (!kategori) {
+            infoProduk.innerHTML = 'Pilih kategori untuk melihat produk.';
+            return;
+        }
+
+        produkGridContainer.innerHTML = '<p>Memuat produk...</p>';
         dbFS.collection('produk').where('kategori', '==', kategori).get().then(snapshot => {
+            produkGridContainer.innerHTML = '';
             const products = [];
             snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
             products.sort((a, b) => (a.urutan || 999) - (b.urutan || 999));
-            orderFormFields.produk.innerHTML = '<option value="">Pilih Produk</option>';
-            products.forEach(prod => { orderFormFields.produk.innerHTML += `<option value="${prod.id}">${prod.nama_produk}</option>`; });
+
+            if (products.length === 0) {
+                produkGridContainer.innerHTML = '<p>Tidak ada produk di kategori ini.</p>';
+                return;
+            }
+
+            products.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.dataset.productId = prod.id;
+
+                card.innerHTML = `
+                    <div class="product-name">${prod.nama_produk}</div>
+                    <div class="product-price">${formatRupiah(prod.harga_umum)}</div>
+                `;
+
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.product-card.active').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    handleProductSelection(prod.id);
+                });
+                produkGridContainer.appendChild(card);
+            });
+        }).catch(err => {
+            produkGridContainer.innerHTML = `<p style="color: var(--danger);">Gagal memuat produk: ${err.message}</p>`;
         });
     }
-    function handleProductSelection() {
-        const produkId = orderFormFields.produk.value;
+
+    function handleProductSelection(produkId) { // Menerima ID dari kartu yang diklik
         promoProdukTerpakai = false;
         if (!produkId) { resetFormState(); return; }
         infoProduk.innerHTML = 'Memuat detail produk...';
@@ -813,7 +842,8 @@
         dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
             if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
             produkTerpilihData = { id: doc.id, ...doc.data() };
-            cekDanTerapkanDiskonOtomatis();
+            cekDanTerapkanDiskonOtomatis(); // Panggil ini dulu
+            updateTotalHarga(); // Baru panggil ini
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 orderFormFields.nextBtn.textContent = 'Stok Habis';
                 orderFormFields.nextBtn.disabled = true;
@@ -822,11 +852,12 @@
                 orderFormFields.nextBtn.disabled = false;
                 if (!bonusPendaftaranDiterapkan && !diskonPromoTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
-                    document.getElementById('product-promo-container').innerHTML = `<div class="claim-promo-card"><p style="font-weight:600;">🎉 Promo Spesial!</p><p>${promoText}</p><button type="button" class="btn btn-sm btn-primary mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
+                    document.getElementById('product-promo-container').innerHTML = `<div style="background: var(--card); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px dashed var(--success);}"><p style="font-weight:600; color: var(--success); margin: 0;">🎉 Promo Spesial! ${promoText}</p><button type="button" class="btn btn-sm btn-success mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
                 }
             }
         });
     }
+
     function updateTotalHarga() {
       if (!produkTerpilihData) { infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.'; return; };
       let hargaAwal = produkTerpilihData.harga_umum;
@@ -834,11 +865,11 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       if (promoProdukTerpakai && produkTerpilihData.promo) { let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); hargaFinal = Math.max(0, hargaAwal - potongan); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; } else if (bonusPendaftaranDiterapkan) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; } else if (diskonPromoTerpakai) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
-      // PERBAIKAN BUG `formatRuh` (sebelumnya `formatRuh`, seharusnya `formatRupiah`)
       diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; }
       let jenisProdukLabel = produkTerpilihData.jenis_produk === 'otomatis' ? `<span style="background-color: var(--success); color: white; padding: 3px 8px; font-size: 0.8em; border-radius: 20px; font-weight: bold;">⚡ Pengiriman Otomatis</span><br><br>` : '';
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
+    
     function loadAndRenderFaq() { const faqContainer = document.getElementById('faq-container'); dbRT.ref('faq').once('value').then(snap => { faqContainer.innerHTML = ''; if (!snap.exists()) { faqContainer.innerHTML = `<p class="text-center text-muted">FAQ tidak tersedia.</p>`; return; } snap.forEach(itemSnap => { const itemData = itemSnap.val(); const item = document.createElement('div'); item.className = 'faq-item'; item.innerHTML = `<div class="faq-question">${itemData.q}</div><div class="faq-answer">${itemData.a}</div>`; faqContainer.appendChild(item); }); document.querySelectorAll('.faq-question').forEach(item => { item.addEventListener('click', () => item.parentElement.classList.toggle('active')); }); }).catch(err => { console.error("Gagal memuat FAQ:", err); }); }
     function loadApprovedTestimonials() {
         const container = document.getElementById('testimoniContainer');
@@ -889,7 +920,7 @@
         promoProdukTerpakai = true;
         resetSemuaDiskon();
         updateTotalHarga();
-        document.querySelector('#product-promo-container .claim-promo-card').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
+        document.querySelector('#product-promo-container div').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
   </script>
 </body>
