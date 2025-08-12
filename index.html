@@ -390,11 +390,11 @@
 </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
     AOS.init({ duration: 800, once: true, offset: 50 });
 
     // === LOGIKA UNTUK PEMILIH TEMA ===
@@ -643,8 +643,6 @@
         cekButton.innerHTML = 'Cek Status';
       }
     };
-    
-    // Perbaikan: Fungsi handleNextToPayment sekarang berfungsi untuk pengguna yang belum login
     async function handleNextToPayment() {
       hideNotification();
       if (orderFormFields.nextBtn.disabled) return;
@@ -652,26 +650,14 @@
       if (!nama.value.trim() || !nomor.value.trim() || !waAktif.checkValidity() || !produkTerpilihData) {
         return showNotification("Harap lengkapi semua data pesanan dengan benar!");
       }
-      
       let hargaFinal = produkTerpilihData.harga_umum;
-      let bonusPendaftaranDiterapkanFinal = false;
-      let diskonPromoTerpakaiFinal = false;
-      let promoProdukTerpakaiFinal = false;
-
-      // Cek diskon hanya jika pengguna sudah login
-      if (currentUser) {
-          if (promoProdukTerpakai && produkTerpilihData.promo) {
-              hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
-              promoProdukTerpakaiFinal = true;
-          } else if (bonusPendaftaranDiterapkan) {
-              hargaFinal = Math.max(0, hargaFinal - POTONGAN_BONUS_PENDAFTARAN);
-              bonusPendaftaranDiterapkanFinal = true;
-          } else if (diskonPromoTerpakai) {
-              hargaFinal = Math.max(0, hargaFinal - POTONGAN_DISKON_PROMO);
-              diskonPromoTerpakaiFinal = true;
-          }
+      if (promoProdukTerpakai && produkTerpilihData.promo) {
+        hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
+      } else if (bonusPendaftaranDiterapkan) {
+        hargaFinal = Math.max(0, hargaFinal - POTONGAN_BONUS_PENDAFTARAN);
+      } else if (diskonPromoTerpakai) {
+        hargaFinal = Math.max(0, hargaFinal - POTONGAN_DISKON_PROMO);
       }
-
       pendingOrderData = {
         nama_pelanggan: nama.value.trim(),
         nomor_pelanggan: nomor.value.trim(),
@@ -679,15 +665,13 @@
         kategori: orderFormFields.kategori.value,
         produk: produkTerpilihData.nama_produk,
         harga_final: hargaFinal,
-        promo_produk_digunakan: promoProdukTerpakaiFinal ? produkTerpilihData.promo : null,
-        diskon_promo_digunakan: diskonPromoTerpakaiFinal,
-        bonus_pendaftaran_digunakan: bonusPendaftaranDiterapkanFinal,
+        promo_produk_digunakan: promoProdukTerpakai ? produkTerpilihData.promo : null,
+        diskon_promo_digunakan: diskonPromoTerpakai,
+        bonus_pendaftaran_digunakan: bonusPendaftaranDiterapkan,
         jenis_produk: produkTerpilihData.jenis_produk || 'manual'
       };
-      
       await tampilkanUiPembayaran(pendingOrderData, 'Konfirmasi Pembayaran');
     }
-    
     async function tampilkanUiPembayaran(dataPesanan, judul) {
         document.getElementById('order-form-container').style.display = 'none';
         const paymentContainer = document.getElementById('payment-selection-container');
@@ -734,8 +718,6 @@
         }
       }
     }
-    
-    // Perbaikan: Fungsi buatPesanan kini menangani pengguna yang belum login dengan benar
     async function buatPesanan() {
         const confirmButton = document.getElementById('confirmOrderBtn');
         if (pendingOrderData.harga_final <= 0 && !pendingOrderData.id) { alert('Pesanan dengan total Rp 0 tidak dapat diproses.'); return; }
@@ -749,14 +731,11 @@
             const batch = dbFS.batch();
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
             batch.set(pesananRef, finalOrderData, { merge: true });
-            
-            // Logika untuk bonus pendaftaran hanya berjalan jika currentUser ada
             if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) {
                 batch.update(dbFS.collection('pelanggan').doc(currentUser.uid), { punyaBonusPendaftaran: false });
             } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
-            
             await batch.commit();
             sessionStorage.setItem('lastUnpaidOrderId', id);
             const instructionHtml = document.getElementById(`content-${metode.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
@@ -863,13 +842,8 @@
         dbFS.collection('produk').doc(produkId).onSnapshot(doc => {
             if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
             produkTerpilihData = { id: doc.id, ...doc.data() };
-            
-            // Cek diskon hanya jika pengguna sudah login
-            if(currentUser) {
-              cekDanTerapkanDiskonOtomatis(); 
-            }
-            updateTotalHarga(); 
-            
+            cekDanTerapkanDiskonOtomatis(); // Panggil ini dulu
+            updateTotalHarga(); // Baru panggil ini
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 orderFormFields.nextBtn.textContent = 'Stok Habis';
                 orderFormFields.nextBtn.disabled = true;
@@ -890,23 +864,8 @@
       let hargaFinal = hargaAwal;
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
-      
-      // Logika diskon hanya berjalan jika pengguna login atau promo produk diklaim
-      if (promoProdukTerpakai && produkTerpilihData.promo) { 
-        let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); 
-        hargaFinal = Math.max(0, hargaAwal - potongan); 
-        deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && bonusPendaftaranDiterapkan) { 
-        hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); 
-        deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && diskonPromoTerpakai) { 
-        hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); 
-        deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; 
-      }
-      
+      if (promoProdukTerpakai && produkTerpilihData.promo) { let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); hargaFinal = Math.max(0, hargaAwal - potongan); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; } else if (bonusPendaftaranDiterapkan) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; } else if (diskonPromoTerpakai) { hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
+      diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; }
       let jenisProdukLabel = produkTerpilihData.jenis_produk === 'otomatis' ? `<span style="background-color: var(--success); color: white; padding: 3px 8px; font-size: 0.8em; border-radius: 20px; font-weight: bold;">⚡ Pengiriman Otomatis</span><br><br>` : '';
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
