@@ -688,7 +688,7 @@
       await tampilkanUiPembayaran(pendingOrderData, 'Konfirmasi Pembayaran');
     }
     
-    async function tampilkanUiPembayaran(dataPesanan, judul) {
+        async function tampilkanUiPembayaran(dataPesanan, judul) {
         document.getElementById('order-form-container').style.display = 'none';
         const paymentContainer = document.getElementById('payment-selection-container');
         paymentContainer.style.display = 'block';
@@ -697,6 +697,7 @@
             const snapshot = await dbFS.collection('infoPembayaran').get();
             let paymentMethods = [];
             snapshot.forEach(doc => paymentMethods.push({ id: doc.id, ...doc.data() }));
+
             let radioButtonsHTML = '', contentDivsHTML = '';
             paymentMethods.forEach(metode => {
                 const metodeId = metode.metode.replace(/\s+/g, '-').toLowerCase();
@@ -707,12 +708,45 @@
                     contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden"><p class="text-center fw-bold">Silakan transfer ke:</p><div class="payment-methods-list"><div class="payment-method-item"><div class="payment-details"><div class="payment-method-name">${metode.metode}</div><div class="payment-method-number">${metode.nomor}</div><div class="payment-method-an">a.n ${metode.atas_nama}</div></div><button class="copy-btn" onclick="copyToClipboard('${metode.nomor}', this)"><i class="far fa-copy"></i> Salin</button></div></div></div>`;
                 }
             });
-            const btnText = judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran';
-            paymentContainer.innerHTML = `<h2>${judul}</h2><div class="info">${dataPesanan.id ? `<p><strong>ID Pesanan:</strong> ${dataPesanan.id}</p>` : ''}<p><strong>Produk:</strong> ${dataPesanan.produk || dataPesanan.nama_produk}</p><p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p></div><h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3><div id="payment-options-list">${radioButtonsHTML}</div><div id="payment-details-container">${contentDivsHTML}</div><button id="confirmOrderBtn" onclick="buatPesanan()">${btnText}</button>`;
+
+            // LOGIKA PENTING: Menentukan tombol konfirmasi
+            let confirmButtonHTML = '';
+            if (dataPesanan.id && !currentUser) {
+                // Jika ini adalah pesanan yang sudah ada (memiliki ID) DAN pengguna belum login
+                // Mereka tidak diizinkan untuk "mengupdate" statusnya, hanya bisa melihat atau membatalkan.
+                confirmButtonHTML = `
+                    <p class="text-center text-muted mt-3">
+                        Anda sedang melihat detail pesanan yang sudah ada. Untuk melanjutkan pembayaran pesanan ini atau mengelolanya, harap login.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2 mt-4">
+                        <a class='btn btn-secondary' href="status.html?id=${dataPesanan.id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status Lengkap</a>
+                        <button class='btn btn-danger' onclick="cancelExistingOrder('${dataPesanan.id}')" style="width:100%;"><i class="fas fa-times-circle me-2"></i>Batalkan Pesanan Ini</button>
+                    </div>
+                `;
+            } else {
+                // Ini adalah pesanan baru (tidak ada dataPesanan.id awal) ATAU pengguna sudah login
+                // Mereka diizinkan untuk membuat/melanjutkan pembayaran.
+                const btnText = judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran';
+                confirmButtonHTML = `<button id="confirmOrderBtn" onclick="buatPesanan()">${btnText}</button>`;
+            }
+
+            paymentContainer.innerHTML = `
+                <h2>${judul}</h2>
+                <div class="info">
+                    ${dataPesanan.id ? `<p><strong>ID Pesanan:</strong> ${dataPesanan.id}</p>` : ''}
+                    <p><strong>Produk:</strong> ${dataPesanan.produk || dataPesanan.nama_produk}</p>
+                    <p><strong>Total Bayar:</strong> <strong style="font-size: 1.2em">${formatRupiah(dataPesanan.harga_final)}</strong></p>
+                </div>
+                <h3 style="margin-top:20px;">Pilih Metode Pembayaran:</h3>
+                <div id="payment-options-list">${radioButtonsHTML}</div>
+                <div id="payment-details-container">${contentDivsHTML}</div>
+                ${confirmButtonHTML}
+            `;
             setupPaymentEventListeners();
             window.scrollTo({ top: paymentContainer.offsetTop - 80, behavior: 'smooth' });
         } catch (error) {
-            paymentContainer.innerHTML = `<p class="text-center text-danger">Gagal memuat metode pembayaran.</p>`;
+            console.error("Gagal memuat metode pembayaran:", error); // Tambahkan ini untuk debugging
+            paymentContainer.innerHTML = `<p class="text-center text-danger">Gagal memuat metode pembayaran. Silakan coba lagi nanti.</p>`;
         }
     }
     function setupPaymentEventListeners() {
