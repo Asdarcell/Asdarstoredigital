@@ -801,7 +801,9 @@
         loadApprovedTestimonials();
     }
     
-    async function loadAndDisplayBanners() { /* ... kode sama ... */ }
+    async function loadAndDisplayBanners() { 
+        // Implementasi banner bisa ditambahkan di sini jika perlu
+    }
 
     // === FUNGSI YANG DIUBAH UNTUK GRID PRODUK ===
     function handleCategoryChange() {
@@ -884,10 +886,134 @@
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
     
-    function loadAndRenderFaq() { /* ... kode sama ... */ }
-    function loadApprovedTestimonials() { /* ... kode sama ... */ }
-    async function handleTestimoniSubmit(e) { /* ... kode sama ... */ }
-    window.klaimPromoProduk = () => { /* ... kode sama ... */ };
+    // =======================================================
+    // === KODE YANG DIPERBAIKI ADA DI DUA FUNGSI BERIKUT ===
+    // =======================================================
+
+    function loadAndRenderFaq() {
+        const container = document.getElementById('faq-container');
+        if (!container) return; // Hentikan jika kontainer tidak ditemukan
+
+        container.innerHTML = '<p>Memuat pertanyaan...</p>'; // Pesan sementara
+
+        dbFS.collection('faq')
+            .orderBy('urutan', 'asc') // Urutkan berdasarkan kolom 'urutan'
+            .get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="color: var(--muted-text);">Tidak ada pertanyaan yang tersedia saat ini.</p>';
+                    return;
+                }
+
+                container.innerHTML = ''; // Kosongkan kontainer
+                snapshot.forEach(doc => {
+                    const faq = doc.data();
+                    const item = document.createElement('div');
+                    item.className = 'faq-item';
+                    item.innerHTML = `
+                        <div class="faq-question">${faq.pertanyaan}</div>
+                        <div class="faq-answer"><p>${faq.jawaban.replace(/\n/g, '<br>')}</p></div>
+                    `;
+                    container.appendChild(item);
+                });
+
+                // Tambahkan event listener untuk fungsionalitas accordion
+                container.querySelectorAll('.faq-question').forEach(question => {
+                    question.addEventListener('click', () => {
+                        const parentItem = question.parentElement;
+                        parentItem.classList.toggle('active');
+                    });
+                });
+            })
+            .catch(error => {
+                console.error("Gagal memuat FAQ:", error);
+                container.innerHTML = '<p style="color: var(--danger);">Gagal memuat pertanyaan. Silakan coba lagi nanti.</p>';
+            });
+    }
+
+    function loadApprovedTestimonials() {
+        const container = document.getElementById('testimoniContainer');
+        if (!container) return; // Hentikan jika kontainer tidak ditemukan
+
+        container.innerHTML = '<p>Memuat testimoni...</p>'; // Pesan sementara
+
+        dbFS.collection('testimoni')
+            .where('status', '==', 'disetujui') // Hanya ambil testimoni yang disetujui
+            .orderBy('waktu', 'desc') // Tampilkan yang terbaru di atas
+            .limit(20) // Batasi jumlah testimoni
+            .get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align:center; color: var(--muted-text);">Belum ada testimoni untuk ditampilkan.</p>';
+                    return;
+                }
+
+                container.innerHTML = ''; // Kosongkan kontainer sebelum diisi
+                let delay = 0;
+                snapshot.forEach(doc => {
+                    const testi = doc.data();
+                    const bubble = document.createElement('div');
+                    bubble.className = 'testimonial-bubble';
+                    // Tambahkan delay animasi untuk setiap item
+                    bubble.style.animationDelay = `${delay}s`; 
+
+                    bubble.innerHTML = `
+                        <div class="testimonial-header">
+                            <i class="fas fa-user-circle"></i>
+                            <span class="testimonial-name">${testi.nama}</span>
+                        </div>
+                        <p class="testimonial-body">${testi.pesan}</p>
+                    `;
+                    container.appendChild(bubble);
+                    delay += 0.15; // Tingkatkan delay untuk item selanjutnya
+                });
+            })
+            .catch(error => {
+                console.error("Gagal memuat testimoni:", error);
+                container.innerHTML = '<p style="text-align:center; color: var(--danger);">Gagal memuat testimoni. Silakan coba lagi nanti.</p>';
+            });
+    }
+    
+    // =======================================================
+    // =======================================================
+
+    async function handleTestimoniSubmit(e) {
+      e.preventDefault();
+      const nama = document.getElementById('testiNama').value;
+      const pesan = document.getElementById('testiPesan').value;
+      const statusEl = document.getElementById('testiStatus');
+      const submitBtn = document.querySelector('#formTestimoni button');
+
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Mengirim...';
+      statusEl.style.color = 'var(--muted-text)';
+
+      try {
+        await dbFS.collection('testimoni').add({
+          nama: nama,
+          pesan: pesan,
+          status: 'menunggu', // default status
+          waktu: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        statusEl.textContent = 'Terima kasih! Testimoni Anda sedang ditinjau.';
+        statusEl.style.color = 'var(--success)';
+        document.getElementById('formTestimoni').reset();
+      } catch (error) {
+        console.error("Gagal mengirim testimoni:", error);
+        statusEl.textContent = 'Gagal mengirim. Coba lagi nanti.';
+        statusEl.style.color = 'var(--danger)';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    window.klaimPromoProduk = () => {
+      if (!produkTerpilihData) return;
+      promoProdukTerpakai = true;
+      resetSemuaDiskon(); // Memastikan diskon lain tidak aktif
+      updateTotalHarga();
+      document.getElementById('product-promo-container').innerHTML = `<div style="background: var(--success); color: white; padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; font-weight: bold;">🎉 Promo Berhasil Diklaim!</div>`;
+    };
   </script>
 </body>
-</html>
+  </html>
