@@ -307,8 +307,7 @@
             <i class="fas fa-list"></i> Lihat Semua Produk
         </a>
         <div id="user-panel">
-            <!-- Ini akan diisi oleh JavaScript berdasarkan status login dan status seller -->
-            <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login / Jadi Seller</span></a>
+            <!-- Ini akan diisi oleh JavaScript untuk mensimulasikan login seller aktif -->
         </div>
     </div>
 </header>
@@ -351,12 +350,6 @@
         <label for="waAktif">Nomor WhatsApp Aktif</label>
         <input type="tel" id="waAktif" placeholder="Cth: 081234567890 (awali 08...)" pattern="^08[0-9]{8,15}$" required />
         
-        <!-- Bagian bonus pendaftaran umum dihapus atau disembunyikan -->
-        <!-- <div id="pesan-bonus-diterapkan" class="alert alert-success" style="display: none; font-weight: bold; text-align: center; margin-top: 15px;">
-            🎉 Selamat! Bonus Pendaftaran Rp 5.000 telah diterapkan.
-        </div> -->
-        <!-- <div id="pesan-info-bonus" class="alert alert-info" style="display: none; font-size: 0.9em; text-align: center; margin-top: 15px;"></div> -->
-        
         <div id="claim-discount-section" style="display: none; background-color: var(--bg); padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
             <h3 style="color: var(--success); margin: 0 0 10px 0;">🎉 Selamat! Anda Punya Diskon!</h3>
             <p>Anda berhak mendapatkan potongan <strong>Rp 5.000</strong> untuk pesanan kali ini.</p>
@@ -391,7 +384,8 @@
 </main>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<!-- Hapus atau komentari baris ini jika tidak menggunakan autentikasi Firebase -->
+<!-- <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -417,12 +411,17 @@
       projectId: "asdarstoredigitalll-d89c4",
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    // const auth = firebase.auth(); // Baris ini dikomentari/dihapus karena kita mensimulasikan login
     const dbFS = firebase.firestore();
     const dbRT = firebase.database();
     
-    let currentUser = null; 
-    const userPanel = document.getElementById('user-panel');
+    // SIMULASI PENGGUNA SELALU LOGIN SEBAGAI SELLER AKTIF
+    let currentUser = {
+        uid: "simulatedSellerUID123", // Contoh UID
+        email: "simulated.seller@example.com", // Contoh email untuk diskon otomatis
+        displayName: "Simulated Seller", // Contoh nama untuk pre-fill form
+    };
+    
     let produkTerpilihData = null;
     let promoProdukTerpakai = false;
     let diskonPromoTerpakai = false; 
@@ -438,9 +437,7 @@
     const infoProduk = document.getElementById('infoProduk');
     const formNotification = document.getElementById('formNotification');
     
-    // const bonusPendaftaranDiterapkan = false; // Ini tidak lagi digunakan, bonus umum dihapus
-    const POTONGAN_DISKON_PROMO = 5000; // Diskon ini tetap ada jika ada hak diskon otomatis lain
-    // const KATEGORI_TERKECUALI_BONUS = ['PULSA', 'TOKEN LISTRIK']; // Tidak lagi relevan
+    const POTONGAN_DISKON_PROMO = 5000;
     
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
@@ -472,48 +469,63 @@
       });
       loadInitialData();
       checkForLostId();
+
+      // Dapatkan elemen user-panel
+      const userPanel = document.getElementById('user-panel');
+
+      // Tampilkan panel seller aktif secara langsung
+      if (userPanel) {
+          userPanel.innerHTML = `
+              <a href="reseller-dashboard.html" class="dashboard-btn mb-2"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a>
+              <a href="#" onclick="location.reload();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+          `;
+      }
+      
+      // Pre-fill nama dari simulated user
+      if (currentUser && orderFormFields.nama) {
+          orderFormFields.nama.value = currentUser.displayName || '';
+      }
+
+      // Event listeners yang sebelumnya ada di auth.onAuthStateChanged dipindahkan ke sini
+      document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
+      orderFormFields.kategori.addEventListener('change', handleCategoryChange);
+      orderFormFields.waAktif.addEventListener('blur', handleWaInputChange);
+      orderFormFields.nextBtn.addEventListener('click', handleNextToPayment);
+
+      // Panggil fungsi diskon otomatis karena user sudah dianggap login
+      cekDanTerapkanDiskonOtomatis();
     });
 
+    // Baris auth.onAuthStateChanged ini sepenuhnya dihapus/dikomentari karena kita mensimulasikan login
+    /*
     auth.onAuthStateChanged(async user => {
         currentUser = user; 
         if (user) {
             const resellerRef = dbFS.collection('resellers').doc(user.uid);
-            // Menghapus atau mengabaikan logika pelanggan umum dan bonus pendaftaran
-            // const pelangganRef = dbFS.collection('pelanggan').doc(user.uid);
             try {
                 const resellerDoc = await resellerRef.get();
                 if (resellerDoc.exists && resellerDoc.data().status === 'active') {
                     userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn mb-2"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 } else {
-                    // Jika login tapi belum jadi seller aktif
                     userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 }
             } catch (error) {
                 console.error("Gagal memeriksa status reseller:", error);
-                // Fallback jika ada error saat memeriksa status reseller
                 userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
             }
             orderFormFields.nama.value = user.displayName || '';
-            // Logika bonus pendaftaran pelanggan umum dihapus dari sini
-            // const pelangganDoc = await pelangganRef.get();
-            // if (!pelangganDoc.exists) {
-            //     try {
-            //         await pelangganRef.set({ email: user.email, uid: user.uid, punyaBonusPendaftaran: true, terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() });
-            //         alert('Selamat datang! Anda mendapatkan bonus pendaftaran Rp 5.000 untuk pesanan pertama Anda.');
-            //     } catch (error) { console.error("Gagal memberi bonus pendaftaran:", error); }
-            // } else { await pelangganRef.update({ terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() }); }
-            
-            await cekDanTerapkanDiskonOtomatis(); // Tetap cek diskon otomatis lainnya (misal: dari hakDiskonOtomatis)
+            await cekDanTerapkanDiskonOtomatis();
         } else {
             currentUser = null;
             userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login / Jadi Seller</span></a>`;
-            resetSemuaDiskon(); // Pastikan diskon reset jika user logout
+            resetSemuaDiskon();
         }
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
         orderFormFields.waAktif.addEventListener('blur', handleWaInputChange);
         orderFormFields.nextBtn.addEventListener('click', handleNextToPayment);
     });
+    */
     
     async function checkForLostId() {
       const lastOrderId = sessionStorage.getItem('lastUnpaidOrderId');
@@ -541,33 +553,17 @@
 
     async function cekDanTerapkanDiskonOtomatis() {
       resetSemuaDiskon(); 
-      if (!currentUser || promoProdukTerpakai || !produkTerpilihData) { updateTotalHarga(); return; }
+      // Karena currentUser selalu ada (simulasi), kita tidak perlu cek `!currentUser`
+      if (promoProdukTerpakai || !produkTerpilihData) { updateTotalHarga(); return; }
       
-      // Logika bonus pendaftaran umum dihapus dari sini
-      // const pelangganRef = dbFS.collection('pelanggan').doc(currentUser.uid);
-      // const pelangganDoc = await pelangganRef.get();
-      // if (pelangganDoc.exists && pelangganDoc.data().punyaBonusPendaftaran === true) {
-      //   const kategoriProduk = produkTerpilihData.kategori.toUpperCase();
-      //   if (KATEGORI_TERKECUALI_BONUS.includes(kategoriProduk)) {
-      //       document.getElementById('pesan-info-bonus').textContent = 'Bonus pendaftaran tidak berlaku untuk kategori produk ini.';
-      //       document.getElementById('pesan-info-bonus').style.display = 'block';
-      //       bonusPendaftaranDiterapkan = false;
-      //   } else {
-      //       bonusPendaftaranDiterapkan = true;
-      //       document.getElementById('pesan-bonus-diterapkan').style.display = 'block';
-      //   }
-      // } else {
-          const diskonRef = dbFS.collection('hakDiskonOtomatis').doc(currentUser.email);
-          const diskonDoc = await diskonRef.get();
-          if (diskonDoc.exists) { document.getElementById('claim-discount-section').style.display = 'block'; }
-      // }
+      const diskonRef = dbFS.collection('hakDiskonOtomatis').doc(currentUser.email);
+      const diskonDoc = await diskonRef.get();
+      if (diskonDoc.exists) { document.getElementById('claim-discount-section').style.display = 'block'; }
+      
       updateTotalHarga();
     }
     function resetSemuaDiskon() {
-        // bonusPendaftaranDiterapkan = false; // Tidak lagi relevan
         diskonPromoTerpakai = false;
-        // document.getElementById('pesan-bonus-diterapkan').style.display = 'none'; // Tidak lagi relevan
-        // document.getElementById('pesan-info-bonus').style.display = 'none'; // Tidak lagi relevan
         document.getElementById('claim-discount-section').style.display = 'none';
         const claimButton = document.getElementById('claim-button');
         if(claimButton) {
@@ -583,8 +579,8 @@
         const claimButton = document.getElementById('claim-button');
         claimButton.disabled = true;
         claimButton.innerText = "✅ Diskon Diterapkan";
-        // Hapus hak diskon otomatis setelah digunakan
-        if (currentUser) {
+        // Hapus hak diskon otomatis setelah digunakan (tetap panggil jika currentUser ada)
+        if (currentUser) { // currentUser selalu ada dalam simulasi ini
             dbFS.collection('hakDiskonOtomatis').doc(currentUser.email).delete().catch(e => console.error("Gagal menghapus hak diskon otomatis:", e));
         }
     }
@@ -646,6 +642,7 @@
         if (orderData) {
           if (orderData.status === 'Menunggu Pembayaran') {
             pendingOrderData = orderData;
+            // Di sini, karena kita selalu "login", kita asumsikan bisa melanjutkan pembayaran
             await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran');
           } else { window.location.href = `status.html?id=${orderId}`; }
         } else { alert('Pesanan tidak ditemukan.'); }
@@ -655,7 +652,7 @@
       }
     };
     
-    // Perbaikan: Fungsi handleNextToPayment sekarang berfungsi untuk pengguna yang belum login
+    // Perbaikan: Fungsi handleNextToPayment sekarang berfungsi dengan asumsi user selalu login
     async function handleNextToPayment() {
       hideNotification();
       if (orderFormFields.nextBtn.disabled) return;
@@ -665,19 +662,16 @@
       }
       
       let hargaFinal = produkTerpilihData.harga_umum;
-      // let bonusPendaftaranDiterapkanFinal = false; // Tidak lagi relevan
       let diskonPromoTerpakaiFinal = false;
       let promoProdukTerpakaiFinal = false;
 
-      // Cek diskon hanya jika pengguna sudah login
-      if (currentUser) {
-          if (promoProdukTerpakai && produkTerpilihData.promo) {
-              hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
-              promoProdukTerpakaiFinal = true;
-          } else if (diskonPromoTerpakai) { // Hanya diskon promo umum yang tersisa
-              hargaFinal = Math.max(0, hargaFinal - POTONGAN_DISKON_PROMO);
-              diskonPromoTerpakaiFinal = true;
-          }
+      // Cek diskon selalu karena pengguna sudah dianggap login
+      if (promoProdukTerpakai && produkTerpilihData.promo) {
+          hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
+          promoProdukTerpakaiFinal = true;
+      } else if (diskonPromoTerpakai) { 
+          hargaFinal = Math.max(0, hargaFinal - POTONGAN_DISKON_PROMO);
+          diskonPromoTerpakaiFinal = true;
       }
 
       pendingOrderData = {
@@ -689,7 +683,6 @@
         harga_final: hargaFinal,
         promo_produk_digunakan: promoProdukTerpakaiFinal ? produkTerpilihData.promo : null,
         diskon_promo_digunakan: diskonPromoTerpakaiFinal,
-        // bonus_pendaftaran_digunakan: bonusPendaftaranDiterapkanFinal, // Tidak lagi relevan
         jenis_produk: produkTerpilihData.jenis_produk || 'manual'
       };
       
@@ -719,24 +712,10 @@
 
             // LOGIKA PENTING: Menentukan tombol konfirmasi
             let confirmButtonHTML = '';
-            if (dataPesanan.id && !currentUser) {
-                // Jika ini adalah pesanan yang sudah ada (memiliki ID) DAN pengguna belum login
-                // Mereka tidak diizinkan untuk "mengupdate" statusnya, hanya bisa melihat atau membatalkan.
-                confirmButtonHTML = `
-                    <p class="text-center text-muted mt-3">
-                        Anda sedang melihat detail pesanan yang sudah ada. Untuk melanjutkan pembayaran pesanan ini atau mengelolanya, harap login.
-                    </p>
-                    <div class="d-flex justify-content-center gap-2 mt-4">
-                        <a class='btn btn-secondary' href="status.html?id=${dataPesanan.id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status Lengkap</a>
-                        <button class='btn btn-danger' onclick="cancelExistingOrder('${dataPesanan.id}')" style="width:100%;"><i class="fas fa-times-circle me-2"></i>Batalkan Pesanan Ini</button>
-                    </div>
-                `;
-            } else {
-                // Ini adalah pesanan baru (tidak ada dataPesanan.id awal) ATAU pengguna sudah login
-                // Mereka diizinkan untuk membuat/melanjutkan pembayaran.
-                const btnText = judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran';
-                confirmButtonHTML = `<button id="confirmOrderBtn" onclick="buatPesanan()">${btnText}</button>`;
-            }
+            // Dalam skenario "selalu login", kita selalu mengizinkan untuk membuat/melanjutkan pembayaran
+            const btnText = judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran';
+            confirmButtonHTML = `<button id="confirmOrderBtn" onclick="buatPesanan()">${btnText}</button>`;
+            
 
             paymentContainer.innerHTML = `
                 <h2>${judul}</h2>
@@ -777,8 +756,8 @@
       }
     }
     
-    // Perbaikan: Fungsi buatPesanan kini menangani pengguna yang belum login dengan benar
-        async function buatPesanan() {
+    // Fungsi buatPesanan kini selalu menangani pengguna yang "login" (simulasi)
+    async function buatPesanan() {
         const confirmButton = document.getElementById('confirmOrderBtn');
         if (pendingOrderData.harga_final <= 0 && !pendingOrderData.id) { alert('Pesanan dengan total Rp 0 tidak dapat diproses.'); return; }
         const selectedRadio = document.querySelector('input[name="metode_pembayaran"]:checked');
@@ -792,32 +771,22 @@
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
             batch.set(pesananRef, finalOrderData, { merge: true });
             
-            // Logika bonus pendaftaran umum dihapus dari sini
-            // if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) {
-            //     batch.update(dbFS.collection('pelanggan').doc(currentUser.uid), { punyaBonusPendaftaran: false });
-            // } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
-            //     batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
-            // }
-            // Hanya hapus diskon otomatis jika digunakan dan ada currentUser
+            // Hapus diskon otomatis jika digunakan dan ada currentUser (yang selalu ada dalam simulasi ini)
             if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
 
-            await batch.commit(); // <-- Operasi utama yang bisa gagal
+            await batch.commit(); 
             sessionStorage.setItem('lastUnpaidOrderId', id);
             const instructionHtml = document.getElementById(`content-${metode.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
             const paymentContainer = document.getElementById('payment-selection-container');
             let pesanSuksesHTML = `<hr><p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!</p><p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>${instructionHtml}<p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
             
-            // Ajakan pendaftaran pelanggan setia umum dihapus
-            // if (!currentUser) {
-            //     pesanSuksesHTML += `<div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;"><h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5><p style="font-size: 0.9em; color: var(--muted-text);">Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!</p><a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a></div>`;
-            // }
             paymentContainer.innerHTML = pesanSuksesHTML;
             localStorage.removeItem('metodeTerpilih');
         } catch (error) { 
             console.error("Gagal membuat pesanan:", error);
-            alert('Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.'); // <-- Baris ini yang menampilkan alert
+            alert('Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.'); 
             confirmButton.disabled = false;
             const btnText = pendingOrderData.id ? 'Selesaikan Pembayaran' : 'Buat Pesanan & Bayar';
             confirmButton.innerHTML = btnText;
@@ -912,10 +881,8 @@
             if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
             produkTerpilihData = { id: doc.id, ...doc.data() };
             
-            // Cek diskon hanya jika pengguna sudah login (dan bukan bonus pendaftaran umum)
-            if(currentUser) {
-              cekDanTerapkanDiskonOtomatis(); 
-            }
+            // Cek diskon selalu karena pengguna sudah dianggap login
+            cekDanTerapkanDiskonOtomatis(); 
             updateTotalHarga(); 
             
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
@@ -940,13 +907,13 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       
-      // Logika diskon hanya berjalan jika promo produk diklaim atau diskon promo umum aktif
+      // Logika diskon selalu berjalan karena user dianggap login
       if (promoProdukTerpakai && produkTerpilihData.promo) { 
         let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); 
         hargaFinal = Math.max(0, hargaAwal - potongan); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && diskonPromoTerpakai) { // Hanya diskon promo umum yang tersisa
+      } else if (diskonPromoTerpakai) { // Diskon promo umum akan selalu aktif jika diklaim
         hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; 
