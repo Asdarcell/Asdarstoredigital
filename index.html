@@ -307,7 +307,8 @@
             <i class="fas fa-list"></i> Lihat Semua Produk
         </a>
         <div id="user-panel">
-            <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a>
+            <!-- Ini akan diisi oleh JavaScript berdasarkan status login dan status seller -->
+            <a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login / Jadi Seller</span></a>
         </div>
     </div>
 </header>
@@ -350,11 +351,11 @@
         <label for="waAktif">Nomor WhatsApp Aktif</label>
         <input type="tel" id="waAktif" placeholder="Cth: 081234567890 (awali 08...)" pattern="^08[0-9]{8,15}$" required />
         
-        <div id="pesan-bonus-diterapkan" class="alert alert-success" style="display: none; font-weight: bold; text-align: center; margin-top: 15px;">
+        <!-- Bagian bonus pendaftaran umum dihapus atau disembunyikan -->
+        <!-- <div id="pesan-bonus-diterapkan" class="alert alert-success" style="display: none; font-weight: bold; text-align: center; margin-top: 15px;">
             🎉 Selamat! Bonus Pendaftaran Rp 5.000 telah diterapkan.
-        </div>
-        
-        <div id="pesan-info-bonus" class="alert alert-info" style="display: none; font-size: 0.9em; text-align: center; margin-top: 15px;"></div>
+        </div> -->
+        <!-- <div id="pesan-info-bonus" class="alert alert-info" style="display: none; font-size: 0.9em; text-align: center; margin-top: 15px;"></div> -->
         
         <div id="claim-discount-section" style="display: none; background-color: var(--bg); padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
             <h3 style="color: var(--success); margin: 0 0 10px 0;">🎉 Selamat! Anda Punya Diskon!</h3>
@@ -437,10 +438,9 @@
     const infoProduk = document.getElementById('infoProduk');
     const formNotification = document.getElementById('formNotification');
     
-    let bonusPendaftaranDiterapkan = false;
-    const POTONGAN_BONUS_PENDAFTARAN = 5000;
-    const POTONGAN_DISKON_PROMO = 5000;
-    const KATEGORI_TERKECUALI_BONUS = ['PULSA', 'TOKEN LISTRIK'];
+    // const bonusPendaftaranDiterapkan = false; // Ini tidak lagi digunakan, bonus umum dihapus
+    const POTONGAN_DISKON_PROMO = 5000; // Diskon ini tetap ada jika ada hak diskon otomatis lain
+    // const KATEGORI_TERKECUALI_BONUS = ['PULSA', 'TOKEN LISTRIK']; // Tidak lagi relevan
     
     const formatRupiah = (angka) => `Rp${(angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     const normalizePhone = (num) => {
@@ -478,31 +478,36 @@
         currentUser = user; 
         if (user) {
             const resellerRef = dbFS.collection('resellers').doc(user.uid);
-            const pelangganRef = dbFS.collection('pelanggan').doc(user.uid);
+            // Menghapus atau mengabaikan logika pelanggan umum dan bonus pendaftaran
+            // const pelangganRef = dbFS.collection('pelanggan').doc(user.uid);
             try {
                 const resellerDoc = await resellerRef.get();
                 if (resellerDoc.exists && resellerDoc.data().status === 'active') {
                     userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn mb-2"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 } else {
+                    // Jika login tapi belum jadi seller aktif
                     userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 }
             } catch (error) {
                 console.error("Gagal memeriksa status reseller:", error);
+                // Fallback jika ada error saat memeriksa status reseller
                 userPanel.innerHTML = `<a href="reseller.html" class="reseller-btn mb-2"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="reseller-btn" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
             }
             orderFormFields.nama.value = user.displayName || '';
-            const pelangganDoc = await pelangganRef.get();
-            if (!pelangganDoc.exists) {
-                try {
-                    await pelangganRef.set({ email: user.email, uid: user.uid, punyaBonusPendaftaran: true, terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() });
-                    alert('Selamat datang! Anda mendapatkan bonus pendaftaran Rp 5.000 untuk pesanan pertama Anda.');
-                } catch (error) { console.error("Gagal memberi bonus pendaftaran:", error); }
-            } else { await pelangganRef.update({ terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() }); }
-            await cekDanTerapkanDiskonOtomatis();
+            // Logika bonus pendaftaran pelanggan umum dihapus dari sini
+            // const pelangganDoc = await pelangganRef.get();
+            // if (!pelangganDoc.exists) {
+            //     try {
+            //         await pelangganRef.set({ email: user.email, uid: user.uid, punyaBonusPendaftaran: true, terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() });
+            //         alert('Selamat datang! Anda mendapatkan bonus pendaftaran Rp 5.000 untuk pesanan pertama Anda.');
+            //     } catch (error) { console.error("Gagal memberi bonus pendaftaran:", error); }
+            // } else { await pelangganRef.update({ terakhirLogin: firebase.firestore.FieldValue.serverTimestamp() }); }
+            
+            await cekDanTerapkanDiskonOtomatis(); // Tetap cek diskon otomatis lainnya (misal: dari hakDiskonOtomatis)
         } else {
             currentUser = null;
-            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login/Daftar</span></a><p class="small text-center mt-1" style="color: var(--muted-text); font-size: 0.8em;">Daftar & dapatkan bonus Rp 5.000!</p>`;
-            resetSemuaDiskon();
+            userPanel.innerHTML = `<a href="login.html" class="reseller-btn"><i class="fas fa-sign-in-alt"></i><span>Login / Jadi Seller</span></a>`;
+            resetSemuaDiskon(); // Pastikan diskon reset jika user logout
         }
         document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
         orderFormFields.kategori.addEventListener('change', handleCategoryChange);
@@ -537,30 +542,32 @@
     async function cekDanTerapkanDiskonOtomatis() {
       resetSemuaDiskon(); 
       if (!currentUser || promoProdukTerpakai || !produkTerpilihData) { updateTotalHarga(); return; }
-      const pelangganRef = dbFS.collection('pelanggan').doc(currentUser.uid);
-      const pelangganDoc = await pelangganRef.get();
-      if (pelangganDoc.exists && pelangganDoc.data().punyaBonusPendaftaran === true) {
-        const kategoriProduk = produkTerpilihData.kategori.toUpperCase();
-        if (KATEGORI_TERKECUALI_BONUS.includes(kategoriProduk)) {
-            document.getElementById('pesan-info-bonus').textContent = 'Bonus pendaftaran tidak berlaku untuk kategori produk ini.';
-            document.getElementById('pesan-info-bonus').style.display = 'block';
-            bonusPendaftaranDiterapkan = false;
-        } else {
-            bonusPendaftaranDiterapkan = true;
-            document.getElementById('pesan-bonus-diterapkan').style.display = 'block';
-        }
-      } else {
-        const diskonRef = dbFS.collection('hakDiskonOtomatis').doc(currentUser.email);
-        const diskonDoc = await diskonRef.get();
-        if (diskonDoc.exists) { document.getElementById('claim-discount-section').style.display = 'block'; }
-      }
+      
+      // Logika bonus pendaftaran umum dihapus dari sini
+      // const pelangganRef = dbFS.collection('pelanggan').doc(currentUser.uid);
+      // const pelangganDoc = await pelangganRef.get();
+      // if (pelangganDoc.exists && pelangganDoc.data().punyaBonusPendaftaran === true) {
+      //   const kategoriProduk = produkTerpilihData.kategori.toUpperCase();
+      //   if (KATEGORI_TERKECUALI_BONUS.includes(kategoriProduk)) {
+      //       document.getElementById('pesan-info-bonus').textContent = 'Bonus pendaftaran tidak berlaku untuk kategori produk ini.';
+      //       document.getElementById('pesan-info-bonus').style.display = 'block';
+      //       bonusPendaftaranDiterapkan = false;
+      //   } else {
+      //       bonusPendaftaranDiterapkan = true;
+      //       document.getElementById('pesan-bonus-diterapkan').style.display = 'block';
+      //   }
+      // } else {
+          const diskonRef = dbFS.collection('hakDiskonOtomatis').doc(currentUser.email);
+          const diskonDoc = await diskonRef.get();
+          if (diskonDoc.exists) { document.getElementById('claim-discount-section').style.display = 'block'; }
+      // }
       updateTotalHarga();
     }
     function resetSemuaDiskon() {
-        bonusPendaftaranDiterapkan = false;
+        // bonusPendaftaranDiterapkan = false; // Tidak lagi relevan
         diskonPromoTerpakai = false;
-        document.getElementById('pesan-bonus-diterapkan').style.display = 'none';
-        document.getElementById('pesan-info-bonus').style.display = 'none';
+        // document.getElementById('pesan-bonus-diterapkan').style.display = 'none'; // Tidak lagi relevan
+        // document.getElementById('pesan-info-bonus').style.display = 'none'; // Tidak lagi relevan
         document.getElementById('claim-discount-section').style.display = 'none';
         const claimButton = document.getElementById('claim-button');
         if(claimButton) {
@@ -576,6 +583,10 @@
         const claimButton = document.getElementById('claim-button');
         claimButton.disabled = true;
         claimButton.innerText = "✅ Diskon Diterapkan";
+        // Hapus hak diskon otomatis setelah digunakan
+        if (currentUser) {
+            dbFS.collection('hakDiskonOtomatis').doc(currentUser.email).delete().catch(e => console.error("Gagal menghapus hak diskon otomatis:", e));
+        }
     }
     function setFormDisabled(disabled) {
         Object.values(orderFormFields).forEach(field => {
@@ -654,7 +665,7 @@
       }
       
       let hargaFinal = produkTerpilihData.harga_umum;
-      let bonusPendaftaranDiterapkanFinal = false;
+      // let bonusPendaftaranDiterapkanFinal = false; // Tidak lagi relevan
       let diskonPromoTerpakaiFinal = false;
       let promoProdukTerpakaiFinal = false;
 
@@ -663,10 +674,7 @@
           if (promoProdukTerpakai && produkTerpilihData.promo) {
               hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
               promoProdukTerpakaiFinal = true;
-          } else if (bonusPendaftaranDiterapkan) {
-              hargaFinal = Math.max(0, hargaFinal - POTONGAN_BONUS_PENDAFTARAN);
-              bonusPendaftaranDiterapkanFinal = true;
-          } else if (diskonPromoTerpakai) {
+          } else if (diskonPromoTerpakai) { // Hanya diskon promo umum yang tersisa
               hargaFinal = Math.max(0, hargaFinal - POTONGAN_DISKON_PROMO);
               diskonPromoTerpakaiFinal = true;
           }
@@ -681,7 +689,7 @@
         harga_final: hargaFinal,
         promo_produk_digunakan: promoProdukTerpakaiFinal ? produkTerpilihData.promo : null,
         diskon_promo_digunakan: diskonPromoTerpakaiFinal,
-        bonus_pendaftaran_digunakan: bonusPendaftaranDiterapkanFinal,
+        // bonus_pendaftaran_digunakan: bonusPendaftaranDiterapkanFinal, // Tidak lagi relevan
         jenis_produk: produkTerpilihData.jenis_produk || 'manual'
       };
       
@@ -783,19 +791,28 @@
             const batch = dbFS.batch();
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
             batch.set(pesananRef, finalOrderData, { merge: true });
-            if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) {
-                batch.update(dbFS.collection('pelanggan').doc(currentUser.uid), { punyaBonusPendaftaran: false });
-            } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
+            
+            // Logika bonus pendaftaran umum dihapus dari sini
+            // if (finalOrderData.bonus_pendaftaran_digunakan && currentUser && !pendingOrderData.id) {
+            //     batch.update(dbFS.collection('pelanggan').doc(currentUser.uid), { punyaBonusPendaftaran: false });
+            // } else if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
+            //     batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
+            // }
+            // Hanya hapus diskon otomatis jika digunakan dan ada currentUser
+            if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
+
             await batch.commit(); // <-- Operasi utama yang bisa gagal
             sessionStorage.setItem('lastUnpaidOrderId', id);
             const instructionHtml = document.getElementById(`content-${metode.replace(/\s+/g, '-').toLowerCase()}`).innerHTML;
             const paymentContainer = document.getElementById('payment-selection-container');
             let pesanSuksesHTML = `<hr><p class="fw-bold fs-5 text-center" style="color:var(--success);"><i class="fas fa-check-circle me-2"></i>Pesanan Berhasil Dibuat/Diperbarui!</p><p class="text-center"><b>ID Pesanan Anda:</b> <code>${id}</code></p>${instructionHtml}<p class="text-center mt-3">Setelah membayar, upload bukti pembayaran.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class='btn btn-primary' href="upload.html?id=${id}" style="width:100%;"><i class="fas fa-upload me-2"></i>Upload Bukti</a><a class='btn btn-secondary' href="status.html?id=${id}" style="width:100%;"><i class="fas fa-eye me-2"></i>Cek Status</a></div>`;
-            if (!currentUser) {
-                pesanSuksesHTML += `<div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;"><h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5><p style="font-size: 0.9em; color: var(--muted-text);">Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!</p><a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a></div>`;
-            }
+            
+            // Ajakan pendaftaran pelanggan setia umum dihapus
+            // if (!currentUser) {
+            //     pesanSuksesHTML += `<div style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 25px; text-align: center;"><h5 style="color: var(--primary);">Jadilah Pelanggan Setia!</h5><p style="font-size: 0.9em; color: var(--muted-text);">Terima kasih sudah berbelanja. Buat akun gratis sekarang untuk mendapatkan diskon dan bonus di pesanan Anda selanjutnya!</p><a href="login.html" class="btn btn-success" style="width: auto; padding: 8px 20px;">Daftar Sekarang</a></div>`;
+            // }
             paymentContainer.innerHTML = pesanSuksesHTML;
             localStorage.removeItem('metodeTerpilih');
         } catch (error) { 
@@ -895,7 +912,7 @@
             if (!doc.exists) { infoProduk.innerHTML = 'Produk tidak ditemukan.'; return; }
             produkTerpilihData = { id: doc.id, ...doc.data() };
             
-            // Cek diskon hanya jika pengguna sudah login
+            // Cek diskon hanya jika pengguna sudah login (dan bukan bonus pendaftaran umum)
             if(currentUser) {
               cekDanTerapkanDiskonOtomatis(); 
             }
@@ -907,7 +924,8 @@
             } else {
                 orderFormFields.nextBtn.textContent = 'Lanjut ke Pembayaran';
                 orderFormFields.nextBtn.disabled = false;
-                if (!bonusPendaftaranDiterapkan && !diskonPromoTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
+                // Hanya tampilkan promo produk jika tidak ada diskon promo umum yang aktif
+                if (!diskonPromoTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
                     document.getElementById('product-promo-container').innerHTML = `<div style="background: var(--card); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px dashed var(--success);}"><p style="font-weight:600; color: var(--success); margin: 0;">🎉 Promo Spesial! ${promoText}</p><button type="button" class="btn btn-sm btn-success mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
                 }
@@ -922,17 +940,13 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       
-      // Logika diskon hanya berjalan jika pengguna login atau promo produk diklaim
+      // Logika diskon hanya berjalan jika promo produk diklaim atau diskon promo umum aktif
       if (promoProdukTerpakai && produkTerpilihData.promo) { 
         let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); 
         hargaFinal = Math.max(0, hargaAwal - potongan); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && bonusPendaftaranDiterapkan) { 
-        hargaFinal = Math.max(0, hargaAwal - POTONGAN_BONUS_PENDAFTARAN); 
-        deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
-        diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Spesial: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && diskonPromoTerpakai) { 
+      } else if (currentUser && diskonPromoTerpakai) { // Hanya diskon promo umum yang tersisa
         hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; 
@@ -990,7 +1004,7 @@
     }
     window.klaimPromoProduk = () => {
         promoProdukTerpakai = true;
-        resetSemuaDiskon();
+        resetSemuaDiskon(); // Pastikan diskon lain (misal diskon promo umum) tidak aktif
         updateTotalHarga();
         document.querySelector('#product-promo-container div').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
