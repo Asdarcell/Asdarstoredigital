@@ -252,7 +252,7 @@
     .theme-button:hover { transform: scale(1.1); }
     .theme-button.active { border-color: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px var(--primary); }
     
-    /* === CSS BARU UNTUK GRID PRODUK === */
+    /* === CSS untuk Grid Produk & Category Tabs === */
     .product-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -326,6 +326,37 @@
         text-shadow: 0 0 5px rgba(0,0,0,0.5);
     }
 
+    /* CSS untuk Category Tabs */
+    .category-button {
+      background-color: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      white-space: nowrap; /* Mencegah wrapping untuk nama kategori panjang */
+    }
+    .category-button:hover {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    .category-button.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transform: scale(1.02);
+    }
+    /* Untuk aqua_gradient theme, gunakan background utama yang spesifik */
+    [data-theme="aqua_gradient"] .category-button.active {
+        background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+        border-color: #8E2DE2;
+    }
+
   </style>
 </head>
 
@@ -335,8 +366,10 @@
         <h1>Asdar Store Digital</h1>
     </div>
     <div class="header-right">
+        <!-- Tombol "Lihat Semua Produk" sekarang bisa dihapus atau diubah jika semua produk sudah tampil di halaman ini -->
+        <!-- Jika Anda punya halaman terpisah untuk daftar produk lengkap dengan filter lebih canggih, tetap bisa dipertahankan -->
         <a href="daftar-produk.html" class="all-products-btn mb-2">
-            <i class="fas fa-list"></i> Lihat Semua Produk
+            <i class="fas fa-list"></i> Lihat Produk Lainnya
         </a>
         <div id="user-panel">
             <!-- Ini akan diisi oleh JavaScript berdasarkan status login dan status seller -->
@@ -379,7 +412,7 @@
         <label for="nama">Nama Lengkap</label>
         <input type="text" id="nama" placeholder="Cth: Budi Santoso" required />
         
-        <!-- Label dan Placeholder ini akan diubah oleh JavaScript -->
+        <!-- Label dan Placeholder ini akan diubah oleh JavaScript secara dinamis -->
         <label for="nomor" id="nomor-label">Nomor HP / ID Game/ [SN/ID]DIGITAL</label>
         <input type="text" id="nomor" placeholder="Cth: 081234567890 atau ID Anda" required />
         
@@ -392,18 +425,22 @@
             <button id="claim-button" type="button" onclick="gunakanPromoDiskon()">✅ Ya, Gunakan Diskon</button>
         </div>
 
-        <label for="kategori">Kategori Produk</label>
-        <select id="kategori" required><option value="">Pilih Kategori</option></select>
+        <!-- Bagian baru untuk Kategori Produk sebagai tombol/tab -->
+        <h3 style="margin-top:20px; text-align: center;">Pilih Kategori Produk</h3>
+        <div id="category-tabs" class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+            <p class="text-center text-muted w-100">Memuat kategori...</p>
+        </div>
+        <!-- Akhir Bagian baru -->
         
-        <!-- === BAGIAN YANG DIPERBAIKI: GRID PRODUK === -->
+        <!-- === GRID PRODUK AKAN TAMPIL DI SINI === -->
         <label for="produk-grid-container" class="mt-3">Pilih Produk</label>
         <div id="produk-grid-container" class="product-grid">
-            <p>Pilih kategori untuk melihat produk.</p>
+            <p class="text-center text-muted">Memuat produk...</p>
         </div>
         <!-- ======================================== -->
 
         <div id="product-promo-container"></div>
-        <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini.</div>
+        <div class="info" id="infoProduk">Harga dan deskripsi akan muncul di sini setelah Anda memilih produk.</div>
         <button type="button" id="nextToPaymentBtn" disabled>Pilih Produk Dahulu</button>
       </form>
     </div>
@@ -421,7 +458,8 @@
     </div>
     <hr>
     <div data-aos="fade-up" class="section-container"><h2>Cek Status Pesanan Anda</h2><form onsubmit="event.preventDefault(); cekStatus();"><label for="idCek">Masukkan ID Pesanan atau No. WhatsApp</label><input type="text" id="idCek" placeholder="Cth: P16789... atau 08123..." required /><button type="submit">Cek Status</button></form></div>
-    <!-- Tombol WhatsApp Terapung (contoh) -->
+    
+    <!-- Tombol WhatsApp Terapung -->
     <a href="https://wa.me/6281234567890" target="_blank" style="position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 15px; border-radius: 50%; font-size: 1.8em; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000;" title="Hubungi Kami via WhatsApp">
         <i class="fab fa-whatsapp"></i>
     </a>
@@ -454,7 +492,7 @@
       projectId: "asdarstoredigitalll-d89c4", // GANTI DENGAN PROJECT ID FIREBASE ASLI ANDA
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(); // Re-enable Firebase Auth
+    const auth = firebase.auth(); 
     const dbFS = firebase.firestore();
     const dbRT = firebase.database();
     
@@ -464,18 +502,21 @@
     let promoProdukTerpakai = false;
     let diskonPromoTerpakai = false; 
     let pendingOrderData = {}; 
+    
+    // Perbarui orderFormFields - Hapus referensi ke kategori select karena sudah diganti tab
     const orderFormFields = {
         nama: document.getElementById('nama'),
         nomor: document.getElementById('nomor'),
         waAktif: document.getElementById('waAktif'),
-        kategori: document.getElementById('kategori'),
         nextBtn: document.getElementById('nextToPaymentBtn'),
-        nomorLabel: document.getElementById('nomor-label') // Tambahkan referensi ke label nomor
+        nomorLabel: document.getElementById('nomor-label') 
     };
+
     const existingOrderNotification = document.getElementById('existing-order-notification');
     const infoProduk = document.getElementById('infoProduk');
     const formNotification = document.getElementById('formNotification');
-    const produkGridContainer = document.getElementById('produk-grid-container'); // Pastikan ini ada
+    const produkGridContainer = document.getElementById('produk-grid-container'); 
+    const categoryTabsContainer = document.getElementById('category-tabs'); // Tambahkan referensi ini
 
     const POTONGAN_DISKON_PROMO = 5000;
     
@@ -507,11 +548,11 @@
       document.querySelectorAll('.theme-button').forEach(button => {
         button.addEventListener('click', () => { switchTheme(button.dataset.themeName); });
       });
-      loadInitialData();
+      loadInitialData(); // Ini akan memuat kategori dan produk awal
       checkForLostId();
 
       document.getElementById('formTestimoni').addEventListener('submit', handleTestimoniSubmit);
-      orderFormFields.kategori.addEventListener('change', handleCategoryChange);
+      // Event listener untuk kategori tidak lagi diperlukan di sini, sudah di loadInitialData
       orderFormFields.waAktif.addEventListener('blur', handleWaInputChange);
       orderFormFields.nextBtn.addEventListener('click', handleNextToPayment);
     });
@@ -523,25 +564,21 @@
             try {
                 const resellerDoc = await resellerRef.get();
                 if (resellerDoc.exists && resellerDoc.data().status === 'active') {
-                    // User is an active seller
                     userPanel.innerHTML = `<a href="reseller-dashboard.html" class="dashboard-btn mb-2"><i class="fas fa-tachometer-alt"></i><span>Dashboard Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="btn-action" style="background-color: var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 } else {
-                    // User is logged in but not an active seller
                     userPanel.innerHTML = `<a href="riwayat-pesanan.html" class="btn-action mb-2"><i class="fas fa-history"></i><span>Riwayat Pesanan</span></a><a href="reseller.html" class="btn-action" style="background-color: var(--success);"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="btn-action" style="background-color: var(--danger); margin-top: 5px;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
                 }
             } catch (error) {
                 console.error("Gagal memeriksa status reseller:", error);
-                // Fallback jika ada error saat memeriksa status reseller
                 userPanel.innerHTML = `<a href="riwayat-pesanan.html" class="btn-action mb-2"><i class="fas fa-history"></i><span>Riwayat Pesanan</span></a><a href="reseller.html" class="btn-action" style="background-color: var(--success);"><i class="fas fa-user-tie"></i><span>Daftar Jadi Seller</span></a><a href="#" onclick="event.preventDefault(); auth.signOut();" class="btn-action" style="background-color: var(--danger); margin-top: 5px;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>`;
             }
             orderFormFields.nama.value = user.displayName || '';
-            await cekDanTerapkanDiskonOtomatis(); // Cek diskon otomatis jika user sudah login
+            await cekDanTerapkanDiskonOtomatis(); 
         } else {
-            // User is not logged in
             currentUser = null;
             userPanel.innerHTML = `<a href="login-daftar.html" class="btn-action"><i class="fas fa-user-circle"></i><span>Akun Saya</span></a>`;
-            resetSemuaDiskon(); // Pastikan diskon reset jika user logout
-            orderFormFields.nama.value = ''; // Kosongkan nama jika tidak login
+            resetSemuaDiskon(); 
+            orderFormFields.nama.value = ''; 
         }
     });
     
@@ -571,7 +608,6 @@
 
     async function cekDanTerapkanDiskonOtomatis() {
       resetSemuaDiskon(); 
-      // Diskon otomatis hanya muncul jika tidak ada promo produk yang aktif
       if (!currentUser || promoProdukTerpakai || !produkTerpilihData) { updateTotalHarga(); return; }
       
       const diskonRef = dbFS.collection('hakDiskonOtomatis').doc(currentUser.email);
@@ -590,14 +626,13 @@
     }
     function gunakanPromoDiskon() {
         diskonPromoTerpakai = true;
-        promoProdukTerpakai = false; // Diskon umum menimpa promo produk
-        document.getElementById('product-promo-container').innerHTML = ''; // Hapus tampilan promo produk
+        promoProdukTerpakai = false; 
+        document.getElementById('product-promo-container').innerHTML = ''; 
         updateTotalHarga();
         const claimButton = document.getElementById('claim-button');
         claimButton.disabled = true;
         claimButton.innerText = "✅ Diskon Diterapkan";
-        // Hapus hak diskon otomatis setelah digunakan (jika ini bukan pesanan yang sedang dipulihkan)
-        if (currentUser && !pendingOrderData.id) { // Hapus hanya jika ini pesanan baru
+        if (currentUser && !pendingOrderData.id) { 
             dbFS.collection('hakDiskonOtomatis').doc(currentUser.email).delete().catch(e => console.error("Gagal menghapus hak diskon otomatis:", e));
         }
     }
@@ -605,7 +640,6 @@
         Object.values(orderFormFields).forEach(field => {
             if (field) field.disabled = disabled;
         });
-        // Nonaktifkan juga kartu produk
         document.querySelectorAll('.product-card').forEach(card => {
             if (disabled) {
                 card.style.pointerEvents = 'none';
@@ -613,6 +647,15 @@
             } else {
                 card.style.pointerEvents = 'auto';
                 card.style.opacity = '1';
+            }
+        });
+        document.querySelectorAll('.category-button').forEach(btn => {
+            if (disabled) {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.7';
+            } else {
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
             }
         });
     }
@@ -643,15 +686,10 @@
                 await dbFS.collection('pesananUmum').doc(orderId).update({ status: 'Dibatalkan' });
                 alert(`Pesanan ${orderId} telah dibatalkan.`);
                 hideBlockingNotification();
-                resetFormState(); // Reset form setelah pembatalan
-                orderFormFields.waAktif.value = ''; // Kosongkan input WA
+                resetFormState(); 
+                orderFormFields.waAktif.value = ''; 
             } catch (error) { alert("Gagal membatalkan pesanan."); }
         }
-    }
-    async function handleWaInputChange() {
-        const existingOrder = await checkForExistingOrder(orderFormFields.waAktif.value);
-        if (existingOrder) { showBlockingNotification(existingOrder); } 
-        else { hideBlockingNotification(); }
     }
     window.cekStatus = async () => {
       const inputCek = document.getElementById('idCek').value.trim();
@@ -661,7 +699,7 @@
       cekButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengecek...';
       try {
         let orderData = null, orderId = null;
-        if (inputCek.toUpperCase().startsWith('P') && inputCek.length > 1 && !isNaN(inputCek.substring(1))) { // Perbaiki validasi ID
+        if (inputCek.toUpperCase().startsWith('P') && inputCek.length > 1 && !isNaN(inputCek.substring(1))) { 
           const doc = await dbFS.collection('pesananUmum').doc(inputCek).get();
           if (doc.exists) { orderData = doc.data(); orderId = doc.id; }
         } else {
@@ -670,9 +708,8 @@
         }
         if (orderData) {
           if (orderData.status === 'Menunggu Pembayaran') {
-            pendingOrderData = orderData; // Simpan data pesanan yang dipulihkan
+            pendingOrderData = orderData;
             await tampilkanUiPembayaran(orderData, 'Lanjutkan Pembayaran');
-            // Pastikan form order disembunyikan jika melanjutkan pembayaran
             document.getElementById('order-form-container').style.display = 'none';
           } else { window.location.href = `status.html?id=${orderId}`; }
         } else { alert('Pesanan tidak ditemukan.'); }
@@ -694,7 +731,6 @@
       let diskonPromoTerpakaiFinal = false;
       let promoProdukTerpakaiFinal = false;
 
-      // Cek diskon hanya jika pengguna sudah login
       if (currentUser) {
           if (promoProdukTerpakai && produkTerpilihData.promo) {
               hargaFinal = Math.max(0, hargaFinal - (produkTerpilihData.promo.jenis === 'nominal' ? produkTerpilihData.promo.nilai : hargaFinal * (produkTerpilihData.promo.nilai / 100)));
@@ -709,7 +745,7 @@
         nama_pelanggan: nama.value.trim(),
         nomor_pelanggan: nomor.value.trim(),
         no_whatsap_aktif: normalizePhone(waAktif.value.trim()),
-        kategori: orderFormFields.kategori.value,
+        kategori: produkTerpilihData.kategori, // Ambil kategori dari produk yang terpilih
         produk: produkTerpilihData.nama_produk,
         harga_final: hargaFinal,
         promo_produk_digunakan: promoProdukTerpakaiFinal ? produkTerpilihData.promo : null,
@@ -733,8 +769,6 @@
             let radioButtonsHTML = '', contentDivsHTML = '';
             paymentMethods.forEach(metode => {
                 const metodeId = metode.metode.replace(/\s+/g, '-').toLowerCase();
-                // Opsional: Tambahkan logo pembayaran jika ada di data Firebase (misal: metode.logoUrl)
-                // <img src="${metode.logoUrl}" alt="${metode.metode}" style="height: 20px; margin-right: 10px;">
                 radioButtonsHTML += `<div class="payment-option"><input type="radio" id="pilih-${metodeId}" name="metode_pembayaran" value="${metode.metode}"><label for="pilih-${metodeId}"><i class="fas fa-wallet"></i> ${metode.metode}</label></div>`;
                 if (metode.metode.toLowerCase().includes('qris')) {
                     contentDivsHTML += `<div id="content-${metodeId}" class="payment-content hidden"><div class="qris-details"><h4>Silakan pindai (scan) kode QRIS di bawah:</h4><img src="${metode.nomor}" alt="Kode QRIS Pembayaran" class="qris-image"><p>a.n ${metode.atas_nama}</p><p>Nominal: <strong>${formatRupiah(dataPesanan.harga_final)}</strong></p></div></div>`;
@@ -743,11 +777,8 @@
                 }
             });
 
-            // LOGIKA PENTING: Menentukan tombol konfirmasi
             let confirmButtonHTML = '';
             if (dataPesanan.id && !currentUser) {
-                // Jika ini adalah pesanan yang sudah ada (memiliki ID) DAN pengguna belum login
-                // Mereka tidak diizinkan untuk "mengupdate" statusnya, hanya bisa melihat atau membatalkan.
                 confirmButtonHTML = `
                     <p class="text-center text-muted mt-3">
                         Anda sedang melihat detail pesanan yang sudah ada. Untuk melanjutkan pembayaran pesanan ini atau mengelolanya, harap login.
@@ -758,8 +789,6 @@
                     </div>
                 `;
             } else {
-                // Ini adalah pesanan baru (tidak ada dataPesanan.id awal) ATAU pengguna sudah login
-                // Mereka diizinkan untuk membuat/melanjutkan pembayaran.
                 const btnText = judul === 'Konfirmasi Pembayaran' ? 'Buat Pesanan & Bayar' : 'Selesaikan Pembayaran';
                 confirmButtonHTML = `<button id="confirmOrderBtn" onclick="buatPesanan()">${btnText}</button>`;
             }
@@ -818,7 +847,6 @@
             const pesananRef = dbFS.collection('pesananUmum').doc(id);
             batch.set(pesananRef, finalOrderData, { merge: true });
             
-            // Hapus diskon otomatis jika digunakan dan ada currentUser (hanya untuk pesanan baru)
             if (finalOrderData.diskon_promo_digunakan && currentUser && !pendingOrderData.id) {
                 batch.delete(dbFS.collection('hakDiskonOtomatis').doc(currentUser.email));
             }
@@ -844,12 +872,11 @@
         produkTerpilihData = null; 
         promoProdukTerpakai = false; 
         resetSemuaDiskon(); 
-        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini.'; 
+        infoProduk.innerHTML = 'Harga dan deskripsi akan muncul di sini setelah Anda memilih produk.'; 
         orderFormFields.nextBtn.disabled = true; 
         orderFormFields.nextBtn.textContent = 'Pilih Produk Dahulu'; 
         document.getElementById('product-promo-container').innerHTML = ''; 
         
-        // Hapus kartu produk aktif jika ada
         const activeCard = document.querySelector('.product-card.active');
         if (activeCard) {
             activeCard.classList.remove('active');
@@ -862,17 +889,66 @@
         hideNotification(); 
     }
 
-    function loadInitialData() {
-        dbFS.collection('produk').get().then(snapshot => {
+    // Fungsi utama untuk memuat data awal (kategori dan produk)
+    async function loadInitialData() {
+        categoryTabsContainer.innerHTML = '<p class="text-center text-muted w-100">Memuat kategori...</p>';
+        produkGridContainer.innerHTML = '<p class="text-center text-muted">Memuat produk...</p>'; // Tampilkan loading produk juga
+
+        try {
+            const snapshot = await dbFS.collection('produk').get();
             const categories = new Set();
-            snapshot.forEach(doc => { if (doc.data().kategori) { categories.add(doc.data().kategori); } });
-            orderFormFields.kategori.innerHTML = '<option value="">Pilih Kategori</option>';
-            [...categories].sort().forEach(k => { orderFormFields.kategori.innerHTML += `<option value="${k}">${k}</option>`; });
-            produkGridContainer.innerHTML = '<p class="text-center text-muted">Pilih kategori untuk melihat produk.</p>';
-        });
-        loadAndDisplayBanners(); loadAndRenderFaq(); loadApprovedTestimonials();
+            snapshot.forEach(doc => { 
+                if (doc.data().kategori) { categories.add(doc.data().kategori); } 
+            });
+
+            const sortedCategories = [...categories].sort();
+            categoryTabsContainer.innerHTML = ''; // Hapus pesan loading kategori
+
+            if (sortedCategories.length === 0) {
+                categoryTabsContainer.innerHTML = '<p class="text-center text-muted w-100">Tidak ada kategori produk.</p>';
+                produkGridContainer.innerHTML = '<p class="text-center text-muted">Tidak ada produk tersedia.</p>';
+                return;
+            }
+
+            let firstCategory = null;
+            sortedCategories.forEach((kategori, index) => {
+                const button = document.createElement('button');
+                button.className = 'category-button';
+                button.textContent = kategori;
+                button.dataset.categoryName = kategori; // Simpan nama kategori di dataset
+
+                button.addEventListener('click', () => {
+                    // Reset tombol aktif sebelumnya
+                    document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active'));
+                    // Set tombol saat ini menjadi aktif
+                    button.classList.add('active');
+                    displayProductsByCategory(kategori); // Panggil fungsi untuk menampilkan produk
+                });
+                categoryTabsContainer.appendChild(button);
+
+                if (index === 0) { // Set kategori pertama sebagai default
+                    firstCategory = kategori;
+                }
+            });
+
+            // Otomatis menampilkan produk untuk kategori pertama saat halaman dimuat
+            if (firstCategory) {
+                document.querySelector(`.category-button[data-category-name="${firstCategory}"]`).classList.add('active');
+                displayProductsByCategory(firstCategory);
+            }
+
+        } catch (err) {
+            console.error("Error loading categories or products:", err);
+            categoryTabsContainer.innerHTML = `<p class="text-center text-danger w-100">Gagal memuat kategori.</p>`;
+            produkGridContainer.innerHTML = `<p class="text-center text-danger">Gagal memuat produk.</p>`;
+        }
+
+        loadAndDisplayBanners(); 
+        loadAndRenderFaq(); 
+        loadApprovedTestimonials();
     }
     
+    // Fungsi untuk memuat dan menampilkan banner
     async function loadAndDisplayBanners() { 
         const bannerContainer = document.getElementById('banner-container');
         bannerContainer.innerHTML = '<p class="text-center text-muted">Memuat banner...</p>';
@@ -882,7 +958,7 @@
                 bannerContainer.innerHTML = '<p class="text-center text-muted">Tidak ada banner saat ini.</p>';
                 return;
             }
-            bannerContainer.innerHTML = ''; // Clear loading message
+            bannerContainer.innerHTML = ''; 
             snapshot.forEach(doc => {
                 const banner = doc.data();
                 const bannerItem = document.createElement('a');
@@ -898,21 +974,13 @@
         }
     }
 
-
-    // === FUNGSI YANG DIUBAH UNTUK GRID PRODUK ===
-    function handleCategoryChange() {
-        resetFormState();
-        const kategori = orderFormFields.kategori.value;
-        produkGridContainer.innerHTML = ''; // Kosongkan grid
-
-        if (!kategori) {
-            produkGridContainer.innerHTML = '<p class="text-center text-muted">Pilih kategori untuk melihat produk.</p>';
-            return;
-        }
-
+    // === FUNGSI BARU: MENAMPILKAN PRODUK BERDASARKAN KATEGORI YANG DIPILIH ===
+    function displayProductsByCategory(kategori) {
+        resetFormState(); // Reset form & pilihan produk sebelumnya
         produkGridContainer.innerHTML = '<p class="text-center text-muted">Memuat produk...</p>';
+
         dbFS.collection('produk').where('kategori', '==', kategori).get().then(snapshot => {
-            produkGridContainer.innerHTML = ''; // Clear loading message
+            produkGridContainer.innerHTML = ''; // Hapus pesan loading
             const products = [];
             snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
             products.sort((a, b) => (a.urutan || 999) - (b.urutan || 999));
@@ -931,7 +999,7 @@
                 let cursorStyle = 'pointer';
                 if (!prod.stok || prod.stok <= 0) {
                     card.classList.add('sold-out');
-                    priceHtml = `<div class="product-price">Stok Habis</div>`; // Tampilkan "Stok Habis"
+                    priceHtml = `<div class="product-price">Stok Habis</div>`; 
                     cursorStyle = 'not-allowed';
                 }
 
@@ -941,7 +1009,7 @@
                 `;
                 card.style.cursor = cursorStyle;
 
-                if (!card.classList.contains('sold-out')) { // Hanya tambahkan event listener jika tidak sold out
+                if (!card.classList.contains('sold-out')) { 
                     card.addEventListener('click', () => {
                         document.querySelectorAll('.product-card.active').forEach(c => c.classList.remove('active'));
                         card.classList.add('active');
@@ -951,11 +1019,11 @@
                 produkGridContainer.appendChild(card);
             });
         }).catch(err => {
-            produkGridContainer.innerHTML = `<p class="text-center text-danger">Gagal memuat produk: ${err.message}</p>`;
+            produkGridContainer.innerHTML = `<p style="color: var(--danger);">Gagal memuat produk: ${err.message}</p>`;
         });
     }
 
-    function handleProductSelection(produkId) { // Menerima ID dari kartu yang diklik
+    function handleProductSelection(produkId) { 
         promoProdukTerpakai = false;
         if (!produkId) { resetFormState(); return; }
         infoProduk.innerHTML = 'Memuat detail produk...';
@@ -967,7 +1035,7 @@
             
             // --- Logika Dinamis untuk Label dan Placeholder Input Nomor ---
             const kategoriProduk = produkTerpilihData.kategori ? produkTerpilihData.kategori.toLowerCase() : '';
-            if (kategoriProduk.includes('game') || kategoriProduk.includes('voucher')) {
+            if (kategoriProduk.includes('game') || kategoriProduk.includes('voucher') || kategoriProduk.includes('top up')) {
                 orderFormFields.nomorLabel.textContent = 'ID Game / Username';
                 orderFormFields.nomor.placeholder = 'Cth: 12345678 (ID Game Anda)';
             } else if (kategoriProduk.includes('pulsa') || kategoriProduk.includes('data')) {
@@ -976,17 +1044,16 @@
             } else if (kategoriProduk.includes('ssh') || kategoriProduk.includes('vpn') || kategoriProduk.includes('akun')) {
                 orderFormFields.nomorLabel.textContent = 'Username yang ingin diorder';
                 orderFormFields.nomor.placeholder = 'Cth: asdarvpn123';
-            } else if (kategoriProduk.includes('digital') || kategoriProduk.includes('premium')) { // Contoh untuk produk digital lain
+            } else if (kategoriProduk.includes('digital') || kategoriProduk.includes('premium') || kategoriProduk.includes('aplikasi')) { 
                  orderFormFields.nomorLabel.textContent = 'Email / ID Akun Digital';
                  orderFormFields.nomor.placeholder = 'Cth: email@contoh.com atau ID Akun Anda';
             }
             else {
-                orderFormFields.nomorLabel.textContent = 'Nomor HP / ID Game/ [SN/ID]DIGITAL'; // Default
+                orderFormFields.nomorLabel.textContent = 'Nomor HP / ID Game/ [SN/ID]DIGITAL'; 
                 orderFormFields.nomor.placeholder = 'Cth: 081234567890 atau ID Anda';
             }
             // --- Akhir Logika Dinamis ---
 
-            // Cek diskon hanya jika pengguna sudah login
             if(currentUser) {
               cekDanTerapkanDiskonOtomatis(); 
             }
@@ -995,11 +1062,10 @@
             if (!produkTerpilihData.stok || produkTerpilihData.stok <= 0) {
                 orderFormFields.nextBtn.textContent = 'Stok Habis';
                 orderFormFields.nextBtn.disabled = true;
-                document.getElementById('product-promo-container').innerHTML = ''; // Sembunyikan promo jika stok habis
+                document.getElementById('product-promo-container').innerHTML = ''; 
             } else {
                 orderFormFields.nextBtn.textContent = 'Lanjut ke Pembayaran';
                 orderFormFields.nextBtn.disabled = false;
-                // Hanya tampilkan promo produk jika tidak ada diskon promo umum yang aktif dan user login
                 if (currentUser && !diskonPromoTerpakai && produkTerpilihData.promo && produkTerpilihData.promo.jenis) {
                     let promoText = produkTerpilihData.promo.jenis === 'nominal' ? `Potongan ${formatRupiah(produkTerpilihData.promo.nilai)}` : `Diskon ${produkTerpilihData.promo.nilai}%`;
                     document.getElementById('product-promo-container').innerHTML = `<div style="background: var(--card); padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; border: 1px dashed var(--success);}"><p style="font-weight:600; color: var(--success); margin: 0;">🎉 Promo Spesial! ${promoText}</p><button type="button" class="btn btn-sm btn-success mt-1" onclick="klaimPromoProduk()">✨ Klaim Diskon</button></div>`;
@@ -1017,13 +1083,12 @@
       let deskripsiHargaHTML = `<b style="font-size: 1.2em;">Harga: ${formatRupiah(hargaAwal)}</b>`;
       let diskonDeskripsiTambahan = '';
       
-      // Logika diskon hanya berjalan jika promo produk diklaim atau diskon promo umum aktif DAN user login
       if (currentUser && promoProdukTerpakai && produkTerpilihData.promo) { 
         let potongan = (produkTerpilihData.promo.jenis === 'nominal') ? produkTerpilihData.promo.nilai : hargaAwal * (produkTerpilihData.promo.nilai / 100); 
         hargaFinal = Math.max(0, hargaAwal - potongan); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`; 
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Promo: ${formatRupiah(hargaFinal)}</b>`; 
-      } else if (currentUser && diskonPromoTerpakai) { // Diskon promo umum akan aktif jika diklaim dan user login
+      } else if (currentUser && diskonPromoTerpakai) { 
         hargaFinal = Math.max(0, hargaAwal - POTONGAN_DISKON_PROMO); 
         deskripsiHargaHTML = `Harga Normal: <del>${formatRupiah(hargaAwal)}</del>`;
         diskonDeskripsiTambahan = `<br><b style="color:var(--success); font-size: 1.2em;">Harga Diskon: ${formatRupiah(hargaFinal)}</b>`; 
@@ -1031,7 +1096,7 @@
       
       let jenisProdukLabel = produkTerpilihData.jenis_produk === 'otomatis' ? `<span style="background-color: var(--success); color: white; padding: 3px 8px; font-size: 0.8em; border-radius: 20px; font-weight: bold;">⚡ Pengiriman Otomatis</span><br><br>` : '';
 
-      // Tampilkan detail produk tambahan jika ada di Firestore
+      // Tampilkan detail produk tambahan dari Firebase
       let additionalDetails = '';
       if (produkTerpilihData.masa_aktif) {
         additionalDetails += `<br><b>Masa Aktif:</b> ${produkTerpilihData.masa_aktif}`;
@@ -1042,15 +1107,21 @@
       if (produkTerpilihData.jenis_paket) {
         additionalDetails += `<br><b>Jenis Paket:</b> ${produkTerpilihData.jenis_paket}`;
       }
-      // Tambahkan lebih banyak detail sesuai kebutuhan produk Anda
+      if (produkTerpilihData.platform) { // Contoh untuk game: Platform
+        additionalDetails += `<br><b>Platform:</b> ${produkTerpilihData.platform}`;
+      }
+      if (produkTerpilihData.resolusi) { // Contoh untuk langganan streaming: Resolusi
+        additionalDetails += `<br><b>Resolusi:</b> ${produkTerpilihData.resolusi}`;
+      }
+      // Tambahkan lebih banyak detail sesuai kebutuhan produk Anda di Firestore (misal: "fitur_lain", "server_game", dll.)
 
       infoProduk.innerHTML = `${jenisProdukLabel}${deskripsiHargaHTML}${diskonDeskripsiTambahan}<hr style="margin: 10px 0; border-color: var(--border);"><b>Deskripsi:</b> ${produkTerpilihData.deskripsi || '-'}${additionalDetails}<br><b>Stok Tersedia:</b> ${produkTerpilihData.stok || 0}`;
     }
     
+    // Pastikan Anda memiliki div <div data-aos="fade-up" class="section-container" id="faq-container"><h2>Pertanyaan Umum (FAQ)</h2></div>
+    // jika ingin menampilkan FAQ di halaman ini. Jika tidak, fungsi ini tidak akan berpengaruh.
     function loadAndRenderFaq() { 
         const faqContainer = document.getElementById('faq-container'); 
-        // Pastikan ada elemen faq-container di HTML jika ingin menampilkan FAQ di halaman ini
-        // Jika tidak, abaikan atau tambahkan div <div data-aos="fade-up" class="section-container" id="faq-container"><h2>Pertanyaan Umum (FAQ)</h2></div>
         if (!faqContainer) return; 
 
         dbRT.ref('faq').once('value').then(snap => { 
@@ -1078,8 +1149,7 @@
             if (window.testimonialInterval) clearInterval(window.testimonialInterval);
             function displayNextTestimonial() {
                 if (allTestimonials.length === 0) return;
-                // Hapus yang paling atas jika sudah terlalu banyak (misal lebih dari 5)
-                if (container.children.length > 5) {
+                if (container.children.length > 5) { // Batasi jumlah testimoni yang ditampilkan
                     container.firstChild.style.opacity = 0;
                     setTimeout(() => container.firstChild.remove(), 500);
                 }
@@ -1088,11 +1158,11 @@
                 bubble.className = 'testimonial-bubble';
                 bubble.innerHTML = `<div class="testimonial-header"><i class="fas fa-user-circle"></i><span class="testimonial-name">${testi.nama || 'Anonim'}</span></div><div class="testimonial-body">${testi.isi || ''}</div>`;
                 container.appendChild(bubble);
-                container.scrollTop = container.scrollHeight; // Scroll ke bawah untuk melihat testimoni baru
+                container.scrollTop = container.scrollHeight; 
                 currentIndex = (currentIndex + 1) % allTestimonials.length;
             }
-            displayNextTestimonial(); // Tampilkan testimoni pertama segera
-            window.testimonialInterval = setInterval(displayNextTestimonial, 4000); // Ganti testimoni setiap 4 detik
+            displayNextTestimonial(); 
+            window.testimonialInterval = setInterval(displayNextTestimonial, 4000); 
         });
     }
     async function handleTestimoniSubmit(e) {
@@ -1113,14 +1183,12 @@
         }
     }
     window.klaimPromoProduk = () => {
-        if (!currentUser) { // Pastikan hanya user login yang bisa klaim
+        if (!currentUser) { 
             alert('Silakan login terlebih dahulu untuk mengklaim promo ini.');
-            // Opsional: Arahkan ke halaman login
-            // window.location.href = 'login-daftar.html'; 
             return;
         }
         promoProdukTerpakai = true;
-        resetSemuaDiskon(); // Memastikan diskon umum dinonaktifkan jika promo produk diklaim
+        resetSemuaDiskon(); 
         updateTotalHarga();
         document.querySelector('#product-promo-container div').innerHTML = `<p style="font-weight:600; color:var(--success);">✅ Promo Produk diklaim!</p>`;
     };
